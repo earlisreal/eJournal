@@ -10,5 +10,6 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation "org.apache.pdfbox:pdfbox:2.0.21"
+    implementation "org.apache.derby:derby:10.15.2.0"
 }

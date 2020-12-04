@@ -4,19 +4,18 @@ import java.util.List;
 
 public enum Table {
 
-    STRATEGY("strategy", "CREATE TABLE strategy(" +
-            "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +
-            "name VARCHAR(20) NOT NULL," +
+    STRATEGY("strategy", "CREATE TABLE strategy (" +
+            "name VARCHAR(10) CONSTRAINT strategy_pk PRIMARY KEY," +
             "description LONG VARCHAR)",
             List.of("CREATE UNIQUE INDEX strategy_name_uindex ON strategy (name)")),
-    LOG("log", "CREATE TABLE log(" +
+    LOG("log", "CREATE TABLE log (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT log_pk PRIMARY KEY, " +
             "date DATE, " +
             "stock VARCHAR(5), " +
             "buy BOOLEAN, " +
             "price DOUBLE, " +
             "shares INT, " +
-            "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET DEFAULT, " +
+            "strategy VARCHAR(10) CONSTRAINT log_strategy_name_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE)",
             null);
 

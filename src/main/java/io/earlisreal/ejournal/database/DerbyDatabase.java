@@ -7,7 +7,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class DerbyDatabase {
+public class DerbyDatabase implements AutoCloseable {
 
     private static Connection connection;
 
@@ -42,6 +42,11 @@ public class DerbyDatabase {
             }
             return false;
         }
+    }
+
+    @Override
+    public void close() throws SQLException {
+        connection.close();
     }
 
 }

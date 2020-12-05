@@ -2,7 +2,8 @@ package io.earlisreal.ejournal.parser;
 
 public enum Broker {
 
-    AAA("AAA", "AAA");
+    AAA("AAA", System.lineSeparator() + "AAA" + System.lineSeparator()),
+    YAPSTER("2TradeAsia", "YAPSTER e-TRADE");
 
     private final String name;
     private final String uniqueIdentifier;

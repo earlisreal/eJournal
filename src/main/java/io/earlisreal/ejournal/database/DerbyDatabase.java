@@ -9,10 +9,12 @@ public class DerbyDatabase {
 
     private static Connection connection;
 
+    private DerbyDatabase() {}
+
     public static Connection getConnection() {
         if (connection == null) {
             throw new RuntimeException("Uninitialized Derby Database Connection. " +
-                    "Please call DerbyDatabase.initialize() first");
+                    "Please invoke DerbyDatabase.initialize() first.");
         }
         return connection;
     }

@@ -2,6 +2,8 @@ package io.earlisreal.ejournal.dao;
 
 public class DAOProvider {
 
+    private DAOProvider() {}
+
     private static TradeLogDAO tradeLogDAO;
     private static StrategyDAO strategyDAO;
 

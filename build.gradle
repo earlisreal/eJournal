@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
 group 'io.earlisreal'
@@ -12,4 +13,9 @@ repositories {
 dependencies {
     implementation "org.apache.pdfbox:pdfbox:2.0.21"
     implementation "org.apache.derby:derby:10.15.2.0"
+}
+
+javafx {
+    version = "11.0.2"
+    modules = [ 'javafx.controls' ]
 }

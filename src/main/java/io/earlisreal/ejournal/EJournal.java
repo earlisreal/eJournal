@@ -1,7 +1,7 @@
 package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
-import io.earlisreal.ejournal.identifier.SimpleBrokerIdentifier;
+import io.earlisreal.ejournal.identifier.BrokerIdentifier;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.InvoiceParserFactory;
@@ -38,7 +38,7 @@ public class EJournal {
                 System.out.println("Parsing PDF file: " + args[0]);
 
                 String invoice = new PDFParser().parse(args[0]);
-                String broker = new SimpleBrokerIdentifier().identify(invoice);
+                String broker = BrokerIdentifier.identify(invoice);
                 System.out.println(broker + " Broker Found");
                 System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
             }

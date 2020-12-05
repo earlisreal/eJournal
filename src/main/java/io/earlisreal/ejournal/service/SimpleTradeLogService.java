@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
@@ -24,25 +23,12 @@ public class SimpleTradeLogService implements TradeLogService {
         this.strategyDAO = strategyDAO;
     }
 
-    public void insertCsvFromConsole() {
-        System.out.println("Follow this csv format - date (yyyy-mm-dd), stock, action (buy/sell), price, shares, strategy, type (long/short)");
-        System.out.println("Enter csv records:");
-        List<String> records = new ArrayList<>();
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String line = scanner.nextLine();
-            if (line.isBlank()) {
-                break;
-            }
-
-            records.add(line);
-        }
-
+    public void insertCsv(List<String> csv) {
         Map<String, Integer> strategies = strategyDAO.queryAll().stream().collect(Collectors.toMap(Strategy::getName, Strategy::getId));
         List<TradeLog> tradeLogs = new ArrayList<>();
 
-        for (int i = 0; i < records.size(); ++i) {
-            String[] columns = records.get(i).split(",");
+        for (int i = 0; i < csv.size(); ++i) {
+            String[] columns = csv.get(i).split(",");
             if (columns.length != COLUMN_COUNT) {
                 System.out.println("Missing columns in row: " + i);
                 System.out.println("Near: " + columns[i]);

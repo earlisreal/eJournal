@@ -22,15 +22,22 @@ public class DerbyDatabase {
     public static Connection initialize() throws SQLException {
         connection = DriverManager.getConnection("jdbc:derby:eJournalDB;create=true", "eJournal", "eJournal");
         for (Table table : Table.values()) {
-            if (!createTable(table.getCreateStatement())) {
+            if (!execute(table.getCreateStatement())) {
                 break;
             }
             System.out.println(table.getName() + " Table Created");
+
+            if (table.getIndexes() != null) {
+                for (String index : table.getIndexes()) {
+                    execute(index);
+                }
+                System.out.println("Indexes Created");
+            }
         }
         return connection;
     }
 
-    private static boolean createTable(String sql) throws SQLException {
+    private static boolean execute(String sql) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.execute();
             return true;

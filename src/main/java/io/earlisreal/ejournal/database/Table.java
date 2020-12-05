@@ -4,9 +4,15 @@ import java.util.List;
 
 public enum Table {
 
+    BANK_TRANSACTION ("bank_transaction", "CREATE TABLE bank_transaction (" +
+            "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT bank_transaction_pk PRIMARY KEY, " +
+            "date DATE," +
+            "dividend BOOLEAN, " +
+            "amount DOUBLE)",
+            null),
     STRATEGY("strategy", "CREATE TABLE strategy (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +
-            "name VARCHAR(20)," +
+            "name VARCHAR(20), " +
             "description LONG VARCHAR)",
             List.of("CREATE UNIQUE INDEX strategy_name_uindex ON strategy (name)")),
     LOG("log", "CREATE TABLE log (" +

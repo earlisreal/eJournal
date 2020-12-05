@@ -1,29 +1,13 @@
 package io.earlisreal.ejournal.parser;
 
-import io.earlisreal.ejournal.dto.TradeLog;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public class AAAEquitiesInvoiceParser implements InvoiceParser {
+public class AAAEquitiesInvoiceParser extends InvoiceParser {
 
-    private LocalDate date = null;
-    private String stock = null;
-    private int shares;
-    private String buy;
-    private double price;
+    AAAEquitiesInvoiceParser() {}
 
-    public String parseAsCsv(String invoice) {
-        parse(invoice);
-        return date + "," + stock + "," + buy + "," + price + "," + shares + "," + "long";
-    }
-
-    public TradeLog parseAsObject(String invoice) {
-        parse(invoice);
-        return new TradeLog(date, stock, buy.equalsIgnoreCase("BUY"), price, shares, null, false);
-    }
-
-    private void parse(String invoice) {
+    void parse(String invoice) {
         for (String line : invoice.split(System.lineSeparator())) {
             if (line.contains("Date")) {
                 parseDate(line);
@@ -44,7 +28,7 @@ public class AAAEquitiesInvoiceParser implements InvoiceParser {
         int r = line.indexOf(right);
 
         String dateStr = line.substring(l + left.length(), r);
-        date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu"));
+        setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")));
     }
 
     private void parseStock(String line) {
@@ -60,14 +44,14 @@ public class AAAEquitiesInvoiceParser implements InvoiceParser {
             }
         }
 
-        shares = Integer.parseInt(line.substring(shareIndex, shareEnd));
-        stock = line.substring(0, shareIndex).trim();
+        setShares(Integer.parseInt(line.substring(shareIndex, shareEnd)));
+        setStock(line.substring(0, shareIndex).trim());
         String end = line.substring(shareEnd).trim();
-        price = Double.parseDouble(end.substring(0, end.indexOf(' ')));
+        setPrice(Double.parseDouble(end.substring(0, end.indexOf(' '))));
     }
 
     private void parseIsBuy(String line) {
-        buy = line.substring(0, line.indexOf(' '));
+        setBuy(line.substring(0, line.indexOf(' ')).equalsIgnoreCase("BUY"));
     }
 
 }

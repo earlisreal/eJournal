@@ -2,10 +2,46 @@ package io.earlisreal.ejournal.parser;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 
-public interface InvoiceParser {
+import java.time.LocalDate;
 
-    String parseAsCsv(String invoice);
+public abstract class InvoiceParser {
 
-    TradeLog parseAsObject(String invoice);
+    private LocalDate date;
+    private String stock;
+    private int shares;
+    private boolean isBuy;
+    private double price;
+
+    public String parseAsCsv(String invoice) {
+        parse(invoice);
+        return date + "," + stock + "," + (isBuy ? "BUY" : "SELL") + "," + price + "," + shares + "," + "long";
+    }
+
+    public TradeLog parseAsObject(String invoice) {
+        parse(invoice);
+        return new TradeLog(date, stock, isBuy, price, shares, null, false);
+    }
+
+    abstract void parse(String invoice);
+
+    protected final void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public final void setStock(String stock) {
+        this.stock = stock;
+    }
+
+    public final void setShares(int shares) {
+        this.shares = shares;
+    }
+
+    public final void setBuy(boolean buy) {
+        isBuy = buy;
+    }
+
+    public final void setPrice(double price) {
+        this.price = price;
+    }
 
 }

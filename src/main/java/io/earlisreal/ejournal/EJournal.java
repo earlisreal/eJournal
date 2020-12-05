@@ -1,10 +1,15 @@
 package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
+import io.earlisreal.ejournal.identifier.SimpleBrokerIdentifier;
+import io.earlisreal.ejournal.input.ConsoleParser;
+import io.earlisreal.ejournal.input.PDFParser;
+import io.earlisreal.ejournal.parser.InvoiceParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public class EJournal {
 
@@ -24,7 +29,18 @@ public class EJournal {
     public void run(String[] args) {
         if (args.length > 0) {
             if (args[0].equals("csv")) {
-                ServiceProvider.getTradeLogService().insertCsvFromConsole();
+                List<String> csv = new ConsoleParser().parseCsv();
+                ServiceProvider.getTradeLogService().insertCsv(csv);
+                return;
+            }
+
+            if (args[0].toLowerCase().contains(".pdf")) {
+                System.out.println("Parsing PDF file: " + args[0]);
+
+                String invoice = new PDFParser().parse(args[0]);
+                String broker = new SimpleBrokerIdentifier().identify(invoice);
+                System.out.println(broker + " Broker Found");
+                System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
             }
         }
     }

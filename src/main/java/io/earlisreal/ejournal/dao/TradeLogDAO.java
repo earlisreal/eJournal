@@ -1,9 +1,13 @@
 package io.earlisreal.ejournal.dao;
 
-import java.time.Instant;
+import io.earlisreal.ejournal.dto.TradeLog;
+
+import java.util.List;
 
 public interface TradeLogDAO {
 
-    boolean insertLog(Instant date, String stock, boolean isBuy, double price, int shares, String strategy, boolean isShort);
+    boolean insertLog(TradeLog tradeLog);
+
+    int insertLog(List<TradeLog> tradeLog);
 
 }

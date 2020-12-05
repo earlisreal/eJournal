@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.dao.DAOProvider;
 import io.earlisreal.ejournal.dao.DerbyTradeLogDAO;
 
 public class ServiceProvider {
@@ -12,7 +13,7 @@ public class ServiceProvider {
         if (tradeLogService == null) {
             synchronized (ServiceProvider.class) {
                 if (tradeLogService == null) {
-                    tradeLogService = new SimpleTradeLogService(new DerbyTradeLogDAO());
+                    tradeLogService = new SimpleTradeLogService(DAOProvider.getTradeLogDAO(), DAOProvider.getStrategyDAO());
                 }
             }
         }

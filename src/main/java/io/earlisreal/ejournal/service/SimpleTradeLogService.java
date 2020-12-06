@@ -18,7 +18,7 @@ public class SimpleTradeLogService implements TradeLogService {
     private final TradeLogDAO tradeLogDAO;
     private final StrategyDAO strategyDAO;
 
-    public SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
+    SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
         this.tradeLogDAO = tradeLogDAO;
         this.strategyDAO = strategyDAO;
     }

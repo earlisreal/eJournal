@@ -6,6 +6,7 @@ public class DAOProvider {
 
     private static TradeLogDAO tradeLogDAO;
     private static StrategyDAO strategyDAO;
+    private static BankTransactionDAO bankTransactionDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -29,6 +30,18 @@ public class DAOProvider {
         }
 
         return strategyDAO;
+    }
+
+    public static BankTransactionDAO getBankTransactionDAO() {
+        if (bankTransactionDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (bankTransactionDAO == null) {
+                    bankTransactionDAO = new DerbyBankTransactionDAO();
+                }
+            }
+        }
+
+        return bankTransactionDAO;
     }
 
 }

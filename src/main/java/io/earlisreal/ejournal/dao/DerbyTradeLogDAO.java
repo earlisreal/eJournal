@@ -58,5 +58,4 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         preparedStatement.setBoolean(7 + (rowIndex * COLUMN_COUNT), tradeLog.isShort());
     }
 
-
 }

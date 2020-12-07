@@ -30,6 +30,21 @@ public class TradeLog {
         this.isShort = isShort;
     }
 
+    @Override
+    public String toString() {
+        return "TradeLog{" +
+                "id=" + id +
+                ", date=" + date +
+                ", stock='" + stock + '\'' +
+                ", isBuy=" + isBuy +
+                ", price=" + price +
+                ", shares=" + shares +
+                ", strategyId=" + strategyId +
+                ", strategy='" + strategy + '\'' +
+                ", isShort=" + isShort +
+                '}';
+    }
+
     public Instant getDateInstant() {
         return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
     }

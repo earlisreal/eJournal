@@ -9,6 +9,16 @@ public class BankTransaction {
     private boolean isDividend;
     private double amount;
 
+    @Override
+    public String toString() {
+        return "BankTransaction{" +
+                "id=" + id +
+                ", date=" + date +
+                ", isDividend=" + isDividend +
+                ", amount=" + amount +
+                '}';
+    }
+
     public LocalDate getDate() {
         return date;
     }

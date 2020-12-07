@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.parser;
 
+import io.earlisreal.ejournal.util.Broker;
+
 public interface InvoiceParserFactory {
 
     static InvoiceParser getInvoiceParser(String broker) {

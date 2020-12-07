@@ -15,17 +15,18 @@ public class TradeLog {
     private double price;
     private int shares;
     private Integer strategyId;
+    private String strategy;
     private boolean isShort;
 
     public TradeLog() {}
 
-    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, Integer strategyId, boolean isShort) {
+    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String strategy, boolean isShort) {
         this.date = date;
         this.stock = stock;
         this.isBuy = isBuy;
         this.price = price;
         this.shares = shares;
-        this.strategyId = strategyId;
+        this.strategy = strategy;
         this.isShort = isShort;
     }
 
@@ -87,6 +88,14 @@ public class TradeLog {
 
     public void setStrategyId(Integer strategyId) {
         this.strategyId = strategyId;
+    }
+
+    public String getStrategy() {
+        return strategy;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
     }
 
     public boolean isShort() {

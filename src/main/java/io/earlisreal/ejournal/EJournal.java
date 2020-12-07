@@ -6,6 +6,8 @@ import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.InvoiceParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.ui.UILauncher;
+import javafx.application.Application;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -42,6 +44,9 @@ public class EJournal {
                 System.out.println(broker + " Broker Found");
                 System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
             }
+        }
+        else {
+            Application.launch(UILauncher.class, args);
         }
     }
 

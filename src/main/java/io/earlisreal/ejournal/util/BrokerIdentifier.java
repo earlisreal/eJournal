@@ -1,6 +1,6 @@
-package io.earlisreal.ejournal.identifier;
+package io.earlisreal.ejournal.util;
 
-import io.earlisreal.ejournal.parser.Broker;
+import io.earlisreal.ejournal.util.Broker;
 
 public interface BrokerIdentifier {
 

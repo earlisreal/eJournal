@@ -31,4 +31,8 @@ public class SimpleTradeLogService implements TradeLogService {
         System.out.println(inserted + " Records Inserted");
     }
 
+    public void insertLedger(List<String> lines) {
+
+    }
+
 }

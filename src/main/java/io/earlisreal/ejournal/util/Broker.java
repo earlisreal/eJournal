@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.parser;
+package io.earlisreal.ejournal.util;
 
 public enum Broker {
 

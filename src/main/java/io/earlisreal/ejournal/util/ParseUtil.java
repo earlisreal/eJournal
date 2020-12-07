@@ -8,7 +8,7 @@ import java.util.List;
 
 import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
 
-public interface ParseUtils {
+public interface ParseUtil {
 
     static List<TradeLog> parseCsv(List<String> csv) {
         List<TradeLog> tradeLogs = new ArrayList<>();

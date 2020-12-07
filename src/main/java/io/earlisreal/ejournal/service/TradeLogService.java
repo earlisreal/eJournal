@@ -6,4 +6,6 @@ public interface TradeLogService {
 
     void insertCsv(List<String> csv);
 
+    void insertLedger(List<String> lines);
+
 }

@@ -10,7 +10,7 @@ public class UILauncher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/scene.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/main.fxml"));
 
         Scene scene = new Scene(root);
 

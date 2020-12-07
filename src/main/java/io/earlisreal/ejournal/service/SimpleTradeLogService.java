@@ -4,9 +4,6 @@ import io.earlisreal.ejournal.dao.StrategyDAO;
 import io.earlisreal.ejournal.dao.TradeLogDAO;
 import io.earlisreal.ejournal.dto.Strategy;
 import io.earlisreal.ejournal.dto.TradeLog;
-import io.earlisreal.ejournal.parser.ledger.LedgerParser;
-import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
-import io.earlisreal.ejournal.util.BrokerIdentifier;
 import io.earlisreal.ejournal.util.ParseUtil;
 
 import java.util.List;
@@ -30,14 +27,10 @@ public class SimpleTradeLogService implements TradeLogService {
             tradeLog.setStrategyId(strategies.getOrDefault(tradeLog.getStrategy(), null));
         }
 
-        int inserted = tradeLogDAO.insertLog(tradeLogs);
-        System.out.println(inserted + " Records Inserted");
+        insert(tradeLogs);
     }
 
-    public void insertLedger(List<String> lines) {
-        LedgerParser parser = LedgerParserFactory.getLedgerParser(BrokerIdentifier.identify(lines.get(0)));
-        List<TradeLog> tradeLogs = parser.parseAsObjects(lines);
-
+    public void insert(List<TradeLog> tradeLogs) {
         int inserted = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(inserted + " Ledger Records Inserted");
     }

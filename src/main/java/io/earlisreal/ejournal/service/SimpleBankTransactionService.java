@@ -1,6 +1,9 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.BankTransactionDAO;
+import io.earlisreal.ejournal.dto.BankTransaction;
+
+import java.util.List;
 
 public class SimpleBankTransactionService implements BankTransactionService {
 
@@ -8,6 +11,12 @@ public class SimpleBankTransactionService implements BankTransactionService {
 
     SimpleBankTransactionService(BankTransactionDAO bankTransactionDAO) {
         this.bankTransactionDAO = bankTransactionDAO;
+    }
+
+    @Override
+    public void insert(List<BankTransaction> bankTransactions) {
+        int inserted = bankTransactionDAO.insert(bankTransactions);
+        System.out.println(inserted + " Transactions inserted");
     }
 
 }

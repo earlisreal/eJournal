@@ -3,7 +3,8 @@ package io.earlisreal.ejournal.util;
 public enum Broker {
 
     AAA("AAA", System.lineSeparator() + "AAA" + System.lineSeparator()),
-    YAPSTER("2TradeAsia", "YAPSTER e-TRADE");
+    YAPSTER("2TradeAsia", "YAPSTER e-TRADE"),
+    COL("COL Financial", "COL FINANCIAL GROUP, INC.");
 
     private final String name;
     private final String uniqueIdentifier;

@@ -7,9 +7,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public class COLFinancialLedgerParser implements LedgerParser {
 
@@ -25,6 +23,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
     public void parse(List<String> lines) {
         tradeLogs = new ArrayList<>();
         bankTransactions = new ArrayList<>();
+        Set<Integer> indexes = new HashSet<>();
 
         for (int i = 0; i < lines.size(); ++i) {
             if (lines.get(i).contains("TRX DATE")) {
@@ -33,7 +32,27 @@ public class COLFinancialLedgerParser implements LedgerParser {
                         if (!lines.get(j).trim().contains("BUY") && !lines.get(j).trim().contains("SELL")) {
                             bankTransactions.add(parseBankTransaction(lines.get(j)));
                         } else {
-                            tradeLogs.add(parseTradeLog(lines.get(j)));
+                            TradeLog tradeLog = parseTradeLog(lines.get(j));
+                            if (tradeLog.getStock().isBlank()) {
+                                int last = tradeLogs.size() - 1;
+                                TradeLog lastTradeLog = tradeLogs.get(last);
+
+                                double runningPrice;
+                                if (indexes.contains(last)) {
+                                    runningPrice = tradeLog.getShares() * tradeLog.getPrice() + lastTradeLog.getPrice();
+                                }
+                                else {
+                                    runningPrice = tradeLog.getShares() * tradeLog.getPrice()
+                                            + lastTradeLog.getPrice() * lastTradeLog.getShares();
+                                }
+
+                                lastTradeLog.setPrice(runningPrice);
+                                lastTradeLog.setShares(lastTradeLog.getShares() + tradeLog.getShares());
+                                indexes.add(last);
+                            }
+                            else {
+                                tradeLogs.add(tradeLog);
+                            }
                         }
                     }
                     catch (ParseException e) {
@@ -48,8 +67,10 @@ public class COLFinancialLedgerParser implements LedgerParser {
             }
         }
 
-        System.out.println(tradeLogs);
-        System.out.println(bankTransactions);
+        for (int index : indexes) {
+            TradeLog tradeLog = tradeLogs.get(index);
+            tradeLog.setPrice(tradeLog.getPrice() / tradeLog.getShares());
+        }
     }
 
     public List<TradeLog> getTradeLogs() {

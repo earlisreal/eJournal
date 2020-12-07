@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 public class BankTransaction {
 
+    public static final int COLUMN_COUNT = 3;
+
     private int id;
     private LocalDate date;
     private boolean isDividend;

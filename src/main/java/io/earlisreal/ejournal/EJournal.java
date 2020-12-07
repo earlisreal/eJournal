@@ -1,12 +1,14 @@
 package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
-import io.earlisreal.ejournal.util.BrokerIdentifier;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.InvoiceParserFactory;
+import io.earlisreal.ejournal.parser.ledger.LedgerParser;
+import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.UILauncher;
+import io.earlisreal.ejournal.util.BrokerIdentifier;
 import javafx.application.Application;
 
 import java.sql.Connection;
@@ -48,7 +50,11 @@ public class EJournal {
             if (args[0].equals("ledger")) {
                 List<String> lines = new ConsoleParser().parseLedger();
                 if (lines.isEmpty()) return;
-                ServiceProvider.getTradeLogService().insertLedger(lines);
+
+                LedgerParser parser = LedgerParserFactory.getLedgerParser(BrokerIdentifier.identify(lines.get(0)));
+                parser.parse(lines);
+                ServiceProvider.getTradeLogService().insert(parser.getTradeLogs());
+                ServiceProvider.getBankTransactionService().insert(parser.getBankTransactions());
             }
         }
         else {

@@ -14,6 +14,11 @@ public class SimpleBankTransactionService implements BankTransactionService {
     }
 
     @Override
+    public List<BankTransaction> getAll() {
+        return bankTransactionDAO.queryAll();
+    }
+
+    @Override
     public void insert(List<BankTransaction> bankTransactions) {
         int inserted = bankTransactionDAO.insert(bankTransactions);
         System.out.println(inserted + " Transactions inserted");

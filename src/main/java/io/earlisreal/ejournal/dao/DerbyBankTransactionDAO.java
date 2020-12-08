@@ -5,7 +5,10 @@ import io.earlisreal.ejournal.dto.BankTransaction;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.earlisreal.ejournal.dto.BankTransaction.COLUMN_COUNT;
@@ -15,6 +18,28 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
     Connection connection = DerbyDatabase.getConnection();
 
     DerbyBankTransactionDAO() {}
+
+    @Override
+    public List<BankTransaction> queryAll() {
+        List<BankTransaction> bankTransactions = new ArrayList<>();
+        try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM bank_transaction");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                BankTransaction bankTransaction = new BankTransaction();
+                bankTransaction.setId(resultSet.getInt(1));
+                bankTransaction.setDate(LocalDate.parse(resultSet.getString(2)));
+                bankTransaction.setDividend(resultSet.getBoolean(3));
+                bankTransaction.setAmount(resultSet.getDouble(4));
+                bankTransactions.add(bankTransaction);
+            }
+        } catch (SQLException sqlException) {
+            System.out.println(sqlException.getMessage());
+            sqlException.printStackTrace();
+        }
+
+        return bankTransactions;
+    }
 
     @Override
     public boolean insert(BankTransaction bankTransaction) {

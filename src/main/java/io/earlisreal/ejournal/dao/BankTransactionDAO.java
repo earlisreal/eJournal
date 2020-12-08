@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface BankTransactionDAO {
 
+    List<BankTransaction> queryAll();
+
     boolean insert(BankTransaction bankTransaction);
 
     int insert(List<BankTransaction> bankTransactions);

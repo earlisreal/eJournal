@@ -3,10 +3,9 @@ package io.earlisreal.ejournal.dao;
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
@@ -16,6 +15,31 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     Connection connection = DerbyDatabase.getConnection();
 
     DerbyTradeLogDAO() {}
+
+    @Override
+    public List<TradeLog> queryAll() {
+        List<TradeLog> logs = new ArrayList<>();
+        try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM log");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                TradeLog tradeLog = new TradeLog();
+                tradeLog.setId(resultSet.getInt(1));
+                tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
+                tradeLog.setStock(resultSet.getString(3));
+                tradeLog.setBuy(resultSet.getBoolean(4));
+                tradeLog.setPrice(resultSet.getDouble(5));
+                tradeLog.setShares(resultSet.getInt(6));
+                tradeLog.setStrategyId(resultSet.getInt(7));
+                tradeLog.setShort(resultSet.getBoolean(8));
+                logs.add(tradeLog);
+            }
+        } catch (SQLException sqlException) {
+            sqlException.printStackTrace();
+        }
+
+        return logs;
+    }
 
     @Override
     public boolean insertLog(TradeLog tradeLog) {

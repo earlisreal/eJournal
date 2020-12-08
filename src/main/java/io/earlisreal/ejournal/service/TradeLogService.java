@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface TradeLogService {
 
+    List<TradeLog> getAll();
+
     void insertCsv(List<String> csv);
 
     void insert(List<TradeLog> tradeLogs);

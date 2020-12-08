@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface TradeLogDAO {
 
+    List<TradeLog> queryAll();
+
     boolean insertLog(TradeLog tradeLog);
 
     int insertLog(List<TradeLog> tradeLog);

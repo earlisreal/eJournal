@@ -20,6 +20,10 @@ public class SimpleTradeLogService implements TradeLogService {
         this.strategyDAO = strategyDAO;
     }
 
+    public List<TradeLog> getAll() {
+        return tradeLogDAO.queryAll();
+    }
+
     public void insertCsv(List<String> csv) {
         Map<String, Integer> strategies = strategyDAO.queryAll().stream().collect(Collectors.toMap(Strategy::getName, Strategy::getId));
         List<TradeLog> tradeLogs = ParseUtil.parseCsv(csv);

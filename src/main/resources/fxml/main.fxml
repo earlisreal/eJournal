@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-
 <AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
-
+   <children>
+      <TabPane layoutX="28.0" layoutY="90.0" prefHeight="484.0" prefWidth="745.0" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+          <Tab fx:id="logsTab" text="Logs" />
+          <Tab fx:id="summaryTab" text="Summary" />
+        </tabs>
+      </TabPane>
+   </children>
 </AnchorPane>

@@ -29,10 +29,26 @@ public class DerbyStrategyDAO implements StrategyDAO {
                 strategies.add(strategy);
             }
         } catch (SQLException sqlException) {
+            System.out.println(sqlException.getMessage());
             sqlException.printStackTrace();
         }
 
         return strategies;
+    }
+
+    @Override
+    public boolean insert(Strategy strategy) {
+        String sql = "INSERT INTO strategy (name, description) VALUES (?, ?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, strategy.getName());
+            preparedStatement.setString(2, strategy.getDescription());
+            preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
+        } catch (SQLException sqlException) {
+            System.out.println(sqlException.getMessage());
+            sqlException.printStackTrace();
+        }
+        return false;
     }
 
 }

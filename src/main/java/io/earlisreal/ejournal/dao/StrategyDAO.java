@@ -8,4 +8,6 @@ public interface StrategyDAO {
 
     List<Strategy> queryAll();
 
+    boolean insert(Strategy strategy);
+
 }

@@ -46,7 +46,8 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         String sql = generateInsertStatement(1);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             setParameters(preparedStatement, tradeLog, 0);
-            return preparedStatement.execute();
+            preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
             System.out.println(sqlException.getMessage());
             return false;

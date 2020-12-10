@@ -13,7 +13,6 @@ repositories {
 dependencies {
     implementation 'org.apache.pdfbox:pdfbox:2.0.21'
     implementation 'org.apache.derby:derby:10.15.2.0'
-    implementation 'org.jfxtras:jmetro:8.6.13'
 }
 
 javafx {

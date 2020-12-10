@@ -3,13 +3,20 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
-   <children>
-      <TabPane layoutX="28.0" layoutY="90.0" prefHeight="484.0" prefWidth="745.0" tabClosingPolicy="UNAVAILABLE">
-        <tabs>
-          <Tab fx:id="logsTab" text="Logs" />
-          <Tab fx:id="summaryTab" text="Summary" />
-        </tabs>
-      </TabPane>
-   </children>
-</AnchorPane>
+<GridPane fx:id="grid" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+   <columnConstraints>
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="228.0"/>
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="672.0" minWidth="10.0" prefWidth="672.0"/>
+   </columnConstraints>
+   <rowConstraints>
+      <RowConstraints minHeight="10.0" vgrow="SOMETIMES"/>
+   </rowConstraints>
+   <AnchorPane prefHeight="600.0" prefWidth="800.0">
+      <Button layoutX="73.0" layoutY="167.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log"/>
+      <Button layoutX="79.0" layoutY="111.0" mnemonicParsing="false" onAction="#showAnalytics" text="Analytics"/>
+      <Button layoutX="78.0" layoutY="236.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy"/>
+      <Button layoutX="58.0" layoutY="288.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Transaction"/>
+   </AnchorPane>
+   <StackPane fx:id="stackPane" prefHeight="150.0" prefWidth="200.0" GridPane.columnIndex="1"/>
+</GridPane>

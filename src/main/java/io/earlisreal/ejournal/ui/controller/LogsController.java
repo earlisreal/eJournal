@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -17,7 +18,6 @@ import java.util.ResourceBundle;
 
 public class LogsController implements Initializable {
 
-    public TableView<TradeLog> table;
     public TableColumn<TradeLog, LocalDate> date;
     public TableColumn<TradeLog, String> stock;
     public TableColumn<TradeLog, String> action;
@@ -26,6 +26,7 @@ public class LogsController implements Initializable {
     public TableColumn<TradeLog, String> fees;
     public TableColumn<TradeLog, String> net;
     public TableColumn<TradeLog, String> strategy;
+    public TableView<TradeLog> tableView;
 
     private TradeLogService tradeLogService;
 
@@ -33,7 +34,7 @@ public class LogsController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
 
-        table.setItems(FXCollections.observableList(tradeLogService.getAll()));
+        tableView.setItems(FXCollections.observableList(tradeLogService.getAll()));
         date.setCellValueFactory(new PropertyValueFactory<>("date"));
         stock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         price.setCellValueFactory(new PropertyValueFactory<>("price"));

@@ -2,6 +2,7 @@ package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
+import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
@@ -55,6 +56,10 @@ public class EJournal {
                 parser.parse(lines);
                 ServiceProvider.getTradeLogService().insert(parser.getTradeLogs());
                 ServiceProvider.getBankTransactionService().insert(parser.getBankTransactions());
+            }
+
+            if (args[0].equals("email")) {
+                new EmailParser().read();
             }
         }
         else {

@@ -59,7 +59,11 @@ public class EJournal {
             }
 
             if (args[0].equals("email")) {
-                new EmailParser().read();
+                var list = new EmailParser().parse();
+                for (String record : list) {
+                    System.out.println(record);
+                    System.out.println("---");
+                }
             }
         }
         else {

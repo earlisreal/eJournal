@@ -21,4 +21,19 @@ public class PDFParser {
         return null;
     }
 
+    // TODO : Minimize this duplicate code
+    public String parse(byte[] data) {
+        try (PDDocument document = PDDocument.load(data)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setSortByPosition(true);
+            return stripper.getText(document);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
 }

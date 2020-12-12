@@ -4,8 +4,9 @@ build/
 .gradle/
 out/
 
-# Database Files
+# eJournal Files
 eJournalDB/
+tokens/
 
 # Compiled class file
 *.class

@@ -14,6 +14,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,15 +37,22 @@ public class EmailParser {
                     .build();
 
             String user = "me";
-            // TODO : Filter Broker emails only
-            var messageResponse = service.users().messages().list(user)
-                    .setLabelIds(List.of("INBOX")).execute();
+
+            StringBuilder query = new StringBuilder();
+            for (int i = 0; i < Broker.values().length; ++i) {
+                if (i > 0) query.append(" OR ");
+                query.append("(").append(Broker.values()[i].getEmailFilter()).append(")");
+            }
+
+            var messageResponse = service.users().messages()
+                    .list(user).setQ(query.toString()).execute();
             var messages = messageResponse.getMessages();
+            // TODO Email parsing can be done in parallel
             for (Message m : messages) {
                 Message message = service.users().messages().get(user, m.getId()).execute();
+                System.out.println(message.getSnippet());
                 var attachmentIds = getAttachmentIds(message.getPayload());
                 for (String attachmentId : attachmentIds) {
-                    // TODO Email parsing can be done in parallel
                     byte[] data = service.users().messages().attachments().get(user, m.getId(), attachmentId).execute().decodeData();
                     String text = new PDFParser().parse(data);
                     records.add(text);

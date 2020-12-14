@@ -3,7 +3,11 @@ package io.earlisreal.ejournal.scraper;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
+import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.PDFParser;
+import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
+import io.earlisreal.ejournal.util.Broker;
+import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,8 +22,12 @@ public class SimpleEmailScraper implements EmailScraper {
             for (String attachmentId : attachmentIds) {
                 try {
                     byte[] data = service.users().messages()
-                            .attachments().get("me", message.getId(), attachmentId).execute().decodeData();
-                    String text = new PDFParser().parse(data);
+                            .attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
+                    String invoice = new PDFParser().parse(data);
+                    Broker broker = CommonUtil.identifyBroker(invoice);
+                    TradeLog tradeLog = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
+                    // TODO : Detect if the the tradeLog is already in the database
+                    // TODO : Insert to DB
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

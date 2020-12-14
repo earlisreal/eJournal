@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.parser;
+package io.earlisreal.ejournal.parser.invoice;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

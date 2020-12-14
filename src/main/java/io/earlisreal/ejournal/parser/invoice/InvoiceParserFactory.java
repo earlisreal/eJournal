@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.parser;
+package io.earlisreal.ejournal.parser.invoice;
 
 import io.earlisreal.ejournal.util.Broker;
 

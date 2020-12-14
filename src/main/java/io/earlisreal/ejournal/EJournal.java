@@ -4,7 +4,7 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.input.PDFParser;
-import io.earlisreal.ejournal.parser.InvoiceParserFactory;
+import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;

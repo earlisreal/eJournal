@@ -13,10 +13,8 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.ListMessagesResponse;
-import com.google.api.services.gmail.model.Message;
-import com.google.api.services.gmail.model.MessagePart;
+import io.earlisreal.ejournal.scraper.EmailScrapperFactory;
 import io.earlisreal.ejournal.util.Broker;
-import org.apache.http.entity.ContentType;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,12 +24,13 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.earlisreal.ejournal.scraper.EmailScraper.USER;
+
 public class EmailParser {
 
-    private static final String USER = "me";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-    private Gmail service;
+    private final Gmail service;
 
     public EmailParser() throws GeneralSecurityException, IOException {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -44,63 +43,16 @@ public class EmailParser {
         List<String> records = new ArrayList<>();
 
         try {
-            StringBuilder query = new StringBuilder();
-            for (int i = 0; i < Broker.values().length; ++i) {
-                if (i > 0) query.append(" OR ");
-                query.append("(").append(Broker.values()[i].getEmailFilter()).append(")");
-            }
-            System.out.println(query.toString());
-
-            ListMessagesResponse messageResponse = null;
-            messageResponse = service.users().messages()
-                    .list(USER).setQ(query.toString()).execute();
-            var messages = messageResponse.getMessages();
-            // TODO Email parsing can be done in parallel
-            for (Message m : messages) {
-                Message message = service.users().messages().get(USER, m.getId()).execute();
-                System.out.println(message.getSnippet());
-                parseAttachments(message, records);
-                parseBody(message);
+            for (Broker broker : Broker.values()) {
+                ListMessagesResponse messageResponse = service.users().messages()
+                        .list(USER).setQ(broker.getEmailFilter()).execute();
+                messageResponse.getMessages().parallelStream().forEach(m -> EmailScrapperFactory.getEmailScraper(broker).scrape(service, m.getId()));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         return records;
-    }
-
-    private void parseBody(Message message) {
-        for (MessagePart part : message.getPayload().getParts()) {
-            if (part.getBody().getData() == null) continue;
-            if (part.getMimeType().equals(ContentType.TEXT_PLAIN.getMimeType())) {
-                String body = new String(part.getBody().decodeData());
-                // TODO : Parse using the Invoice Parser
-            }
-        }
-    }
-
-    private void parseAttachments(Message message, List<String> destinationList) throws IOException {
-        var attachmentIds = getAttachmentIds(message.getPayload());
-        for (String attachmentId : attachmentIds) {
-            byte[] data = service.users().messages().attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
-            String text = new PDFParser().parse(data);
-            destinationList.add(text);
-        }
-    }
-
-    private List<String> getAttachmentIds(MessagePart messagePart) {
-        List<String> attachmentIds = new ArrayList<>();
-        if (messagePart.getFilename().endsWith(".pdf")) {
-            attachmentIds.add(messagePart.getBody().getAttachmentId());
-        }
-
-        if (messagePart.getParts() != null) {
-            for (MessagePart part : messagePart.getParts()) {
-                attachmentIds.addAll(getAttachmentIds(part));
-            }
-        }
-
-        return attachmentIds;
     }
 
     private Credential getCredentials(NetHttpTransport httpTransport) throws IOException {

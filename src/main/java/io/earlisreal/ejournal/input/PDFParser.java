@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.input;
 
+import io.earlisreal.ejournal.util.CommonUtil;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
@@ -10,30 +11,28 @@ public class PDFParser {
 
     public String parse(String path) {
         try (PDDocument document = PDDocument.load(new File(path))) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-            return stripper.getText(document);
+            return strip(document);
         } catch (IOException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            CommonUtil.handleException(e);
         }
 
         return null;
     }
 
-    // TODO : Minimize this duplicate code
     public String parse(byte[] data) {
         try (PDDocument document = PDDocument.load(data)) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-            return stripper.getText(document);
+            return strip(document);
         } catch (IOException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            CommonUtil.handleException(e);
         }
 
         return null;
     }
 
+    private String strip(PDDocument document) throws IOException {
+        PDFTextStripper stripper = new PDFTextStripper();
+        stripper.setSortByPosition(true);
+        return stripper.getText(document);
+    }
 
 }

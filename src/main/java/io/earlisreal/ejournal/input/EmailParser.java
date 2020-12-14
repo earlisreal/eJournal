@@ -12,9 +12,11 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
+import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import io.earlisreal.ejournal.util.Broker;
+import org.apache.http.entity.ContentType;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,44 +28,64 @@ import java.util.List;
 
 public class EmailParser {
 
+    private static final String USER = "me";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+
+    private Gmail service;
+
+    public EmailParser() throws GeneralSecurityException, IOException {
+        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
+                .setApplicationName("eJournal")
+                .build();
+    }
 
     public List<String> parse() {
         List<String> records = new ArrayList<>();
+
         try {
-            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-            Gmail service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
-                    .setApplicationName("eJournal")
-                    .build();
-
-            String user = "me";
-
             StringBuilder query = new StringBuilder();
             for (int i = 0; i < Broker.values().length; ++i) {
                 if (i > 0) query.append(" OR ");
                 query.append("(").append(Broker.values()[i].getEmailFilter()).append(")");
             }
+            System.out.println(query.toString());
 
-            var messageResponse = service.users().messages()
-                    .list(user).setQ(query.toString()).execute();
+            ListMessagesResponse messageResponse = null;
+            messageResponse = service.users().messages()
+                    .list(USER).setQ(query.toString()).execute();
             var messages = messageResponse.getMessages();
             // TODO Email parsing can be done in parallel
             for (Message m : messages) {
-                Message message = service.users().messages().get(user, m.getId()).execute();
+                Message message = service.users().messages().get(USER, m.getId()).execute();
                 System.out.println(message.getSnippet());
-                var attachmentIds = getAttachmentIds(message.getPayload());
-                for (String attachmentId : attachmentIds) {
-                    byte[] data = service.users().messages().attachments().get(user, m.getId(), attachmentId).execute().decodeData();
-                    String text = new PDFParser().parse(data);
-                    records.add(text);
-                }
+                parseAttachments(message, records);
+                parseBody(message);
             }
-        } catch (GeneralSecurityException | IOException e) {
-            System.out.println(e.getMessage());
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
         return records;
+    }
+
+    private void parseBody(Message message) {
+        for (MessagePart part : message.getPayload().getParts()) {
+            if (part.getBody().getData() == null) continue;
+            if (part.getMimeType().equals(ContentType.TEXT_PLAIN.getMimeType())) {
+                String body = new String(part.getBody().decodeData());
+                // TODO : Parse using the Invoice Parser
+            }
+        }
+    }
+
+    private void parseAttachments(Message message, List<String> destinationList) throws IOException {
+        var attachmentIds = getAttachmentIds(message.getPayload());
+        for (String attachmentId : attachmentIds) {
+            byte[] data = service.users().messages().attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
+            String text = new PDFParser().parse(data);
+            destinationList.add(text);
+        }
     }
 
     private List<String> getAttachmentIds(MessagePart messagePart) {

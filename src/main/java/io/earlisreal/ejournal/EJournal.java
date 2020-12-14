@@ -12,6 +12,8 @@ import io.earlisreal.ejournal.ui.UILauncher;
 import io.earlisreal.ejournal.util.BrokerIdentifier;
 import javafx.application.Application;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,7 +25,7 @@ public class EJournal {
         try (Connection ignored = DerbyDatabase.initialize()) {
             EJournal eJournal = new EJournal();
             eJournal.run(args);
-        } catch (SQLException e) {
+        } catch (SQLException | GeneralSecurityException | IOException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
@@ -31,7 +33,7 @@ public class EJournal {
         System.out.println("bye!");
     }
 
-    public void run(String[] args) {
+    public void run(String[] args) throws GeneralSecurityException, IOException {
         if (args.length > 0) {
             if (args[0].equals("csv")) {
                 List<String> csv = new ConsoleParser().parseCsv();

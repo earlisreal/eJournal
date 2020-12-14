@@ -11,6 +11,9 @@ public interface InvoiceParserFactory {
         if (Broker.YAPSTER.getName().equals(broker)) {
             return new YapsterInvoiceParser();
         }
+        if (Broker.COL.getName().equals(broker)) {
+            return new COLFinancialInvoiceParser();
+        }
 
         throw new RuntimeException("Broker name " + broker + " is not supported");
     }

@@ -9,6 +9,7 @@ import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.UILauncher;
+import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.BrokerIdentifier;
 import javafx.application.Application;
 
@@ -45,8 +46,8 @@ public class EJournal {
                 System.out.println("Parsing PDF file: " + args[0]);
 
                 String invoice = new PDFParser().parse(args[0]);
-                String broker = BrokerIdentifier.identify(invoice);
-                System.out.println(broker + " Broker Found");
+                Broker broker = BrokerIdentifier.identify(invoice);
+                System.out.println(broker.getName() + " Broker Found");
                 System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
             }
 

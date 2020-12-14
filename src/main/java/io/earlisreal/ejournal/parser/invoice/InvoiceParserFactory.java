@@ -4,14 +4,14 @@ import io.earlisreal.ejournal.util.Broker;
 
 public interface InvoiceParserFactory {
 
-    static InvoiceParser getInvoiceParser(String broker) {
-        if (Broker.AAA.getName().equals(broker)) {
+    static InvoiceParser getInvoiceParser(Broker broker) {
+        if (Broker.AAA == broker) {
             return new AAAEquitiesInvoiceParser();
         }
-        if (Broker.YAPSTER.getName().equals(broker)) {
+        if (Broker.YAPSTER == broker) {
             return new YapsterInvoiceParser();
         }
-        if (Broker.COL.getName().equals(broker)) {
+        if (Broker.COL == broker) {
             return new COLFinancialInvoiceParser();
         }
 

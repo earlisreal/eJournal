@@ -4,8 +4,8 @@ import io.earlisreal.ejournal.util.Broker;
 
 public interface LedgerParserFactory {
 
-    static LedgerParser getLedgerParser(String broker) {
-        if (Broker.COL.getName().equals(broker)) {
+    static LedgerParser getLedgerParser(Broker broker) {
+        if (Broker.COL == broker) {
             return new COLFinancialLedgerParser();
         }
 

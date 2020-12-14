@@ -10,12 +10,12 @@ public enum Broker {
     YAPSTER(
             "2TradeAsia",
             "YAPSTER e-TRADE",
-            "from:(accounting@2tradeasia.com) subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA) Invoice) has:attachment"
+            "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA) Invoice) has:attachment"
     ),
     COL(
             "COL Financial",
             "COL FINANCIAL GROUP, INC.",
-            "from:(alert@colfinancial.com) subject:(COL Trading Confirmation)"
+            "subject:(COL Trading Confirmation)"
     );
 
     private final String name;

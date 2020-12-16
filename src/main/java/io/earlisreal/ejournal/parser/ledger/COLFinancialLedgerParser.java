@@ -3,22 +3,19 @@ package io.earlisreal.ejournal.parser.ledger;
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class COLFinancialLedgerParser implements LedgerParser {
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
-    private final NumberFormat numberFormat;
+public class COLFinancialLedgerParser implements LedgerParser {
 
     private List<TradeLog> tradeLogs;
     private List<BankTransaction> bankTransactions;
 
-    COLFinancialLedgerParser() {
-        numberFormat = NumberFormat.getInstance(Locale.getDefault());
-    }
+    COLFinancialLedgerParser() {}
 
     public void parse(List<String> lines) {
         // TODO : Parse the reference number
@@ -36,21 +33,8 @@ public class COLFinancialLedgerParser implements LedgerParser {
                         } else {
                             TradeLog tradeLog = parseTradeLog(lines.get(j));
                             if (tradeLog.getStock().isBlank()) {
-                                int last = tradeLogs.size() - 1;
-                                TradeLog lastTradeLog = tradeLogs.get(last);
-
-                                double runningPrice;
-                                if (indexes.contains(last)) {
-                                    runningPrice = tradeLog.getShares() * tradeLog.getPrice() + lastTradeLog.getPrice();
-                                }
-                                else {
-                                    runningPrice = tradeLog.getShares() * tradeLog.getPrice()
-                                            + lastTradeLog.getPrice() * lastTradeLog.getShares();
-                                }
-
-                                lastTradeLog.setPrice(runningPrice);
+                                TradeLog lastTradeLog = tradeLogs.get(tradeLogs.size() - 1);
                                 lastTradeLog.setShares(lastTradeLog.getShares() + tradeLog.getShares());
-                                indexes.add(last);
                             }
                             else {
                                 tradeLogs.add(tradeLog);
@@ -69,8 +53,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
             }
         }
 
-        for (int index : indexes) {
-            TradeLog tradeLog = tradeLogs.get(index);
+        for (TradeLog tradeLog : tradeLogs) {
             tradeLog.setPrice(tradeLog.getPrice() / tradeLog.getShares());
         }
     }
@@ -88,7 +71,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         BankTransaction bankTransaction = new BankTransaction();
 
         bankTransaction.setDate(LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu")));
-            double amount = numberFormat.parse(tokens[5].trim()).doubleValue();
+            double amount = parseDouble(tokens[5].trim());
             bankTransaction.setAmount(amount);
         if (tokens[2].equals("WFUNDS")) {
             bankTransaction.setAmount(bankTransaction.getAmount() * -1);
@@ -105,8 +88,8 @@ public class COLFinancialLedgerParser implements LedgerParser {
         LocalDate date = LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu"));
         boolean isBuy = tokens[2].trim().equals("BUY");
         String stock = tokens[4].trim();
-        int shares = numberFormat.parse(tokens[5].trim()).intValue();
-        double price = numberFormat.parse(tokens[6].trim()).doubleValue();
+        int shares = parseInt(tokens[5].trim());
+        double price = parseDouble(tokens[7].trim());
         return new TradeLog(date, stock, isBuy, price, shares);
     }
 

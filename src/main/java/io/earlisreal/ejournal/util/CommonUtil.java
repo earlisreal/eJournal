@@ -5,8 +5,6 @@ import java.text.ParseException;
 
 public interface CommonUtil {
 
-    NumberFormat numberFormat = NumberFormat.getNumberInstance();
-
     static void handleException(Exception e) {
         System.out.println(e.getMessage());
         e.printStackTrace();
@@ -23,11 +21,11 @@ public interface CommonUtil {
     }
 
     static int parseInt(String text) throws ParseException {
-        return numberFormat.parse(text).intValue();
+        return NumberFormat.getNumberInstance().parse(text).intValue();
     }
 
     static double parseDouble(String text) throws ParseException {
-        return numberFormat.parse(text).doubleValue();
+        return NumberFormat.getNumberInstance().parse(text).doubleValue();
     }
 
 }

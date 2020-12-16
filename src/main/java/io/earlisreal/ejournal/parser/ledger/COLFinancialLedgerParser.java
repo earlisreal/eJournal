@@ -18,11 +18,8 @@ public class COLFinancialLedgerParser implements LedgerParser {
     COLFinancialLedgerParser() {}
 
     public void parse(List<String> lines) {
-        // TODO : Parse the reference number
-        // TODO : Simplify the multiple transaction on a single trade by using the gross amount
         tradeLogs = new ArrayList<>();
         bankTransactions = new ArrayList<>();
-        Set<Integer> indexes = new HashSet<>();
 
         for (int i = 0; i < lines.size(); ++i) {
             if (lines.get(i).contains("TRX DATE")) {
@@ -90,7 +87,8 @@ public class COLFinancialLedgerParser implements LedgerParser {
         String stock = tokens[4].trim();
         int shares = parseInt(tokens[5].trim());
         double price = parseDouble(tokens[7].trim());
-        return new TradeLog(date, stock, isBuy, price, shares);
+        String referenceNo = tokens[3].trim();
+        return new TradeLog(date, stock, isBuy, price, shares, referenceNo);
     }
 
 }

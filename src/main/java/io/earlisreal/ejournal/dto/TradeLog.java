@@ -52,6 +52,7 @@ public class TradeLog {
                 ", strategyId=" + strategyId +
                 ", strategy='" + strategy + '\'' +
                 ", isShort=" + isShort +
+                ", invoiceNo='" + invoiceNo + '\'' +
                 '}';
     }
 

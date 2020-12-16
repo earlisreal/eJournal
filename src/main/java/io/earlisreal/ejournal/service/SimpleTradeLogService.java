@@ -35,8 +35,11 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     public void insert(List<TradeLog> tradeLogs) {
-        int inserted = tradeLogDAO.insertLog(tradeLogs);
-        System.out.println(inserted + " Ledger Records Inserted");
+        int inserted = 0;
+        if (!tradeLogs.isEmpty()) {
+            inserted = tradeLogDAO.insertLog(tradeLogs);
+        }
+        System.out.println(inserted + " Records Inserted");
     }
 
 }

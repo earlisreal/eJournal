@@ -14,8 +14,11 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
     AAAEquitiesInvoiceParser() {}
 
     void parse(String invoice) {
-        for (String line : invoice.split(System.lineSeparator())) {
-            if (line.contains("Date")) {
+        String[] lines = invoice.split(System.lineSeparator());
+        parseIsBuy(lines[0]);
+
+        for (String line : lines) {
+            if (line.toUpperCase().contains("DUE DATE:")) {
                 parseDate(line);
             }
             if (line.contains("COMM ")) {
@@ -25,17 +28,24 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
                     CommonUtil.handleException(e);
                 }
             }
-            if (line.contains("CONFIRMATION")) {
-                parseIsBuy(line);
-            }
         }
     }
 
     private void parseDate(String line) {
-        String left = "Date: ";
-        String right = " Due Date: ";
-        int l = line.indexOf(left);
-        int r = line.indexOf(right);
+        String left;
+        int l, r;
+        if (line.contains("Date: ")) {
+            left = "Date: ";
+            String right = " Due Date: ";
+            l = line.indexOf(left);
+            r = line.indexOf(right);
+        }
+        else {
+            left = "DATE ";
+            String right = " DUE DATE: ";
+            l = line.toUpperCase().indexOf(left);
+            r = line.toUpperCase().indexOf(right);
+        }
 
         String dateStr = line.substring(l + left.length(), r);
         setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")));
@@ -55,13 +65,14 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
         }
 
         setShares(parseInt(line.substring(shareIndex, shareEnd)));
+        // TODO : Convert The Stock into Stock CODE
         setStock(line.substring(0, shareIndex).trim());
         String end = line.substring(shareEnd).trim();
         setPrice(parseDouble(end.substring(0, end.indexOf(' '))));
     }
 
     private void parseIsBuy(String line) {
-        setBuy(line.substring(0, line.indexOf(' ')).equalsIgnoreCase("BUY"));
+        setBuy(line.startsWith("BUY"));
     }
 
 }

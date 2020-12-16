@@ -15,7 +15,7 @@ public enum Broker {
     COL(
             "COL Financial",
             "COL FINANCIAL GROUP, INC.",
-            "subject:(COL Trading Confirmation)"
+            null
     );
 
     private final String name;

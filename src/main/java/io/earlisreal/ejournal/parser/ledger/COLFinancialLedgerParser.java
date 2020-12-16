@@ -21,6 +21,8 @@ public class COLFinancialLedgerParser implements LedgerParser {
     }
 
     public void parse(List<String> lines) {
+        // TODO : Parse the reference number
+        // TODO : Simplify the multiple transaction on a single trade by using the gross amount
         tradeLogs = new ArrayList<>();
         bankTransactions = new ArrayList<>();
         Set<Integer> indexes = new HashSet<>();

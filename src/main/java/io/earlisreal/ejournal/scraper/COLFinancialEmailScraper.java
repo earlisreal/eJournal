@@ -16,6 +16,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This Will be discontinued for a while. As COL Financial has no official invoice. The Email Their are sending
+ * as BUY or SELL confirmation doesn't have the reference number same on their ledger.
+ *
+ * So Automatic Scraping from Email will not be supported for COL Financial.
+ */
 public class COLFinancialEmailScraper implements EmailScraper {
 
     private final TradeLogService service;

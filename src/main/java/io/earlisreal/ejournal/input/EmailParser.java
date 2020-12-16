@@ -44,6 +44,7 @@ public class EmailParser {
 
         try {
             for (Broker broker : Broker.values()) {
+                if (broker.getEmailFilter() == null) continue;
                 ListMessagesResponse messageResponse = service.users().messages()
                         .list(USER).setQ(broker.getEmailFilter()).execute();
                 messageResponse.getMessages().parallelStream().forEach(m -> EmailScrapperFactory.getEmailScraper(broker).scrape(service, m.getId()));

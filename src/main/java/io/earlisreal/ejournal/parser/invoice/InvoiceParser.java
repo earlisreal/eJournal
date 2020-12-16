@@ -11,6 +11,7 @@ public abstract class InvoiceParser {
     private int shares;
     private boolean isBuy;
     private double price;
+    private String invoiceNo;
 
     public String parseAsCsv(String invoice) {
         parse(invoice);
@@ -19,28 +20,32 @@ public abstract class InvoiceParser {
 
     public TradeLog parseAsObject(String invoice) {
         parse(invoice);
-        return new TradeLog(date, stock, isBuy, price, shares, null, false);
+        return new TradeLog(date, stock, isBuy, price, shares, invoiceNo);
     }
 
     abstract void parse(String invoice);
+
+    public final void setInvoiceNo(String invoiceNo) {
+        this.invoiceNo = invoiceNo;
+    }
 
     protected final void setDate(LocalDate date) {
         this.date = date;
     }
 
-    public final void setStock(String stock) {
+    protected final void setStock(String stock) {
         this.stock = stock;
     }
 
-    public final void setShares(int shares) {
+    protected final void setShares(int shares) {
         this.shares = shares;
     }
 
-    public final void setBuy(boolean buy) {
+    protected final void setBuy(boolean buy) {
         isBuy = buy;
     }
 
-    public final void setPrice(double price) {
+    protected final void setPrice(double price) {
         this.price = price;
     }
 

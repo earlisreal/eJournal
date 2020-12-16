@@ -17,17 +17,27 @@ public class TradeLog {
     private Integer strategyId;
     private String strategy;
     private boolean isShort;
+    private String invoiceNo;
 
     public TradeLog() {}
 
     public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String strategy, boolean isShort) {
+        this(date, stock, isBuy, price, shares, strategy);
+        this.isShort = isShort;
+        this.strategy = strategy;
+    }
+
+    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String invoiceNo) {
+        this(date, stock, isBuy, price, shares);
+        this.invoiceNo = invoiceNo;
+    }
+
+    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares) {
         this.date = date;
         this.stock = stock;
         this.isBuy = isBuy;
         this.price = price;
         this.shares = shares;
-        this.strategy = strategy;
-        this.isShort = isShort;
     }
 
     @Override

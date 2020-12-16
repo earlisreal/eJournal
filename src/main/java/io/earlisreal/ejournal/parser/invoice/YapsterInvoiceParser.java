@@ -1,7 +1,10 @@
 package io.earlisreal.ejournal.parser.invoice;
 
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class YapsterInvoiceParser extends InvoiceParser {
 
@@ -17,7 +20,11 @@ public class YapsterInvoiceParser extends InvoiceParser {
                 parseStock(line);
             }
             if (line.contains(" . VAT")) {
-                parsePrice(line);
+                try {
+                    parsePrice(line);
+                } catch (ParseException e) {
+                    handleException(e);
+                }
             }
             if (line.contains("BUY CONFIRMATION")) setBuy(true);
         }
@@ -31,10 +38,10 @@ public class YapsterInvoiceParser extends InvoiceParser {
         setStock(line.substring(1, line.lastIndexOf("'")));
     }
 
-    private void parsePrice(String line) {
+    private void parsePrice(String line) throws ParseException {
         String[] tokens = line.split(" . ");
-        setShares(Integer.parseInt(tokens[0]));
-        setPrice(Double.parseDouble(tokens[1].substring(0, tokens[1].indexOf(' '))));
+        setShares(parseInt(tokens[0]));
+        setPrice(parseDouble(tokens[1].substring(0, tokens[1].indexOf(' '))));
     }
 
 }

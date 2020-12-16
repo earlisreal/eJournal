@@ -1,7 +1,13 @@
 package io.earlisreal.ejournal.parser.invoice;
 
+import io.earlisreal.ejournal.util.CommonUtil;
+
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
+import static io.earlisreal.ejournal.util.CommonUtil.parseDouble;
+import static io.earlisreal.ejournal.util.CommonUtil.parseInt;
 
 public class AAAEquitiesInvoiceParser extends InvoiceParser {
 
@@ -13,7 +19,11 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
                 parseDate(line);
             }
             if (line.contains("COMM ")) {
-                parseStock(line);
+                try {
+                    parseStock(line);
+                } catch (ParseException e) {
+                    CommonUtil.handleException(e);
+                }
             }
             if (line.contains("CONFIRMATION")) {
                 parseIsBuy(line);
@@ -31,7 +41,7 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
         setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")));
     }
 
-    private void parseStock(String line) {
+    private void parseStock(String line) throws ParseException {
         int shareIndex = -1;
         int shareEnd = -1;
         for (int i = 0; i < line.length(); ++i) {
@@ -44,10 +54,10 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
             }
         }
 
-        setShares(Integer.parseInt(line.substring(shareIndex, shareEnd)));
+        setShares(parseInt(line.substring(shareIndex, shareEnd)));
         setStock(line.substring(0, shareIndex).trim());
         String end = line.substring(shareEnd).trim();
-        setPrice(Double.parseDouble(end.substring(0, end.indexOf(' '))));
+        setPrice(parseDouble(end.substring(0, end.indexOf(' '))));
     }
 
     private void parseIsBuy(String line) {

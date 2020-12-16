@@ -15,7 +15,7 @@ public class EmailScrapperFactory {
             if (colFinancialEmailScraper == null) {
                 synchronized (EmailScrapperFactory.class) {
                     if (colFinancialEmailScraper == null) {
-                        colFinancialEmailScraper = new COLFinancialEmailScraper();
+                        colFinancialEmailScraper = new COLFinancialEmailScraper(ServiceProvider.getTradeLogService());
                     }
                 }
             }
@@ -27,7 +27,7 @@ public class EmailScrapperFactory {
             if (simpleEmailScraper == null) {
                 synchronized (EmailScrapperFactory.class) {
                     if (simpleEmailScraper == null) {
-                        simpleEmailScraper = new SimpleEmailScraper();
+                        simpleEmailScraper = new SimpleEmailScraper(ServiceProvider.getTradeLogService());
                     }
                 }
             }

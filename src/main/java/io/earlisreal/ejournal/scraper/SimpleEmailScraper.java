@@ -6,6 +6,7 @@ import com.google.api.services.gmail.model.MessagePart;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
+import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 
@@ -15,19 +16,25 @@ import java.util.List;
 
 public class SimpleEmailScraper implements EmailScraper {
 
-    public void scrape(Gmail service, String messageId) {
+    private final TradeLogService service;
+
+    SimpleEmailScraper(TradeLogService tradeLogService) {
+        this.service = tradeLogService;
+    }
+
+    public void scrape(Gmail gmail, String messageId) {
+        List<TradeLog> tradeLogs = new ArrayList<>();
         try {
-            Message message = service.users().messages().get(USER, messageId).execute();
+            Message message = gmail.users().messages().get(USER, messageId).execute();
             var attachmentIds = getAttachmentIds(message.getPayload());
             for (String attachmentId : attachmentIds) {
                 try {
-                    byte[] data = service.users().messages()
+                    byte[] data = gmail.users().messages()
                             .attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
                     String invoice = new PDFParser().parse(data);
                     Broker broker = CommonUtil.identifyBroker(invoice);
                     TradeLog tradeLog = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
-                    // TODO : Detect if the the tradeLog is already in the database
-                    // TODO : Insert to DB
+                    tradeLogs.add(tradeLog);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -35,11 +42,13 @@ public class SimpleEmailScraper implements EmailScraper {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        service.insert(tradeLogs);
     }
 
     private List<String> getAttachmentIds(MessagePart messagePart) {
         List<String> attachmentIds = new ArrayList<>();
-        if (messagePart.getFilename().endsWith(".pdf")) {
+        if (messagePart.getFilename().toLowerCase().endsWith(".pdf")) {
             attachmentIds.add(messagePart.getBody().getAttachmentId());
         }
 

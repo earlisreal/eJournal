@@ -40,7 +40,6 @@ public class COLFinancialEmailScraper implements EmailScraper {
                         }
                         else {
                             TradeLog tradeLog = parser.parseAsObject(invoice);
-                            System.out.println(tradeLog);
                             tradeLogs.add(tradeLog);
                         }
                     }

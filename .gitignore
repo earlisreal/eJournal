@@ -5,6 +5,7 @@ build/
 out/
 
 # eJournal Files
+.eJournal/
 eJournalDB/
 tokens/
 

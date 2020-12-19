@@ -7,6 +7,7 @@ public class DAOProvider {
     private static TradeLogDAO tradeLogDAO;
     private static StrategyDAO strategyDAO;
     private static BankTransactionDAO bankTransactionDAO;
+    private static EmailLastSyncDAO emailLastSyncDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -42,6 +43,18 @@ public class DAOProvider {
         }
 
         return bankTransactionDAO;
+    }
+
+    public static EmailLastSyncDAO getEmailLastSyncDAO() {
+        if (emailLastSyncDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (emailLastSyncDAO == null) {
+                    emailLastSyncDAO = new DerbyEmailLastSyncDAO();
+                }
+            }
+        }
+
+        return emailLastSyncDAO;
     }
 
 }

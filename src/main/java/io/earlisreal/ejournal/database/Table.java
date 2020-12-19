@@ -25,7 +25,11 @@ public enum Table {
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
             "invoice VARCHAR(8))",
-            List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)"));
+            List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
+    SETTINGS("settings", "CREATE TABLE email_sync (" +
+            "email VARCHAR(30) NOT NULL CONSTRAINT EMAIL_SYNC_PK PRIMARY KEY, " +
+            "last_sync TIMESTAMP)",
+            null);
 
     private final String name;
     private final String createStatement;

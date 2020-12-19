@@ -7,6 +7,7 @@ public class ServiceProvider {
     private static TradeLogService tradeLogService;
     private static StrategyService strategyService;
     private static BankTransactionService bankTransactionService;
+    private static CacheService cacheService;
 
     private ServiceProvider() {}
 
@@ -44,6 +45,18 @@ public class ServiceProvider {
         }
 
         return bankTransactionService;
+    }
+
+    public static CacheService getCacheService() {
+        if (cacheService == null) {
+            synchronized (ServiceProvider.class) {
+                if (cacheService == null) {
+                    cacheService = new SimpleCacheService(DAOProvider.getEmailLastSyncDAO());
+                }
+            }
+        }
+
+        return cacheService;
     }
 
 }

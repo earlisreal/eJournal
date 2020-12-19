@@ -3,10 +3,11 @@ package io.earlisreal.ejournal.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Objects;
 
 public class TradeLog {
 
-    public static final int COLUMN_COUNT = 7;
+    public static final int COLUMN_COUNT = 8;
 
     private int id;
     private LocalDate date;
@@ -130,6 +131,14 @@ public class TradeLog {
 
     public void setShort(boolean aShort) {
         isShort = aShort;
+    }
+
+    public String getInvoiceNo() {
+        return invoiceNo;
+    }
+
+    public void setInvoiceNo(String invoiceNo) {
+        this.invoiceNo = invoiceNo;
     }
 
 }

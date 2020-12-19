@@ -32,6 +32,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
                 tradeLog.setShares(resultSet.getInt(6));
                 tradeLog.setStrategyId(resultSet.getInt(7));
                 tradeLog.setShort(resultSet.getBoolean(8));
+                tradeLog.setInvoiceNo(resultSet.getString(9));
                 logs.add(tradeLog);
             }
         } catch (SQLException sqlException) {
@@ -69,8 +70,8 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     private String generateInsertStatement(int rowCount) {
-        return "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                + ", (?, ?, ?, ?, ?, ?, ?)".repeat(Math.max(0, rowCount - 1));
+        return "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                + ", (?, ?, ?, ?, ?, ?, ?, ?)".repeat(Math.max(0, rowCount - 1));
     }
 
     private void setParameters(PreparedStatement preparedStatement, TradeLog tradeLog, int rowIndex) throws SQLException {
@@ -81,6 +82,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         preparedStatement.setInt(5 + (rowIndex * COLUMN_COUNT), tradeLog.getShares());
         preparedStatement.setObject(6 + (rowIndex * COLUMN_COUNT), tradeLog.getStrategyId());
         preparedStatement.setBoolean(7 + (rowIndex * COLUMN_COUNT), tradeLog.isShort());
+        preparedStatement.setString(8 + (rowIndex * COLUMN_COUNT), tradeLog.getInvoiceNo());
     }
 
 }

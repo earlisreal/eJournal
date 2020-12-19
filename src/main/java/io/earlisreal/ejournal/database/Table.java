@@ -23,8 +23,9 @@ public enum Table {
             "price DOUBLE, " +
             "shares INT, " +
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
-            "short BOOLEAN DEFAULT FALSE)",
-            null);
+            "short BOOLEAN DEFAULT FALSE, " +
+            "invoice VARCHAR(8))",
+            List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)"));
 
     private final String name;
     private final String createStatement;

@@ -34,7 +34,7 @@ public class DerbyEmailLastSyncDAO implements EmailLastSyncDAO {
 
     @Override
     public boolean insert(EmailLastSync emailLastSync) {
-        String sql = "INSERT INTO email_sync (email, last_sync) VALUES (?, ?)";
+        String sql = "INSERT INTO email_sync (last_sync, email) VALUES (?, ?)";
         return execute(sql, emailLastSync);
     }
 

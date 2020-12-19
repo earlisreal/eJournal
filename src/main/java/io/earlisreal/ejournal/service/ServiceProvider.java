@@ -8,6 +8,7 @@ public class ServiceProvider {
     private static StrategyService strategyService;
     private static BankTransactionService bankTransactionService;
     private static CacheService cacheService;
+    private static StockService stockService;
 
     private ServiceProvider() {}
 
@@ -57,6 +58,18 @@ public class ServiceProvider {
         }
 
         return cacheService;
+    }
+
+    public static StockService getStockService() {
+        if (stockService == null) {
+            synchronized (ServiceProvider.class) {
+                if (stockService == null) {
+                    stockService = new SimpleStockService(DAOProvider.getStockDAO());
+                }
+            }
+        }
+
+        return stockService;
     }
 
 }

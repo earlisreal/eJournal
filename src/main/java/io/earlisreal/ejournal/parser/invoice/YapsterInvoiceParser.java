@@ -28,6 +28,9 @@ public class YapsterInvoiceParser extends InvoiceParser {
                     handleException(e);
                 }
             }
+            if (line.contains("BUY CONFIRMATION")) {
+                setBuy(true);
+            }
             if (line.contains("(INVOICE No.)")) {
                 parseInvoiceNo(line);
             }

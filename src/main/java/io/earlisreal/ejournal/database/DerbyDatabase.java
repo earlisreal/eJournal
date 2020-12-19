@@ -1,9 +1,12 @@
 package io.earlisreal.ejournal.database;
 
+import io.earlisreal.ejournal.util.Configs;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.ConcurrentMap;
 
 public class DerbyDatabase {
 
@@ -19,8 +22,27 @@ public class DerbyDatabase {
         return connection;
     }
 
+    public static Connection initialize(ConcurrentMap<String, Boolean> settings) throws SQLException {
+        createConnection();
+        String key = "firstRun";
+        if (settings.getOrDefault(key, true)) {
+            createTables();
+            settings.put(key, false);
+        }
+        return connection;
+    }
+
     public static Connection initialize() throws SQLException {
-        connection = DriverManager.getConnection("jdbc:derby:eJournalDB;create=true", "eJournal", "eJournal");
+        createConnection();
+        createTables();
+        return connection;
+    }
+
+    private static void createConnection() throws SQLException {
+        connection = DriverManager.getConnection("jdbc:derby:" + Configs.DATA_DIR + "/eJournalDB;create=true", "eJournal", "eJournal");
+    }
+
+    private static void createTables() throws SQLException {
         for (Table table : Table.values()) {
             if (!execute(table.getCreateStatement())) {
                 break;
@@ -34,7 +56,6 @@ public class DerbyDatabase {
                 System.out.println("Indexes Created");
             }
         }
-        return connection;
     }
 
     private static boolean execute(String sql) throws SQLException {

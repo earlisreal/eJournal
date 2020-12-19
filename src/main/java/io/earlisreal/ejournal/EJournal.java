@@ -1,9 +1,11 @@
 package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
+import io.earlisreal.ejournal.database.MapDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.input.PDFParser;
+import io.earlisreal.ejournal.input.WebParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -12,6 +14,7 @@ import io.earlisreal.ejournal.ui.UILauncher;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import javafx.application.Application;
+import org.mapdb.DB;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -23,7 +26,9 @@ public class EJournal {
 
     public static void main(String[] args) {
         System.out.println("Welcome to eJournal!");
-        try (Connection ignored = DerbyDatabase.initialize()) {
+        try (DB ignored1 = MapDatabase.initialize();
+             Connection ignored = DerbyDatabase.initialize(MapDatabase.getSettingsMap())) {
+
             EJournal eJournal = new EJournal();
             eJournal.run(args);
         } catch (SQLException | GeneralSecurityException | IOException e) {
@@ -67,6 +72,10 @@ public class EJournal {
                     System.out.println(record);
                     System.out.println("---");
                 }
+            }
+
+            if (args[0].equals("stocks")) {
+                new WebParser().parse();
             }
         }
         else {

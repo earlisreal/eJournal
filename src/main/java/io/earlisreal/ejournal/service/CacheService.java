@@ -8,4 +8,6 @@ public interface CacheService {
 
     void updateEmailLastSync(String email, Instant lastSync);
 
+    void insertEmailLastSync(String email, Instant lastSync);
+
 }

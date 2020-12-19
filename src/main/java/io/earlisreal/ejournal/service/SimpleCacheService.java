@@ -16,12 +16,25 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public Instant getLastSync(String email) {
-        return emailLastSyncDAO.query(email).getLastSync();
+        EmailLastSync emailLastSync = emailLastSyncDAO.query(stripEmail(email));
+        if (emailLastSync == null) return null;
+        return emailLastSync.getLastSync();
     }
 
     @Override
     public void updateEmailLastSync(String email, Instant lastSync) {
+        email = stripEmail(email);
+        emailLastSyncDAO.update(new EmailLastSync(email, lastSync));
+    }
+
+    @Override
+    public void insertEmailLastSync(String email, Instant lastSync) {
+        email = stripEmail(email);
         emailLastSyncDAO.insert(new EmailLastSync(email, lastSync));
+    }
+
+    private String stripEmail(String email) {
+        return email.split("@")[0];
     }
 
 }

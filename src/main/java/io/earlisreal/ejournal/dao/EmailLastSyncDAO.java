@@ -8,4 +8,6 @@ public interface EmailLastSyncDAO {
 
     boolean insert(EmailLastSync emailLastSync);
 
+    boolean update(EmailLastSync emailLastSync);
+
 }

@@ -6,6 +6,7 @@ import com.google.api.services.gmail.model.MessagePart;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.PDFParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
+import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
@@ -14,11 +15,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimpleEmailScraper implements EmailScraper {
+public class EmailAttachmentScraper implements EmailScraper {
 
     private final TradeLogService service;
+    private static EmailAttachmentScraper emailAttachmentScraper;
 
-    SimpleEmailScraper(TradeLogService tradeLogService) {
+    EmailAttachmentScraper(TradeLogService tradeLogService) {
         this.service = tradeLogService;
     }
 
@@ -59,6 +61,18 @@ public class SimpleEmailScraper implements EmailScraper {
         }
 
         return attachmentIds;
+    }
+
+    public static EmailAttachmentScraper getInstance() {
+        if (emailAttachmentScraper == null) {
+            synchronized (EmailAttachmentScraper.class) {
+                if (emailAttachmentScraper == null) {
+                    emailAttachmentScraper = new EmailAttachmentScraper(ServiceProvider.getTradeLogService());
+                }
+            }
+        }
+
+        return emailAttachmentScraper;
     }
 
 }

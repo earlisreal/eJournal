@@ -8,7 +8,6 @@ public class EmailScrapperFactory {
     private EmailScrapperFactory() {}
 
     private static COLFinancialEmailScraper colFinancialEmailScraper;
-    private static SimpleEmailScraper simpleEmailScraper;
 
     public static EmailScraper getEmailScraper(Broker broker) {
         if (Broker.COL == broker) {
@@ -24,15 +23,7 @@ public class EmailScrapperFactory {
         }
 
         if (Broker.AAA == broker || Broker.YAPSTER == broker) {
-            if (simpleEmailScraper == null) {
-                synchronized (EmailScrapperFactory.class) {
-                    if (simpleEmailScraper == null) {
-                        simpleEmailScraper = new SimpleEmailScraper(ServiceProvider.getTradeLogService());
-                    }
-                }
-            }
-
-            return simpleEmailScraper;
+            return EmailAttachmentScraper.getInstance();
         }
 
         throw new RuntimeException("Invalid Broker: " + broker.getName());

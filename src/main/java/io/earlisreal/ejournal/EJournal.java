@@ -75,7 +75,10 @@ public class EJournal {
             }
 
             if (args[0].equals("stocks")) {
-                new WebParser().parse();
+                WebParser webParser = new WebParser();
+                webParser.parse();
+                System.out.println(webParser.getStockMap());
+                System.out.println(webParser.getPriceMap());
             }
         }
         else {

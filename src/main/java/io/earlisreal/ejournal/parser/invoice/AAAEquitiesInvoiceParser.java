@@ -73,6 +73,7 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
 
     private void parseIsBuy(String line) {
         setBuy(line.startsWith("BUY"));
+        setInvoiceNo(line.substring(line.indexOf("No. ") + 4));
     }
 
 }

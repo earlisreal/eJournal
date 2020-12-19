@@ -12,7 +12,9 @@ public class YapsterInvoiceParser extends InvoiceParser {
 
     @Override
     void parse(String invoice) {
-        for (String line : invoice.split(System.lineSeparator())) {
+        String[] lines = invoice.split(System.lineSeparator());
+        parseInvoiceNo(lines[0]);
+        for (String line : lines) {
             if (line.startsWith("Date ")) {
                 parseDate(line);
             }
@@ -26,8 +28,14 @@ public class YapsterInvoiceParser extends InvoiceParser {
                     handleException(e);
                 }
             }
-            if (line.contains("BUY CONFIRMATION")) setBuy(true);
+            if (line.contains("(INVOICE No.)")) {
+                parseInvoiceNo(line);
+            }
         }
+    }
+
+    private void parseInvoiceNo(String line) {
+        setInvoiceNo(line.substring(line.indexOf("(INVOICE No.)") + 13).trim());
     }
 
     private void parseDate(String line) {

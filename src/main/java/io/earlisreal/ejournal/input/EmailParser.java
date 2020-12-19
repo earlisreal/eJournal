@@ -14,6 +14,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import io.earlisreal.ejournal.scraper.EmailAttachmentScraper;
+import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.util.Broker;
 
@@ -42,10 +43,12 @@ public class EmailParser {
     }
 
     public List<String> parse() {
+        Instant syncTime = Instant.now();
+        CacheService cacheService = ServiceProvider.getCacheService();
         List<String> records = new ArrayList<>();
         try {
             String email = service.users().getProfile(USER).execute().getEmailAddress();
-            Instant lastQuery = ServiceProvider.getCacheService().getLastSync(email);
+            Instant lastQuery = cacheService.getLastSync(email);
 
             StringBuilder query = new StringBuilder("(");
             Broker[] brokers = Broker.values();
@@ -54,19 +57,30 @@ public class EmailParser {
                 if (i > 0) query.append(" OR ");
                 query.append("(").append(brokers[i].getEmailFilter()).append(")");
             }
-            query.append(") ").append(" AND after:").append(lastQuery.getEpochSecond());
+            query.append(")");
+            if (lastQuery != null) {
+                query.append(" AND after:").append(lastQuery.getEpochSecond());
+            }
 
             ListMessagesResponse messageResponse = service.users().messages().list(USER)
                     .setMaxResults(10_000L)
                     .setQ(query.toString())
                     .execute();
             EmailAttachmentScraper scraper = EmailAttachmentScraper.getInstance();
-            messageResponse.getMessages().parallelStream().forEach(m -> scraper.scrape(service, m.getId()));
+            var messages = messageResponse.getMessages();
+            if (messages != null) {
+                messages.parallelStream().forEach(m -> scraper.scrape(service, m.getId()));
+            }
+
+            if (lastQuery == null) {
+                cacheService.insertEmailLastSync(email, syncTime);
+            }
+            else {
+                cacheService.updateEmailLastSync(email, syncTime);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // TODO : Get the first message (latest) and update the settings last email sync
 
         return records;
     }

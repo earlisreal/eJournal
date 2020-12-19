@@ -8,6 +8,7 @@ public class DAOProvider {
     private static StrategyDAO strategyDAO;
     private static BankTransactionDAO bankTransactionDAO;
     private static EmailLastSyncDAO emailLastSyncDAO;
+    private static StockDAO stockDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -55,6 +56,18 @@ public class DAOProvider {
         }
 
         return emailLastSyncDAO;
+    }
+
+    public static StockDAO getStockDAO() {
+        if (stockDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (stockDAO == null) {
+                    stockDAO = new MapDBStockDAO();
+                }
+            }
+        }
+
+        return stockDAO;
     }
 
 }

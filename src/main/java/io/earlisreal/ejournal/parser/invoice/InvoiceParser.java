@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.parser.invoice;
 
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.time.LocalDate;
 
@@ -12,6 +13,11 @@ public abstract class InvoiceParser {
     private boolean isBuy;
     private double price;
     private String invoiceNo;
+    private Broker broker;
+
+    InvoiceParser(Broker broker) {
+        this.broker = broker;
+    }
 
     public String parseAsCsv(String invoice) {
         parse(invoice);

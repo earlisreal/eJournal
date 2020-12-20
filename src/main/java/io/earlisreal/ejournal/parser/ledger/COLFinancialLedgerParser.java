@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.parser.ledger;
 
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.text.ParseException;
 import java.time.LocalDate;
@@ -88,7 +89,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         int shares = parseInt(tokens[5].trim());
         double price = parseDouble(tokens[7].trim());
         String referenceNo = tokens[3].trim();
-        return new TradeLog(date, stock, isBuy, price, shares, referenceNo);
+        return new TradeLog(date, stock, isBuy, price, shares, referenceNo, Broker.COL);
     }
 
 }

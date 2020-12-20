@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.parser.invoice;
 
 import io.earlisreal.ejournal.service.StockService;
+import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.text.ParseException;
@@ -14,6 +15,7 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
     private final StockService stockService;
 
     AAAEquitiesInvoiceParser(StockService stockService) {
+        super(Broker.AAA);
         this.stockService = stockService;
     }
 

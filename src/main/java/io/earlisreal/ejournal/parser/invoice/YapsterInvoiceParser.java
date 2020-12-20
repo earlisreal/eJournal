@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.parser.invoice;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,7 +10,9 @@ import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class YapsterInvoiceParser extends InvoiceParser {
 
-    YapsterInvoiceParser() {}
+    YapsterInvoiceParser() {
+        super(Broker.YAPSTER);
+    }
 
     @Override
     void parse(String invoice) {

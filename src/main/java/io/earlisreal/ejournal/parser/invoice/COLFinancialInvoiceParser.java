@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.parser.invoice;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -10,6 +12,10 @@ public class COLFinancialInvoiceParser extends InvoiceParser {
 
     int shares;
     double amount;
+
+    COLFinancialInvoiceParser() {
+        super(Broker.COL);
+    }
 
     @Override
     void parse(String invoice) {

@@ -1,9 +1,10 @@
 package io.earlisreal.ejournal.dto;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Objects;
 
 public class TradeLog {
 
@@ -19,18 +20,20 @@ public class TradeLog {
     private String strategy;
     private boolean isShort;
     private String invoiceNo;
+    private Broker broker;
 
     public TradeLog() {}
 
     public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String strategy, boolean isShort) {
-        this(date, stock, isBuy, price, shares, strategy);
+        this(date, stock, isBuy, price, shares);
         this.isShort = isShort;
         this.strategy = strategy;
     }
 
-    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String invoiceNo) {
+    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String invoiceNo, Broker broker) {
         this(date, stock, isBuy, price, shares);
         this.invoiceNo = invoiceNo;
+        this.broker = broker;
     }
 
     public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares) {
@@ -39,6 +42,15 @@ public class TradeLog {
         this.isBuy = isBuy;
         this.price = price;
         this.shares = shares;
+    }
+
+    public double getNetAmount() {
+        double gross = getGrossAmount();
+        return gross + broker.getFees(gross);
+    }
+
+    public double getGrossAmount() {
+        return getShares() * getPrice();
     }
 
     @Override
@@ -139,6 +151,15 @@ public class TradeLog {
 
     public void setInvoiceNo(String invoiceNo) {
         this.invoiceNo = invoiceNo;
+    }
+
+    public Broker getBroker() {
+        if (broker == null) return Broker.UNKNOWN;
+        return broker;
+    }
+
+    public void setBroker(Broker broker) {
+        this.broker = broker;
     }
 
 }

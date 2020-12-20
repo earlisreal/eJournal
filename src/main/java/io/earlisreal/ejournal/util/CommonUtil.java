@@ -30,4 +30,12 @@ public interface CommonUtil {
         return NumberFormat.getNumberInstance().parse(text).doubleValue();
     }
 
+    static String trimStockName(String name) {
+        int index = name.lastIndexOf(", Inc.");
+        if (index != -1) {
+            name = name.substring(0, index);
+        }
+        return name.toUpperCase();
+    }
+
 }

@@ -1,29 +1,34 @@
 package io.earlisreal.ejournal.parser.invoice;
 
+import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-import static io.earlisreal.ejournal.util.CommonUtil.parseDouble;
-import static io.earlisreal.ejournal.util.CommonUtil.parseInt;
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class AAAEquitiesInvoiceParser extends InvoiceParser {
 
-    AAAEquitiesInvoiceParser() {}
+    private final StockService stockService;
+
+    AAAEquitiesInvoiceParser(StockService stockService) {
+        this.stockService = stockService;
+    }
 
     void parse(String invoice) {
         String[] lines = invoice.split(System.lineSeparator());
         parseIsBuy(lines[0]);
 
-        for (String line : lines) {
+        for (int i = 0; i < lines.length; ++i) {
+            String line = lines[i];
             if (line.toUpperCase().contains("DUE DATE:")) {
                 parseDate(line);
             }
             if (line.contains("COMM ")) {
                 try {
-                    parseStock(line);
+                    parseStock(line, lines[i + 1]);
                 } catch (ParseException e) {
                     CommonUtil.handleException(e);
                 }
@@ -51,7 +56,7 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
         setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")));
     }
 
-    private void parseStock(String line) throws ParseException {
+    private void parseStock(String line, String nextLine) throws ParseException {
         int shareIndex = -1;
         int shareEnd = -1;
         for (int i = 0; i < line.length(); ++i) {
@@ -65,8 +70,20 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
         }
 
         setShares(parseInt(line.substring(shareIndex, shareEnd)));
-        // TODO : Convert The Stock into Stock CODE
-        setStock(line.substring(0, shareIndex).trim());
+        String name = line.substring(0, shareIndex).trim();
+        String stock = stockService.getCode(trimStockName(name));
+        if (stock == null) {
+            int i = 0;
+            while (Character.isLetter(nextLine.charAt(i))) {
+                ++i;
+            }
+            String extension = nextLine.substring(0, i);
+            if (!extension.isBlank()) {
+                name += " " + extension;
+            }
+            stock = stockService.getCode(trimStockName(name));
+        }
+        setStock(stock);
         String end = line.substring(shareEnd).trim();
         setPrice(parseDouble(end.substring(0, end.indexOf(' '))));
     }

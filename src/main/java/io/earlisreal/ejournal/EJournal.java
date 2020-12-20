@@ -77,6 +77,7 @@ public class EJournal {
             if (args[0].equals("stocks")) {
                 WebParser webParser = new WebParser();
                 webParser.parse();
+                ServiceProvider.getStockService().updateStockMap(webParser.getStockMap());
                 System.out.println(webParser.getStockMap());
                 System.out.println(webParser.getPriceMap());
             }

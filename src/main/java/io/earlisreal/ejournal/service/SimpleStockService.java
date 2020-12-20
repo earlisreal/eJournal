@@ -20,6 +20,7 @@ public class SimpleStockService implements StockService {
         return stockMap.get(stock);
     }
 
+    @Override
     public void updateStockMap(Map<String, String> stockMap) {
         stockDAO.updateStockMap(stockMap);
         this.stockMap = stockMap;

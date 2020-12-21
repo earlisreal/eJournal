@@ -14,9 +14,9 @@ public enum Broker {
             "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA) Invoice) has:attachment"
     ) {
         @Override
-        public double getFees(double grossAmount) {
+        public double getFees(double grossAmount, boolean isBuy) {
             double otherFees = grossAmount * 0.0002;
-            return getCommission(grossAmount) + otherFees;
+            return getCommission(grossAmount, isBuy) + otherFees;
         }
     },
     COL(
@@ -35,14 +35,18 @@ public enum Broker {
         this.emailFilter = emailFilter;
     }
 
-    public double getFees(double grossAmount) {
+    public double getFees(double grossAmount, boolean isBuy) {
         double otherFees = grossAmount * 0.00015;
-        return getCommission(grossAmount) + otherFees;
+        return getCommission(grossAmount, isBuy) + otherFees;
     }
 
-    protected double getCommission(double grossAmount) {
+    protected double getCommission(double grossAmount, boolean isBuy) {
         double commission = grossAmount * 0.0025;
-        return commission + commission * 0.12;
+        commission += commission * 0.12;
+        if (!isBuy) {
+            commission += grossAmount * 0.006;
+        }
+        return commission;
     }
 
     public String getName() {

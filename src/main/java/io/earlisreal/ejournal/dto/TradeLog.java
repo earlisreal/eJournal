@@ -46,7 +46,7 @@ public class TradeLog {
 
     public double getNetAmount() {
         double gross = getGrossAmount();
-        return gross + broker.getFees(gross);
+        return gross + broker.getFees(gross, isBuy());
     }
 
     public double getGrossAmount() {
@@ -66,6 +66,7 @@ public class TradeLog {
                 ", strategy='" + strategy + '\'' +
                 ", isShort=" + isShort +
                 ", invoiceNo='" + invoiceNo + '\'' +
+                ", broker='" + broker.getName() + '\'' +
                 '}';
     }
 

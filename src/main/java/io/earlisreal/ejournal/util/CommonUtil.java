@@ -12,7 +12,7 @@ public interface CommonUtil {
 
     static Broker identifyBroker(String invoice) {
         for (Broker broker : Broker.values()) {
-            if (invoice.contains(broker.getUniqueIdentifier())) {
+            if (broker.getUniqueIdentifier() != null && invoice.contains(broker.getUniqueIdentifier())) {
                 return broker;
             }
         }

@@ -17,11 +17,12 @@ import io.earlisreal.ejournal.scraper.EmailAttachmentScraper;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.util.Broker;
+import io.earlisreal.ejournal.util.Configs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public class EmailParser {
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(inputStream));
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 httpTransport, JSON_FACTORY, clientSecrets, List.of(GmailScopes.GMAIL_READONLY))
-                .setDataStoreFactory(new FileDataStoreFactory(new File("tokens")))
+                .setDataStoreFactory(new FileDataStoreFactory(Paths.get(Configs.DATA_DIR, "tokens").toFile()))
                 .setAccessType("offline")
                 .build();
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();

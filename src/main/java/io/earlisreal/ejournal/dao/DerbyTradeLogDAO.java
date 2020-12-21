@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -33,6 +34,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
                 tradeLog.setStrategyId(resultSet.getInt(7));
                 tradeLog.setShort(resultSet.getBoolean(8));
                 tradeLog.setInvoiceNo(resultSet.getString(9));
+                tradeLog.setBroker(Broker.values()[resultSet.getInt(10)]);
                 logs.add(tradeLog);
             }
         } catch (SQLException sqlException) {
@@ -70,8 +72,17 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     private String generateInsertStatement(int rowCount) {
-        return "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-                + ", (?, ?, ?, ?, ?, ?, ?, ?)".repeat(Math.max(0, rowCount - 1));
+        return "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice, broker) VALUES "
+                + getValues() + (", " + getValues()).repeat(Math.max(0, rowCount - 1));
+    }
+
+    private String getValues() {
+        StringBuilder builder = new StringBuilder("(");
+        for (int i = 0; i < COLUMN_COUNT; ++i) {
+            if (i > 0) builder.append(", ");
+            builder.append('?');
+        }
+        return builder.append(")").toString();
     }
 
     private void setParameters(PreparedStatement preparedStatement, TradeLog tradeLog, int rowIndex) throws SQLException {
@@ -83,6 +94,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         preparedStatement.setObject(6 + (rowIndex * COLUMN_COUNT), tradeLog.getStrategyId());
         preparedStatement.setBoolean(7 + (rowIndex * COLUMN_COUNT), tradeLog.isShort());
         preparedStatement.setString(8 + (rowIndex * COLUMN_COUNT), tradeLog.getInvoiceNo());
+        preparedStatement.setInt(9 + (rowIndex * COLUMN_COUNT), tradeLog.getBroker().ordinal());
     }
 
 }

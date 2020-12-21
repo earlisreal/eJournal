@@ -8,7 +8,7 @@ import java.time.ZoneId;
 
 public class TradeLog {
 
-    public static final int COLUMN_COUNT = 8;
+    public static final int COLUMN_COUNT = 9;
 
     private int id;
     private LocalDate date;

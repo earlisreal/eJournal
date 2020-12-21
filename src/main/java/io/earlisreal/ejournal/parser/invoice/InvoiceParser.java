@@ -26,7 +26,7 @@ public abstract class InvoiceParser {
 
     public TradeLog parseAsObject(String invoice) {
         parse(invoice);
-        return new TradeLog(date, stock, isBuy, price, shares, invoiceNo);
+        return new TradeLog(date, stock, isBuy, price, shares, invoiceNo, broker);
     }
 
     abstract void parse(String invoice);

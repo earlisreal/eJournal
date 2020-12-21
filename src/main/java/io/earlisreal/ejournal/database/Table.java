@@ -24,7 +24,8 @@ public enum Table {
             "shares INT, " +
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
-            "invoice VARCHAR(8))",
+            "invoice VARCHAR(8), " +
+            "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
     SETTINGS("settings", "CREATE TABLE email_sync (" +
             "email VARCHAR(30) NOT NULL CONSTRAINT EMAIL_SYNC_PK PRIMARY KEY, " +

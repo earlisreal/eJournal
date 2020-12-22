@@ -9,7 +9,7 @@ public enum Table {
             "date DATE," +
             "dividend BOOLEAN, " +
             "amount DOUBLE, " +
-            "ref VARCHAR(7))",
+            "ref VARCHAR(15))",
             List.of("CREATE UNIQUE INDEX bank_transaction_ref_uindex ON bank_transaction (ref)")),
     STRATEGY("strategy", "CREATE TABLE strategy (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +
@@ -25,7 +25,7 @@ public enum Table {
             "shares INT, " +
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
-            "invoice VARCHAR(8), " +
+            "invoice VARCHAR(12), " +
             "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
     SETTINGS("settings", "CREATE TABLE email_sync (" +

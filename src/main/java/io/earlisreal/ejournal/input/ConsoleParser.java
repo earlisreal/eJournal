@@ -27,6 +27,9 @@ public class ConsoleParser {
             if (line.isBlank()) {
                 ++blank;
             }
+            else {
+                blank = 0;
+            }
             if (blank == blankLines) {
                 break;
             }

@@ -77,6 +77,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         else if (!tokens[2].trim().equals("OR")) {
             bankTransaction.setDividend(true);
         }
+        bankTransaction.setReferenceNo(tokens[3].trim());
 
         return bankTransaction;
     }

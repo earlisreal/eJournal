@@ -31,6 +31,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
                 bankTransaction.setDate(LocalDate.parse(resultSet.getString(2)));
                 bankTransaction.setDividend(resultSet.getBoolean(3));
                 bankTransaction.setAmount(resultSet.getDouble(4));
+                bankTransaction.setReferenceNo(resultSet.getString(5));
                 bankTransactions.add(bankTransaction);
             }
         } catch (SQLException sqlException) {
@@ -43,20 +44,12 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
 
     @Override
     public boolean insert(BankTransaction bankTransaction) {
-        String sql = "INSERT INTO bank_transaction (date, dividend, amount)" + generateValues(1);
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            setParameters(preparedStatement, bankTransaction, 0);
-            return true;
-        } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
-            sqlException.printStackTrace();
-            return false;
-        }
+        return insert(List.of(bankTransaction)) > 0;
     }
 
     @Override
     public int insert(List<BankTransaction> bankTransactions) {
-        String sql = "INSERT INTO bank_transaction (date, dividend, amount)" + generateValues(bankTransactions.size());
+        String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref)" + generateValues(bankTransactions.size());
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             for (int i = 0; i < bankTransactions.size(); ++i) {
                 setParameters(preparedStatement, bankTransactions.get(i), i);
@@ -65,19 +58,19 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
             return preparedStatement.getUpdateCount();
         } catch (SQLException sqlException) {
             System.out.println(sqlException.getMessage());
-            sqlException.printStackTrace();
             return 0;
         }
     }
 
     private String generateValues(int rows) {
-        return "VALUES (?, ?, ?)" + ", (?, ?, ?)".repeat(Math.max(0, rows - 1));
+        return " VALUES (?, ?, ?, ?)" + ", (?, ?, ?, ?)".repeat(Math.max(0, rows - 1));
     }
 
     private void setParameters(PreparedStatement preparedStatement, BankTransaction bankTransaction, int row) throws SQLException {
         preparedStatement.setObject(1 + (row * COLUMN_COUNT), bankTransaction.getDate().toString());
         preparedStatement.setBoolean(2 + (row * COLUMN_COUNT), bankTransaction.isDividend());
         preparedStatement.setDouble(3 + (row * COLUMN_COUNT), bankTransaction.getAmount());
+        preparedStatement.setString(4 + (row * COLUMN_COUNT), bankTransaction.getReferenceNo());
     }
 
 }

@@ -8,8 +8,9 @@ public enum Table {
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT bank_transaction_pk PRIMARY KEY, " +
             "date DATE," +
             "dividend BOOLEAN, " +
-            "amount DOUBLE)",
-            null),
+            "amount DOUBLE, " +
+            "ref VARCHAR(7))",
+            List.of("CREATE UNIQUE INDEX bank_transaction_ref_uindex ON bank_transaction (ref)")),
     STRATEGY("strategy", "CREATE TABLE strategy (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +
             "name VARCHAR(20), " +

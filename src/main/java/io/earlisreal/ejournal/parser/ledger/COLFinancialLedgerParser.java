@@ -22,6 +22,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         tradeLogs = new ArrayList<>();
         bankTransactions = new ArrayList<>();
 
+        Map<String, TradeLog> tradeMap = new HashMap<>();
         for (int i = 0; i < lines.size(); ++i) {
             if (lines.get(i).contains("TRX DATE")) {
                 for (int j = i + 4; !lines.get(j).startsWith("---"); ++j) {
@@ -35,7 +36,15 @@ public class COLFinancialLedgerParser implements LedgerParser {
                                 lastTradeLog.setShares(lastTradeLog.getShares() + tradeLog.getShares());
                             }
                             else {
-                                tradeLogs.add(tradeLog);
+                                if (tradeMap.containsKey(tradeLog.getInvoiceNo())) {
+                                    TradeLog sameLog = tradeMap.get(tradeLog.getInvoiceNo());
+                                    sameLog.setPrice(tradeLog.getPrice() + sameLog.getPrice());
+                                    sameLog.setShares(sameLog.getShares() + tradeLog.getShares());
+                                }
+                                else {
+                                    tradeLogs.add(tradeLog);
+                                    tradeMap.put(tradeLog.getInvoiceNo(), tradeLog);
+                                }
                             }
                         }
                     }
@@ -69,12 +78,13 @@ public class COLFinancialLedgerParser implements LedgerParser {
         BankTransaction bankTransaction = new BankTransaction();
 
         bankTransaction.setDate(LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu")));
-            double amount = parseDouble(tokens[5].trim());
-            bankTransaction.setAmount(amount);
-        if (tokens[2].equals("WFUNDS")) {
+        double amount = parseDouble(tokens[5].trim());
+        bankTransaction.setAmount(amount);
+        String action = tokens[2].trim();
+        if (action.equals("WFUNDS")) {
             bankTransaction.setAmount(bankTransaction.getAmount() * -1);
         }
-        else if (!tokens[2].trim().equals("OR")) {
+        if (action.equals("CDIV+")) {
             bankTransaction.setDividend(true);
         }
         bankTransaction.setReferenceNo(tokens[3].trim());
@@ -89,7 +99,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         String stock = tokens[4].trim();
         int shares = parseInt(tokens[5].trim());
         double price = parseDouble(tokens[7].trim());
-        String referenceNo = tokens[3].trim();
+        String referenceNo = date.format(DateTimeFormatter.ofPattern("MMdduu")) + (isBuy ? "1" : "0") + stock;
         return new TradeLog(date, stock, isBuy, price, shares, referenceNo, Broker.COL);
     }
 

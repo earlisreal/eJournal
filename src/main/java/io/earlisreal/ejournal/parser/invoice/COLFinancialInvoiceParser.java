@@ -45,6 +45,8 @@ public class COLFinancialInvoiceParser extends InvoiceParser {
                 setPrice(amount / shares);
             }
         }
+
+        setInvoiceNo(getDate().format(DateTimeFormatter.ofPattern("MMdduu")) + getStock());
     }
 
     private void parseQuantity(String line) throws ParseException {

@@ -13,7 +13,7 @@ public abstract class InvoiceParser {
     private boolean isBuy;
     private double price;
     private String invoiceNo;
-    private Broker broker;
+    private final Broker broker;
 
     InvoiceParser(Broker broker) {
         this.broker = broker;
@@ -53,6 +53,14 @@ public abstract class InvoiceParser {
 
     protected final void setPrice(double price) {
         this.price = price;
+    }
+
+    protected final LocalDate getDate() {
+        return date;
+    }
+
+    protected final String getStock() {
+        return stock;
     }
 
 }

@@ -3,6 +3,8 @@ package io.earlisreal.ejournal.model;
 import io.earlisreal.ejournal.dto.TradeLog;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TradeSummary {
 
@@ -10,34 +12,54 @@ public class TradeSummary {
     private final LocalDate openDate;
     private int shares;
     private int position;
-    private double averageBuy;
-    private double averageSell;
     private LocalDate closeDate;
+
+    private final List<TradeLog> logs;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
         this.openDate = initialTrade.getDate();
+        logs = new ArrayList<>();
         buy(initialTrade);
     }
 
     public void buy(TradeLog log) {
         position += log.getShares();
         this.shares += log.getShares();
-
-        averageBuy = (averageBuy + log.getNetAmount()) / position;
+        logs.add(log);
     }
 
     public void sell(TradeLog log) {
-        this.shares -= shares;
-        averageSell = (averageSell + log.getNetAmount()) / position;
+        this.shares -= log.getShares();
+        logs.add(log);
+    }
+
+    public double getAverageBuy() {
+        double total = 0;
+        for (TradeLog log : logs) {
+            if (log.isBuy()) {
+                total += log.getNetAmount();
+            }
+        }
+        return total / position;
+    }
+
+    public double getAverageSell() {
+        double total = 0;
+        for (TradeLog log : logs) {
+            if (!log.isBuy()) {
+                total += log.getNetAmount();
+            }
+        }
+        return total / position;
     }
 
     public double getProfit() {
-        return (averageSell - averageBuy) * position;
+        return (getAverageSell() - getAverageBuy()) * position;
     }
 
     public double getProfitPercentage() {
-        return averageSell / averageBuy;
+        return getAverageSell() / getAverageBuy();
     }
 
     public int getShares() {
@@ -57,8 +79,8 @@ public class TradeSummary {
         return "TradeSummary{" +
                 "stock='" + stock + '\'' +
                 ", position=" + position +
-                ", averageBuy=" + averageBuy +
-                ", averageSell=" + averageSell +
+                ", averageBuy=" + getAverageBuy() +
+                ", averageSell=" + getAverageSell() +
                 ", openDate=" + openDate +
                 ", closeDate=" + closeDate +
                 '}';

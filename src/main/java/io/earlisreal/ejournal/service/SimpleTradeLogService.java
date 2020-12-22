@@ -54,10 +54,10 @@ public class SimpleTradeLogService implements TradeLogService {
             if (trades.containsKey(stock)) {
                 var trade = trades.get(stock);
                 if (log.isBuy()) {
-                    trade.buy(log.getShares(), log.getPrice());
+                    trade.buy(log);
                 }
                 else {
-                    trade.sell(log.getShares(), log.getPrice());
+                    trade.sell(log);
                     if (trade.getShares() == 0) {
                         trades.remove(stock);
                         trade.setCloseDate(log.getDate());

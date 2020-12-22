@@ -17,18 +17,27 @@ public class TradeSummary {
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
         this.openDate = initialTrade.getDate();
-        buy(initialTrade.getShares(), initialTrade.getPrice());
+        buy(initialTrade);
     }
 
-    public void buy(int shares, double price) {
-        position += shares;
-        this.shares += shares;
-        averageBuy = (averageBuy + shares * price) / position;
+    public void buy(TradeLog log) {
+        position += log.getShares();
+        this.shares += log.getShares();
+
+        averageBuy = (averageBuy + log.getNetAmount()) / position;
     }
 
-    public void sell(int shares, double price) {
+    public void sell(TradeLog log) {
         this.shares -= shares;
-        averageSell = (averageSell + shares * price) / position;
+        averageSell = (averageSell + log.getNetAmount()) / position;
+    }
+
+    public double getProfit() {
+        return (averageSell - averageBuy) * position;
+    }
+
+    public double getProfitPercentage() {
+        return averageSell / averageBuy;
     }
 
     public int getShares() {

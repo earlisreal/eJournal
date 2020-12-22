@@ -41,7 +41,7 @@ public enum Broker {
     }
 
     protected double getCommission(double grossAmount, boolean isBuy) {
-        double commission = grossAmount * 0.0025;
+        double commission = Math.max(20.0, grossAmount * 0.0025);
         commission += commission * 0.12;
         if (!isBuy) {
             commission += grossAmount * 0.006;

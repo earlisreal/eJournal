@@ -4,10 +4,11 @@ import io.earlisreal.ejournal.dao.StrategyDAO;
 import io.earlisreal.ejournal.dao.TradeLogDAO;
 import io.earlisreal.ejournal.dto.Strategy;
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.ParseUtil;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SimpleTradeLogService implements TradeLogService {
@@ -40,6 +41,36 @@ public class SimpleTradeLogService implements TradeLogService {
             inserted = tradeLogDAO.insertLog(tradeLogs);
         }
         System.out.println(inserted + " Records Inserted");
+    }
+
+    @Override
+    public List<TradeSummary> getTradeSummaries() {
+        var logs = getAll();
+        logs.sort(Comparator.comparing(TradeLog::getDate).thenComparing(tradeLog -> !tradeLog.isBuy()));
+        List<TradeSummary> summaries = new ArrayList<>();
+        Map<String, TradeSummary> trades = new HashMap<>();
+        for (TradeLog log : logs) {
+            String stock = log.getStock();
+            if (trades.containsKey(stock)) {
+                var trade = trades.get(stock);
+                if (log.isBuy()) {
+                    trade.buy(log.getShares(), log.getPrice());
+                }
+                else {
+                    trade.sell(log.getShares(), log.getPrice());
+                    if (trade.getShares() == 0) {
+                        trades.remove(stock);
+                        trade.setCloseDate(log.getDate());
+                        summaries.add(trade);
+                    }
+                }
+            }
+            else {
+                var trade = new TradeSummary(log);
+                trades.put(stock, trade);
+            }
+        }
+        return summaries;
     }
 
 }

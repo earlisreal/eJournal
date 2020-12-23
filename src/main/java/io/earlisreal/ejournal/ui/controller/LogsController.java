@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.controller;
 
 
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.beans.property.SimpleStringProperty;
@@ -18,31 +19,54 @@ import java.util.ResourceBundle;
 
 public class LogsController implements Initializable {
 
-    public TableColumn<TradeLog, LocalDate> date;
-    public TableColumn<TradeLog, String> stock;
-    public TableColumn<TradeLog, String> action;
-    public TableColumn<TradeLog, Double> price;
-    public TableColumn<TradeLog, Integer> shares;
-    public TableColumn<TradeLog, String> fees;
-    public TableColumn<TradeLog, String> net;
-    public TableColumn<TradeLog, String> strategy;
-    public TableView<TradeLog> tableView;
+    public TableView<TradeLog> logTable;
+    public TableColumn<TradeLog, LocalDate> logDate;
+    public TableColumn<TradeLog, String> logStock;
+    public TableColumn<TradeLog, String> logAction;
+    public TableColumn<TradeLog, Double> logPrice;
+    public TableColumn<TradeLog, Integer> logShares;
+    public TableColumn<TradeLog, String> logFees;
+    public TableColumn<TradeLog, String> logNet;
+    public TableColumn<TradeLog, String> logStrategy;
+
+    public TableView<TradeSummary> summaryTable;
+    public TableColumn<TradeSummary, String> summaryClosed;
+    public TableColumn<TradeSummary, String> summaryStock;
+    public TableColumn<TradeSummary, String> summaryPosition;
+    public TableColumn<TradeSummary, String> summaryProfit;
+    public TableColumn<TradeSummary, String> summaryStrategy;
 
     private TradeLogService tradeLogService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
+        initLogs();
+        initSummary();
+    }
 
-        tableView.setItems(FXCollections.observableList(tradeLogService.getAll()));
-        date.setCellValueFactory(new PropertyValueFactory<>("date"));
-        stock.setCellValueFactory(new PropertyValueFactory<>("stock"));
-        price.setCellValueFactory(new PropertyValueFactory<>("price"));
-        action.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
-        price.setCellValueFactory(new PropertyValueFactory<>("price"));
-        shares.setCellValueFactory(new PropertyValueFactory<>("shares"));
-        net.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getPrice() * p.getValue().getShares())));
-        strategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
+    private void initLogs() {
+        logTable.setItems(FXCollections.observableList(tradeLogService.getAll()));
+        logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
+        logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
+        logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
+        logShares.setCellValueFactory(new PropertyValueFactory<>("shares"));
+        logNet.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getPrice() * p.getValue().getShares())));
+        logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
+    }
+
+    private void initSummary() {
+        for (TradeSummary summary : tradeLogService.getTradeSummaries()) {
+            System.out.println(summary);
+        }
+        summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
+        summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
+        summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        summaryPosition.setCellValueFactory(new PropertyValueFactory<>("position"));
+        summaryProfit.setCellValueFactory(s ->
+                new SimpleStringProperty(s.getValue().getSimpleProfit() + " (" + s.getValue().getProfitPercentage() + ")"));
     }
 
 }

@@ -23,9 +23,10 @@ public class COLFinancialLedgerParser implements LedgerParser {
         bankTransactions = new ArrayList<>();
 
         Map<String, TradeLog> tradeMap = new HashMap<>();
+        int transactionIndex = 4;
         for (int i = 0; i < lines.size(); ++i) {
-            if (lines.get(i).contains("TRX DATE")) {
-                for (int j = i + 4; !lines.get(j).startsWith("---"); ++j) {
+            if (lines.get(i).startsWith(":TRX DATE")) {
+                for (int j = i + transactionIndex; !lines.get(j).startsWith("---"); ++j) {
                     try {
                         if (!lines.get(j).trim().contains("BUY") && !lines.get(j).trim().contains("SELL")) {
                             bankTransactions.add(parseBankTransaction(lines.get(j)));
@@ -54,9 +55,10 @@ public class COLFinancialLedgerParser implements LedgerParser {
                     }
                     ++i;
                 }
-                if (lines.get(i).contains("STOCK POS.")) {
-                    break;
-                }
+                transactionIndex = 2;
+            }
+            if (lines.get(i).startsWith(":STOCK POS.")) {
+                break;
             }
         }
 

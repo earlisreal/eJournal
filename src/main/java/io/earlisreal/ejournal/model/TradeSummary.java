@@ -15,6 +15,8 @@ public class TradeSummary {
     private LocalDate closeDate;
 
     private final List<TradeLog> logs;
+    private double totalBuy;
+    private double totalSell;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
@@ -25,41 +27,35 @@ public class TradeSummary {
 
     public void buy(TradeLog log) {
         position += log.getShares();
-        this.shares += log.getShares();
+        shares += log.getShares();
         logs.add(log);
+        totalBuy += log.getNetAmount();
     }
 
     public void sell(TradeLog log) {
-        this.shares -= log.getShares();
+        shares -= log.getShares();
         logs.add(log);
+        totalSell += log.getNetAmount();
     }
 
     public double getAverageBuy() {
-        double total = 0;
-        for (TradeLog log : logs) {
-            if (log.isBuy()) {
-                total += log.getNetAmount();
-            }
-        }
-        return total / position;
+        return totalBuy / position;
     }
 
     public double getAverageSell() {
-        double total = 0;
-        for (TradeLog log : logs) {
-            if (!log.isBuy()) {
-                total += log.getNetAmount();
-            }
-        }
-        return total / position;
+        return totalSell / position;
+    }
+
+    public double getSimpleProfit() {
+        return Math.round((getAverageSell() - getAverageBuy()) * position * 100) / 100.0;
     }
 
     public double getProfit() {
         return (getAverageSell() - getAverageBuy()) * position;
     }
 
-    public double getProfitPercentage() {
-        return getAverageSell() / getAverageBuy();
+    public String getProfitPercentage() {
+        return Math.round(getProfit() / totalBuy * 10000) % 10000 / 100.0 + "%";
     }
 
     public int getShares() {
@@ -72,6 +68,18 @@ public class TradeSummary {
 
     public String getStock() {
         return stock;
+    }
+
+    public LocalDate getOpenDate() {
+        return openDate;
+    }
+
+    public int getPosition() {
+        return position;
+    }
+
+    public LocalDate getCloseDate() {
+        return closeDate;
     }
 
     @Override

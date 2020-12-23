@@ -7,7 +7,6 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.ParseUtil;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 

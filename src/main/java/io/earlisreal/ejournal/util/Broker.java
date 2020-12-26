@@ -22,7 +22,9 @@ public enum Broker {
     COL(
             "COL Financial",
             "COL FINANCIAL GROUP, INC.",
-            null
+            "from:(alert@colfinancial.com OR Helpdesk@colfinancial.com OR withdrawals@colfinancial.com) " +
+                    "subject:(\"COL Trading Confirmation\" OR \"Notice of Cash Dividend\" " +
+                    "OR \"Acknowledgement of Deposit\" OR \"NOTICE OF RECEIPT OF WITHDRAWAL REQUEST\")"
     );
 
     private final String name;

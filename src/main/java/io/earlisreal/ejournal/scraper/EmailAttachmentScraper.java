@@ -24,25 +24,21 @@ public class EmailAttachmentScraper implements EmailScraper {
         this.service = tradeLogService;
     }
 
-    public void scrape(Gmail gmail, String messageId) {
+    @Override
+    public void scrape(Message message, Gmail gmail) {
         List<TradeLog> tradeLogs = new ArrayList<>();
-        try {
-            Message message = gmail.users().messages().get(USER, messageId).execute();
-            var attachmentIds = getAttachmentIds(message.getPayload());
-            for (String attachmentId : attachmentIds) {
-                try {
-                    byte[] data = gmail.users().messages()
-                            .attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
-                    String invoice = new PDFParser().parse(data);
-                    Broker broker = CommonUtil.identifyBroker(invoice);
-                    TradeLog tradeLog = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
-                    tradeLogs.add(tradeLog);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        var attachmentIds = getAttachmentIds(message.getPayload());
+        for (String attachmentId : attachmentIds) {
+            try {
+                byte[] data = gmail.users().messages()
+                        .attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
+                String invoice = new PDFParser().parse(data);
+                Broker broker = CommonUtil.identifyBroker(invoice);
+                TradeLog tradeLog = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
+                tradeLogs.add(tradeLog);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         service.insert(tradeLogs);

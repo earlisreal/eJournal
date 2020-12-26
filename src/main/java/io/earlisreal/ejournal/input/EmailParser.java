@@ -28,7 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.earlisreal.ejournal.scraper.EmailScraper.USER;
+import static io.earlisreal.ejournal.scraper.EmailAttachmentScraper.USER;
 
 public class EmailParser {
 

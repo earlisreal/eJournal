@@ -58,9 +58,6 @@ public class LogsController implements Initializable {
     }
 
     private void initSummary() {
-        for (TradeSummary summary : tradeLogService.getTradeSummaries()) {
-            System.out.println(summary);
-        }
         summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
         summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));

@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmailAttachmentScraper implements EmailScraper {
+public class EmailAttachmentScraper {
+
+    public static final String USER = "me";
 
     private final TradeLogService service;
     private static EmailAttachmentScraper emailAttachmentScraper;

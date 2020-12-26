@@ -3,15 +3,16 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-
 <AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.BankTransactionController">
-   <children>
-      <TableView fx:id="table" layoutX="20.0" layoutY="100.0" prefHeight="280.0" prefWidth="560.0">
-        <columns>
-          <TableColumn prefWidth="75.0" text="Date" />
-          <TableColumn prefWidth="75.0" text="Action" />
-            <TableColumn prefWidth="75.0" text="Amount" />
-        </columns>
-      </TableView>
-   </children>
+    <children>
+        <TableView fx:id="table" layoutX="20.0" layoutY="100.0" prefHeight="280.0" prefWidth="560.0">
+            <columns>
+                <TableColumn prefWidth="138.0" text="Date" />
+                <TableColumn prefWidth="154.0" text="Action" />
+                <TableColumn prefWidth="128.0" text="Amount" />
+            </columns>
+        </TableView>
+        <Button layoutX="20.0" layoutY="14.0" mnemonicParsing="false" onAction="#deposit" text="Deposit" />
+        <Button layoutX="91.0" layoutY="14.0" mnemonicParsing="false" text="Withraw" />
+    </children>
 </AnchorPane>

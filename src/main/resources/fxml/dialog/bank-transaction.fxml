@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+
+<AnchorPane prefHeight="300.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.BankTransactionDialogController">
+   <children>
+      <DatePicker layoutX="113.0" layoutY="14.0" promptText="Transaction Date" />
+      <TextField layoutX="126.0" layoutY="138.0" promptText="Amount" />
+      <Button layoutX="14.0" layoutY="261.0" mnemonicParsing="false" text="Okay" />
+      <Button layoutX="334.0" layoutY="261.0" mnemonicParsing="false" text="Cancel" />
+   </children>
+</AnchorPane>

@@ -13,9 +13,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.ListMessagesResponse;
-import com.google.api.services.gmail.model.Message;
-import com.google.api.services.gmail.model.MessagePartHeader;
-import io.earlisreal.ejournal.scraper.EmailScrapperFactory;
+import io.earlisreal.ejournal.scraper.EmailAttachmentScraper;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.util.Broker;
@@ -36,11 +34,11 @@ public class EmailParser {
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-    private final Gmail gmail;
+    private final Gmail service;
 
     public EmailParser() throws GeneralSecurityException, IOException {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        gmail = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
+        service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
                 .setApplicationName("eJournal")
                 .build();
     }
@@ -50,7 +48,7 @@ public class EmailParser {
         CacheService cacheService = ServiceProvider.getCacheService();
         List<String> records = new ArrayList<>();
         try {
-            String email = gmail.users().getProfile(USER).execute().getEmailAddress();
+            String email = service.users().getProfile(USER).execute().getEmailAddress();
             Instant lastQuery = cacheService.getLastSync(email);
 
             StringBuilder query = new StringBuilder("(");
@@ -65,13 +63,14 @@ public class EmailParser {
                 query.append(" AND after:").append(lastQuery.getEpochSecond());
             }
 
-            ListMessagesResponse messageResponse = gmail.users().messages().list(USER)
+            ListMessagesResponse messageResponse = service.users().messages().list(USER)
                     .setMaxResults(10_000L)
                     .setQ(query.toString())
                     .execute();
+            EmailAttachmentScraper scraper = EmailAttachmentScraper.getInstance();
             var messages = messageResponse.getMessages();
             if (messages != null) {
-                messages.parallelStream().forEach(this::processMessage);
+                messages.parallelStream().forEach(m -> scraper.scrape(service, m.getId()));
             }
 
             if (lastQuery == null) {
@@ -85,36 +84,6 @@ public class EmailParser {
         }
 
         return records;
-    }
-
-    private void processMessage(Message message) {
-        try {
-            message = gmail.users().messages().get(USER, message.getId()).execute();
-            Broker broker = null;
-            for (MessagePartHeader header : message.getPayload().getHeaders()) {
-                if (!header.getName().equals("From")) continue;
-                String sender = header.getValue();
-                if (sender.endsWith("@colfinancial.com>")) {
-                    broker = Broker.COL;
-                }
-                if (sender.equals("accounting@2tradeasia.com")) {
-                    broker = Broker.YAPSTER;
-                }
-                if (sender.endsWith("@aaa-equities.com>")) {
-                    broker = Broker.AAA;
-                }
-                break;
-            }
-
-            if (broker == null) {
-                System.out.println("Broker Not Found from Email Sender:");
-                System.out.println(message.getSnippet());
-            }
-
-            EmailScrapperFactory.getEmailScraper(broker).scrape(message, gmail);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private Credential getCredentials(NetHttpTransport httpTransport) throws IOException {

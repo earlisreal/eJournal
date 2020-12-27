@@ -14,4 +14,6 @@ public interface AnalyticsService {
 
     double getAccuracy();
 
+    double getProfitFactor();
+
 }

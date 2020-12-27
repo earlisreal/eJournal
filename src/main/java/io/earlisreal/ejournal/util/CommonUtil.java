@@ -47,4 +47,8 @@ public interface CommonUtil {
         return Math.round(num * 100) / 100.0;
     }
 
+    static String prettify(double num) {
+        return NumberFormat.getNumberInstance().format(Math.round(num * 100) / 100.0);
+    }
+
 }

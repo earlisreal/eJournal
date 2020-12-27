@@ -56,4 +56,12 @@ public class SimpleAnalyticsService implements AnalyticsService {
         return round((double) summaries.stream().filter(win).count() / summaries.size() * 100);
     }
 
+    @Override
+    public double getProfitFactor() {
+        var summaries = tradeLogService.getTradeSummaries();
+        double profits = summaries.stream().filter(win).mapToDouble(TradeSummary::getProfit).sum();
+        double losses = summaries.stream().filter(loss).mapToDouble(TradeSummary::getProfit).sum();
+        return round(profits / losses * -1);
+    }
+
 }

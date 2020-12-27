@@ -54,6 +54,10 @@ public class TradeSummary {
         return getProfit() / totalBuy * 100;
     }
 
+    public int getTradeLength() {
+        return getOpenDate().until(getCloseDate()).getDays();
+    }
+
     public int getShares() {
         return shares;
     }

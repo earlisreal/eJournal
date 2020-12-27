@@ -17,6 +17,7 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 
+import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class LogsController implements Initializable {
@@ -37,6 +38,8 @@ public class LogsController implements Initializable {
     public TableColumn<TradeSummary, String> summaryPosition;
     public TableColumn<TradeSummary, String> summaryProfit;
     public TableColumn<TradeSummary, String> summaryStrategy;
+    public TableColumn<TradeSummary, String> summaryPercent;
+    public TableColumn<TradeSummary, String> summaryDays;
 
     private TradeLogService tradeLogService;
 
@@ -55,7 +58,8 @@ public class LogsController implements Initializable {
         logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
         logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         logShares.setCellValueFactory(new PropertyValueFactory<>("shares"));
-        logNet.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getPrice() * p.getValue().getShares())));
+        logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
+        logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
         logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
     }
 
@@ -65,8 +69,10 @@ public class LogsController implements Initializable {
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         summaryPosition.setCellValueFactory(new PropertyValueFactory<>("position"));
         summaryProfit.setCellValueFactory(s ->
-                new SimpleStringProperty(round(s.getValue().getProfit())
-                        + " (" + round(s.getValue().getProfitPercentage()) + "%)"));
+                new SimpleStringProperty("" + prettify(s.getValue().getProfit())));
+        summaryPercent.setCellValueFactory(s ->
+                new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
+        summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
     }
 
 }

@@ -4,7 +4,7 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.database.MapDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.EmailParser;
-import io.earlisreal.ejournal.input.PDFParser;
+import io.earlisreal.ejournal.util.PDFParser;
 import io.earlisreal.ejournal.input.WebParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
@@ -50,7 +50,7 @@ public class EJournal {
             if (args[0].toLowerCase().contains(".pdf")) {
                 System.out.println("Parsing PDF file: " + args[0]);
 
-                String invoice = new PDFParser().parse(args[0]);
+                String invoice = PDFParser.parse(args[0]);
                 Broker broker = CommonUtil.identifyBroker(invoice);
                 System.out.println(broker.getName() + " Broker Found");
                 System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));

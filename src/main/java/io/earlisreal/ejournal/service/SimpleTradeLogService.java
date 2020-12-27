@@ -21,6 +21,7 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     public List<TradeLog> getAll() {
+        // TODO : Create cache and retrieve from dao only when there is newly inserted record
         return tradeLogDAO.queryAll();
     }
 
@@ -39,6 +40,7 @@ public class SimpleTradeLogService implements TradeLogService {
         if (!tradeLogs.isEmpty()) {
             inserted = tradeLogDAO.insertLog(tradeLogs);
         }
+        // TODO: Track a flag if logs is updated, then use it to recompute the summaries
         System.out.println(inserted + " Records Inserted");
     }
 

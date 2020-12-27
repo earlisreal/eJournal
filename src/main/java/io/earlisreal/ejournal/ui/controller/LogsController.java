@@ -17,6 +17,8 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 
+import static io.earlisreal.ejournal.util.CommonUtil.round;
+
 public class LogsController implements Initializable {
 
     public TableView<TradeLog> logTable;
@@ -63,7 +65,8 @@ public class LogsController implements Initializable {
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         summaryPosition.setCellValueFactory(new PropertyValueFactory<>("position"));
         summaryProfit.setCellValueFactory(s ->
-                new SimpleStringProperty(s.getValue().getSimpleProfit() + " (" + s.getValue().getProfitPercentage() + ")"));
+                new SimpleStringProperty(round(s.getValue().getProfit())
+                        + " (" + round(s.getValue().getProfitPercentage()) + "%)"));
     }
 
 }

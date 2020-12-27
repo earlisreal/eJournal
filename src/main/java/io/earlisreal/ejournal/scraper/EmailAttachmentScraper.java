@@ -4,7 +4,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import io.earlisreal.ejournal.dto.TradeLog;
-import io.earlisreal.ejournal.input.PDFParser;
+import io.earlisreal.ejournal.util.PDFParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
@@ -35,7 +35,7 @@ public class EmailAttachmentScraper {
                 try {
                     byte[] data = gmail.users().messages()
                             .attachments().get(USER, message.getId(), attachmentId).execute().decodeData();
-                    String invoice = new PDFParser().parse(data);
+                    String invoice = PDFParser.parse(data);
                     Broker broker = CommonUtil.identifyBroker(invoice);
                     TradeLog tradeLog = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
                     tradeLogs.add(tradeLog);

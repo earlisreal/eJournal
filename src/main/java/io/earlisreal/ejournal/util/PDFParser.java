@@ -1,15 +1,14 @@
-package io.earlisreal.ejournal.input;
+package io.earlisreal.ejournal.util;
 
-import io.earlisreal.ejournal.util.CommonUtil;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
 import java.io.File;
 import java.io.IOException;
 
-public class PDFParser {
+public interface PDFParser {
 
-    public String parse(String path) {
+    static String parse(String path) {
         try (PDDocument document = PDDocument.load(new File(path))) {
             return strip(document);
         } catch (IOException e) {
@@ -19,7 +18,7 @@ public class PDFParser {
         return null;
     }
 
-    public String parse(byte[] data) {
+    static String parse(byte[] data) {
         try (PDDocument document = PDDocument.load(data)) {
             return strip(document);
         } catch (IOException e) {
@@ -29,7 +28,7 @@ public class PDFParser {
         return null;
     }
 
-    private String strip(PDDocument document) throws IOException {
+    private static String strip(PDDocument document) throws IOException {
         PDFTextStripper stripper = new PDFTextStripper();
         stripper.setSortByPosition(true);
         return stripper.getText(document);

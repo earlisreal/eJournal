@@ -16,4 +16,6 @@ public interface AnalyticsService {
 
     double getProfitFactor();
 
+    double getAverageHoldingDays();
+
 }

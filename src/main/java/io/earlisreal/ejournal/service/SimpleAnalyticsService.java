@@ -64,4 +64,9 @@ public class SimpleAnalyticsService implements AnalyticsService {
         return round(profits / losses * -1);
     }
 
+    @Override
+    public double getAverageHoldingDays() {
+        return tradeLogService.getTradeSummaries().stream().collect(Collectors.averagingDouble(TradeSummary::getTradeLength));
+    }
+
 }

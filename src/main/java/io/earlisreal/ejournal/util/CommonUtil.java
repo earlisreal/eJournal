@@ -43,12 +43,12 @@ public interface CommonUtil {
         return name.toUpperCase();
     }
 
-    static double round(double num) {
-        return Math.round(num * 100) / 100.0;
+    static String prettify(double num) {
+        return NumberFormat.getNumberInstance().format(round(num));
     }
 
-    static String prettify(double num) {
-        return NumberFormat.getNumberInstance().format(Math.round(num * 100) / 100.0);
+    static double round(double num) {
+        return Math.round(num * 100) / 100.0;
     }
 
 }

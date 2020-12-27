@@ -14,6 +14,6 @@
             </columns>
         </TableView>
         <Button layoutX="20.0" layoutY="14.0" mnemonicParsing="false" onAction="#deposit" text="Deposit" />
-        <Button layoutX="91.0" layoutY="14.0" mnemonicParsing="false" text="withdraw" />
+        <Button layoutX="91.0" layoutY="14.0" mnemonicParsing="false" onAction="#withdraw" text="withdraw" />
     </children>
 </AnchorPane>

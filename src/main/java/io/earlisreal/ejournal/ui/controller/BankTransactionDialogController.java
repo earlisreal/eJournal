@@ -5,10 +5,8 @@ import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.List;
@@ -21,6 +19,7 @@ public class BankTransactionDialogController implements Initializable {
 
     private BankTransactionService service;
     private BankTransactionController bankTransactionController;
+    private boolean isWithdraw;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -29,12 +28,18 @@ public class BankTransactionDialogController implements Initializable {
 
     public void okay(ActionEvent event) {
         BankTransaction bankTransaction = new BankTransaction();
-        bankTransaction.setAmount(Double.parseDouble(amount.getText()));
+        double value = Double.parseDouble(amount.getText());
+        if (isWithdraw) value *= -1;
+        bankTransaction.setAmount(value);
         bankTransaction.setDate(datePicker.getValue());
         service.insert(List.of(bankTransaction));
 
-
+        bankTransactionController.loadBankTransactions();
         closeWindow(event);
+    }
+
+    public void setWithdraw(boolean isWithdraw) {
+        this.isWithdraw = isWithdraw;
     }
 
     public void cancel(ActionEvent event) {
@@ -46,9 +51,9 @@ public class BankTransactionDialogController implements Initializable {
     }
 
     private void closeWindow(ActionEvent event) {
-        Node source = (Node) event.getSource();
-        Stage stage = (Stage) source.getScene().getWindow();
-        stage.close();
+        amount.clear();
+        datePicker.setValue(null);
+        bankTransactionController.closeDialog();
     }
 
 }

@@ -27,29 +27,39 @@ public class BankTransactionController implements Initializable {
     public TableView<BankTransaction> bankTable;
 
     private BankTransactionService service;
+    private Stage dialogStage;
+    private BankTransactionDialogController dialogController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = ServiceProvider.getBankTransactionService();
         loadBankTransactions();
-    }
 
-    public void deposit(ActionEvent event) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/bank-transaction.fxml"));
             Parent dialog = loader.load();
             Scene scene = new Scene(dialog);
-            Stage stage = new Stage();
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setScene(scene);
-            BankTransactionDialogController controller = loader.getController();
-            controller.setBankTransactionController(this);
+            dialogStage = new Stage();
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+            dialogStage.setScene(scene);
+            dialogController = loader.getController();
+            dialogController.setBankTransactionController(this);
 
-            stage.setTitle("Dialog");
-            stage.show();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void deposit(ActionEvent event) {
+        dialogStage.setTitle("Add Deposit Transaction");
+        dialogController.setWithdraw(false);
+        showDialog();
+    }
+
+    public void withdraw(ActionEvent event) {
+        dialogStage.setTitle("Add Withdraw Transaction");
+        dialogController.setWithdraw(true);
+        showDialog();
     }
 
     public void loadBankTransactions() {
@@ -57,6 +67,14 @@ public class BankTransactionController implements Initializable {
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
         actionColumn.setCellValueFactory(new PropertyValueFactory<>("action"));
+    }
+
+    public void showDialog() {
+        dialogStage.show();
+    }
+
+    public void closeDialog() {
+        dialogStage.hide();
     }
 
 }

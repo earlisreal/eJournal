@@ -46,16 +46,12 @@ public class TradeSummary {
         return totalSell / position;
     }
 
-    public double getSimpleProfit() {
-        return Math.round((getAverageSell() - getAverageBuy()) * position * 100) / 100.0;
-    }
-
     public double getProfit() {
         return (getAverageSell() - getAverageBuy()) * position;
     }
 
-    public String getProfitPercentage() {
-        return Math.round(getProfit() / totalBuy * 10000) % 10000 / 100.0 + "%";
+    public double getProfitPercentage() {
+        return getProfit() / totalBuy * 100;
     }
 
     public int getShares() {

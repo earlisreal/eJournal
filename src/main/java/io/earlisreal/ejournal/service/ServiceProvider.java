@@ -9,8 +9,21 @@ public class ServiceProvider {
     private static BankTransactionService bankTransactionService;
     private static CacheService cacheService;
     private static StockService stockService;
+    private static AnalyticsService analyticsService;
 
     private ServiceProvider() {}
+
+    public static AnalyticsService getAnalyticsService() {
+        if (analyticsService == null) {
+            synchronized (ServiceProvider.class) {
+                if (analyticsService == null) {
+                    analyticsService = new SimpleAnalyticsService(getTradeLogService());
+                }
+            }
+        }
+
+        return analyticsService;
+    }
 
     public static TradeLogService getTradeLogService() {
         if (tradeLogService == null) {

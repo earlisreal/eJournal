@@ -43,4 +43,8 @@ public interface CommonUtil {
         return name.toUpperCase();
     }
 
+    static double round(double num) {
+        return Math.round(num * 100) / 100.0;
+    }
+
 }

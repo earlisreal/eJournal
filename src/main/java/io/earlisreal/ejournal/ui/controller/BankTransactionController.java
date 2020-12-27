@@ -1,10 +1,17 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.service.BankTransactionService;
+import io.earlisreal.ejournal.service.ServiceProvider;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -14,8 +21,16 @@ import java.util.ResourceBundle;
 
 public class BankTransactionController implements Initializable {
 
+    public TableColumn<BankTransaction, String> dateColumn;
+    public TableColumn<BankTransaction, String> actionColumn;
+    public TableColumn<BankTransaction, String> amountColumn;
+    public TableView<BankTransaction> bankTable;
+
+    private BankTransactionService service;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        service = ServiceProvider.getBankTransactionService();
         loadBankTransactions();
     }
 
@@ -38,7 +53,10 @@ public class BankTransactionController implements Initializable {
     }
 
     public void loadBankTransactions() {
-        System.out.println("loading");
+        bankTable.setItems(FXCollections.observableList(service.getAll()));
+        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        actionColumn.setCellValueFactory(new PropertyValueFactory<>("action"));
     }
 
 }

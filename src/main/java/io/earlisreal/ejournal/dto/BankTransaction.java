@@ -23,6 +23,12 @@ public class BankTransaction {
                 '}';
     }
 
+    public String getAction() {
+        if (amount < 0) return "Withdraw";
+        if (isDividend()) return "Dividend";
+        return "Deposit";
+    }
+
     public LocalDate getDate() {
         return date;
     }

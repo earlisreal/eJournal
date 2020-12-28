@@ -20,8 +20,13 @@ public class SimpleBankTransactionService implements BankTransactionService {
 
     @Override
     public void insert(List<BankTransaction> bankTransactions) {
+        for (BankTransaction bankTransaction : bankTransactions) {
+            if (bankTransaction.getReferenceNo() == null) {
+                bankTransaction.setReferenceNo((bankTransaction.getAmount() > 0 ? 1 : 0) + bankTransaction.getDate().toString());
+            }
+        }
         int inserted = bankTransactionDAO.insert(bankTransactions);
-        System.out.println(inserted + " Transactions inserted");
+        System.out.println(inserted + " Bank Transactions inserted");
     }
 
 }

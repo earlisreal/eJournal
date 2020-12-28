@@ -51,6 +51,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
     public int insert(List<BankTransaction> bankTransactions) {
         String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref)" + generateValues(bankTransactions.size());
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            // TODO : Remove this duplicate code
             for (int i = 0; i < bankTransactions.size(); ++i) {
                 setParameters(preparedStatement, bankTransactions.get(i), i);
             }

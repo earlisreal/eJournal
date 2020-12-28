@@ -8,6 +8,9 @@ public interface LedgerParserFactory {
         if (Broker.COL == broker) {
             return new COLFinancialLedgerParser();
         }
+        if (Broker.YAPSTER == broker) {
+            return new YapsterLedgerParser();
+        }
 
         throw new RuntimeException("Ledger Parser of Broker name " + broker + " is not supported");
     }

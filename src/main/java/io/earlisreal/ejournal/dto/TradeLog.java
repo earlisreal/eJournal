@@ -70,7 +70,7 @@ public class TradeLog {
                 ", strategy='" + strategy + '\'' +
                 ", isShort=" + isShort +
                 ", invoiceNo='" + invoiceNo + '\'' +
-                ", broker='" + broker.getName() + '\'' +
+                ", broker='" + broker + '\'' +
                 '}';
     }
 

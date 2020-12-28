@@ -10,8 +10,8 @@ public enum Broker {
     ),
     YAPSTER(
             "2TradeAsia",
-            "YAPSTER e-TRADE",
-            "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA) Invoice) has:attachment"
+            "YAPSTER",
+            "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA)) has:attachment"
     ) {
         @Override
         public double getFees(double grossAmount, boolean isBuy) {

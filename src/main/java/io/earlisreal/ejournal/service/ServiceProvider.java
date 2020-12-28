@@ -17,7 +17,7 @@ public class ServiceProvider {
         if (analyticsService == null) {
             synchronized (ServiceProvider.class) {
                 if (analyticsService == null) {
-                    analyticsService = new SimpleAnalyticsService(getTradeLogService());
+                    analyticsService = new SimpleAnalyticsService(getTradeLogService(), getBankTransactionService());
                 }
             }
         }

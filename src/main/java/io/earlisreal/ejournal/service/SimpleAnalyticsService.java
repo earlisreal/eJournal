@@ -1,7 +1,13 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.model.TradeSummary;
+import javafx.scene.chart.XYChart;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -10,11 +16,13 @@ import static io.earlisreal.ejournal.util.CommonUtil.round;
 public class SimpleAnalyticsService implements AnalyticsService {
 
     private final TradeLogService tradeLogService;
+    private final BankTransactionService bankTransactionService;
     private final Predicate<TradeSummary> win;
     private final Predicate<TradeSummary> loss;
 
-    SimpleAnalyticsService(TradeLogService tradeLogService) {
+    SimpleAnalyticsService(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
         this.tradeLogService = tradeLogService;
+        this.bankTransactionService = bankTransactionService;
         win = t -> t.getProfit() >= 0;
         loss = t -> t.getProfit() < 0;
     }
@@ -67,6 +75,23 @@ public class SimpleAnalyticsService implements AnalyticsService {
     @Override
     public double getAverageHoldingDays() {
         return tradeLogService.getTradeSummaries().stream().collect(Collectors.averagingDouble(TradeSummary::getTradeLength));
+    }
+
+    @Override
+    public List<XYChart.Data<String, Double>> getEquityData() {
+        var summaries = tradeLogService.getTradeSummaries();
+        var transactions = bankTransactionService.getAll();
+        var dateMap = summaries.stream()
+                .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
+        for (BankTransaction transaction : transactions) {
+            dateMap.merge(transaction.getDate(), transaction.getAmount(), Double::sum);
+        }
+
+        List<XYChart.Data<String, Double>> data = new ArrayList<>();
+        for (var entry : dateMap.entrySet()) {
+            data.add(new XYChart.Data<>(entry.getKey().toString(), entry.getValue()));
+        }
+        return data;
     }
 
 }

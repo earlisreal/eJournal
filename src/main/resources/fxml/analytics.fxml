@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.*?>
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
    <children>
-      <Label fx:id="analyticsLabel" layoutX="286.0" layoutY="192.0" text="Analytics" />
+      <Label fx:id="analyticsLabel" layoutX="277.0" layoutY="63.0" text="Analytics" />
+      <LineChart fx:id="equityChart" layoutX="17.0" layoutY="175.0" prefHeight="277.0" prefWidth="566.0" title="Equity">
+        <xAxis>
+          <CategoryAxis label="Date" side="BOTTOM" />
+        </xAxis>
+        <yAxis>
+          <NumberAxis label="Value" side="LEFT" />
+        </yAxis>
+      </LineChart>
    </children>
 </AnchorPane>

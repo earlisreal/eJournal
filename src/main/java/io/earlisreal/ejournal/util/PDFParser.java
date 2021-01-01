@@ -9,7 +9,11 @@ import java.io.IOException;
 public interface PDFParser {
 
     static String parse(String path) {
-        try (PDDocument document = PDDocument.load(new File(path))) {
+        return parse(new File(path));
+    }
+
+    static String parse(File file) {
+        try (PDDocument document = PDDocument.load(file)) {
             return strip(document);
         } catch (IOException e) {
             CommonUtil.handleException(e);

@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.util.Broker;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static io.earlisreal.ejournal.util.CommonUtil.*;
@@ -49,9 +50,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
                             }
                         }
                     }
-                    catch (ParseException e) {
-                        System.out.println(e.getMessage());
-                        e.printStackTrace();
+                    catch (DateTimeParseException | ParseException ignored) {
                     }
                     ++i;
                 }

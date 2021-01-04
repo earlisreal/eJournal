@@ -12,4 +12,6 @@ public interface BankTransactionDAO {
 
     int insert(List<BankTransaction> bankTransactions);
 
+    boolean delete(int id);
+
 }

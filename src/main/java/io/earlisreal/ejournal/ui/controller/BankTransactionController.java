@@ -79,11 +79,13 @@ public class BankTransactionController implements Initializable {
                     protected void updateItem(Void item, boolean empty) {
                         final Button button = new Button("Delete");
                         button.setOnAction(event -> {
-                            System.out.println(getTableView().getItems().get(getIndex()));
+                            boolean res = service.delete(getTableView().getItems().get(getIndex()).getId());
+                            if (res) {
+                                loadBankTransactions();
+                            }
                         });
                         super.updateItem(item, empty);
-                        if (empty) setGraphic(null);
-                        else setGraphic(button);
+                        if (!empty) setGraphic(button);
                     }
                 };
             }

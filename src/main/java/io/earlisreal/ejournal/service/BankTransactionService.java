@@ -10,4 +10,6 @@ public interface BankTransactionService {
 
     void insert(List<BankTransaction> bankTransactions);
 
+    boolean delete(int id);
+
 }

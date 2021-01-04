@@ -63,6 +63,19 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
         }
     }
 
+    @Override
+    public boolean delete(int id) {
+        String sql = "DELETE FROM bank_transaction WHERE id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, id);
+            preparedStatement.execute();
+            return true;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return false;
+    }
+
     private String generateValues(int rows) {
         return " VALUES (?, ?, ?, ?)" + ", (?, ?, ?, ?)".repeat(Math.max(0, rows - 1));
     }

@@ -11,6 +11,7 @@
                 <TableColumn fx:id="dateColumn" prefWidth="138.0" text="Date" />
                 <TableColumn fx:id="actionColumn" prefWidth="154.0" text="Action" />
                 <TableColumn fx:id="amountColumn" prefWidth="128.0" text="Amount" />
+            <TableColumn fx:id="deleteColumn" editable="false" prefWidth="128.0" sortable="false" text="Delete" />
             </columns>
         </TableView>
         <Button layoutX="20.0" layoutY="14.0" mnemonicParsing="false" onAction="#deposit" text="Deposit" />

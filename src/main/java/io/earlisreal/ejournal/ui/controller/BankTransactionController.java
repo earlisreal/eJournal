@@ -9,11 +9,14 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -25,6 +28,7 @@ public class BankTransactionController implements Initializable {
     public TableColumn<BankTransaction, String> actionColumn;
     public TableColumn<BankTransaction, String> amountColumn;
     public TableView<BankTransaction> bankTable;
+    public TableColumn<BankTransaction, Void> deleteColumn;
 
     private BankTransactionService service;
     private Stage dialogStage;
@@ -67,6 +71,23 @@ public class BankTransactionController implements Initializable {
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
         actionColumn.setCellValueFactory(new PropertyValueFactory<>("action"));
+        deleteColumn.setCellFactory(new Callback<>() {
+            @Override
+            public TableCell<BankTransaction, Void> call(TableColumn<BankTransaction, Void> param) {
+                return new TableCell<>() {
+                    @Override
+                    protected void updateItem(Void item, boolean empty) {
+                        final Button button = new Button("Delete");
+                        button.setOnAction(event -> {
+                            System.out.println(getTableView().getItems().get(getIndex()));
+                        });
+                        super.updateItem(item, empty);
+                        if (empty) setGraphic(null);
+                        else setGraphic(button);
+                    }
+                };
+            }
+        });
     }
 
     public void showDialog() {

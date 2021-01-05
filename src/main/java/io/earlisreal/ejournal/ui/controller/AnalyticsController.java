@@ -9,7 +9,6 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 
 import java.net.URL;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -28,17 +27,15 @@ public class AnalyticsController implements Initializable {
         service = ServiceProvider.getAnalyticsService();
         service.initialize();
 
+        reload();
+    }
+
+    public void reload() {
         initializeStatistics();
         initializeEquityChart();
     }
 
-    public void applyDateFilter(LocalDate startDate, LocalDate endDate) {
-        service.initialize(startDate, endDate);
-        initializeStatistics();
-        initializeEquityChart();
-    }
-
-    public void initializeStatistics() {
+    private void initializeStatistics() {
         String ratio = "Edge Ratio: " + round(service.getEdgeRatio()) + "\n";
         String profit = "Average Profit: " + prettify(service.getAverageProfit()) + " (" + service.getAverageProfitPercentage() + "%)\n";
         String loss = "Average Loss: " + prettify(service.getAverageLoss()) + " (" + service.getAverageLossPercentage() + "%)\n";
@@ -48,7 +45,7 @@ public class AnalyticsController implements Initializable {
         analyticsLabel.setText(ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
     }
 
-    public void initializeEquityChart() {
+    private void initializeEquityChart() {
         XYChart.Series<String, Double> series = new XYChart.Series<>();
         series.setName("Original Portfolio");
         series.setData(FXCollections.observableList(service.getEquityData()));

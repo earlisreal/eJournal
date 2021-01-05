@@ -7,23 +7,16 @@ import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 
-import java.io.File;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
-import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class LogsController implements Initializable {
 
@@ -45,7 +38,6 @@ public class LogsController implements Initializable {
     public TableColumn<TradeSummary, String> summaryStrategy;
     public TableColumn<TradeSummary, String> summaryPercent;
     public TableColumn<TradeSummary, String> summaryDays;
-    public Button importButton;
 
     private TradeLogService tradeLogService;
 
@@ -57,7 +49,7 @@ public class LogsController implements Initializable {
     }
 
     private void initLogs() {
-        logTable.setItems(FXCollections.observableList(tradeLogService.getAll()));
+        logTable.setItems(FXCollections.observableList(tradeLogService.getLogs()));
         logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));

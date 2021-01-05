@@ -3,16 +3,19 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TradeLogService {
 
-    List<TradeLog> getAll();
+    void applyFilter(LocalDate startDate, LocalDate endDate);
 
-    void insertCsv(List<String> csv);
+    int insertCsv(List<String> csv);
 
-    void insert(List<TradeLog> tradeLogs);
+    int insert(List<TradeLog> tradeLogs);
 
     List<TradeSummary> getTradeSummaries();
+
+    List<TradeLog> getLogs();
 
 }

@@ -44,6 +44,10 @@ public class LogsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
+        reload();
+    }
+
+    public void reload() {
         initLogs();
         initSummary();
     }

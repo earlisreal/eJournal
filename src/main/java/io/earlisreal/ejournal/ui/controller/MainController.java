@@ -45,6 +45,8 @@ public class MainController implements Initializable {
     private ObservableList<Node> children;
     private BankTransactionService bankTransactionService;
     private TradeLogService tradeLogService;
+    private AnalyticsController analyticsController;
+    private LogsController logController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -52,10 +54,13 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
 
         try {
-            log = FXMLLoader.load(getClass().getResource("/fxml/log.fxml"));
+            FXMLLoader logLoader = new FXMLLoader(getClass().getResource("/fxml/log.fxml"));
+            log = logLoader.load();
+            logController = logLoader.getController();
 
             FXMLLoader analyticsLoader = new FXMLLoader(getClass().getResource("/fxml/analytics.fxml"));
             analytics = analyticsLoader.load();
+            analyticsController = analyticsLoader.getController();
 
             strategy = FXMLLoader.load(getClass().getResource("/fxml/strategy.fxml"));
             bankTransaction = FXMLLoader.load(getClass().getResource("/fxml/bank-transaction.fxml"));
@@ -122,6 +127,8 @@ public class MainController implements Initializable {
 
     public void filterDate(ActionEvent event) {
         tradeLogService.applyFilter(startDate.getValue(), endDate.getValue());
+        analyticsController.reload();
+        logController.reload();
     }
     
 }

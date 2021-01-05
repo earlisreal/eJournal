@@ -4,12 +4,16 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
+import static io.earlisreal.ejournal.util.CommonUtil.toSqlDate;
 
 public class DerbyTradeLogDAO implements TradeLogDAO {
 
@@ -18,27 +22,49 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     DerbyTradeLogDAO() {}
 
     @Override
-    public List<TradeLog> queryAll() {
-        List<TradeLog> logs = new ArrayList<>();
-        try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM log");
-             ResultSet resultSet = preparedStatement.executeQuery()) {
-
-            while (resultSet.next()) {
-                TradeLog tradeLog = new TradeLog();
-                tradeLog.setId(resultSet.getInt(1));
-                tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
-                tradeLog.setStock(resultSet.getString(3));
-                tradeLog.setBuy(resultSet.getBoolean(4));
-                tradeLog.setPrice(resultSet.getDouble(5));
-                tradeLog.setShares(resultSet.getInt(6));
-                tradeLog.setStrategyId(resultSet.getInt(7));
-                tradeLog.setShort(resultSet.getBoolean(8));
-                tradeLog.setInvoiceNo(resultSet.getString(9));
-                tradeLog.setBroker(Broker.values()[resultSet.getInt(10)]);
-                logs.add(tradeLog);
-            }
+    public List<TradeLog> queryInBetween(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT * FROM log WHERE date BETWEEN ? AND ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setDate(1, toSqlDate(startDate));
+            preparedStatement.setDate(2, toSqlDate(endDate));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return mapToTradeLogs(resultSet);
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
+        }
+
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<TradeLog> queryAll() {
+        String sql = "SELECT * FROM log";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            return mapToTradeLogs(resultSet);
+        } catch (SQLException sqlException) {
+            sqlException.printStackTrace();
+        }
+
+        return new ArrayList<>();
+    }
+
+    private List<TradeLog> mapToTradeLogs(ResultSet resultSet) throws SQLException {
+        List<TradeLog> logs = new ArrayList<>();
+        while (resultSet.next()) {
+            TradeLog tradeLog = new TradeLog();
+            tradeLog.setId(resultSet.getInt(1));
+            tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
+            tradeLog.setStock(resultSet.getString(3));
+            tradeLog.setBuy(resultSet.getBoolean(4));
+            tradeLog.setPrice(resultSet.getDouble(5));
+            tradeLog.setShares(resultSet.getInt(6));
+            tradeLog.setStrategyId(resultSet.getInt(7));
+            tradeLog.setShort(resultSet.getBoolean(8));
+            tradeLog.setInvoiceNo(resultSet.getString(9));
+            tradeLog.setBroker(Broker.values()[resultSet.getInt(10)]);
+            logs.add(tradeLog);
         }
 
         return logs;
@@ -86,7 +112,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     private void setParameters(PreparedStatement preparedStatement, TradeLog tradeLog, int rowIndex) throws SQLException {
-        preparedStatement.setDate(1 + (rowIndex * COLUMN_COUNT), new Date(tradeLog.getDateInstant().toEpochMilli()));
+        preparedStatement.setDate(1 + (rowIndex * COLUMN_COUNT), toSqlDate(tradeLog.getDate()));
         preparedStatement.setString(2 + (rowIndex * COLUMN_COUNT), tradeLog.getStock());
         preparedStatement.setBoolean(3 + (rowIndex * COLUMN_COUNT), tradeLog.isBuy());
         preparedStatement.setDouble(4 + (rowIndex * COLUMN_COUNT), tradeLog.getPrice());

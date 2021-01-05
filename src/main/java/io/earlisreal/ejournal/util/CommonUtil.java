@@ -1,7 +1,11 @@
 package io.earlisreal.ejournal.util;
 
+import java.sql.Date;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 public interface CommonUtil {
@@ -49,6 +53,10 @@ public interface CommonUtil {
 
     static double round(double num) {
         return Math.round(num * 100) / 100.0;
+    }
+
+    static Date toSqlDate(LocalDate localDate) {
+        return new Date(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
 }

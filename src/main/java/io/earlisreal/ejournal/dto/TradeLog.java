@@ -74,10 +74,6 @@ public class TradeLog {
                 '}';
     }
 
-    public Instant getDateInstant() {
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
-    }
-
     public int getId() {
         return id;
     }

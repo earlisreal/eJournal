@@ -7,6 +7,10 @@ import java.util.List;
 
 public interface AnalyticsService {
 
+    void initialize();
+
+    void initialize(LocalDate startDate, LocalDate endDate);
+
     double getEdgeRatio();
 
     double getAverageProfit();

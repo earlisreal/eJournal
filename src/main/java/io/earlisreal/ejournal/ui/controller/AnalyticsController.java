@@ -26,6 +26,19 @@ public class AnalyticsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = ServiceProvider.getAnalyticsService();
+        service.initialize();
+
+        initializeStatistics();
+        initializeEquityChart();
+    }
+
+    public void applyDateFilter(LocalDate startDate, LocalDate endDate) {
+        service.initialize(startDate, endDate);
+        initializeStatistics();
+        initializeEquityChart();
+    }
+
+    public void initializeStatistics() {
         String ratio = "Edge Ratio: " + round(service.getEdgeRatio()) + "\n";
         String profit = "Average Profit: " + prettify(service.getAverageProfit()) + " (" + service.getAverageProfitPercentage() + "%)\n";
         String loss = "Average Loss: " + prettify(service.getAverageLoss()) + " (" + service.getAverageLossPercentage() + "%)\n";
@@ -33,11 +46,9 @@ public class AnalyticsController implements Initializable {
         String profitFactor = "Profit Factor: " + service.getProfitFactor() + "\n";
         String averageHoldingDays = "Average Holding Days: " + service.getAverageHoldingDays() + "\n";
         analyticsLabel.setText(ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
-
-        initializeEquityChart();
     }
 
-    private void initializeEquityChart() {
+    public void initializeEquityChart() {
         XYChart.Series<String, Double> series = new XYChart.Series<>();
         series.setName("Original Portfolio");
         series.setData(FXCollections.observableList(service.getEquityData()));

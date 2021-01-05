@@ -46,6 +46,8 @@ public class MainController implements Initializable {
     private BankTransactionService bankTransactionService;
     private TradeLogService tradeLogService;
 
+    private AnalyticsController analyticsController;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         bankTransactionService = ServiceProvider.getBankTransactionService();
@@ -53,7 +55,11 @@ public class MainController implements Initializable {
 
         try {
             log = FXMLLoader.load(getClass().getResource("/fxml/log.fxml"));
-            analytics = FXMLLoader.load(getClass().getResource("/fxml/analytics.fxml"));
+
+            FXMLLoader analyticsLoader = new FXMLLoader(getClass().getResource("/fxml/analytics.fxml"));
+            analytics = analyticsLoader.load();
+            analyticsController = analyticsLoader.getController();
+
             strategy = FXMLLoader.load(getClass().getResource("/fxml/strategy.fxml"));
             bankTransaction = FXMLLoader.load(getClass().getResource("/fxml/bank-transaction.fxml"));
         } catch (IOException e) {
@@ -118,7 +124,7 @@ public class MainController implements Initializable {
     }
 
     public void filterDate(ActionEvent event) {
-        
+        analyticsController.applyDateFilter(startDate.getValue(), endDate.getValue());
     }
     
 }

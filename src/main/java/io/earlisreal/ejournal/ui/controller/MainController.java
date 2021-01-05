@@ -17,6 +17,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -34,6 +35,8 @@ public class MainController implements Initializable {
 
     public GridPane grid;
     public StackPane stackPane;
+    public DatePicker startDate;
+    public DatePicker endDate;
 
     private Parent log;
     private Parent analytics;
@@ -114,4 +117,8 @@ public class MainController implements Initializable {
         }
     }
 
+    public void filterDate(ActionEvent event) {
+        
+    }
+    
 }

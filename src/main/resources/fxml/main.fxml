@@ -35,6 +35,9 @@
                <children>
                   <Button layoutX="85.0" layoutY="33.0" mnemonicParsing="false" text="Export" />
                   <Button layoutX="14.0" layoutY="33.0" mnemonicParsing="false" onAction="#importLogs" text="Import" />
+                  <DatePicker fx:id="startDate" layoutX="147.0" layoutY="33.0" promptText="Start Date" />
+                  <DatePicker fx:id="endDate" layoutX="328.0" layoutY="33.0" promptText="End Date" />
+                  <Button layoutX="512.0" layoutY="33.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
                </children></AnchorPane>
          </children>
       </GridPane>

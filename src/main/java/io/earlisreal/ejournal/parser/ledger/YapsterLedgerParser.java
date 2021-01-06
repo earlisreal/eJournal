@@ -8,6 +8,7 @@ import io.earlisreal.ejournal.util.CommonUtil;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,45 +24,54 @@ public class YapsterLedgerParser implements LedgerParser {
 
     @Override
     public void parse(List<String> lines) {
-        boolean flag = false;
-        for (String line : lines) {
+        for (int i = 0; i < lines.size(); ++i) {
+            if (lines.get(i).startsWith("BEGINNING BALANCE: ")) {
+                parse(lines, i + 2);
+                break;
+            }
+        }
+    }
+
+    private void parse(List<String> lines, int start) {
+        for (int i = start; i < lines.size(); ++i) {
+            String line = lines.get(i);
             if (line.equals(".")) {
-                if (flag) break;
-                flag = true;
-                continue;
+                break;
             }
 
-            if (flag) {
-                try {
-                    boolean isBuy = line.contains("BI#");
-                    int dateIndex = line.indexOf(' ');
-                    String dateStr = line.substring(0, dateIndex);
-                    LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MM/dd/uuuu"));
-                    int refIndex = dateIndex + 1;
-                    while (!Character.isDigit(line.charAt(refIndex))) {
-                        ++refIndex;
-                    }
-                    line = line.substring(refIndex);
-                    int refEndIndex = line.indexOf(' ');
-                    String refNo = line.substring(0, refEndIndex);
+            try {
+                boolean isBuy = line.contains("BI#");
+                int dateIndex = line.indexOf(' ');
+                if (Character.isLetter(line.charAt(0))) continue;
 
-                    line = line.substring(refEndIndex).trim();
-                    if (Character.isDigit(line.charAt(0))) {
-                        TradeLog tradeLog = parseTrade(line);
-                        tradeLog.setDate(date);
-                        tradeLog.setInvoiceNo(refNo);
-                        tradeLog.setBuy(isBuy);
-                        tradeLogs.add(tradeLog);
-                    }
-                    else {
-                        BankTransaction bankTransaction = parseBank(line);
-                        bankTransaction.setDate(date);
-                        bankTransaction.setReferenceNo(refNo);
-                        bankTransactions.add(bankTransaction);
-                    }
-                } catch (ParseException e) {
-                    CommonUtil.handleException(e);
+                String dateStr = line.substring(0, dateIndex);
+                LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MM/dd/uuuu"));
+                int refIndex = dateIndex + 1;
+                while (!Character.isDigit(line.charAt(refIndex))) {
+                    ++refIndex;
                 }
+                line = line.substring(refIndex);
+                int refEndIndex = line.indexOf(' ');
+                String refNo = line.substring(0, refEndIndex);
+
+                line = line.substring(refEndIndex).trim();
+                if (Character.isDigit(line.charAt(0))) {
+                    TradeLog tradeLog = parseTrade(line);
+                    tradeLog.setDate(date);
+                    tradeLog.setInvoiceNo(refNo);
+                    tradeLog.setBuy(isBuy);
+                    tradeLogs.add(tradeLog);
+                }
+                else {
+                    BankTransaction bankTransaction = parseBank(line);
+                    bankTransaction.setDate(date);
+                    bankTransaction.setReferenceNo(refNo);
+                    bankTransactions.add(bankTransaction);
+                }
+            } catch (DateTimeParseException ignore) {
+                // Dividend Just ignore
+            } catch (ParseException e) {
+                CommonUtil.handleException(e);
             }
         }
     }

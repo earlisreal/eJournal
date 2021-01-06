@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 public class EJournal {
@@ -50,10 +51,20 @@ public class EJournal {
             if (args[0].toLowerCase().contains(".pdf")) {
                 System.out.println("Parsing PDF file: " + args[0]);
 
-                String invoice = PDFParser.parse(args[0]);
-                Broker broker = CommonUtil.identifyBroker(invoice);
-                System.out.println(broker.getName() + " Broker Found");
-                System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
+                if (args[0].contains("SAP_")) {
+                    String ledger = PDFParser.parse(args[0]);
+                    Broker broker = CommonUtil.identifyBroker(ledger);
+                    LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
+                    parser.parse(Arrays.asList(ledger.split(System.lineSeparator())));
+                    System.out.println(parser.getBankTransactions());
+                    System.out.println(parser.getTradeLogs());
+                }
+                else {
+                    String invoice = PDFParser.parse(args[0]);
+                    Broker broker = CommonUtil.identifyBroker(invoice);
+                    System.out.println(broker.getName() + " Broker Found");
+                    System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
+                }
             }
 
             if (args[0].equals("ledger")) {
@@ -67,11 +78,7 @@ public class EJournal {
             }
 
             if (args[0].equals("email")) {
-                var list = new EmailParser().parse();
-                for (String record : list) {
-                    System.out.println(record);
-                    System.out.println("---");
-                }
+                new EmailParser().parse();
             }
 
             if (args[0].equals("stocks")) {

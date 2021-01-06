@@ -43,10 +43,9 @@ public class EmailParser {
                 .build();
     }
 
-    public List<String> parse() {
+    public void parse() {
         Instant syncTime = Instant.now();
         CacheService cacheService = ServiceProvider.getCacheService();
-        List<String> records = new ArrayList<>();
         try {
             String email = service.users().getProfile(USER).execute().getEmailAddress();
             Instant lastQuery = cacheService.getLastSync(email);
@@ -82,8 +81,6 @@ public class EmailParser {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return records;
     }
 
     private Credential getCredentials(NetHttpTransport httpTransport) throws IOException {

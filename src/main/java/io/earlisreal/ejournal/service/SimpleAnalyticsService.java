@@ -16,6 +16,9 @@ public class SimpleAnalyticsService implements AnalyticsService {
     private final TradeLogService tradeLogService;
     private final BankTransactionService bankTransactionService;
 
+    private List<TradeSummary> allSummaries;
+    private List<TradeSummary> allWins;
+    private List<TradeSummary> allLosses;
     private List<TradeSummary> summaries;
     private List<TradeSummary> wins;
     private List<TradeSummary> losses;
@@ -27,6 +30,10 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public void initialize() {
+        allSummaries = tradeLogService.getAllTradeSummaries();
+        allWins = allSummaries.stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
+        allLosses = allSummaries.stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
+
         summaries = tradeLogService.getTradeSummaries();
         wins = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
         losses = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
@@ -59,7 +66,7 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public double getAccuracy() {
-        return round((double) wins.size() / tradeLogService.getTradeSummaries().size() * 100);
+        return round((double) wins.size() / summaries.size() * 100);
     }
 
     @Override
@@ -76,7 +83,6 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public List<XYChart.Data<String, Double>> getEquityData() {
-        var summaries = tradeLogService.getTradeSummaries();
         var transactions = bankTransactionService.getAll();
         var dateMap = summaries.stream()
                 .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
@@ -106,6 +112,16 @@ public class SimpleAnalyticsService implements AnalyticsService {
     @Override
     public List<TradeSummary> getWins() {
         return wins;
+    }
+
+    @Override
+    public List<TradeSummary> getAllWins() {
+        return allWins;
+    }
+
+    @Override
+    public List<TradeSummary> getAllLosses() {
+        return allLosses;
     }
 
 }

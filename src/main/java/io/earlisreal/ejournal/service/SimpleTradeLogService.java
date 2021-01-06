@@ -56,8 +56,16 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
+    public List<TradeSummary> getAllTradeSummaries() {
+        return getSummaries(getAllLogs());
+    }
+
+    @Override
     public List<TradeSummary> getTradeSummaries() {
-        var logs = getLogs();
+        return getSummaries(getLogs());
+    }
+
+    private List<TradeSummary> getSummaries(List<TradeLog> logs) {
         logs.sort(Comparator.comparing(TradeLog::getDate).thenComparing(tradeLog -> !tradeLog.isBuy()));
         List<TradeSummary> summaries = new ArrayList<>();
         Map<String, TradeSummary> trades = new HashMap<>();

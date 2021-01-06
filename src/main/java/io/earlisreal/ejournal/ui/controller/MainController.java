@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
+import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
@@ -52,6 +53,7 @@ public class MainController implements Initializable {
     private ObservableList<Node> children;
     private BankTransactionService bankTransactionService;
     private TradeLogService tradeLogService;
+    private AnalyticsService analyticsService;
     private AnalyticsController analyticsController;
     private LogsController logController;
 
@@ -59,6 +61,7 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         bankTransactionService = ServiceProvider.getBankTransactionService();
         tradeLogService = ServiceProvider.getTradeLogService();
+        analyticsService = ServiceProvider.getAnalyticsService();
 
         try {
             FXMLLoader logLoader = new FXMLLoader(getClass().getResource("/fxml/log.fxml"));
@@ -83,8 +86,11 @@ public class MainController implements Initializable {
     }
 
     private void initializeStatistics() {
-        String trades = "Total Trades: " + tradeLogService.getAllLogs().size() + "\n";
-        statisticsLabel.setText(trades);
+        String separator = System.lineSeparator();
+        String trades = "Total Trades: " + tradeLogService.getAllTradeSummaries().size() + separator;
+        String wins = "Total Wins: " + analyticsService.getAllWins().size() + separator;
+        String losses = "Total Losses: " + analyticsService.getAllLosses().size() + separator;
+        statisticsLabel.setText(trades + wins + losses);
     }
 
     public void showAnalytics(ActionEvent event) {

@@ -7,7 +7,6 @@ import javafx.scene.chart.XYChart;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.round;
@@ -16,14 +15,21 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     private final TradeLogService tradeLogService;
     private final BankTransactionService bankTransactionService;
-    private final Predicate<TradeSummary> win;
-    private final Predicate<TradeSummary> loss;
+
+    private List<TradeSummary> summaries;
+    private List<TradeSummary> wins;
+    private List<TradeSummary> losses;
 
     SimpleAnalyticsService(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
         this.tradeLogService = tradeLogService;
         this.bankTransactionService = bankTransactionService;
-        win = t -> t.getProfit() >= 0;
-        loss = t -> t.getProfit() < 0;
+    }
+
+    @Override
+    public void initialize() {
+        summaries = tradeLogService.getTradeSummaries();
+        wins = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
+        losses = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
     }
 
     @Override
@@ -33,40 +39,34 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public double getAverageProfit() {
-        return tradeLogService.getTradeSummaries().stream()
-                .filter(t -> t.getProfit() >= 0).collect(Collectors.averagingDouble(TradeSummary::getProfit));
+        return summaries.stream().filter(t -> t.getProfit() >= 0).collect(Collectors.averagingDouble(TradeSummary::getProfit));
     }
 
     @Override
     public double getAverageLoss() {
-        return tradeLogService.getTradeSummaries().stream()
-                .filter(t -> t.getProfit() < 0).collect(Collectors.averagingDouble(TradeSummary::getProfit));
+        return losses.stream().collect(Collectors.averagingDouble(TradeSummary::getProfit));
     }
 
     @Override
     public double getAverageProfitPercentage() {
-        return round(tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfitPercentage() >= 0)
-                .collect(Collectors.averagingDouble(TradeSummary::getProfitPercentage)));
+        return round(wins.stream().collect(Collectors.averagingDouble(TradeSummary::getProfitPercentage)));
     }
 
     @Override
     public double getAverageLossPercentage() {
-        return round(tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfitPercentage() < 0)
-                .collect(Collectors.averagingDouble(TradeSummary::getProfitPercentage)));
+        return round(losses.stream().collect(Collectors.averagingDouble(TradeSummary::getProfitPercentage)));
     }
 
     @Override
     public double getAccuracy() {
-        var summaries = tradeLogService.getTradeSummaries();
-        return round((double) summaries.stream().filter(win).count() / summaries.size() * 100);
+        return round((double) wins.size() / tradeLogService.getTradeSummaries().size() * 100);
     }
 
     @Override
     public double getProfitFactor() {
-        var summaries = tradeLogService.getTradeSummaries();
-        double profits = summaries.stream().filter(win).mapToDouble(TradeSummary::getProfit).sum();
-        double losses = summaries.stream().filter(loss).mapToDouble(TradeSummary::getProfit).sum();
-        return round(profits / losses * -1);
+        double profits = wins.stream().mapToDouble(TradeSummary::getProfit).sum();
+        double mistakes = losses.stream().mapToDouble(TradeSummary::getProfit).sum();
+        return round(profits / mistakes * -1);
     }
 
     @Override
@@ -91,6 +91,21 @@ public class SimpleAnalyticsService implements AnalyticsService {
             data.add(new XYChart.Data<>(entry.getKey().toString(), runningSum));
         }
         return data;
+    }
+
+    @Override
+    public List<TradeSummary> getSummaries() {
+        return summaries;
+    }
+
+    @Override
+    public List<TradeSummary> getLosses() {
+        return losses;
+    }
+
+    @Override
+    public List<TradeSummary> getWins() {
+        return wins;
     }
 
 }

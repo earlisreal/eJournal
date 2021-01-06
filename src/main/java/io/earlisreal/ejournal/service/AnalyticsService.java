@@ -9,6 +9,12 @@ public interface AnalyticsService {
 
     void initialize();
 
+    double getTotalEquity();
+
+    double getTotalProfit();
+
+    double getTotalProfitPercentage();
+
     double getEdgeRatio();
 
     double getAverageProfit();

@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -16,12 +17,13 @@ public class SimpleAnalyticsService implements AnalyticsService {
     private final TradeLogService tradeLogService;
     private final BankTransactionService bankTransactionService;
 
-    private List<TradeSummary> allSummaries;
     private List<TradeSummary> allWins;
     private List<TradeSummary> allLosses;
     private List<TradeSummary> summaries;
     private List<TradeSummary> wins;
     private List<TradeSummary> losses;
+    private TreeMap<LocalDate, Double> dateMap;
+    private double totalEquity;
 
     SimpleAnalyticsService(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
         this.tradeLogService = tradeLogService;
@@ -30,13 +32,44 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public void initialize() {
-        allSummaries = tradeLogService.getAllTradeSummaries();
+        List<TradeSummary> allSummaries = tradeLogService.getAllTradeSummaries();
         allWins = allSummaries.stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
         allLosses = allSummaries.stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
 
         summaries = tradeLogService.getTradeSummaries();
         wins = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
         losses = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
+
+        var transactions = bankTransactionService.getAll();
+        dateMap = summaries.stream()
+                .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
+        for (BankTransaction transaction : transactions) {
+            dateMap.merge(transaction.getDate(), transaction.getAmount(), Double::sum);
+        }
+
+        totalEquity = 0;
+        for (double value : dateMap.values()) {
+            totalEquity += value;
+        }
+    }
+
+    @Override
+    public double getTotalEquity() {
+        return totalEquity;
+    }
+
+    @Override
+    public double getTotalProfit() {
+        double total = 0;
+        for (TradeSummary tradeSummary : tradeLogService.getTradeSummaries()) {
+            total += tradeSummary.getProfit();
+        }
+        return total;
+    }
+
+    @Override
+    public double getTotalProfitPercentage() {
+        return round(getTotalProfit() / getTotalEquity() * 100);
     }
 
     @Override
@@ -83,13 +116,6 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public List<XYChart.Data<String, Double>> getEquityData() {
-        var transactions = bankTransactionService.getAll();
-        var dateMap = summaries.stream()
-                .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
-        for (BankTransaction transaction : transactions) {
-            dateMap.merge(transaction.getDate(), transaction.getAmount(), Double::sum);
-        }
-
         List<XYChart.Data<String, Double>> data = new ArrayList<>();
         double runningSum = 0;
         for (var entry : dateMap.entrySet()) {

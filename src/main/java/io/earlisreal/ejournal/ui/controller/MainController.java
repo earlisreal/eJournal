@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -130,5 +132,14 @@ public class MainController implements Initializable {
         analyticsController.reload();
         logController.reload();
     }
-    
+
+    public void syncEmail(ActionEvent event) {
+        try {
+            new EmailParser().parse();
+            System.out.println("Email Successfully synced");
+        } catch (GeneralSecurityException | IOException e) {
+            CommonUtil.handleException(e);
+        }
+    }
+
 }

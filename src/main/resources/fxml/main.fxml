@@ -40,7 +40,7 @@
                   <DatePicker fx:id="startDate" layoutX="217.0" layoutY="33.0" promptText="Start Date" />
                   <DatePicker fx:id="endDate" layoutX="398.0" layoutY="33.0" promptText="End Date" />
                   <Button layoutX="582.0" layoutY="33.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
-                  <Button layoutX="130.0" layoutY="33.0" mnemonicParsing="false" text="Email Sync" />
+                  <Button layoutX="130.0" layoutY="33.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
                </children></AnchorPane>
          </children>
       </GridPane>

@@ -25,7 +25,6 @@ public class AnalyticsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = ServiceProvider.getAnalyticsService();
-        service.initialize();
 
         reload();
     }
@@ -41,7 +40,7 @@ public class AnalyticsController implements Initializable {
         String loss = "Average Loss: " + prettify(service.getAverageLoss()) + " (" + service.getAverageLossPercentage() + "%)\n";
         String accuracy = "Accuracy: " + service.getAccuracy() + "%\n";
         String profitFactor = "Profit Factor: " + service.getProfitFactor() + "\n";
-        String averageHoldingDays = "Average Holding Days: " + service.getAverageHoldingDays() + "\n";
+        String averageHoldingDays = "Average Holding Days: " + prettify(service.getAverageHoldingDays()) + "\n";
         analyticsLabel.setText(ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
     }
 

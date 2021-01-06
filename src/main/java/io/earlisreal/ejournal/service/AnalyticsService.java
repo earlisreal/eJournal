@@ -2,14 +2,9 @@ package io.earlisreal.ejournal.service;
 
 import javafx.scene.chart.XYChart;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface AnalyticsService {
-
-    void initialize();
-
-    void initialize(LocalDate startDate, LocalDate endDate);
 
     double getEdgeRatio();
 

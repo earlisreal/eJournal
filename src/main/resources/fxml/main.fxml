@@ -48,6 +48,7 @@
          <children>
             <PieChart layoutX="11.0" layoutY="309.0" prefHeight="122.0" prefWidth="121.0" />
             <Label layoutX="71.0" layoutY="220.0" text="Some Statistics" />
+            <Label fx:id="statusLabel" layoutX="159.0" layoutY="737.0" text="All is Well" />
          </children>
       </AnchorPane>
    </children>

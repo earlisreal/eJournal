@@ -4,7 +4,6 @@ import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -20,29 +19,11 @@ public class SimpleAnalyticsService implements AnalyticsService {
     private final Predicate<TradeSummary> win;
     private final Predicate<TradeSummary> loss;
 
-    List<TradeSummary> summaries;
-    List<BankTransaction> transactions;
-
     SimpleAnalyticsService(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
         this.tradeLogService = tradeLogService;
         this.bankTransactionService = bankTransactionService;
         win = t -> t.getProfit() >= 0;
         loss = t -> t.getProfit() < 0;
-    }
-
-    @Override
-    public void initialize(LocalDate startDate, LocalDate endDate) {
-        initialize();
-        summaries.removeIf(tradeSummary -> tradeSummary.getOpenDate().isBefore(startDate)
-                || tradeSummary.getCloseDate().isAfter(endDate));
-        transactions.removeIf(bankTransaction -> bankTransaction.getDate().isBefore(startDate)
-                || bankTransaction.getDate().isAfter(endDate));
-    }
-
-    @Override
-    public void initialize() {
-        summaries = tradeLogService.getTradeSummaries();
-        transactions = bankTransactionService.getAll();
     }
 
     @Override
@@ -52,13 +33,13 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public double getAverageProfit() {
-        return summaries.stream()
+        return tradeLogService.getTradeSummaries().stream()
                 .filter(t -> t.getProfit() >= 0).collect(Collectors.averagingDouble(TradeSummary::getProfit));
     }
 
     @Override
     public double getAverageLoss() {
-        return summaries.stream()
+        return tradeLogService.getTradeSummaries().stream()
                 .filter(t -> t.getProfit() < 0).collect(Collectors.averagingDouble(TradeSummary::getProfit));
     }
 
@@ -76,11 +57,13 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public double getAccuracy() {
+        var summaries = tradeLogService.getTradeSummaries();
         return round((double) summaries.stream().filter(win).count() / summaries.size() * 100);
     }
 
     @Override
     public double getProfitFactor() {
+        var summaries = tradeLogService.getTradeSummaries();
         double profits = summaries.stream().filter(win).mapToDouble(TradeSummary::getProfit).sum();
         double losses = summaries.stream().filter(loss).mapToDouble(TradeSummary::getProfit).sum();
         return round(profits / losses * -1);
@@ -93,6 +76,8 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public List<XYChart.Data<String, Double>> getEquityData() {
+        var summaries = tradeLogService.getTradeSummaries();
+        var transactions = bankTransactionService.getAll();
         var dateMap = summaries.stream()
                 .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
         for (BankTransaction transaction : transactions) {
@@ -100,8 +85,10 @@ public class SimpleAnalyticsService implements AnalyticsService {
         }
 
         List<XYChart.Data<String, Double>> data = new ArrayList<>();
+        double runningSum = 0;
         for (var entry : dateMap.entrySet()) {
-            data.add(new XYChart.Data<>(entry.getKey().toString(), entry.getValue()));
+            runningSum += entry.getValue();
+            data.add(new XYChart.Data<>(entry.getKey().toString(), runningSum));
         }
         return data;
     }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.text.*?>
 <?import javafx.scene.chart.*?>
 <?import java.lang.*?>
 <?import javafx.scene.control.*?>
@@ -28,8 +29,8 @@
           <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
         </columnConstraints>
         <rowConstraints>
-          <RowConstraints maxHeight="295.0" minHeight="10.0" prefHeight="96.0" vgrow="SOMETIMES" />
-          <RowConstraints maxHeight="678.0" minHeight="10.0" prefHeight="672.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="295.0" minHeight="10.0" prefHeight="74.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="695.0" minHeight="10.0" prefHeight="694.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
@@ -46,9 +47,14 @@
       </GridPane>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="2">
          <children>
-            <PieChart layoutX="11.0" layoutY="309.0" prefHeight="122.0" prefWidth="121.0" />
-            <Label layoutX="71.0" layoutY="220.0" text="Some Statistics" />
+            <PieChart fx:id="battingChart" layoutX="11.0" layoutY="309.0" prefHeight="122.0" prefWidth="121.0" title="Batting Average" />
+            <Label fx:id="statisticsLabel" layoutX="71.0" layoutY="220.0" text="Some Statistics" />
             <Label fx:id="statusLabel" layoutX="159.0" layoutY="737.0" text="All is Well" />
+            <Label layoutX="49.0" layoutY="14.0" text="All Time Statistics" textAlignment="CENTER">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
          </children>
       </AnchorPane>
    </children>

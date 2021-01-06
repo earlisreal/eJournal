@@ -99,6 +99,11 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
+    public List<TradeLog> getAllLogs() {
+        return allLogs;
+    }
+
+    @Override
     public void applyFilter(LocalDate startDate, LocalDate endDate) {
         logs.clear();
         logs.addAll(allLogs);

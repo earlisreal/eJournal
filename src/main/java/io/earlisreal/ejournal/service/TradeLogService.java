@@ -18,4 +18,6 @@ public interface TradeLogService {
 
     List<TradeLog> getLogs();
 
+    List<TradeLog> getAllLogs();
+
 }

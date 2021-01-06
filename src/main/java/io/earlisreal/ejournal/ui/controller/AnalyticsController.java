@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
@@ -21,10 +22,12 @@ public class AnalyticsController implements Initializable {
     public LineChart<String, Double> equityChart;
 
     private AnalyticsService service;
+    private TradeLogService tradeLogService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = ServiceProvider.getAnalyticsService();
+        tradeLogService = ServiceProvider.getTradeLogService();
 
         reload();
     }
@@ -41,7 +44,8 @@ public class AnalyticsController implements Initializable {
         String accuracy = "Accuracy: " + service.getAccuracy() + "%\n";
         String profitFactor = "Profit Factor: " + service.getProfitFactor() + "\n";
         String averageHoldingDays = "Average Holding Days: " + prettify(service.getAverageHoldingDays()) + "\n";
-        analyticsLabel.setText(ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
+        String tradesTaken = "Trades Taken: " + prettify(tradeLogService.getLogs().size()) + "\n";
+        analyticsLabel.setText(tradesTaken + ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
     }
 
     private void initializeEquityChart() {

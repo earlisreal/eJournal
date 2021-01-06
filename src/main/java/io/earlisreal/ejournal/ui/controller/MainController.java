@@ -17,8 +17,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -39,6 +41,9 @@ public class MainController implements Initializable {
     public StackPane stackPane;
     public DatePicker startDate;
     public DatePicker endDate;
+    public Label statusLabel;
+    public Label statisticsLabel;
+    public PieChart battingChart;
 
     private Parent log;
     private Parent analytics;
@@ -72,7 +77,14 @@ public class MainController implements Initializable {
         }
 
         children = stackPane.getChildren();
-        children.add(log);
+        children.add(analytics);
+
+        initializeStatistics();
+    }
+
+    private void initializeStatistics() {
+        String trades = "Total Trades: " + tradeLogService.getAllLogs().size() + "\n";
+        statisticsLabel.setText(trades);
     }
 
     public void showAnalytics(ActionEvent event) {

@@ -38,6 +38,10 @@ public class TradeSummary {
         totalSell += log.getNetAmount();
     }
 
+    public double getPosition() {
+        return getAverageBuy() * position;
+    }
+
     public double getAverageBuy() {
         return totalBuy / position;
     }
@@ -72,10 +76,6 @@ public class TradeSummary {
 
     public LocalDate getOpenDate() {
         return openDate;
-    }
-
-    public int getPosition() {
-        return position;
     }
 
     public LocalDate getCloseDate() {

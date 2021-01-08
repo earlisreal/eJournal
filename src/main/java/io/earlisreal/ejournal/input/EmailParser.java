@@ -34,13 +34,27 @@ public class EmailParser {
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
+    private static EmailParser instance;
+
     private final Gmail service;
 
-    public EmailParser() throws GeneralSecurityException, IOException {
+    private EmailParser() throws GeneralSecurityException, IOException {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
         service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
                 .setApplicationName("eJournal")
                 .build();
+    }
+
+    public static EmailParser getInstance() throws GeneralSecurityException, IOException {
+        if (instance == null) {
+            synchronized (EmailParser.class) {
+                if (instance == null) {
+                    instance = new EmailParser();
+                }
+            }
+        }
+
+        return instance;
     }
 
     public void parse() {

@@ -78,7 +78,7 @@ public class EJournal {
             }
 
             if (args[0].equals("email")) {
-                new EmailParser().parse();
+                EmailParser.getInstance().parse();
             }
 
             if (args[0].equals("stocks")) {

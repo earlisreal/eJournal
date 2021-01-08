@@ -49,12 +49,13 @@
          <children>
             <PieChart fx:id="battingChart" layoutX="11.0" layoutY="309.0" prefHeight="122.0" prefWidth="121.0" title="Batting Average" />
             <Label fx:id="statisticsLabel" layoutX="71.0" layoutY="220.0" text="Some Statistics" />
-            <Label fx:id="statusLabel" layoutX="159.0" layoutY="737.0" text="All is Well" />
+            <Label fx:id="statusLabel" layoutX="159.0" layoutY="746.0" text="All is Well" textAlignment="CENTER" />
             <Label layoutX="49.0" layoutY="14.0" text="All Time Statistics" textAlignment="CENTER">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
+            <ProgressIndicator fx:id="statusProgressIndicator" layoutX="139.0" layoutY="745.0" prefHeight="20.0" prefWidth="20.0" visible="false" />
          </children>
       </AnchorPane>
    </children>

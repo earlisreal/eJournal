@@ -9,6 +9,7 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.ui.service.EmailSyncService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
@@ -22,6 +23,7 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -45,6 +47,7 @@ public class MainController implements Initializable {
     public Label statusLabel;
     public Label statisticsLabel;
     public PieChart battingChart;
+    public ProgressIndicator statusProgressIndicator;
 
     private Parent log;
     private Parent analytics;
@@ -152,12 +155,16 @@ public class MainController implements Initializable {
     }
 
     public void syncEmail(ActionEvent event) {
-        try {
-            new EmailParser().parse();
-            System.out.println("Email Successfully synced");
-        } catch (GeneralSecurityException | IOException e) {
-            CommonUtil.handleException(e);
-        }
+        EmailSyncService emailSyncService = new EmailSyncService();
+        statusProgressIndicator.setVisible(true);
+        statusLabel.setText("Syncing");
+        emailSyncService.start();
+
+        emailSyncService.setOnSucceeded(workerStateEvent -> {
+            statusLabel.setText("All is well");
+            statusProgressIndicator.setVisible(false);
+            // TODO : Reload everything if something is added
+        });
     }
 
 }

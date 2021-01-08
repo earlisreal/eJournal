@@ -4,16 +4,14 @@ import io.earlisreal.ejournal.input.EmailParser;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 
-public class EmailSyncService extends Service<Void> {
+public class EmailSyncService extends Service<Integer> {
 
     @Override
-    protected Task<Void> createTask() {
+    protected Task<Integer> createTask() {
         return new Task<>() {
             @Override
-            protected Void call() throws Exception {
-                EmailParser.getInstance().parse();
-
-                return null;
+            protected Integer call() throws Exception {
+                return EmailParser.getInstance().parse();
             }
         };
     }

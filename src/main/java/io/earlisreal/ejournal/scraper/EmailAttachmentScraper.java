@@ -33,13 +33,13 @@ public class EmailAttachmentScraper {
         this.bankTransactionService = bankTransactionService;
     }
 
-    public void scrape(Gmail gmail, String messageId) {
+    public int scrape(Gmail gmail, String messageId) {
         Message message;
         try {
             message = gmail.users().messages().get(USER, messageId).execute();
         } catch (IOException e) {
             CommonUtil.handleException(e);
-            return;
+            return 0;
         }
 
         List<TradeLog> tradeLogs = new ArrayList<>();
@@ -71,8 +71,10 @@ public class EmailAttachmentScraper {
             }
         }
 
-        tradeLogService.insert(tradeLogs);
-        bankTransactionService.insert(bankTransactions);
+        int res = 0;
+        res += tradeLogService.insert(tradeLogs);
+        res += bankTransactionService.insert(bankTransactions);
+        return res;
     }
 
     private List<MessagePart> getAttachments(MessagePart messagePart) {

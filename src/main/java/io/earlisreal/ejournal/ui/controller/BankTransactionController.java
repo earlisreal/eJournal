@@ -66,6 +66,10 @@ public class BankTransactionController implements Initializable {
         showDialog();
     }
 
+    public void reload() {
+        loadBankTransactions();
+    }
+
     public void loadBankTransactions() {
         bankTable.setItems(FXCollections.observableList(service.getAll()));
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));

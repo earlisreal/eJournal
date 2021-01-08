@@ -9,11 +9,12 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
-import io.earlisreal.ejournal.ui.service.EmailSyncService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -34,7 +35,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -59,6 +59,7 @@ public class MainController implements Initializable {
     private AnalyticsService analyticsService;
     private AnalyticsController analyticsController;
     private LogsController logController;
+    private BankTransactionController bankTransactionController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -76,7 +77,10 @@ public class MainController implements Initializable {
             analyticsController = analyticsLoader.getController();
 
             strategy = FXMLLoader.load(getClass().getResource("/fxml/strategy.fxml"));
-            bankTransaction = FXMLLoader.load(getClass().getResource("/fxml/bank-transaction.fxml"));
+
+            FXMLLoader bankLoader = new FXMLLoader(getClass().getResource("/fxml/bank-transaction.fxml"));
+            bankTransaction = bankLoader.load();
+            bankTransactionController = bankLoader.getController();
         } catch (IOException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -125,6 +129,7 @@ public class MainController implements Initializable {
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;
 
+        int res = 0;
         for (File file : files) {
             String filename = file.getName();
             if (filename.endsWith(".txt")) {
@@ -133,8 +138,8 @@ public class MainController implements Initializable {
                     Broker broker = CommonUtil.identifyBroker(lines.get(0));
                     LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
                     parser.parse(lines);
-                    tradeLogService.insert(parser.getTradeLogs());
-                    bankTransactionService.insert(parser.getBankTransactions());
+                    res += tradeLogService.insert(parser.getTradeLogs());
+                    res += bankTransactionService.insert(parser.getBankTransactions());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -143,8 +148,12 @@ public class MainController implements Initializable {
                 String invoice = PDFParser.parse(file);
                 Broker broker = CommonUtil.identifyBroker(invoice);
                 TradeLog log = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
-                tradeLogService.insert(List.of(log));
+                res += tradeLogService.insert(List.of(log));
             }
+        }
+
+        if (res > 0) {
+            refresh();
         }
     }
 
@@ -155,16 +164,35 @@ public class MainController implements Initializable {
     }
 
     public void syncEmail(ActionEvent event) {
-        EmailSyncService emailSyncService = new EmailSyncService();
+        Service<Integer> service = new Service<>() {
+            @Override
+            protected Task<Integer> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Integer call() throws Exception {
+                        return EmailParser.getInstance().parse();
+                    }
+                };
+            }
+        };
+
         statusProgressIndicator.setVisible(true);
         statusLabel.setText("Syncing");
-        emailSyncService.start();
+        service.start();
 
-        emailSyncService.setOnSucceeded(workerStateEvent -> {
+        service.setOnSucceeded(workerStateEvent -> {
             statusLabel.setText("All is well");
             statusProgressIndicator.setVisible(false);
-            // TODO : Reload everything if something is added
+            if ((int) workerStateEvent.getSource().getValue() > 0) {
+                refresh();
+            }
         });
+    }
+
+    private void refresh() {
+        logController.reload();
+        analyticsController.reload();
+        bankTransactionController.reload();
     }
 
 }

@@ -25,7 +25,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import static io.earlisreal.ejournal.scraper.EmailAttachmentScraper.USER;
@@ -57,9 +56,10 @@ public class EmailParser {
         return instance;
     }
 
-    public void parse() {
+    public int parse() {
         Instant syncTime = Instant.now();
         CacheService cacheService = ServiceProvider.getCacheService();
+        int res = 0;
         try {
             String email = service.users().getProfile(USER).execute().getEmailAddress();
             Instant lastQuery = cacheService.getLastSync(email);
@@ -83,7 +83,7 @@ public class EmailParser {
             EmailAttachmentScraper scraper = EmailAttachmentScraper.getInstance();
             var messages = messageResponse.getMessages();
             if (messages != null) {
-                messages.parallelStream().forEach(m -> scraper.scrape(service, m.getId()));
+                res = messages.parallelStream().reduce(0, (i, m) -> i + scraper.scrape(service, m.getId()), Integer::sum);
             }
 
             if (lastQuery == null) {
@@ -95,6 +95,7 @@ public class EmailParser {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return res;
     }
 
     private Credential getCredentials(NetHttpTransport httpTransport) throws IOException {

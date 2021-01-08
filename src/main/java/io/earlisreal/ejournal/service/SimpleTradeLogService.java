@@ -43,10 +43,11 @@ public class SimpleTradeLogService implements TradeLogService {
 
     @Override
     public int insert(List<TradeLog> tradeLogs) {
-        int inserted = 0;
-        if (!tradeLogs.isEmpty()) {
-            inserted = tradeLogDAO.insertLog(tradeLogs);
+        if (tradeLogs.isEmpty()) {
+            return 0;
         }
+
+        int inserted = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(inserted + " Records Inserted");
 
         logs.clear();

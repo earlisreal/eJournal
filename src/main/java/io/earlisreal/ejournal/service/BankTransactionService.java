@@ -8,7 +8,7 @@ public interface BankTransactionService {
 
     List<BankTransaction> getAll();
 
-    void insert(List<BankTransaction> bankTransactions);
+    int insert(List<BankTransaction> bankTransactions);
 
     boolean delete(int id);
 

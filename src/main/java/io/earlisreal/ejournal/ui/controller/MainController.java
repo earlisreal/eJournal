@@ -212,6 +212,16 @@ public class MainController implements Initializable {
         });
     }
 
+    public void clearData(ActionEvent event) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure? All data will be cleared.", ButtonType.YES, ButtonType.NO);
+        ButtonType result = alert.showAndWait().orElse(ButtonType.NO);
+        if (ButtonType.NO.equals(result)) {
+            event.consume();
+        }
+
+        refresh();
+    }
+
     private void refresh() {
         logController.reload();
         analyticsController.reload();

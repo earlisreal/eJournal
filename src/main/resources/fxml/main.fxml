@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="158.0" />
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="646.0" />
@@ -45,8 +46,8 @@
       </GridPane>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
-            <PieChart fx:id="battingChart" layoutX="11.0" layoutY="309.0" prefHeight="122.0" prefWidth="121.0" title="Batting Average" />
-            <Label fx:id="statisticsLabel" layoutX="71.0" layoutY="220.0" text="Some Statistics" />
+            <PieChart fx:id="battingChart" layoutX="11.0" layoutY="563.0" prefHeight="122.0" prefWidth="121.0" title="Accuracy" />
+            <Label fx:id="statisticsLabel" layoutX="71.0" layoutY="407.0" text="Some Statistics" />
             <Label fx:id="statusLabel" layoutX="159.0" layoutY="714.0" text="All is Well" textAlignment="CENTER" />
             <Label layoutX="49.0" layoutY="14.0" text="All Time Statistics" textAlignment="CENTER">
                <font>
@@ -54,13 +55,19 @@
                </font>
             </Label>
             <ProgressIndicator fx:id="statusProgressIndicator" layoutX="139.0" layoutY="713.0" prefHeight="20.0" prefWidth="20.0" visible="false" />
+            <TableView layoutX="11.0" layoutY="39.0" prefHeight="270.0" prefWidth="200.0">
+              <columns>
+                <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Analytics" />
+                <TableColumn editable="false" prefWidth="103.0" resizable="false" sortable="false" text="Value" />
+              </columns>
+            </TableView>
          </children>
       </AnchorPane>
       <MenuBar prefHeight="25.0" GridPane.columnSpan="2147483647" GridPane.valignment="TOP">
         <menus>
           <Menu mnemonicParsing="false" text="File">
             <items>
-              <MenuItem mnemonicParsing="false" text="Close" />
+              <MenuItem mnemonicParsing="false" onAction="#clearData" text="Reset Data" />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Import">

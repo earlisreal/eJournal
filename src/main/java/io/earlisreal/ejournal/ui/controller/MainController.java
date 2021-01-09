@@ -145,6 +145,7 @@ public class MainController implements Initializable {
                 }
             }
             if (filename.toLowerCase().endsWith(".pdf")) {
+                // TODO : Replace with import ledger / invoice button
                 String invoice = PDFParser.parse(file);
                 Broker broker = CommonUtil.identifyBroker(invoice);
                 TradeLog log = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);

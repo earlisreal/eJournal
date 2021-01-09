@@ -11,6 +11,9 @@ public interface LedgerParserFactory {
         if (Broker.YAPSTER == broker) {
             return new YapsterLedgerParser();
         }
+        if (Broker.AAA == broker) {
+            return new AAALedgerParser();
+        }
 
         throw new RuntimeException("Ledger Parser of Broker name " + broker + " is not supported");
     }

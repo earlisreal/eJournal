@@ -13,8 +13,8 @@
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="221.0" />
    </columnConstraints>
    <rowConstraints>
-      <RowConstraints maxHeight="104.0" minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
-      <RowConstraints maxHeight="748.0" minHeight="10.0" prefHeight="733.0" vgrow="SOMETIMES" />
+      <RowConstraints maxHeight="104.0" minHeight="10.0" prefHeight="24.0" vgrow="SOMETIMES" />
+      <RowConstraints maxHeight="748.0" minHeight="10.0" prefHeight="744.0" vgrow="SOMETIMES" />
    </rowConstraints>
    <children>
       <AnchorPane prefHeight="600.0" prefWidth="800.0" GridPane.rowIndex="1">
@@ -37,12 +37,12 @@
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
             <AnchorPane prefHeight="200.0" prefWidth="200.0">
                <children>
-                  <Button layoutX="73.0" layoutY="33.0" mnemonicParsing="false" text="Export" />
-                  <Button layoutX="14.0" layoutY="33.0" mnemonicParsing="false" onAction="#importLogs" text="Import" />
-                  <DatePicker fx:id="startDate" layoutX="217.0" layoutY="33.0" promptText="Start Date" />
-                  <DatePicker fx:id="endDate" layoutX="398.0" layoutY="33.0" promptText="End Date" />
-                  <Button layoutX="582.0" layoutY="33.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
-                  <Button layoutX="130.0" layoutY="33.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
+                  <Button layoutX="75.0" layoutY="17.0" mnemonicParsing="false" text="Export" />
+                  <Button layoutX="16.0" layoutY="17.0" mnemonicParsing="false" onAction="#importLogs" text="Import" />
+                  <DatePicker fx:id="startDate" layoutX="219.0" layoutY="17.0" promptText="Start Date" />
+                  <DatePicker fx:id="endDate" layoutX="400.0" layoutY="17.0" promptText="End Date" />
+                  <Button layoutX="584.0" layoutY="17.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
+                  <Button layoutX="132.0" layoutY="17.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
                </children></AnchorPane>
          </children>
       </GridPane>

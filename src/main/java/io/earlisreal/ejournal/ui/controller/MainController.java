@@ -21,10 +21,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -35,6 +32,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -120,10 +118,31 @@ public class MainController implements Initializable {
         children.add(strategy);
     }
 
-    public void importLogs(ActionEvent event) {
+    public void importInvoice(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open Ledger / Invoice");
-        Stage stage = (Stage) ((Button) event.getSource()).getScene().getWindow();
+        fileChooser.setTitle("Open Invoice");
+        Stage stage = (Stage) grid.getScene().getWindow();
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        var files = fileChooser.showOpenMultipleDialog(stage);
+        if (files == null) return;
+
+        int res = 0;
+        for (File file : files) {
+            String invoice = PDFParser.parse(file);
+            Broker broker = CommonUtil.identifyBroker(invoice);
+            TradeLog log = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
+            res += tradeLogService.insert(List.of(log));
+        }
+
+        if (res > 0) {
+            refresh();
+        }
+    }
+
+    public void importLedger(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Invoice");
+        Stage stage = (Stage) grid.getScene().getWindow();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text File", "*.txt"),
                 new FileChooser.ExtensionFilter("PDF", "*.pdf"));
         var files = fileChooser.showOpenMultipleDialog(stage);
@@ -132,25 +151,28 @@ public class MainController implements Initializable {
         int res = 0;
         for (File file : files) {
             String filename = file.getName();
+            List<String> lines;
+            Broker broker;
             if (filename.endsWith(".txt")) {
                 try {
-                    var lines = Files.readAllLines(Paths.get(file.toURI()));
-                    Broker broker = CommonUtil.identifyBroker(lines.get(0));
-                    LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
-                    parser.parse(lines);
-                    res += tradeLogService.insert(parser.getTradeLogs());
-                    res += bankTransactionService.insert(parser.getBankTransactions());
+                    lines = Files.readAllLines(Paths.get(file.toURI()));
+                    broker = CommonUtil.identifyBroker(lines.get(0));
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    CommonUtil.handleException(e);
+                    continue;
                 }
             }
-            if (filename.toLowerCase().endsWith(".pdf")) {
-                // TODO : Replace with import ledger / invoice button
-                String invoice = PDFParser.parse(file);
-                Broker broker = CommonUtil.identifyBroker(invoice);
-                TradeLog log = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
-                res += tradeLogService.insert(List.of(log));
+            else {
+                String ledger = PDFParser.parse(file);
+                if (ledger == null) continue;
+                lines = Arrays.asList(ledger.split(System.lineSeparator()));
+                broker = CommonUtil.identifyBroker(ledger);
             }
+
+            LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
+            parser.parse(lines);
+            res += tradeLogService.insert(parser.getTradeLogs());
+            res += bankTransactionService.insert(parser.getBankTransactions());
         }
 
         if (res > 0) {

@@ -18,6 +18,7 @@ dependencies {
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.31.2'
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'org.mapdb:mapdb:3.0.8'
+    implementation 'com.jsoniter:jsoniter:0.9.23'
 }
 
 javafx {

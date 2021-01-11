@@ -8,20 +8,32 @@ import java.util.concurrent.ConcurrentMap;
 
 public class MapDBStockDAO implements StockDAO {
 
-    private final ConcurrentMap<String, String> stockMap;
+    private final ConcurrentMap<String, String> stockNameMap;
+    private final ConcurrentMap<String, String> stockSecurityMap;
 
     MapDBStockDAO() {
-        stockMap = MapDatabase.getStockMap();
+        stockNameMap = MapDatabase.getStockNameMap();
+        stockSecurityMap = MapDatabase.getStockSecurityMap();
     }
 
     @Override
-    public Map<String, String> getStockMap() {
-        return new HashMap<>(stockMap);
+    public Map<String, String> getStockNameMap() {
+        return new HashMap<>(stockNameMap);
+    }
+
+    @Override
+    public Map<String, String> getStockSecurityMap() {
+        return new HashMap<>(stockSecurityMap);
     }
 
     @Override
     public void updateStockMap(Map<String, String> stockMap) {
-        this.stockMap.putAll(stockMap);
+        this.stockNameMap.putAll(stockMap);
+    }
+
+    @Override
+    public void updateStockSecurityMap(Map<String, String> stockSecurityMap) {
+        this.stockSecurityMap.putAll(stockSecurityMap);
     }
 
 }

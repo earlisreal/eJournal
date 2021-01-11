@@ -14,7 +14,8 @@ import static io.earlisreal.ejournal.util.Configs.DATA_DIR;
 public class MapDatabase {
 
     private static DB db;
-    private static ConcurrentMap<String, String> stockMap;
+    private static ConcurrentMap<String, String> stockNameMap;
+    private static ConcurrentMap<String, String> stockSecurityMap;
     private static ConcurrentMap<String, Boolean> settings;
 
     public static DB initialize() throws IOException {
@@ -28,15 +29,26 @@ public class MapDatabase {
         return db;
     }
 
-    public static ConcurrentMap<String, String> getStockMap() {
-        if (stockMap == null) {
+    public static ConcurrentMap<String, String> getStockNameMap() {
+        if (stockNameMap == null) {
             synchronized (MapDatabase.class) {
-                if (stockMap == null) {
-                    stockMap = db.hashMap("stockMap", Serializer.STRING, Serializer.STRING).createOrOpen();
+                if (stockNameMap == null) {
+                    stockNameMap = db.hashMap("stockNameMap", Serializer.STRING, Serializer.STRING).createOrOpen();
                 }
             }
         }
-        return stockMap;
+        return stockNameMap;
+    }
+
+    public static ConcurrentMap<String, String> getStockSecurityMap() {
+        if (stockSecurityMap == null) {
+            synchronized (MapDatabase.class) {
+                if (stockSecurityMap == null) {
+                    stockSecurityMap = db.hashMap("stockSecurityMap", Serializer.STRING, Serializer.STRING).createOrOpen();
+                }
+            }
+        }
+        return stockSecurityMap;
     }
 
     public static ConcurrentMap<String, Boolean> getSettingsMap() {

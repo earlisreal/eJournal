@@ -12,4 +12,6 @@ public interface StockDAO {
 
     void updateStockSecurityMap(Map<String, String> stockSecurityMap);
 
+    Map<String, Long> getStockDateMap();
+
 }

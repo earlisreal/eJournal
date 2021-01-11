@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.StockDAO;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 public class SimpleStockService implements StockService {
@@ -10,11 +11,13 @@ public class SimpleStockService implements StockService {
 
     private Map<String, String> stockNameMap;
     private Map<String, String> stockSecurityMap;
+    private Map<String, Long> stockDateMap;
 
     SimpleStockService(StockDAO stockDAO) {
         this.stockDAO = stockDAO;
         stockNameMap = stockDAO.getStockNameMap();
         stockSecurityMap = stockDAO.getStockSecurityMap();
+        stockDateMap = stockDAO.getStockDateMap();
     }
 
     @Override
@@ -32,6 +35,16 @@ public class SimpleStockService implements StockService {
     public String getCompanyId(String stock) {
         String security = stockSecurityMap.get(stock);
         return security.split(",")[0];
+    }
+
+    @Override
+    public LocalDate getLastPriceDate(String stock) {
+        return LocalDate.ofEpochDay(stockDateMap.get(stock));
+    }
+
+    @Override
+    public void updateLastDate(String stock, LocalDate localDate) {
+        stockDateMap.put(stock, localDate.toEpochDay());
     }
 
     @Override

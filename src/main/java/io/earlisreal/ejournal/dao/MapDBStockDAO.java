@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.MapDatabase;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -10,10 +11,12 @@ public class MapDBStockDAO implements StockDAO {
 
     private final ConcurrentMap<String, String> stockNameMap;
     private final ConcurrentMap<String, String> stockSecurityMap;
+    private final ConcurrentMap<String, Long> stockDateMap;
 
     MapDBStockDAO() {
         stockNameMap = MapDatabase.getStockNameMap();
         stockSecurityMap = MapDatabase.getStockSecurityMap();
+        stockDateMap = MapDatabase.getStockDateMap();
     }
 
     @Override
@@ -34,6 +37,11 @@ public class MapDBStockDAO implements StockDAO {
     @Override
     public void updateStockSecurityMap(Map<String, String> stockSecurityMap) {
         this.stockSecurityMap.putAll(stockSecurityMap);
+    }
+
+    @Override
+    public Map<String, Long> getStockDateMap() {
+        return stockDateMap;
     }
 
 }

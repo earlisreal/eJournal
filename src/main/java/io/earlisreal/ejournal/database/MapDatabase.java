@@ -16,6 +16,7 @@ public class MapDatabase {
     private static DB db;
     private static ConcurrentMap<String, String> stockNameMap;
     private static ConcurrentMap<String, String> stockSecurityMap;
+    private static ConcurrentMap<String, Long> stockDateMap;
     private static ConcurrentMap<String, Boolean> settings;
 
     public static DB initialize() throws IOException {
@@ -60,6 +61,17 @@ public class MapDatabase {
             }
         }
         return settings;
+    }
+
+    public static ConcurrentMap<String, Long> getStockDateMap() {
+        if (stockDateMap == null) {
+            synchronized (MapDatabase.class) {
+                if (stockDateMap == null) {
+                    stockDateMap = db.hashMap("stockDateMap", Serializer.STRING, Serializer.LONG).createOrOpen();
+                }
+            }
+        }
+        return stockDateMap;
     }
 
 }

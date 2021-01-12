@@ -3,33 +3,48 @@ package io.earlisreal.ejournal.scraper;
 import com.jsoniter.JsonIterator;
 import com.jsoniter.any.Any;
 import com.jsoniter.output.JsonStream;
-import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
+import org.apache.http.HttpHeaders;
+import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PSEStockPriceScraper {
+public class PSEStockPriceScraper implements StockPriceScraper {
 
     public static final String URL_SOURCE = "https://edge.pse.com.ph/common/DisclosureCht.ax";
 
-    public List<String> scrapeStockPrice(String stockCode) {
-        StockService service = ServiceProvider.getStockService();
-        List<String> csv = new ArrayList<>();
+    private final StockService service;
 
+    PSEStockPriceScraper(StockService stockService) {
+        service = stockService;
+    }
+
+    @Override
+    public List<String> scrapeStockPrice(String stockCode) {
+        return scrapeStockPrice(stockCode, service.getCompanyId(stockCode), service.getSecurityId(stockCode));
+    }
+
+    @Override
+    public List<String> scrapeStockPrice(String stock, String id, String security) {
+        List<String> csv = new ArrayList<>();
         try {
             Map<String, String> body = new HashMap<>();
-            body.put("cmpy_id", service.getCompanyId(stockCode));
-            body.put("security_id", service.getSecurityId(stockCode));
-            body.put("startDate", "01-06-2021");
-            body.put("endDate", "01-08-2021");
+            body.put("cmpy_id", id);
+            body.put("security_id", security);
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-uuuu");
+            body.put("startDate", service.getLastPriceDate(stock).format(formatter));
+            body.put("endDate", formatter.format(LocalDate.now()));
 
             String json = Jsoup.connect(URL_SOURCE)
-                    .header("Content-Type", "application/json")
+                    .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType())
                     .requestBody(JsonStream.serialize(body))
                     .post()
                     .text();
@@ -41,10 +56,12 @@ public class PSEStockPriceScraper {
                         + record.get("VALUE")
                         + "," + record.get("CLOSE")
                         + ",\"" + record.get("CHART_DATE") + "\","
-                        +record.get("HIGH") + ","
+                        + record.get("HIGH") + ","
                         + record.get("LOW");
                 csv.add(row);
             }
+
+            service.updateLastDate(stock, LocalDate.now());
         } catch (IOException e) {
             e.printStackTrace();
         }

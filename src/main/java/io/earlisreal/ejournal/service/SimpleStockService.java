@@ -11,7 +11,7 @@ public class SimpleStockService implements StockService {
 
     private Map<String, String> stockNameMap;
     private Map<String, String> stockSecurityMap;
-    private Map<String, Long> stockDateMap;
+    private final Map<String, Long> stockDateMap;
 
     SimpleStockService(StockDAO stockDAO) {
         this.stockDAO = stockDAO;
@@ -39,7 +39,9 @@ public class SimpleStockService implements StockService {
 
     @Override
     public LocalDate getLastPriceDate(String stock) {
-        return LocalDate.ofEpochDay(stockDateMap.get(stock));
+        Long last = stockDateMap.get(stock);
+        if (last == null) return LocalDate.of(2000, 1, 1);
+        return LocalDate.ofEpochDay(last);
     }
 
     @Override

@@ -50,14 +50,13 @@ public class PSEStockPriceScraper implements StockPriceScraper {
                     .text();
 
             var records = JsonIterator.deserialize(json).get("chartData");
-            csv.add("OPEN,VALUE,CLOSE,CHART_DATE,HIGH,LOW");
             for (Any record : records) {
-                String row = record.get("OPEN") + ","
-                        + record.get("VALUE")
-                        + "," + record.get("CLOSE")
-                        + ",\"" + record.get("CHART_DATE") + "\","
+                String row = "\"" + record.get("CHART_DATE") + "\","
+                        + record.get("OPEN") + ","
                         + record.get("HIGH") + ","
-                        + record.get("LOW");
+                        + record.get("LOW") + ","
+                        + record.get("CLOSE") + ","
+                        + record.get("VALUE");
                 csv.add(row);
             }
 

@@ -8,21 +8,21 @@
 
 <GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="158.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="646.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="221.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="100.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="702.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="220.0" />
    </columnConstraints>
    <rowConstraints>
       <RowConstraints maxHeight="104.0" minHeight="10.0" prefHeight="24.0" vgrow="SOMETIMES" />
       <RowConstraints maxHeight="748.0" minHeight="10.0" prefHeight="744.0" vgrow="SOMETIMES" />
    </rowConstraints>
    <children>
-      <AnchorPane prefHeight="600.0" prefWidth="800.0" GridPane.rowIndex="1">
+      <AnchorPane prefHeight="744.0" prefWidth="100.0" GridPane.rowIndex="1">
          <children>
-            <Button layoutX="44.0" layoutY="65.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
-            <Button layoutX="42.0" layoutY="14.0" mnemonicParsing="false" onAction="#showAnalytics" text="Dashboard" />
-            <Button layoutX="49.0" layoutY="115.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy" />
-            <Button layoutX="26.0" layoutY="167.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Transaction" />
+            <Button layoutX="17.0" layoutY="65.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
+            <Button layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#showAnalytics" text="Dashboard" />
+            <Button layoutX="21.0" layoutY="116.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy" />
+            <Button layoutX="19.0" layoutY="167.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Log" />
          </children>
       </AnchorPane>
       <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
@@ -30,17 +30,17 @@
           <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
         </columnConstraints>
         <rowConstraints>
-          <RowConstraints maxHeight="295.0" minHeight="10.0" prefHeight="74.0" vgrow="SOMETIMES" />
-          <RowConstraints maxHeight="695.0" minHeight="10.0" prefHeight="694.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="295.0" minHeight="10.0" prefHeight="52.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="695.0" minHeight="10.0" prefHeight="700.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
             <AnchorPane prefHeight="200.0" prefWidth="200.0">
                <children>
-                  <DatePicker fx:id="startDate" layoutX="219.0" layoutY="17.0" promptText="Start Date" />
-                  <DatePicker fx:id="endDate" layoutX="400.0" layoutY="17.0" promptText="End Date" />
-                  <Button layoutX="584.0" layoutY="17.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
-                  <Button layoutX="132.0" layoutY="17.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
+                  <DatePicker fx:id="startDate" layoutX="189.0" layoutY="13.0" promptText="Start Date" />
+                  <DatePicker fx:id="endDate" layoutX="370.0" layoutY="13.0" promptText="End Date" />
+                  <Button layoutX="554.0" layoutY="13.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
+                  <Button layoutX="102.0" layoutY="13.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
                </children></AnchorPane>
          </children>
       </GridPane>

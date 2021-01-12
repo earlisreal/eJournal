@@ -1,34 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.geometry.Rectangle2D?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<AnchorPane prefHeight="700.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
-   <ImageView fx:id="plotImageView" fitHeight="369.0" fitWidth="632.0" layoutX="186.0" preserveRatio="true">
-      <viewport>
-         <Rectangle2D/>
-      </viewport>
-      <Image url="@../../../../../.eJournal/plot/BDO.png"/>
-   </ImageView>
-   <TableView fx:id="logTable" layoutX="14.0" layoutY="357.0" prefHeight="329.0" prefWidth="671.0">
-      <columns>
-         <TableColumn fx:id="logDate" prefWidth="74.0" text="Date"/>
-         <TableColumn fx:id="logStock" prefWidth="74.0" text="Stock"/>
-         <TableColumn fx:id="logAction" prefWidth="74.0" text="Action"/>
-         <TableColumn fx:id="logPrice" prefWidth="74.0" text="Price"/>
-         <TableColumn fx:id="logShares" prefWidth="74.0" text="Shares"/>
-         <TableColumn fx:id="logFees" prefWidth="74.0" text="Fees"/>
-         <TableColumn fx:id="logNet" prefWidth="83.0" text="Net Amount"/>
-         <TableColumn fx:id="logStrategy" prefWidth="131.0" text="Strategy"/>
-      </columns>
-   </TableView>
-   <TableView layoutX="14.0" layoutY="14.0" prefHeight="329.0" prefWidth="200.0">
-      <columns>
-         <TableColumn prefWidth="100.0" text="Statistic"/>
-         <TableColumn prefWidth="100.0" text="Value"/>
-      </columns>
-   </TableView>
+
+<AnchorPane fx:id="anchorPane" prefHeight="700.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
+   <children>
+      <ImageView fx:id="plotImageView" fitHeight="369.0" fitWidth="632.0" layoutX="186.0" preserveRatio="true">
+         <viewport>
+            <Rectangle2D />
+         </viewport>
+         <image>
+            <Image url="@../../../../../.eJournal/plot/BDO.png" />
+         </image>
+      </ImageView>
+      <TableView fx:id="logTable" layoutX="14.0" layoutY="357.0" prefHeight="329.0" prefWidth="671.0">
+         <columns>
+            <TableColumn fx:id="logDate" prefWidth="74.0" text="Date" />
+            <TableColumn fx:id="logAction" prefWidth="74.0" text="Action" />
+            <TableColumn fx:id="logPrice" prefWidth="62.0" text="Price" />
+            <TableColumn fx:id="logShares" prefWidth="73.0" text="Shares" />
+            <TableColumn fx:id="logFees" prefWidth="77.0" text="Fees" />
+            <TableColumn fx:id="logNet" prefWidth="93.0" text="Net Amount" />
+            <TableColumn fx:id="logStrategy" prefWidth="106.0" text="Strategy" />
+            <TableColumn fx:id="logStrategy1" prefWidth="111.0" text="Remarks" />
+         </columns>
+      </TableView>
+      <TableView layoutX="14.0" layoutY="14.0" prefHeight="329.0" prefWidth="200.0">
+         <columns>
+            <TableColumn prefWidth="100.0" text="Statistic" />
+            <TableColumn prefWidth="100.0" text="Value" />
+         </columns>
+      </TableView>
+   </children>
 </AnchorPane>

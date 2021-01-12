@@ -82,6 +82,10 @@ public class TradeSummary {
         return closeDate;
     }
 
+    public List<TradeLog> getLogs() {
+        return logs;
+    }
+
     @Override
     public String toString() {
         return "TradeSummary{" +

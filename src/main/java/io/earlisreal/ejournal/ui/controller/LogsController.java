@@ -7,15 +7,23 @@ import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
 public class LogsController implements Initializable {
@@ -24,8 +32,8 @@ public class LogsController implements Initializable {
     public TableColumn<TradeLog, LocalDate> logDate;
     public TableColumn<TradeLog, String> logStock;
     public TableColumn<TradeLog, String> logAction;
-    public TableColumn<TradeLog, Double> logPrice;
-    public TableColumn<TradeLog, Integer> logShares;
+    public TableColumn<TradeLog, String> logPrice;
+    public TableColumn<TradeLog, String> logShares;
     public TableColumn<TradeLog, String> logFees;
     public TableColumn<TradeLog, String> logNet;
     public TableColumn<TradeLog, String> logStrategy;
@@ -40,10 +48,25 @@ public class LogsController implements Initializable {
     public TableColumn<TradeSummary, String> summaryDays;
 
     private TradeLogService tradeLogService;
+    private Stage tradeDetailsStage;
+    private TradeDetailsController tradeDetailsController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/trade-details.fxml"));
+            Parent dialog = loader.load();
+            Scene scene = new Scene(dialog);
+            tradeDetailsStage = new Stage();
+            tradeDetailsStage.initModality(Modality.APPLICATION_MODAL);
+            tradeDetailsStage.setScene(scene);
+            tradeDetailsController = loader.getController();
+        } catch (IOException e) {
+            handleException(e);
+        }
+
         reload();
     }
 
@@ -56,16 +79,26 @@ public class LogsController implements Initializable {
         logTable.setItems(FXCollections.observableList(tradeLogService.getLogs()));
         logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
-        logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
+        logPrice.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPrice())));
         logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
-        logPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
-        logShares.setCellValueFactory(new PropertyValueFactory<>("shares"));
+        logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
         logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
     }
 
     private void initSummary() {
+        summaryTable.setRowFactory(param -> {
+            TableRow<TradeSummary> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                TradeSummary summary = row.getItem();
+                tradeDetailsController.initialize(summary);
+                tradeDetailsStage.setTitle(summary.getStock());
+                tradeDetailsStage.show();
+            });
+            return row;
+        });
+
         summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
         summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));

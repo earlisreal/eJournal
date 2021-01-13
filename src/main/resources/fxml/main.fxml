@@ -19,8 +19,8 @@
    <children>
       <AnchorPane prefHeight="744.0" prefWidth="100.0" GridPane.rowIndex="1">
          <children>
-            <Button layoutX="17.0" layoutY="65.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
             <Button layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#showAnalytics" text="Dashboard" />
+            <Button layoutX="17.0" layoutY="65.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
             <Button layoutX="21.0" layoutY="116.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy" />
             <Button layoutX="19.0" layoutY="167.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Log" />
          </children>

@@ -31,11 +31,11 @@ if __name__ == "__main__":
     for index, row in dataframe.iterrows():
         d = str(index.date())
         if d in buys:
-            buy_markers.append(row["Low"])
+            buy_markers.append(row["Low"] - row["Low"] * 0.01)
             sell_markers.append(numpy.nan)
         elif d in sells:
             buy_markers.append(numpy.nan)
-            sell_markers.append(row["High"])
+            sell_markers.append(row["High"] + row["High"] * 0.01)
         else:
             buy_markers.append(numpy.nan)
             sell_markers.append(numpy.nan)

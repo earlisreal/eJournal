@@ -37,7 +37,6 @@ public class PesobilityStockListScraper implements StockListScraper {
             Elements rows = document.select("#MAIN_BODY > div > div > table > tbody > tr");
             rows.forEach(element -> {
                 var columns = element.getElementsByTag("td").eachText();
-                System.out.println(columns);
                 table.add(columns);
             });
 

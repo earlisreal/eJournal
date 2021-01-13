@@ -3,7 +3,7 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dao.DAOProvider;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
 
-public class ServiceProvider {
+public final class ServiceProvider {
 
     private static TradeLogService tradeLogService;
     private static StrategyService strategyService;
@@ -12,6 +12,7 @@ public class ServiceProvider {
     private static StockService stockService;
     private static AnalyticsService analyticsService;
     private static StartupService startupService;
+    private static PlotService plotService;
 
     private ServiceProvider() {}
 
@@ -19,12 +20,25 @@ public class ServiceProvider {
         if (startupService == null) {
             synchronized (ServiceProvider.class) {
                 if (startupService == null) {
+                    // TODO : Remove this circular dependency of ScraperProvider and ServiceProvider
                     startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(), ScraperProvider.getCompanyScraper(), getStockService());
                 }
             }
         }
 
         return startupService;
+    }
+
+    public static PlotService getPlotService() {
+        if (plotService == null) {
+            synchronized (ServiceProvider.class) {
+                if (plotService == null) {
+                    plotService = new SimplePlotService(getStockService(), ScraperProvider.getStockPriceScraper());
+                }
+            }
+        }
+
+        return plotService;
     }
 
     public static AnalyticsService getAnalyticsService() {

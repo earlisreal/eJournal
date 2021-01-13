@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 
@@ -36,6 +37,10 @@ public class TradeDetailsController {
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
         logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
+    }
+
+    public void updateImage(String imageUrl) {
+        plotImageView.setImage(new Image(imageUrl));
     }
 
 }

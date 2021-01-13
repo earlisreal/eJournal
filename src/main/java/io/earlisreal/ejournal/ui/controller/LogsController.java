@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,9 +20,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
@@ -50,10 +55,12 @@ public class LogsController implements Initializable {
     private TradeLogService tradeLogService;
     private Stage tradeDetailsStage;
     private TradeDetailsController tradeDetailsController;
+    private PlotService plotService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
+        plotService = ServiceProvider.getPlotService();
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/trade-details.fxml"));
@@ -95,6 +102,22 @@ public class LogsController implements Initializable {
                 tradeDetailsController.initialize(summary);
                 tradeDetailsStage.setTitle(summary.getStock());
                 tradeDetailsStage.show();
+
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return plotService.plot(row.getItem());
+                    } catch (IOException e) {
+                        handleException(e);
+                    }
+                    return null;
+                }).thenAccept(imageUrl -> {
+                    if (imageUrl == null) return;
+                    try {
+                        tradeDetailsController.updateImage(imageUrl.toUri().toURL().toString());
+                    } catch (MalformedURLException e) {
+                        handleException(e);
+                    }
+                });
             });
             return row;
         });

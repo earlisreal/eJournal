@@ -25,8 +25,6 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
@@ -104,6 +102,7 @@ public class LogsController implements Initializable {
                 tradeDetailsStage.show();
 
                 CompletableFuture.supplyAsync(() -> {
+                    tradeDetailsController.showLoading();
                     try {
                         return plotService.plot(row.getItem());
                     } catch (IOException e) {

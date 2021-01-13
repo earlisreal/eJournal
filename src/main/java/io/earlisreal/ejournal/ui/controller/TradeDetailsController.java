@@ -4,6 +4,8 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -27,8 +29,12 @@ public class TradeDetailsController {
     public TableColumn<TradeLog, String> logNet;
     public TableColumn<TradeLog, String> logStrategy;
     public AnchorPane anchorPane;
+    public ProgressIndicator loadingProgress;
+    public Label loadingLabel;
 
     public void initialize(TradeSummary tradeSummary) {
+        showLoading();
+
         logTable.setItems(FXCollections.observableList(tradeSummary.getLogs()));
         logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
@@ -41,6 +47,16 @@ public class TradeDetailsController {
 
     public void updateImage(String imageUrl) {
         plotImageView.setImage(new Image(imageUrl));
+
+        plotImageView.setVisible(true);
+        loadingLabel.setVisible(false);
+        loadingProgress.setVisible(false);
+    }
+
+    public void showLoading() {
+        plotImageView.setVisible(false);
+        loadingLabel.setVisible(true);
+        loadingProgress.setVisible(true);
     }
 
 }

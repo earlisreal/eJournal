@@ -38,5 +38,7 @@
             <TableColumn prefWidth="100.0" text="Value" />
          </columns>
       </TableView>
+      <ProgressIndicator fx:id="loadingProgress" layoutX="358.0" layoutY="158.0" />
+      <Label fx:id="loadingLabel" layoutX="424.0" layoutY="176.0" text="Loading Plot Image" />
    </children>
 </AnchorPane>

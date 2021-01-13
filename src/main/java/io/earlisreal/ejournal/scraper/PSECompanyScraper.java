@@ -8,10 +8,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PSECompanyScraper {
+public class PSECompanyScraper implements CompanyScraper {
 
     public static final String URL_SOURCE = "https://edge.pse.com.ph/companyDirectory/search.ax";
 
+    PSECompanyScraper() {}
+
+    @Override
     public Map<String, String> scrapeCompanies() {
         Map<String, String> companies = new HashMap<>();
         int limit = 1;

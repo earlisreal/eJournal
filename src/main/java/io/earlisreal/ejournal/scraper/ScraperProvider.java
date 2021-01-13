@@ -8,4 +8,12 @@ public final class ScraperProvider {
         return new PSEStockPriceScraper(ServiceProvider.getStockService());
     }
 
+    public static StockListScraper getStockListScraper() {
+        return new PesobilityStockListScraper();
+    }
+
+    public static CompanyScraper getCompanyScraper() {
+        return new PSECompanyScraper();
+    }
+
 }

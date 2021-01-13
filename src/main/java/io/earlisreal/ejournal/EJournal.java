@@ -4,15 +4,16 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.database.MapDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.EmailParser;
-import io.earlisreal.ejournal.util.PDFParser;
-import io.earlisreal.ejournal.input.WebParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
+import io.earlisreal.ejournal.scraper.ScraperProvider;
+import io.earlisreal.ejournal.scraper.StockListScraper;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.UILauncher;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.PDFParser;
 import javafx.application.Application;
 import org.mapdb.DB;
 
@@ -30,6 +31,7 @@ public class EJournal {
         try (DB ignored1 = MapDatabase.initialize();
              Connection ignored = DerbyDatabase.initialize(MapDatabase.getSettingsMap())) {
 
+            ServiceProvider.getStartupService().manageStockList();
             EJournal eJournal = new EJournal();
             eJournal.run(args);
         } catch (SQLException | GeneralSecurityException | IOException e) {
@@ -82,11 +84,11 @@ public class EJournal {
             }
 
             if (args[0].equals("stocks")) {
-                WebParser webParser = new WebParser();
-                webParser.parse();
-                ServiceProvider.getStockService().updateStockNameMap(webParser.getStockMap());
-                System.out.println(webParser.getStockMap());
-                System.out.println(webParser.getPriceMap());
+                StockListScraper stockListScraper = ScraperProvider.getStockListScraper();
+                stockListScraper.parse();
+                ServiceProvider.getStockService().updateStockNameMap(stockListScraper.getStockMap());
+                System.out.println(stockListScraper.getStockMap());
+                System.out.println(stockListScraper.getPriceMap());
             }
         }
         else {

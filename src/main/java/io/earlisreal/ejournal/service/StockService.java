@@ -19,4 +19,6 @@ public interface StockService {
 
     void updateStockSecurityMap(Map<String, String> stockSecurityMap);
 
+    int getStockCount();
+
 }

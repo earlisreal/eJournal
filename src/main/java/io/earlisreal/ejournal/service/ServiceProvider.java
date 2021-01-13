@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.DAOProvider;
+import io.earlisreal.ejournal.scraper.ScraperProvider;
 
 public class ServiceProvider {
 
@@ -10,8 +11,21 @@ public class ServiceProvider {
     private static CacheService cacheService;
     private static StockService stockService;
     private static AnalyticsService analyticsService;
+    private static StartupService startupService;
 
     private ServiceProvider() {}
+
+    public static StartupService getStartupService() {
+        if (startupService == null) {
+            synchronized (ServiceProvider.class) {
+                if (startupService == null) {
+                    startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(), ScraperProvider.getCompanyScraper(), getStockService());
+                }
+            }
+        }
+
+        return startupService;
+    }
 
     public static AnalyticsService getAnalyticsService() {
         if (analyticsService == null) {

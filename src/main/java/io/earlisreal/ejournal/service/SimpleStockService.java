@@ -61,4 +61,9 @@ public class SimpleStockService implements StockService {
         this.stockSecurityMap = stockSecurityMap;
     }
 
+    @Override
+    public int getStockCount() {
+        return stockNameMap.size();
+    }
+
 }

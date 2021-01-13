@@ -35,11 +35,6 @@ public class SimplePlotService implements PlotService {
             }
         }
 
-        // TODO : Move this on start up
-        var companies = new PSECompanyScraper().scrapeCompanies();
-        System.out.println(companies);
-        ServiceProvider.getStockService().updateStockSecurityMap(companies);
-
         // TODO : Create id or hash for each trade summary for the filename
         ProcessBuilder processBuilder = new ProcessBuilder("python",
                 "python/plot.py", ".eJournal/stocks/BDO.csv", ".eJournal/plot/BDO.png", "2021-01-05", "2021-01-08");

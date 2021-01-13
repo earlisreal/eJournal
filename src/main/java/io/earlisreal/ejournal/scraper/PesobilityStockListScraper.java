@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.input;
+package io.earlisreal.ejournal.scraper;
 
 import io.earlisreal.ejournal.util.CommonUtil;
 import org.jsoup.Jsoup;
@@ -13,19 +13,21 @@ import java.util.Map;
 
 import static io.earlisreal.ejournal.util.CommonUtil.trimStockName;
 
-public class WebParser {
+public class PesobilityStockListScraper implements StockListScraper {
 
     public static final String STOCK_SOURCE_URL = "https://www.pesobility.com/stock";
+
     private final List<List<String>> table;
     private final Map<String, String> stockMap;
     private final Map<String, Double> priceMap;
 
-    public WebParser() {
+    PesobilityStockListScraper() {
         table = new ArrayList<>();
         stockMap = new HashMap<>();
         priceMap = new HashMap<>();
     }
 
+    @Override
     public void parse() {
         priceMap.clear();
         stockMap.clear();
@@ -44,6 +46,7 @@ public class WebParser {
         }
     }
 
+    @Override
     public Map<String, String> getStockMap() {
         if (!stockMap.isEmpty()) return stockMap;
 
@@ -55,6 +58,7 @@ public class WebParser {
         return stockMap;
     }
 
+    @Override
     public Map<String, Double> getPriceMap() {
         if (!priceMap.isEmpty()) return priceMap;
 

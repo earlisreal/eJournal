@@ -79,7 +79,7 @@ public class SimpleTradeLogService implements TradeLogService {
                 }
                 else {
                     trade.sell(log);
-                    if (trade.getShares() == 0) {
+                    if (trade.isClosed()) {
                         trades.remove(stock);
                         trade.setCloseDate(log.getDate());
                         summaries.add(trade);

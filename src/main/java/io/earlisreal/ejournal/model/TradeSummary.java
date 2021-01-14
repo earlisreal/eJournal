@@ -11,12 +11,13 @@ public class TradeSummary {
     private final String stock;
     private final LocalDate openDate;
     private int shares;
-    private int position;
     private LocalDate closeDate;
 
     private final List<TradeLog> logs;
     private double totalBuy;
     private double totalSell;
+
+    private int runningShares;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
@@ -26,32 +27,32 @@ public class TradeSummary {
     }
 
     public void buy(TradeLog log) {
-        position += log.getShares();
         shares += log.getShares();
+        runningShares += log.getShares();
         logs.add(log);
         totalBuy += log.getNetAmount();
     }
 
     public void sell(TradeLog log) {
-        shares -= log.getShares();
+        runningShares -= log.getShares();
         logs.add(log);
         totalSell += log.getNetAmount();
     }
 
     public double getPosition() {
-        return getAverageBuy() * position;
+        return getAverageBuy() * shares;
     }
 
     public double getAverageBuy() {
-        return totalBuy / position;
+        return totalBuy / shares;
     }
 
     public double getAverageSell() {
-        return totalSell / position;
+        return totalSell / shares;
     }
 
     public double getProfit() {
-        return (getAverageSell() - getAverageBuy()) * position;
+        return (getAverageSell() - getAverageBuy()) * shares;
     }
 
     public double getProfitPercentage() {
@@ -86,11 +87,15 @@ public class TradeSummary {
         return logs;
     }
 
+    public boolean isClosed() {
+        return runningShares == 0;
+    }
+
     @Override
     public String toString() {
         return "TradeSummary{" +
                 "stock='" + stock + '\'' +
-                ", position=" + position +
+                ", shares=" + getShares() +
                 ", averageBuy=" + getAverageBuy() +
                 ", averageSell=" + getAverageSell() +
                 ", openDate=" + openDate +

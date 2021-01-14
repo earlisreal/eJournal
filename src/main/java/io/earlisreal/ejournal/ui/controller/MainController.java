@@ -51,7 +51,6 @@ public class MainController implements Initializable {
     public DatePicker endDate;
 
     public Label statusLabel;
-    public Label statisticsLabel;
     public PieChart battingChart;
     public ProgressIndicator statusProgressIndicator;
     public TableView<Pair<String, String>> analyticsTable;
@@ -99,29 +98,6 @@ public class MainController implements Initializable {
         children.add(analytics);
 
         initializeStatistics();
-    }
-
-    private void initializeStatistics() {
-        List<Pair<String, String>> analytics = new ArrayList<>();
-        analytics.add(new Pair<>("Equity", prettify(analyticsService.getTotalEquity())));
-        analytics.add(new Pair<>("Profit", prettify((analyticsService.getTotalProfit()))));
-        analytics.add(new Pair<>("Profit %", analyticsService.getTotalProfitPercentage() + "%"));
-        analytics.add(new Pair<>("Edge Ratio", String.valueOf(round(analyticsService.getEdgeRatio()))));
-        analytics.add(new Pair<>("Average Profit", prettify(analyticsService.getAverageProfit())));
-        analytics.add(new Pair<>("Average Profit %", analyticsService.getAverageProfitPercentage() + "%"));
-        analytics.add(new Pair<>("Average Loss", prettify(analyticsService.getAverageLoss())));
-        analytics.add(new Pair<>("Average Loss %", analyticsService.getAverageLossPercentage() + "%"));
-        analytics.add(new Pair<>("Accuracy", analyticsService.getAccuracy() + "%"));
-        analytics.add(new Pair<>("Profit Factor", String.valueOf(analyticsService.getProfitFactor())));
-        analytics.add(new Pair<>("Average Length", prettify(analyticsService.getAverageHoldingDays()) + " Days"));
-        analytics.add(new Pair<>("Trades Taken", prettify(analyticsService.getSummaries().size())));
-        analytics.add(new Pair<>("Transactions", prettify(tradeLogService.getLogs().size())));
-        analytics.add(new Pair<>("Losses", prettify(analyticsService.getLosses().size())));
-        analytics.add(new Pair<>("Wins", prettify(analyticsService.getWins().size())));
-
-        analyticsTable.setItems(FXCollections.observableList(analytics));
-        analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
-        valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
     }
 
     public void showAnalytics(ActionEvent event) {
@@ -210,6 +186,7 @@ public class MainController implements Initializable {
         tradeLogService.applyFilter(startDate.getValue(), endDate.getValue());
         analyticsController.reload();
         logController.reload();
+        reload();
     }
 
     public void syncEmail(ActionEvent event) {
@@ -249,9 +226,37 @@ public class MainController implements Initializable {
     }
 
     private void refresh() {
+        reload();
         logController.reload();
         analyticsController.reload();
         bankTransactionController.reload();
+    }
+
+    public void reload() {
+        initializeStatistics();
+    }
+
+    private void initializeStatistics() {
+        List<Pair<String, String>> analytics = new ArrayList<>();
+        analytics.add(new Pair<>("Equity", prettify(analyticsService.getTotalEquity())));
+        analytics.add(new Pair<>("Profit", prettify((analyticsService.getTotalProfit()))));
+        analytics.add(new Pair<>("Profit %", analyticsService.getTotalProfitPercentage() + "%"));
+        analytics.add(new Pair<>("Edge Ratio", String.valueOf(round(analyticsService.getEdgeRatio()))));
+        analytics.add(new Pair<>("Average Profit", prettify(analyticsService.getAverageProfit())));
+        analytics.add(new Pair<>("Average Profit %", analyticsService.getAverageProfitPercentage() + "%"));
+        analytics.add(new Pair<>("Average Loss", prettify(analyticsService.getAverageLoss())));
+        analytics.add(new Pair<>("Average Loss %", analyticsService.getAverageLossPercentage() + "%"));
+        analytics.add(new Pair<>("Accuracy", analyticsService.getAccuracy() + "%"));
+        analytics.add(new Pair<>("Profit Factor", String.valueOf(analyticsService.getProfitFactor())));
+        analytics.add(new Pair<>("Average Length", prettify(analyticsService.getAverageHoldingDays()) + " Days"));
+        analytics.add(new Pair<>("Trades Taken", prettify(analyticsService.getSummaries().size())));
+        analytics.add(new Pair<>("Transactions", prettify(tradeLogService.getLogs().size())));
+        analytics.add(new Pair<>("Losses", prettify(analyticsService.getLosses().size())));
+        analytics.add(new Pair<>("Wins", prettify(analyticsService.getWins().size())));
+
+        analyticsTable.setItems(FXCollections.observableList(analytics));
+        analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
+        valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
     }
 
 }

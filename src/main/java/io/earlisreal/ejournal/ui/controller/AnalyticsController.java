@@ -33,11 +33,7 @@ public class AnalyticsController implements Initializable {
 
     public void reload() {
         service.initialize();
-        initializeStatistics();
         initializeEquityChart();
-    }
-
-    private void initializeStatistics() {
     }
 
     private void initializeEquityChart() {

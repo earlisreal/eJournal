@@ -18,7 +18,6 @@ import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class AnalyticsController implements Initializable {
 
-    public Label analyticsLabel;
     public LineChart<String, Double> equityChart;
 
     private AnalyticsService service;
@@ -39,20 +38,6 @@ public class AnalyticsController implements Initializable {
     }
 
     private void initializeStatistics() {
-        String separator = System.lineSeparator();
-        String equity = "Total Equity: " + prettify(service.getTotalEquity()) + separator;
-        String totalProfit = "Total Profit: " + prettify((service.getTotalProfit())) + " (" + service.getTotalProfitPercentage() + "%)" + separator;
-        String ratio = "Edge Ratio: " + round(service.getEdgeRatio()) + separator;
-        String profit = "Average Profit: " + prettify(service.getAverageProfit()) + " (" + service.getAverageProfitPercentage() + "%)" + separator;
-        String loss = "Average Loss: " + prettify(service.getAverageLoss()) + " (" + service.getAverageLossPercentage() + "%)" + separator;
-        String accuracy = "Accuracy: " + service.getAccuracy() + "%" + separator;
-        String profitFactor = "Profit Factor: " + service.getProfitFactor() + separator;
-        String averageHoldingDays = "Average Holding Days: " + prettify(service.getAverageHoldingDays()) + separator;
-        String tradesTaken = "Trades Taken: " + prettify(service.getSummaries().size()) + separator;
-        String transactions = "Transactions: " + prettify(tradeLogService.getLogs().size()) + separator;
-        String losses = "Losses: " + prettify(service.getLosses().size()) + separator;
-        String wins = "Wins: " + prettify(service.getWins().size()) + separator;
-        analyticsLabel.setText(equity + totalProfit + tradesTaken + transactions + wins + losses + ratio + profit + loss + accuracy + profitFactor + averageHoldingDays);
     }
 
     private void initializeEquityChart() {

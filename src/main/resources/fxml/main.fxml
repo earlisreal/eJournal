@@ -47,18 +47,17 @@
       <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
             <PieChart fx:id="battingChart" layoutX="11.0" layoutY="563.0" prefHeight="122.0" prefWidth="121.0" title="Accuracy" />
-            <Label fx:id="statisticsLabel" layoutX="71.0" layoutY="407.0" text="Some Statistics" />
             <Label fx:id="statusLabel" layoutX="159.0" layoutY="714.0" text="All is Well" textAlignment="CENTER" />
-            <Label layoutX="49.0" layoutY="14.0" text="All Time Statistics" textAlignment="CENTER">
+            <Label layoutX="79.0" layoutY="10.0" text="Statistics" textAlignment="CENTER" AnchorPane.topAnchor="10.0">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
             <ProgressIndicator fx:id="statusProgressIndicator" layoutX="139.0" layoutY="713.0" prefHeight="20.0" prefWidth="20.0" visible="false" />
-            <TableView layoutX="11.0" layoutY="39.0" prefHeight="270.0" prefWidth="200.0">
+            <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="450.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
               <columns>
-                <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Analytics" />
-                <TableColumn editable="false" prefWidth="103.0" resizable="false" sortable="false" text="Value" />
+                <TableColumn fx:id="analyticsColumn" editable="false" prefWidth="100.0" resizable="false" sortable="false" text="Analytics" />
+                <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
               </columns>
             </TableView>
          </children>

@@ -7,10 +7,9 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="681.0" prefWidth="644.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
+<AnchorPane prefHeight="694.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
    <children>
-      <Label fx:id="analyticsLabel" layoutX="299.0" layoutY="14.0" text="Analytics" />
-      <LineChart fx:id="equityChart" layoutX="13.0" layoutY="328.0" prefHeight="339.0" prefWidth="620.0" title="Equity">
+      <LineChart fx:id="equityChart" layoutX="11.0" layoutY="341.0" prefHeight="339.0" prefWidth="678.0" title="Equity">
         <xAxis>
           <CategoryAxis label="Date" side="BOTTOM" />
         </xAxis>

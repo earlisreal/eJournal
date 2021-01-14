@@ -12,6 +12,9 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
+import io.earlisreal.ejournal.util.Pair;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -32,9 +35,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
+
+import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class MainController implements Initializable {
 
@@ -42,10 +49,14 @@ public class MainController implements Initializable {
     public StackPane stackPane;
     public DatePicker startDate;
     public DatePicker endDate;
+
     public Label statusLabel;
     public Label statisticsLabel;
     public PieChart battingChart;
     public ProgressIndicator statusProgressIndicator;
+    public TableView<Pair<String, String>> analyticsTable;
+    public TableColumn<Pair<String, String>, String> analyticsColumn;
+    public TableColumn<Pair<String, String>, String> valueColumn;
 
     private Parent log;
     private Parent analytics;
@@ -91,11 +102,26 @@ public class MainController implements Initializable {
     }
 
     private void initializeStatistics() {
-        String separator = System.lineSeparator();
-        String trades = "Total Trades: " + tradeLogService.getAllTradeSummaries().size() + separator;
-        String wins = "Total Wins: " + analyticsService.getAllWins().size() + separator;
-        String losses = "Total Losses: " + analyticsService.getAllLosses().size() + separator;
-        statisticsLabel.setText(trades + wins + losses);
+        List<Pair<String, String>> analytics = new ArrayList<>();
+        analytics.add(new Pair<>("Equity", prettify(analyticsService.getTotalEquity())));
+        analytics.add(new Pair<>("Profit", prettify((analyticsService.getTotalProfit()))));
+        analytics.add(new Pair<>("Profit %", analyticsService.getTotalProfitPercentage() + "%"));
+        analytics.add(new Pair<>("Edge Ratio", String.valueOf(round(analyticsService.getEdgeRatio()))));
+        analytics.add(new Pair<>("Average Profit", prettify(analyticsService.getAverageProfit())));
+        analytics.add(new Pair<>("Average Profit %", analyticsService.getAverageProfitPercentage() + "%"));
+        analytics.add(new Pair<>("Average Loss", prettify(analyticsService.getAverageLoss())));
+        analytics.add(new Pair<>("Average Loss %", analyticsService.getAverageLossPercentage() + "%"));
+        analytics.add(new Pair<>("Accuracy", analyticsService.getAccuracy() + "%"));
+        analytics.add(new Pair<>("Profit Factor", String.valueOf(analyticsService.getProfitFactor())));
+        analytics.add(new Pair<>("Average Length", prettify(analyticsService.getAverageHoldingDays()) + " Days"));
+        analytics.add(new Pair<>("Trades Taken", prettify(analyticsService.getSummaries().size())));
+        analytics.add(new Pair<>("Transactions", prettify(tradeLogService.getLogs().size())));
+        analytics.add(new Pair<>("Losses", prettify(analyticsService.getLosses().size())));
+        analytics.add(new Pair<>("Wins", prettify(analyticsService.getWins().size())));
+
+        analyticsTable.setItems(FXCollections.observableList(analytics));
+        analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
+        valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
     }
 
     public void showAnalytics(ActionEvent event) {

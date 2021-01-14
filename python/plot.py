@@ -29,8 +29,8 @@ if __name__ == "__main__":
     for index, row in dataframe.iterrows():
         d = str(index.date())
         if d in sells and d in buys:
-            buy_markers.append(row["Low"] - row["Low"] * 0.01)
-            sell_markers.append(row["High"] + row["High"] * 0.01)
+            buy_markers.append(row["Low"])
+            sell_markers.append(row["High"])
         elif d in buys:
             buy_markers.append(row["Low"] - row["Low"] * 0.01)
             sell_markers.append(numpy.nan)
@@ -41,6 +41,6 @@ if __name__ == "__main__":
             buy_markers.append(numpy.nan)
             sell_markers.append(numpy.nan)
 
-    buy_plot = mplfinance.make_addplot(buy_markers, type="scatter", marker="$\u21E7$", markersize=200, color="green")
-    sell_plot = mplfinance.make_addplot(sell_markers, type="scatter", marker="$\u21E9$", markersize=200, color="red")
+    buy_plot = mplfinance.make_addplot(buy_markers, type="scatter", marker="^", markersize=200, color="green")
+    sell_plot = mplfinance.make_addplot(sell_markers, type="scatter", alpha=0.8, marker="v", markersize=200, color="red")
     mplfinance.plot(dataframe, type="candle", volume=True, addplot=[buy_plot, sell_plot], savefig=sys.argv[2])

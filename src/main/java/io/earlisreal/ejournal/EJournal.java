@@ -31,7 +31,8 @@ public class EJournal {
         try (DB ignored1 = MapDatabase.initialize();
              Connection ignored = DerbyDatabase.initialize(MapDatabase.getSettingsMap())) {
 
-            ServiceProvider.getStartupService().manageStockList();
+            ServiceProvider.getStartupService().run();
+
             EJournal eJournal = new EJournal();
             eJournal.run(args);
         } catch (SQLException | GeneralSecurityException | IOException e) {

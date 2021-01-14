@@ -6,24 +6,22 @@ import numpy
 import pandas
 
 if __name__ == "__main__":
-    print("hello")
-
     buys = {}
-    buysinput = sys.argv[3].split(",")
-    for buy in buysinput:
+    buys_input = sys.argv[3].split(",")
+    for buy in buys_input:
         buys[buy] = True
 
     sells = {}
-    sellsinput = sys.argv[4].split(",")
-    for sell in sellsinput:
+    sells_input = sys.argv[4].split(",")
+    for sell in sells_input:
         sells[sell] = True
 
     dataframe = pandas.read_csv(sys.argv[1], names=["Date", "Open", "High", "Low", "Close", "Volume"],
                                 parse_dates=["Date"], index_col=0)
     dataframe.index.name = "Date"
 
-    start = dataframe.index.searchsorted(datetime.fromisoformat(buysinput[0]))
-    end = dataframe.index.searchsorted(datetime.fromisoformat(sellsinput[-1]))
+    start = dataframe.index.searchsorted(datetime.fromisoformat(buys_input[0]))
+    end = dataframe.index.searchsorted(datetime.fromisoformat(sells_input[-1]))
     dataframe = dataframe[start - 5:end + 5]
 
     buy_markers = []

@@ -3,50 +3,41 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.scraper.StockPriceScraper;
-import io.earlisreal.ejournal.util.Configs;
+import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import static io.earlisreal.ejournal.util.Configs.plotDirectory;
+import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
+
 public class SimplePlotService implements PlotService {
 
     private final StockService stockService;
     private final StockPriceScraper stockPriceScraper;
 
-    private final Path plotDirectory;
-    private final Path stocksDirectory;
-
     SimplePlotService(StockService stockService, StockPriceScraper stockPriceScraper) {
         this.stockService = stockService;
         this.stockPriceScraper = stockPriceScraper;
-
-        plotDirectory = Path.of(Configs.DATA_DIR, "plot");
-        stocksDirectory = Path.of(Configs.DATA_DIR, "stocks");
     }
 
     @Override
     public Path plot(TradeSummary tradeSummary) throws IOException {
-        long start = System.currentTimeMillis();
-
-        // TODO : Cache the image then skip this process when there is already an image
+        Path imagePath = plotDirectory.resolve(generateImageName(tradeSummary));
+        if (Files.exists(imagePath)) {
+            return imagePath;
+        }
 
         String stock = tradeSummary.getStock();
-        if (stockService.getLastPriceDate(stock).isBefore(tradeSummary.getCloseDate())) {
-            // TODO : Skip plotting if closed now because there is no data yet, or add button to generate plot again,
-            // to provide plot for now
+        if (stockService.getLastPriceDate(stock).isBefore(tradeSummary.getCloseDate().plusDays(7))) {
             var csv = stockPriceScraper.scrapeStockPrice(tradeSummary.getStock());
             if (!csv.isEmpty()) {
-                Files.createDirectories(stocksDirectory);
-                Files.createDirectories(stocksDirectory);
-
                 Files.write(stocksDirectory.resolve(tradeSummary.getStock() + ".csv"), csv,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             }
         }
-
-        // TODO : Use invoice id for image id. Or generate if there is no invoice for all trade logs
 
         StringBuilder buys = new StringBuilder();
         StringBuilder sells = new StringBuilder();
@@ -60,21 +51,27 @@ public class SimplePlotService implements PlotService {
             }
         }
 
-        Path outputPath = plotDirectory.resolve(stock + ".png");
-
         ProcessBuilder processBuilder = new ProcessBuilder("python", "python/plot.py",
-                stocksDirectory.resolve(stock + ".csv").toString(), outputPath.toString(), buys.toString(), sells.toString());
+                stocksDirectory.resolve(stock + ".csv").toString(), imagePath.toString(), buys.toString(), sells.toString());
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         try {
-            System.out.println(process.waitFor());
+            process.waitFor();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            CommonUtil.handleException(e);
         }
 
-        System.out.println(System.currentTimeMillis() - start);
+        return imagePath;
+    }
 
-        return outputPath;
+    private String generateImageName(TradeSummary tradeSummary) {
+        String imageId = tradeSummary.getLogs().get(0).getBroker().name() + tradeSummary.getStock();
+        long hash = 5381;
+        for (TradeLog tradeLog : tradeSummary.getLogs()) {
+            hash = (hash * 33 + tradeLog.getInvoiceNo().hashCode()) % Integer.MAX_VALUE;
+        }
+
+        return imageId + hash + ".png";
     }
 
 }

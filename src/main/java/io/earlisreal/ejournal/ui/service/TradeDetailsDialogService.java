@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.ui.helper;
+package io.earlisreal.ejournal.ui.service;
 
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.PlotService;
@@ -15,28 +15,14 @@ import java.util.concurrent.CompletableFuture;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
-public class TradeDetailsDialog {
-
-    private static TradeDetailsDialog instance;
+public class TradeDetailsDialogService {
 
     private final PlotService plotService;
     private final Stage stage;
     private final TradeDetailsController controller;
 
-    public static TradeDetailsDialog getInstance() throws IOException {
-        if (instance == null) {
-            synchronized (TradeDetailsDialog.class) {
-                if (instance == null) {
-                    instance = new TradeDetailsDialog();
-                }
-            }
-        }
-
-        return instance;
-    }
-
-    private TradeDetailsDialog() throws IOException {
-        plotService = ServiceProvider.getPlotService();
+    TradeDetailsDialogService(PlotService plotService) throws IOException {
+        this.plotService = plotService;
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/trade-details.fxml"));
         Scene scene = new Scene(loader.load());

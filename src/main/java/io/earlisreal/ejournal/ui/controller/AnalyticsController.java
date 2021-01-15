@@ -4,7 +4,7 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
-import io.earlisreal.ejournal.ui.helper.TradeDetailsDialog;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
@@ -97,7 +97,7 @@ public class AnalyticsController implements Initializable {
 
             pane.setOnMouseClicked(event -> {
                 try {
-                    TradeDetailsDialog.getInstance().show(summary);
+                    UIServiceProvider.getTradeDetailsDialogService().show(summary);
                 } catch (IOException e) {
                     handleException(e);
                 }

@@ -3,10 +3,9 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
-import io.earlisreal.ejournal.ui.helper.TradeDetailsDialog;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
@@ -14,14 +13,11 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
-import java.util.concurrent.CompletableFuture;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
@@ -48,14 +44,10 @@ public class LogsController implements Initializable {
     public TableColumn<TradeSummary, String> summaryDays;
 
     private TradeLogService tradeLogService;
-    private Stage tradeDetailsStage;
-    private TradeDetailsController tradeDetailsController;
-    private PlotService plotService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
-        plotService = ServiceProvider.getPlotService();
 
         reload();
     }
@@ -82,7 +74,7 @@ public class LogsController implements Initializable {
             TableRow<TradeSummary> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 try {
-                    TradeDetailsDialog.getInstance().show(row.getItem());
+                    UIServiceProvider.getTradeDetailsDialogService().show(row.getItem());
                 } catch (IOException e) {
                     handleException(e);
                 }

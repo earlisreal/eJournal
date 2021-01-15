@@ -51,6 +51,15 @@ public class AnalyticsController implements Initializable {
 
     private void initializeLastTrade() {
         var summaries = tradeLogService.getTradeSummaries();
+        if (summaries.isEmpty()) {
+            lastStock.setText("");
+            lastClosedDate.setText("");
+            lastPosition.setText("");
+            lastHolding.setText("");
+            lastProfit.setText("");
+            return;
+        }
+
         TradeSummary lastTrade = summaries.get(summaries.size() - 1);
         lastStock.setText(lastTrade.getStock());
         lastClosedDate.setText(lastTrade.getCloseDate().toString());
@@ -64,6 +73,8 @@ public class AnalyticsController implements Initializable {
         var panes = previousTradesBox.getChildren();
         for (int i = 0; i < Math.min(panes.size(), summaries.size()); ++i) {
             Pane pane = (Pane) panes.get(i);
+            pane.setVisible(true);
+
             var labels = pane.getChildren();
             Label win = (Label) labels.get(0);
             Label stock = (Label) labels.get(1);
@@ -83,6 +94,10 @@ public class AnalyticsController implements Initializable {
                 profit.setTextFill(Paint.valueOf("red"));
                 win.setTextFill(Paint.valueOf("red"));
             }
+        }
+
+        for (int i = 0; i < panes.size() - summaries.size(); ++i) {
+            panes.get(panes.size() - 1 - i).setVisible(false);
         }
     }
 

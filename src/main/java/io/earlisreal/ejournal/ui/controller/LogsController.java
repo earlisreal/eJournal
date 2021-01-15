@@ -6,17 +6,14 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.ui.helper.TradeDetailsDialog;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -60,18 +57,6 @@ public class LogsController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         plotService = ServiceProvider.getPlotService();
 
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/trade-details.fxml"));
-            Parent dialog = loader.load();
-            Scene scene = new Scene(dialog);
-            tradeDetailsStage = new Stage();
-            tradeDetailsStage.initModality(Modality.APPLICATION_MODAL);
-            tradeDetailsStage.setScene(scene);
-            tradeDetailsController = loader.getController();
-        } catch (IOException e) {
-            handleException(e);
-        }
-
         reload();
     }
 
@@ -96,27 +81,11 @@ public class LogsController implements Initializable {
         summaryTable.setRowFactory(param -> {
             TableRow<TradeSummary> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
-                TradeSummary summary = row.getItem();
-                tradeDetailsController.initialize(summary);
-                tradeDetailsStage.setTitle(summary.getStock());
-                tradeDetailsStage.show();
-
-                CompletableFuture.supplyAsync(() -> {
-                    tradeDetailsController.showLoading();
-                    try {
-                        return plotService.plot(row.getItem());
-                    } catch (IOException e) {
-                        handleException(e);
-                    }
-                    return null;
-                }).thenAccept(imageUrl -> {
-                    if (imageUrl == null) return;
-                    try {
-                        tradeDetailsController.updateImage(imageUrl.toUri().toURL().toString());
-                    } catch (MalformedURLException e) {
-                        handleException(e);
-                    }
-                });
+                try {
+                    TradeDetailsDialog.getInstance().show(row.getItem());
+                } catch (IOException e) {
+                    handleException(e);
+                }
             });
             return row;
         });

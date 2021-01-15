@@ -4,9 +4,9 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.ui.helper.TradeDetailsDialog;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
@@ -14,12 +14,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.prettify;
-import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class AnalyticsController implements Initializable {
 
@@ -94,6 +94,14 @@ public class AnalyticsController implements Initializable {
                 profit.setTextFill(Paint.valueOf("red"));
                 win.setTextFill(Paint.valueOf("red"));
             }
+
+            pane.setOnMouseClicked(event -> {
+                try {
+                    TradeDetailsDialog.getInstance().show(summary);
+                } catch (IOException e) {
+                    handleException(e);
+                }
+            });
         }
 
         for (int i = 0; i < panes.size() - summaries.size(); ++i) {

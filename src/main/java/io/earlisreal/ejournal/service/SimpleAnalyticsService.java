@@ -5,9 +5,7 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.round;
@@ -122,6 +120,38 @@ public class SimpleAnalyticsService implements AnalyticsService {
             runningSum += entry.getValue();
             data.add(new XYChart.Data<>(entry.getKey().toString(), runningSum));
         }
+        return data;
+    }
+
+    @Override
+    public List<XYChart.Data<Double, String>> getTopWinners() {
+        var map = tradeLogService.getTradeSummaries().stream()
+                .filter(summary -> summary.getProfit() > 0)
+                .sorted(Comparator.comparing(TradeSummary::getProfit).reversed())
+                .collect(Collectors.toMap(TradeSummary::getStock, TradeSummary::getProfit, Double::sum));
+        var list = mapToList(map);
+        list.sort(Comparator.comparing(XYChart.Data::getXValue));
+        return list;
+    }
+
+    @Override
+    public List<XYChart.Data<Double, String>> getTopLosers() {
+        var map = tradeLogService.getTradeSummaries().stream()
+                .filter(summary -> summary.getProfit() < 0)
+                .sorted(Comparator.comparing(TradeSummary::getProfit))
+                .collect(Collectors.toMap(TradeSummary::getStock, TradeSummary::getProfit, Double::sum));
+        var list = mapToList(map);
+        list.sort((o1, o2) -> o2.getXValue().compareTo(o1.getXValue()));
+        return list;
+    }
+
+    private List<XYChart.Data<Double, String>> mapToList(Map<String, Double> map) {
+        List<XYChart.Data<Double, String>> data = new ArrayList<>();
+        for (var entry : map.entrySet()) {
+            if (data.size() == 5) break;
+            data.add(new XYChart.Data<>(entry.getValue(), entry.getKey()));
+        }
+
         return data;
     }
 

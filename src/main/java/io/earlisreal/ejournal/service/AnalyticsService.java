@@ -33,6 +33,10 @@ public interface AnalyticsService {
 
     List<XYChart.Data<String, Double>> getEquityData();
 
+    List<XYChart.Data<Double, String>> getTopWinners();
+
+    List<XYChart.Data<Double, String>> getTopLosers();
+
     List<TradeSummary> getSummaries();
 
     List<TradeSummary> getLosses();

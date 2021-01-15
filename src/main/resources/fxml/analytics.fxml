@@ -9,7 +9,7 @@
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
    <children>
-      <LineChart fx:id="equityChart" layoutX="11.0" layoutY="341.0" prefHeight="339.0" prefWidth="678.0" title="Equity">
+      <LineChart fx:id="equityChart" layoutX="17.0" layoutY="341.0" prefHeight="339.0" prefWidth="680.0" title="Equity">
         <xAxis>
           <CategoryAxis label="Date" side="BOTTOM" />
         </xAxis>
@@ -110,20 +110,20 @@
          </children>
       </HBox>
       <Label layoutX="336.0" layoutY="10.0" text="PREVIOUS TRADES PERFORMANCE" />
-      <BarChart layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
+      <BarChart fx:id="topWinners" layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
         <xAxis>
-          <CategoryAxis side="BOTTOM" />
+           <NumberAxis side="BOTTOM" />
         </xAxis>
         <yAxis>
-          <NumberAxis side="LEFT" />
+           <CategoryAxis side="LEFT" />
         </yAxis>
       </BarChart>
-      <BarChart layoutX="356.0" layoutY="131.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Loser">
+      <BarChart fx:id="topLosers" layoutX="362.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Loser">
          <xAxis>
-            <CategoryAxis side="BOTTOM" />
+            <NumberAxis side="BOTTOM" />
          </xAxis>
          <yAxis>
-            <NumberAxis side="LEFT" />
+            <CategoryAxis side="LEFT" />
          </yAxis>
       </BarChart>
       <Pane layoutX="15.0" layoutY="27.0" prefHeight="100.0" prefWidth="192.0">

@@ -7,8 +7,7 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.XYChart;
+import javafx.scene.chart.*;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -30,6 +29,8 @@ public class AnalyticsController implements Initializable {
     public Label lastPosition;
     public Label lastHolding;
     public Label lastStock;
+    public BarChart<Double, String> topWinners;
+    public BarChart<Double, String> topLosers;
 
     private AnalyticsService service;
     private TradeLogService tradeLogService;
@@ -47,6 +48,8 @@ public class AnalyticsController implements Initializable {
         initializeEquityChart();
         initializeLastTrade();
         initializePreviousTrades();
+        initializeTopLoser();
+        initializeTopWinner();
     }
 
     private void initializeLastTrade() {
@@ -114,6 +117,18 @@ public class AnalyticsController implements Initializable {
         series.setName("Original Portfolio");
         series.setData(FXCollections.observableList(service.getEquityData()));
         equityChart.setData(FXCollections.observableList(List.of(series)));
+    }
+
+    private void initializeTopWinner() {
+        XYChart.Series<Double, String> series = new XYChart.Series<>();
+        series.setData(FXCollections.observableList(service.getTopWinners()));
+        topWinners.setData(FXCollections.observableList(List.of(series)));
+    }
+
+    private void initializeTopLoser() {
+        XYChart.Series<Double, String> series = new XYChart.Series<>();
+        series.setData(FXCollections.observableList(service.getTopLosers()));
+        topLosers.setData(FXCollections.observableList(List.of(series)));
     }
 
 }

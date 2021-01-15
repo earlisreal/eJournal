@@ -16,6 +16,7 @@ public class SimpleTradeLogService implements TradeLogService {
     private final TradeLogDAO tradeLogDAO;
     private final StrategyDAO strategyDAO;
     private final List<TradeLog> logs;
+    private final List<TradeSummary> summaries;
 
     private List<TradeLog> allLogs;
 
@@ -24,6 +25,7 @@ public class SimpleTradeLogService implements TradeLogService {
         this.strategyDAO = strategyDAO;
 
         logs = new ArrayList<>();
+        summaries = new ArrayList<>();
     }
 
     @Override
@@ -34,11 +36,7 @@ public class SimpleTradeLogService implements TradeLogService {
             tradeLog.setStrategyId(strategies.getOrDefault(tradeLog.getStrategy(), null));
         }
 
-        int res = insert(tradeLogs);
-        if (res > 0) {
-            logs.addAll(tradeLogs);
-        }
-        return res;
+        return insert(tradeLogs);
     }
 
     @Override
@@ -50,10 +48,43 @@ public class SimpleTradeLogService implements TradeLogService {
         int inserted = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(inserted + " Records Inserted");
 
-        logs.clear();
-        logs.addAll(tradeLogDAO.queryAll());
+        if (inserted > 0) {
+            logs.clear();
+            logs.addAll(tradeLogDAO.queryAll());
+            summaries.clear();
+            summaries.addAll(getSummaries(logs));
+        }
 
         return inserted;
+    }
+
+    @Override
+    public List<TradeLog> getLogs() {
+        if (allLogs == null) {
+            synchronized (this) {
+                if (allLogs == null) {
+                    allLogs = tradeLogDAO.queryAll();
+                    logs.addAll(allLogs);
+                    summaries.addAll(getSummaries(logs));
+                }
+            }
+        }
+        return logs;
+    }
+
+    @Override
+    public List<TradeLog> getAllLogs() {
+        return allLogs;
+    }
+
+    @Override
+    public void applyFilter(LocalDate startDate, LocalDate endDate) {
+        logs.clear();
+        logs.addAll(allLogs);
+        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
+
+        summaries.clear();
+        summaries.addAll(getSummaries(logs));
     }
 
     @Override
@@ -63,7 +94,7 @@ public class SimpleTradeLogService implements TradeLogService {
 
     @Override
     public List<TradeSummary> getTradeSummaries() {
-        return getSummaries(getLogs());
+        return summaries;
     }
 
     private List<TradeSummary> getSummaries(List<TradeLog> logs) {
@@ -92,31 +123,6 @@ public class SimpleTradeLogService implements TradeLogService {
             }
         }
         return summaries;
-    }
-
-    @Override
-    public List<TradeLog> getLogs() {
-        if (allLogs == null) {
-            synchronized (this) {
-                if (allLogs == null) {
-                    allLogs = tradeLogDAO.queryAll();
-                    logs.addAll(allLogs);
-                }
-            }
-        }
-        return logs;
-    }
-
-    @Override
-    public List<TradeLog> getAllLogs() {
-        return allLogs;
-    }
-
-    @Override
-    public void applyFilter(LocalDate startDate, LocalDate endDate) {
-        logs.clear();
-        logs.addAll(allLogs);
-        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
     }
 
 }

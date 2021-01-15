@@ -6,10 +6,13 @@ import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Paint;
 
 import java.net.URL;
 import java.util.List;
@@ -57,7 +60,30 @@ public class AnalyticsController implements Initializable {
     }
 
     private void initializePreviousTrades() {
+        var summaries = tradeLogService.getTradeSummaries();
+        var panes = previousTradesBox.getChildren();
+        for (int i = 0; i < Math.min(panes.size(), summaries.size()); ++i) {
+            Pane pane = (Pane) panes.get(i);
+            var labels = pane.getChildren();
+            Label win = (Label) labels.get(0);
+            Label stock = (Label) labels.get(1);
+            Label profit = (Label) labels.get(2);
 
+            TradeSummary summary = summaries.get(summaries.size() - 1 - i);
+            stock.setText(summary.getStock());
+            profit.setText(round(summary.getProfitPercentage()) + "%");
+            boolean isWin = summary.getProfit() > 0;
+            if (isWin) {
+                win.setText("WIN");
+                profit.setTextFill(Paint.valueOf("green"));
+                win.setTextFill(Paint.valueOf("green"));
+            }
+            else {
+                win.setText("LOSS");
+                profit.setTextFill(Paint.valueOf("red"));
+                win.setTextFill(Paint.valueOf("red"));
+            }
+        }
     }
 
     private void initializeEquityChart() {

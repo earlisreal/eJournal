@@ -17,6 +17,7 @@ public class SimpleTradeLogService implements TradeLogService {
     private final StrategyDAO strategyDAO;
     private final List<TradeLog> logs;
     private final List<TradeSummary> summaries;
+    private final List<TradeSummary> openPositions;
 
     private List<TradeLog> allLogs;
 
@@ -26,6 +27,7 @@ public class SimpleTradeLogService implements TradeLogService {
 
         logs = new ArrayList<>();
         summaries = new ArrayList<>();
+        openPositions = new ArrayList<>();
     }
 
     @Override
@@ -51,8 +53,7 @@ public class SimpleTradeLogService implements TradeLogService {
         if (inserted > 0) {
             logs.clear();
             logs.addAll(tradeLogDAO.queryAll());
-            summaries.clear();
-            summaries.addAll(getSummaries(logs));
+            getSummaries(logs);
         }
 
         return inserted;
@@ -65,7 +66,7 @@ public class SimpleTradeLogService implements TradeLogService {
                 if (allLogs == null) {
                     allLogs = tradeLogDAO.queryAll();
                     logs.addAll(allLogs);
-                    summaries.addAll(getSummaries(logs));
+                    getSummaries(logs);
                 }
             }
         }
@@ -73,8 +74,8 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
-    public List<TradeLog> getAllLogs() {
-        return allLogs;
+    public List<TradeSummary> getOpenPositions() {
+        return openPositions;
     }
 
     @Override
@@ -84,12 +85,6 @@ public class SimpleTradeLogService implements TradeLogService {
         logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
 
         summaries.clear();
-        summaries.addAll(getSummaries(logs));
-    }
-
-    @Override
-    public List<TradeSummary> getAllTradeSummaries() {
-        return getSummaries(getAllLogs());
     }
 
     @Override
@@ -97,9 +92,9 @@ public class SimpleTradeLogService implements TradeLogService {
         return summaries;
     }
 
-    private List<TradeSummary> getSummaries(List<TradeLog> logs) {
+    private void getSummaries(List<TradeLog> logs) {
+        summaries.clear();
         logs.sort(Comparator.comparing(TradeLog::getDate).thenComparing(tradeLog -> !tradeLog.isBuy()));
-        List<TradeSummary> summaries = new ArrayList<>();
         Map<String, TradeSummary> trades = new HashMap<>();
         for (TradeLog log : logs) {
             String stock = log.getStock();
@@ -122,7 +117,8 @@ public class SimpleTradeLogService implements TradeLogService {
                 trades.put(stock, trade);
             }
         }
-        return summaries;
+
+        openPositions.addAll(trades.values());
     }
 
 }

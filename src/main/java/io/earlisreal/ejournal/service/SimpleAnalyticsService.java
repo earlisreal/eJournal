@@ -15,8 +15,6 @@ public class SimpleAnalyticsService implements AnalyticsService {
     private final TradeLogService tradeLogService;
     private final BankTransactionService bankTransactionService;
 
-    private List<TradeSummary> allWins;
-    private List<TradeSummary> allLosses;
     private List<TradeSummary> summaries;
     private List<TradeSummary> wins;
     private List<TradeSummary> losses;
@@ -30,10 +28,6 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public void initialize() {
-        List<TradeSummary> allSummaries = tradeLogService.getAllTradeSummaries();
-        allWins = allSummaries.stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
-        allLosses = allSummaries.stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
-
         summaries = tradeLogService.getTradeSummaries();
         wins = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
         losses = tradeLogService.getTradeSummaries().stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
@@ -168,16 +162,6 @@ public class SimpleAnalyticsService implements AnalyticsService {
     @Override
     public List<TradeSummary> getWins() {
         return wins;
-    }
-
-    @Override
-    public List<TradeSummary> getAllWins() {
-        return allWins;
-    }
-
-    @Override
-    public List<TradeSummary> getAllLosses() {
-        return allLosses;
     }
 
 }

@@ -43,7 +43,4 @@ public interface AnalyticsService {
 
     List<TradeSummary> getWins();
 
-    List<TradeSummary> getAllWins();
-
-    List<TradeSummary> getAllLosses();
 }

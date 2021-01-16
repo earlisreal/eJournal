@@ -14,12 +14,10 @@ public interface TradeLogService {
 
     int insert(List<TradeLog> tradeLogs);
 
-    List<TradeSummary> getAllTradeSummaries();
-
     List<TradeSummary> getTradeSummaries();
 
     List<TradeLog> getLogs();
 
-    List<TradeLog> getAllLogs();
+    List<TradeSummary> getOpenPositions();
 
 }

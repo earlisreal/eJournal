@@ -19,6 +19,7 @@ public class TradeLog {
     private boolean isShort;
     private String invoiceNo;
     private Broker broker;
+    private String remarks;
 
     public TradeLog() {}
 

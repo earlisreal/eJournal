@@ -17,98 +17,6 @@
           <NumberAxis label="Value" side="LEFT" />
         </yAxis>
       </LineChart>
-      <HBox fx:id="previousTradesBox" layoutX="212.0" layoutY="27.0" prefHeight="100.0" prefWidth="480.0">
-         <children>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="14.0" layoutY="69.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
-               </children>
-            </Pane>
-         </children>
-      </HBox>
       <Label layoutX="336.0" layoutY="10.0" text="PREVIOUS TRADES PERFORMANCE" />
       <BarChart fx:id="topWinners" layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
         <xAxis>
@@ -126,23 +34,5 @@
             <CategoryAxis side="LEFT" />
          </yAxis>
       </BarChart>
-      <Pane layoutX="15.0" layoutY="27.0" prefHeight="100.0" prefWidth="192.0">
-         <children>
-            <Label fx:id="lastStock" layoutY="37.0" text="DITO">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Label>
-            <Label layoutX="47.0" layoutY="14.0" text="DITO HCM INC" />
-            <Label layoutX="47.0" layoutY="31.0" text="Profit" />
-            <Label layoutX="47.0" layoutY="50.0" text="Position" />
-            <Label layoutX="47.0" layoutY="64.0" text="Holding days" />
-            <Label fx:id="lastClosedDate" layoutX="47.0" layoutY="81.0" text="1/2/2021" />
-            <Label fx:id="lastProfit" layoutX="135.0" layoutY="31.0" text="+37.3%" />
-            <Label fx:id="lastPosition" layoutX="135.0" layoutY="50.0" text="34,000.00" />
-            <Label fx:id="lastHolding" layoutX="135.0" layoutY="64.0" text="13" />
-            <Label layoutX="4.0" layoutY="-1.0" text="LAST TRADE" />
-         </children>
-      </Pane>
    </children>
 </AnchorPane>

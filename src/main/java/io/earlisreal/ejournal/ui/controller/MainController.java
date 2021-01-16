@@ -62,6 +62,8 @@ public class MainController implements Initializable {
     private Parent analytics;
     private Parent strategy;
     private Parent bankTransaction;
+    private Parent dashboard;
+
     private ObservableList<Node> children;
     private BankTransactionService bankTransactionService;
     private TradeLogService tradeLogService;
@@ -69,6 +71,7 @@ public class MainController implements Initializable {
     private AnalyticsController analyticsController;
     private LogsController logController;
     private BankTransactionController bankTransactionController;
+    private DashboardController dashboardController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -90,6 +93,10 @@ public class MainController implements Initializable {
             FXMLLoader bankLoader = new FXMLLoader(getClass().getResource("/fxml/bank-transaction.fxml"));
             bankTransaction = bankLoader.load();
             bankTransactionController = bankLoader.getController();
+
+            FXMLLoader dashboardLoader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+            dashboard = dashboardLoader.load();
+            dashboardController = dashboardLoader.getController();
         } catch (IOException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -119,6 +126,11 @@ public class MainController implements Initializable {
     public void showStrategy(ActionEvent event) {
         children.clear();
         children.add(strategy);
+    }
+
+    public void showDashboard(ActionEvent event) {
+        children.clear();
+        children.add(dashboard);
     }
 
     public void importInvoice(ActionEvent event) {

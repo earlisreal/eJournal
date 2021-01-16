@@ -56,6 +56,7 @@ public class MainController implements Initializable {
     public TableView<Pair<String, String>> analyticsTable;
     public TableColumn<Pair<String, String>, String> analyticsColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
+    public Label accuracyLabel;
 
     private Parent log;
     private Parent analytics;
@@ -257,6 +258,12 @@ public class MainController implements Initializable {
         analyticsTable.setItems(FXCollections.observableList(analytics));
         analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
         valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
+
+        double accuracy = analyticsService.getAccuracy();
+        double lossAccuracy = 100 - analyticsService.getAccuracy();
+        battingChart.setData(FXCollections.observableArrayList(new PieChart.Data("Win\n" + accuracy + "%", accuracy),
+                new PieChart.Data("Loss\n" + lossAccuracy + "%", lossAccuracy)));
+        accuracyLabel.setText(accuracy + "%");
     }
 
 }

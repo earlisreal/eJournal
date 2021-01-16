@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.shape.*?>
 <?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
@@ -46,7 +48,7 @@
       </GridPane>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
-            <PieChart fx:id="battingChart" layoutX="11.0" layoutY="563.0" prefHeight="122.0" prefWidth="121.0" title="Accuracy" />
+            <PieChart fx:id="battingChart" labelsVisible="false" layoutX="10.0" layoutY="493.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
             <Label fx:id="statusLabel" layoutX="159.0" layoutY="714.0" text="All is Well" textAlignment="CENTER" />
             <Label layoutX="79.0" layoutY="10.0" text="Statistics" textAlignment="CENTER" AnchorPane.topAnchor="10.0">
                <font>
@@ -60,6 +62,8 @@
                 <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
               </columns>
             </TableView>
+            <Circle fill="WHITE" layoutX="110.0" layoutY="580.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
+            <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="91.0" layoutY="572.0" text="38.46%" textAlignment="CENTER" />
          </children>
       </AnchorPane>
       <MenuBar prefHeight="25.0" GridPane.columnSpan="2147483647" GridPane.valignment="TOP">

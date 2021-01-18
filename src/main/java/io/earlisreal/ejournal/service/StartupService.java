@@ -8,4 +8,6 @@ public interface StartupService {
 
     void createDirectories();
 
+    void addStockPriceListener(StartupListener listener);
+
 }

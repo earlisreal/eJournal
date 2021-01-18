@@ -19,6 +19,7 @@ public class SimpleStockService implements StockService {
         stockNameMap = stockDAO.getStockNameMap();
         stockSecurityMap = stockDAO.getStockSecurityMap();
         stockDateMap = stockDAO.getStockDateMap();
+        stockPriceMap = stockDAO.getStockPriceMap();
     }
 
     @Override

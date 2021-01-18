@@ -242,6 +242,7 @@ public class MainController implements Initializable {
         logController.reload();
         analyticsController.reload();
         bankTransactionController.reload();
+        dashboardController.reload();
     }
 
     public void reload() {

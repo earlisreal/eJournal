@@ -3,12 +3,17 @@ package io.earlisreal.ejournal.ui.controller;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.service.StartupListener;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
@@ -19,7 +24,7 @@ import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.*;
 
-public class DashboardController implements Initializable {
+public class DashboardController implements Initializable, StartupListener {
 
     public HBox previousTradesBox;
     public Label lastClosedDate;
@@ -27,17 +32,34 @@ public class DashboardController implements Initializable {
     public Label lastPosition;
     public Label lastHolding;
     public Label lastStock;
+
     public TableView<TradeSummary> openPositionTable;
+    public TableColumn<TradeSummary, String> stockColumn;
+    public TableColumn<TradeSummary, String> averageBuyColumn;
+    public TableColumn<TradeSummary, String> sharesColumn;
+    public TableColumn<TradeSummary, String> totalCostColumn;
+    public TableColumn<TradeSummary, String> marketValueColumn;
+    public TableColumn<TradeSummary, String> profitColumn;
+    public TableColumn<TradeSummary, String> percentColumn;
+    public TableColumn<TradeSummary, String> lastPriceColumn;
 
     private TradeLogService tradeLogService;
     private StockService stockService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        ServiceProvider.getStartupService().addStockPriceListener(this);
         tradeLogService = ServiceProvider.getTradeLogService();
         stockService = ServiceProvider.getStockService();
 
-        reload();
+
+        initializeLastTrade();
+        initializePreviousTrades();
+    }
+
+    @Override
+    public void onFinish() {
+        initializeOpenTrades();
     }
 
     public void reload() {
@@ -47,11 +69,31 @@ public class DashboardController implements Initializable {
     }
 
     private void initializeOpenTrades() {
+        System.out.println("Initializing Open Trades");
         var openPositions = tradeLogService.getOpenPositions();
-        // TODO: Listen to Startup Fetch of Stock price
-        for (TradeSummary log : openPositions) {
-//            stockService.getPrice(log.getStock());
-        }
+        openPositionTable.setItems(FXCollections.observableArrayList(openPositions));
+        stockColumn.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        averageBuyColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getAverageBuy())));
+        lastPriceColumn.setCellValueFactory(p -> new SimpleStringProperty(
+                prettify(stockService.getPrice(p.getValue().getStock()))));
+        sharesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getRemainingShares())));
+        totalCostColumn.setCellValueFactory(p -> new SimpleStringProperty(
+                prettify(p.getValue().getAverageBuy() * p.getValue().getRemainingShares())));
+        marketValueColumn.setCellValueFactory(p -> new SimpleStringProperty(
+                prettify(stockService.getPrice(p.getValue().getStock()) * p.getValue().getRemainingShares())));
+        profitColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(getProfit(p.getValue()))));
+        percentColumn.setCellValueFactory(p -> new SimpleStringProperty(
+                round(getProfit(p.getValue()) / getCost(p.getValue()) * 100) + "%"));
+    }
+
+    private double getProfit(TradeSummary summary) {
+        double cost = getCost(summary);
+        double current = stockService.getPrice(summary.getStock()) * summary.getRemainingShares();
+        return current - cost;
+    }
+
+    private double getCost(TradeSummary summary) {
+        return summary.getAverageBuy() * summary.getRemainingShares();
     }
 
     private void initializeLastTrade() {

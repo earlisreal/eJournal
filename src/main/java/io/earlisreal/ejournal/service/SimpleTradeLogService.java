@@ -19,8 +19,6 @@ public class SimpleTradeLogService implements TradeLogService {
     private final List<TradeSummary> summaries;
     private final List<TradeSummary> openPositions;
 
-    private List<TradeLog> allLogs;
-
     SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
         this.tradeLogDAO = tradeLogDAO;
         this.strategyDAO = strategyDAO;
@@ -61,14 +59,9 @@ public class SimpleTradeLogService implements TradeLogService {
 
     @Override
     public List<TradeLog> getLogs() {
-        if (allLogs == null) {
-            synchronized (this) {
-                if (allLogs == null) {
-                    allLogs = tradeLogDAO.queryAll();
-                    logs.addAll(allLogs);
-                    getSummaries(logs);
-                }
-            }
+        if (logs.isEmpty()) {
+            logs.addAll(tradeLogDAO.queryAll());
+            getSummaries(logs);
         }
         return logs;
     }
@@ -81,10 +74,10 @@ public class SimpleTradeLogService implements TradeLogService {
     @Override
     public void applyFilter(LocalDate startDate, LocalDate endDate) {
         logs.clear();
-        logs.addAll(allLogs);
+        logs.addAll(tradeLogDAO.queryAll());
         logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
 
-        summaries.clear();
+        getSummaries(logs);
     }
 
     @Override

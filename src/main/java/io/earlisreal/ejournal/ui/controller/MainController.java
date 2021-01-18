@@ -197,9 +197,8 @@ public class MainController implements Initializable {
 
     public void filterDate(ActionEvent event) {
         tradeLogService.applyFilter(startDate.getValue(), endDate.getValue());
-        analyticsController.reload();
-        logController.reload();
-        reload();
+        analyticsService.initialize();
+        refresh();
     }
 
     public void syncEmail(ActionEvent event) {

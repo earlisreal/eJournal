@@ -17,7 +17,7 @@ public class TradeSummary {
     private double totalBuy;
     private double totalSell;
 
-    private int runningShares;
+    private int remainingShares;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
@@ -28,13 +28,13 @@ public class TradeSummary {
 
     public void buy(TradeLog log) {
         shares += log.getShares();
-        runningShares += log.getShares();
+        remainingShares += log.getShares();
         logs.add(log);
         totalBuy += log.getNetAmount();
     }
 
     public void sell(TradeLog log) {
-        runningShares -= log.getShares();
+        remainingShares -= log.getShares();
         logs.add(log);
         totalSell += log.getNetAmount();
     }
@@ -88,7 +88,11 @@ public class TradeSummary {
     }
 
     public boolean isClosed() {
-        return runningShares == 0;
+        return remainingShares == 0;
+    }
+
+    public int getRemainingShares() {
+        return remainingShares;
     }
 
     @Override

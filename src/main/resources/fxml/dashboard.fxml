@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.chart.*?>
-<?import javafx.scene.text.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
-
-<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DashboardController">
+<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DashboardController">
    <children>
       <Pane layoutX="13.0" layoutY="14.0" prefHeight="100.0" prefWidth="192.0">
          <children>
@@ -122,12 +118,24 @@
          </children>
       </HBox>
       <Label layoutX="503.0" layoutY="6.0" text="PREVIOUS TRADES PERFORMANCE" />
-      <TableView layoutX="12.0" layoutY="400.0" prefHeight="280.0" prefWidth="679.0">
+      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="400.0" prefHeight="280.0" prefWidth="679.0">
         <columns>
-          <TableColumn prefWidth="75.0" text="C1" />
-          <TableColumn prefWidth="75.0" text="C2" />
+          <TableColumn prefWidth="75.0" text="Stock" />
+            <TableColumn prefWidth="61.0" text="Opened" />
+          <TableColumn prefWidth="99.0" text="Average Buy" />
+            <TableColumn prefWidth="81.0" text="Shares" />
+            <TableColumn prefWidth="82.0" text="Total Cost" />
+            <TableColumn prefWidth="98.0" text="Market Value" />
+            <TableColumn prefWidth="105.0" text="Unrealized Profit" />
+            <TableColumn prefWidth="75.0" text="Percent" />
         </columns>
       </TableView>
       <PieChart layoutX="14.0" layoutY="114.0" prefHeight="280.0" prefWidth="400.0" />
+      <TableView editable="true" layoutX="423.0" layoutY="114.0" prefHeight="280.0" prefWidth="268.0">
+        <columns>
+          <TableColumn prefWidth="75.0" text="Stock" />
+          <TableColumn prefWidth="191.0" text="Sell Plan" />
+        </columns>
+      </TableView>
    </children>
 </AnchorPane>

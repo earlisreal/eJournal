@@ -1,11 +1,14 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
@@ -24,18 +27,31 @@ public class DashboardController implements Initializable {
     public Label lastPosition;
     public Label lastHolding;
     public Label lastStock;
+    public TableView<TradeSummary> openPositionTable;
 
     private TradeLogService tradeLogService;
+    private StockService stockService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
+        stockService = ServiceProvider.getStockService();
+
         reload();
     }
 
     public void reload() {
         initializeLastTrade();
         initializePreviousTrades();
+        initializeOpenTrades();
+    }
+
+    private void initializeOpenTrades() {
+        var openPositions = tradeLogService.getOpenPositions();
+        // TODO: Listen to Startup Fetch of Stock price
+        for (TradeSummary log : openPositions) {
+//            stockService.getPrice(log.getStock());
+        }
     }
 
     private void initializeLastTrade() {

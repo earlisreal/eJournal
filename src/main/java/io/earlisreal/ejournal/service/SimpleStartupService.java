@@ -34,6 +34,8 @@ public class SimpleStartupService implements StartupService {
         CompletableFuture.runAsync(() -> {
             stockListScraper.parse();
             var stockMap = stockListScraper.getStockMap();
+            stockService.updateStockPrice(stockListScraper.getPriceMap());
+
             if (stockService.getStockCount() != stockMap.size()) {
                 stockService.updateStockNameMap(stockMap);
                 stockService.updateStockSecurityMap(companyScraper.scrapeCompanies());

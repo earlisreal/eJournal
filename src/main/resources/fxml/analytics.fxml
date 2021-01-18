@@ -17,7 +17,6 @@
           <NumberAxis label="Value" side="LEFT" />
         </yAxis>
       </LineChart>
-      <Label layoutX="336.0" layoutY="10.0" text="PREVIOUS TRADES PERFORMANCE" />
       <BarChart fx:id="topWinners" layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
         <xAxis>
            <NumberAxis side="BOTTOM" />

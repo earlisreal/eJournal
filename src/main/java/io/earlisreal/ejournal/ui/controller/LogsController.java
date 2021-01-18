@@ -13,6 +13,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 
 import java.io.IOException;
 import java.net.URL;
@@ -33,6 +34,7 @@ public class LogsController implements Initializable {
     public TableColumn<TradeLog, String> logFees;
     public TableColumn<TradeLog, String> logNet;
     public TableColumn<TradeLog, String> logStrategy;
+    public TableColumn<TradeLog, String> remarksColumn;
 
     public TableView<TradeSummary> summaryTable;
     public TableColumn<TradeSummary, String> summaryClosed;
@@ -67,6 +69,7 @@ public class LogsController implements Initializable {
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
         logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
+        remarksColumn.setCellFactory(TextFieldTableCell.forTableColumn());
     }
 
     private void initSummary() {
@@ -91,6 +94,10 @@ public class LogsController implements Initializable {
         summaryPercent.setCellValueFactory(s ->
                 new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
         summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
+    }
+
+    public void saveRemarks(TableColumn.CellEditEvent<TradeLog, String> tradeLogStringCellEditEvent) {
+        System.out.println(tradeLogStringCellEditEvent.getNewValue());
     }
 
 }

@@ -26,6 +26,7 @@
             <Button layoutX="16.0" layoutY="108.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
             <Button layoutX="20.0" layoutY="159.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy" />
             <Button layoutX="18.0" layoutY="210.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Log" />
+            <Button layoutX="23.0" layoutY="255.0" mnemonicParsing="false" text="Planner" />
          </children>
       </AnchorPane>
       <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">

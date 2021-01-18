@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
+<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
    <children>
       <TabPane layoutX="13.0" layoutY="11.0" prefHeight="678.0" prefWidth="678.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
@@ -30,16 +29,17 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TableView fx:id="logTable" layoutX="9.0" layoutY="9.0" prefHeight="632.0" prefWidth="661.0">
+                        <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="9.0" prefHeight="632.0" prefWidth="661.0">
                           <columns>
-                              <TableColumn fx:id="logDate" prefWidth="74.0" text="Date" />
-                              <TableColumn fx:id="logStock" prefWidth="74.0" text="Stock" />
-                              <TableColumn fx:id="logAction" prefWidth="74.0" text="Action" />
-                              <TableColumn fx:id="logPrice" prefWidth="74.0" text="Price" />
-                              <TableColumn fx:id="logShares" prefWidth="74.0" text="Shares" />
-                              <TableColumn fx:id="logFees" prefWidth="74.0" text="Fees" />
-                              <TableColumn fx:id="logNet" prefWidth="83.0" text="Net Amount" />
-                              <TableColumn fx:id="logStrategy" prefWidth="131.0" text="Strategy" />
+                              <TableColumn fx:id="logDate" editable="false" prefWidth="74.0" text="Date" />
+                              <TableColumn fx:id="logStock" editable="false" prefWidth="51.0" text="Stock" />
+                              <TableColumn fx:id="logAction" editable="false" prefWidth="57.0" text="Action" />
+                              <TableColumn fx:id="logPrice" editable="false" prefWidth="77.0" text="Price" />
+                              <TableColumn fx:id="logShares" editable="false" prefWidth="59.0" text="Shares" />
+                              <TableColumn fx:id="logFees" editable="false" prefWidth="67.0" text="Fees" />
+                              <TableColumn fx:id="logNet" editable="false" prefWidth="87.0" text="Net Amount" />
+                              <TableColumn fx:id="logStrategy" prefWidth="67.0" text="Strategy" />
+                              <TableColumn fx:id="remarksColumn" onEditCommit="#saveRemarks" prefWidth="120.0" text="Remarks" />
                           </columns>
                         </TableView>
                      </children></AnchorPane>

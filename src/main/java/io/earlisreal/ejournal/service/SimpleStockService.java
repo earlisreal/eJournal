@@ -10,6 +10,7 @@ public class SimpleStockService implements StockService {
     private final StockDAO stockDAO;
 
     private Map<String, String> stockNameMap;
+    private Map<String, Double> stockPriceMap;
     private Map<String, String> stockSecurityMap;
     private final Map<String, Long> stockDateMap;
 
@@ -45,6 +46,11 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
+    public double getPrice(String stock) {
+        return stockPriceMap.get(stock);
+    }
+
+    @Override
     public void updateLastDate(String stock, LocalDate localDate) {
         stockDateMap.put(stock, localDate.toEpochDay());
     }
@@ -64,6 +70,12 @@ public class SimpleStockService implements StockService {
     @Override
     public int getStockCount() {
         return stockNameMap.size();
+    }
+
+    @Override
+    public void updateStockPrice(Map<String, Double> priceMap) {
+        stockDAO.updateStockPrice(priceMap);
+        stockPriceMap = priceMap;
     }
 
 }

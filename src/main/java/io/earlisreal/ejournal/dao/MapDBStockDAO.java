@@ -10,11 +10,13 @@ import java.util.concurrent.ConcurrentMap;
 public class MapDBStockDAO implements StockDAO {
 
     private final ConcurrentMap<String, String> stockNameMap;
+    private final ConcurrentMap<String, Double> stockPriceMap;
     private final ConcurrentMap<String, String> stockSecurityMap;
     private final ConcurrentMap<String, Long> stockDateMap;
 
     MapDBStockDAO() {
         stockNameMap = MapDatabase.getStockNameMap();
+        stockPriceMap = MapDatabase.getStockPriceMap();
         stockSecurityMap = MapDatabase.getStockSecurityMap();
         stockDateMap = MapDatabase.getStockDateMap();
     }
@@ -22,6 +24,11 @@ public class MapDBStockDAO implements StockDAO {
     @Override
     public Map<String, String> getStockNameMap() {
         return new HashMap<>(stockNameMap);
+    }
+
+    @Override
+    public Map<String, Double> getStockPriceMap() {
+        return new HashMap<>(stockPriceMap);
     }
 
     @Override
@@ -42,6 +49,11 @@ public class MapDBStockDAO implements StockDAO {
     @Override
     public Map<String, Long> getStockDateMap() {
         return stockDateMap;
+    }
+
+    @Override
+    public void updateStockPrice(Map<String, Double> priceMap) {
+        stockPriceMap.putAll(priceMap);
     }
 
 }

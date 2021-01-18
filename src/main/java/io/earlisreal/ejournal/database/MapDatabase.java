@@ -15,6 +15,7 @@ public class MapDatabase {
 
     private static DB db;
     private static ConcurrentMap<String, String> stockNameMap;
+    private static ConcurrentMap<String, Double> stockPriceMap;
     private static ConcurrentMap<String, String> stockSecurityMap;
     private static ConcurrentMap<String, Long> stockDateMap;
     private static ConcurrentMap<String, Boolean> settings;
@@ -72,6 +73,17 @@ public class MapDatabase {
             }
         }
         return stockDateMap;
+    }
+
+    public static ConcurrentMap<String, Double> getStockPriceMap() {
+        if (stockPriceMap == null) {
+            synchronized (MapDatabase.class) {
+                if (stockPriceMap == null) {
+                    stockPriceMap = db.hashMap("stockPriceMap", Serializer.STRING, Serializer.DOUBLE).createOrOpen();
+                }
+            }
+        }
+        return stockPriceMap;
     }
 
 }

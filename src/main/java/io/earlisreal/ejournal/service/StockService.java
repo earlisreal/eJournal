@@ -13,6 +13,8 @@ public interface StockService {
 
     LocalDate getLastPriceDate(String stock);
 
+    double getPrice(String stock);
+
     void updateLastDate(String stock, LocalDate localDate);
 
     void updateStockNameMap(Map<String, String> stockMap);
@@ -20,5 +22,7 @@ public interface StockService {
     void updateStockSecurityMap(Map<String, String> stockSecurityMap);
 
     int getStockCount();
+
+    void updateStockPrice(Map<String, Double> priceMap);
 
 }

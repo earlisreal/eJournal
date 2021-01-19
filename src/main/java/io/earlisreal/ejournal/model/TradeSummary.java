@@ -43,6 +43,10 @@ public class TradeSummary {
         return getAverageBuy() * shares;
     }
 
+    public double getTotalSell() {
+        return totalSell;
+    }
+
     public double getAverageBuy() {
         return totalBuy / shares;
     }

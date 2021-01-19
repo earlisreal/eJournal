@@ -2,6 +2,8 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,12 +17,16 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class TradeDetailsController {
+
+    private final StockService stockService;
 
     public ImageView plotImageView;
     public TableView<TradeLog> logTable;
@@ -39,6 +45,10 @@ public class TradeDetailsController {
     public TableColumn<Pair<String, String>, String> statisticColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
 
+    public TradeDetailsController() {
+        stockService = ServiceProvider.getStockService();
+    }
+
     public void initialize(TradeSummary tradeSummary) {
         showLoading();
 
@@ -49,16 +59,35 @@ public class TradeDetailsController {
     private void initializeStatistics(TradeSummary summary) {
         List<Pair<String, String>> list = new ArrayList<>();
         list.add(new Pair<>("Stock", summary.getStock()));
-        list.add(new Pair<>("Profit", prettify(summary.getProfit())));
-        list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
         list.add(new Pair<>("Open", summary.getOpenDate().toString()));
         if (summary.isClosed()) {
+            list.add(new Pair<>("Profit", prettify(summary.getProfit())));
+            list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
             list.add(new Pair<>("Closed", summary.getCloseDate().toString()));
             list.add(new Pair<>("Holding Days", String.valueOf(summary.getTradeLength())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
         }
         else {
-            // TODO : Get price from stockPriceMap
+            double soldShares = summary.getShares() - summary.getRemainingShares();
+            double profit = ((summary.getTotalSell() / soldShares) - summary.getAverageBuy()) * soldShares;
+            list.add(new Pair<>("Realized Profit", prettify(profit)));
+            list.add(new Pair<>("Realized Profit %", round(profit / (soldShares * summary.getAverageBuy()) * 100) + "%"));
+
+            String hold = "";
+            Period period = summary.getOpenDate().until(LocalDate.now());
+            if (period.getYears() > 0) {
+                hold += period.getYears() + " Years ";
+            }
+            if (period.getMonths() > 0) {
+                hold += period.getMonths() + " Months ";
+            }
+            hold += period.getDays() + " Days";
+            list.add(new Pair<>("Holding Days", hold));
+
+            double cost = summary.getAverageBuy() * summary.getRemainingShares();
+            double unrealizedProfit = stockService.getPrice(summary.getStock()) * summary.getRemainingShares() - cost;
+            list.add(new Pair<>("Unrealized Profit", prettify(unrealizedProfit)));
+            list.add(new Pair<>("Unrealized Profit %", round(unrealizedProfit / cost * 100) + "%"));
         }
         list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
         list.add(new Pair<>("Position", prettify(summary.getPosition())));

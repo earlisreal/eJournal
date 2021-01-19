@@ -31,7 +31,7 @@ public class SimplePlotService implements PlotService {
         }
 
         String stock = tradeSummary.getStock();
-        if (stockService.getLastPriceDate(stock).isBefore(tradeSummary.getCloseDate().plusDays(7))) {
+        if (!tradeSummary.isClosed() || stockService.getLastPriceDate(stock).isBefore(tradeSummary.getCloseDate().plusDays(7))) {
             var csv = stockPriceScraper.scrapeStockPrice(tradeSummary.getStock());
             if (!csv.isEmpty()) {
                 Files.write(stocksDirectory.resolve(tradeSummary.getStock() + ".csv"), csv,

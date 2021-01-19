@@ -8,7 +8,7 @@ public final class UIServiceProvider {
 
     private static TradeDetailsDialogService tradeDetailsDialogService;
 
-    public static TradeDetailsDialogService getTradeDetailsDialogService() throws IOException {
+    public static TradeDetailsDialogService getTradeDetailsDialogService() {
         if (tradeDetailsDialogService == null) {
             synchronized (TradeDetailsDialogService.class) {
                 if (tradeDetailsDialogService == null) {

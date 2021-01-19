@@ -12,17 +12,22 @@ if __name__ == "__main__":
         buys[buy] = True
 
     sells = {}
-    sells_input = sys.argv[4].split(",")
-    for sell in sells_input:
-        sells[sell] = True
+    sells_input = None
+    if len(sys.argv) > 4:
+        sells_input = sys.argv[4].split(",")
+        for sell in sells_input:
+            sells[sell] = True
 
     dataframe = pandas.read_csv(sys.argv[1], names=["Date", "Open", "High", "Low", "Close", "Volume"],
                                 parse_dates=["Date"], index_col=0)
     dataframe.index.name = "Date"
 
     start = dataframe.index.searchsorted(datetime.fromisoformat(buys_input[0]))
-    end = dataframe.index.searchsorted(datetime.fromisoformat(sells_input[-1]))
-    dataframe = dataframe[start - 5:end + 5]
+    if sells_input is not None:
+        end = dataframe.index.searchsorted(datetime.fromisoformat(sells_input[-1]))
+        dataframe = dataframe[start - 5:end + 5]
+    else:
+        dataframe = dataframe[start - 5:]
 
     buy_markers = []
     sell_markers = []
@@ -43,4 +48,8 @@ if __name__ == "__main__":
 
     buy_plot = mplfinance.make_addplot(buy_markers, type="scatter", marker="^", markersize=200, color="green")
     sell_plot = mplfinance.make_addplot(sell_markers, type="scatter", alpha=0.8, marker="v", markersize=200, color="red")
-    mplfinance.plot(dataframe, type="candle", volume=True, addplot=[buy_plot, sell_plot], savefig=sys.argv[2])
+    if sells_input is None:
+        plot = [buy_plot]
+    else:
+        plot = [buy_plot, sell_plot]
+    mplfinance.plot(dataframe, type="candle", volume=True, addplot=plot, savefig=sys.argv[2])

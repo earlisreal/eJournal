@@ -60,12 +60,16 @@ public class TradeDetailsController {
         List<Pair<String, String>> list = new ArrayList<>();
         list.add(new Pair<>("Stock", summary.getStock()));
         list.add(new Pair<>("Open", summary.getOpenDate().toString()));
+        list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
+        list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
+        list.add(new Pair<>("Position", prettify(summary.getPosition())));
+
         if (summary.isClosed()) {
-            list.add(new Pair<>("Profit", prettify(summary.getProfit())));
-            list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
             list.add(new Pair<>("Closed", summary.getCloseDate().toString()));
             list.add(new Pair<>("Holding Days", String.valueOf(summary.getTradeLength())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
+            list.add(new Pair<>("Profit", prettify(summary.getProfit())));
+            list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
         }
         else {
             double soldShares = summary.getShares() - summary.getRemainingShares();
@@ -89,9 +93,6 @@ public class TradeDetailsController {
             list.add(new Pair<>("Unrealized Profit", prettify(unrealizedProfit)));
             list.add(new Pair<>("Unrealized Profit %", round(unrealizedProfit / cost * 100) + "%"));
         }
-        list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
-        list.add(new Pair<>("Position", prettify(summary.getPosition())));
-        list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
 
         statisticTable.setItems(FXCollections.observableList(list));
         statisticColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));

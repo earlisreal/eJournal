@@ -142,7 +142,7 @@ public class DashboardController implements Initializable, StartupListener {
                 win.setTextFill(Paint.valueOf("red"));
             }
 
-            pane.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
+            pane.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary));
         }
 
         for (int i = 0; i < panes.size() - summaries.size(); ++i) {

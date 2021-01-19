@@ -73,17 +73,7 @@ public class LogsController implements Initializable {
     }
 
     private void initSummary() {
-        summaryTable.setRowFactory(param -> {
-            TableRow<TradeSummary> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                try {
-                    UIServiceProvider.getTradeDetailsDialogService().show(row.getItem());
-                } catch (IOException e) {
-                    handleException(e);
-                }
-            });
-            return row;
-        });
+        summaryTable.setRowFactory(param -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
 
         summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
         summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));

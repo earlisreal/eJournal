@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.ui.controller;
 
-import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StartupListener;
@@ -12,6 +11,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -69,9 +69,7 @@ public class DashboardController implements Initializable, StartupListener {
     }
 
     private void initializeOpenTrades() {
-        System.out.println("Initializing Open Trades");
-        var openPositions = tradeLogService.getOpenPositions();
-        openPositionTable.setItems(FXCollections.observableArrayList(openPositions));
+        openPositionTable.setItems(FXCollections.observableArrayList(tradeLogService.getOpenPositions()));
         stockColumn.setCellValueFactory(new PropertyValueFactory<>("stock"));
         averageBuyColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getAverageBuy())));
         lastPriceColumn.setCellValueFactory(p -> new SimpleStringProperty(
@@ -84,6 +82,8 @@ public class DashboardController implements Initializable, StartupListener {
         profitColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(getProfit(p.getValue()))));
         percentColumn.setCellValueFactory(p -> new SimpleStringProperty(
                 round(getProfit(p.getValue()) / getCost(p.getValue()) * 100) + "%"));
+
+        openPositionTable.setRowFactory(unused -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
     }
 
     private double getProfit(TradeSummary summary) {
@@ -142,13 +142,7 @@ public class DashboardController implements Initializable, StartupListener {
                 win.setTextFill(Paint.valueOf("red"));
             }
 
-            pane.setOnMouseClicked(event -> {
-                try {
-                    UIServiceProvider.getTradeDetailsDialogService().show(summary);
-                } catch (IOException e) {
-                    handleException(e);
-                }
-            });
+            pane.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
         }
 
         for (int i = 0; i < panes.size() - summaries.size(); ++i) {

@@ -103,7 +103,7 @@ public class MainController implements Initializable {
         }
 
         children = stackPane.getChildren();
-        children.add(analytics);
+        children.add(dashboard);
 
         initializeStatistics();
     }

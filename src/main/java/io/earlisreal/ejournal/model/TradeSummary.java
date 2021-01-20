@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class TradeSummary {
 
@@ -18,6 +19,7 @@ public class TradeSummary {
     private double totalSell;
 
     private int remainingShares;
+    private String imageUrl;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
@@ -99,6 +101,14 @@ public class TradeSummary {
         return remainingShares;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
     @Override
     public String toString() {
         return "TradeSummary{" +
@@ -109,6 +119,38 @@ public class TradeSummary {
                 ", openDate=" + openDate +
                 ", closeDate=" + closeDate +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TradeSummary summary = (TradeSummary) o;
+
+        if (shares != summary.shares) return false;
+        if (Double.compare(summary.totalBuy, totalBuy) != 0) return false;
+        if (Double.compare(summary.totalSell, totalSell) != 0) return false;
+        if (remainingShares != summary.remainingShares) return false;
+        if (!stock.equals(summary.stock)) return false;
+        if (!openDate.equals(summary.openDate)) return false;
+        return Objects.equals(closeDate, summary.closeDate);
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = stock.hashCode();
+        result = 31 * result + openDate.hashCode();
+        result = 31 * result + shares;
+        result = 31 * result + (closeDate != null ? closeDate.hashCode() : 0);
+        temp = Double.doubleToLongBits(totalBuy);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(totalSell);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + remainingShares;
+        return result;
     }
 
 }

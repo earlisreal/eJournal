@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.input;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -22,6 +23,8 @@ import io.earlisreal.ejournal.util.Configs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
@@ -35,16 +38,15 @@ public class EmailParser {
 
     private static EmailParser instance;
 
-    private final Gmail service;
+    private Gmail service;
 
-    private EmailParser() throws GeneralSecurityException, IOException {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
-                .setApplicationName("eJournal")
-                .build();
+    private final Path tokenPath;
+
+    private EmailParser() {
+        tokenPath = Paths.get(Configs.DATA_DIR, "tokens");
     }
 
-    public static EmailParser getInstance() throws GeneralSecurityException, IOException {
+    public static EmailParser getInstance() {
         if (instance == null) {
             synchronized (EmailParser.class) {
                 if (instance == null) {
@@ -56,7 +58,11 @@ public class EmailParser {
         return instance;
     }
 
-    public int parse() {
+    public int parse() throws GeneralSecurityException, IOException {
+        if (service == null) {
+            newService();
+        }
+
         Instant syncTime = Instant.now();
         CacheService cacheService = ServiceProvider.getCacheService();
         int res = 0;
@@ -92,10 +98,24 @@ public class EmailParser {
             else {
                 cacheService.updateEmailLastSync(email, syncTime);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (TokenResponseException e) {
+            Path storedCredential = tokenPath.resolve("StoredCredential");
+            if (!Files.exists(storedCredential)) {
+                throw e;
+            }
+
+            Files.delete(storedCredential);
+            newService();
+            parse();
         }
         return res;
+    }
+
+    private void newService() throws GeneralSecurityException, IOException {
+        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        service = new Gmail.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))
+                .setApplicationName("eJournal")
+                .build();
     }
 
     private Credential getCredentials(NetHttpTransport httpTransport) throws IOException {
@@ -103,7 +123,7 @@ public class EmailParser {
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(inputStream));
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 httpTransport, JSON_FACTORY, clientSecrets, List.of(GmailScopes.GMAIL_READONLY))
-                .setDataStoreFactory(new FileDataStoreFactory(Paths.get(Configs.DATA_DIR, "tokens").toFile()))
+                .setDataStoreFactory(new FileDataStoreFactory(tokenPath.toFile()))
                 .setAccessType("offline")
                 .build();
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();

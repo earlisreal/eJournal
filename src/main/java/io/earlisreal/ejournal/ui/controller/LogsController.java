@@ -10,17 +10,14 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 
-import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
 public class LogsController implements Initializable {
@@ -73,7 +70,8 @@ public class LogsController implements Initializable {
     }
 
     private void initSummary() {
-        summaryTable.setRowFactory(param -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
+        summaryTable.setRowFactory(param ->
+                UIServiceProvider.getTradeDetailsDialogService().getTableRow(tradeLogService.getTradeSummaries()));
 
         summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
         summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));

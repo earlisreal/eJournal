@@ -2,11 +2,13 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
@@ -16,17 +18,20 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import static io.earlisreal.ejournal.util.CommonUtil.prettify;
-import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class TradeDetailsController {
 
     private final StockService stockService;
+    private final PlotService plotService;
 
     public ImageView plotImageView;
     public TableView<TradeLog> logTable;
@@ -45,15 +50,41 @@ public class TradeDetailsController {
     public TableColumn<Pair<String, String>, String> statisticColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
 
+    private List<TradeSummary> summaries;
+    private int index;
+
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
+        plotService = ServiceProvider.getPlotService();
+
+        summaries = new ArrayList<>();
     }
 
-    public void initialize(TradeSummary tradeSummary) {
-        showLoading();
+    public void setSummaries(List<TradeSummary> summaries) {
+        this.summaries = summaries;
+    }
 
-        initializeStatistics(tradeSummary);
-        initializeLogs(tradeSummary);
+    public void nextTrade(ActionEvent event) {
+        index = (index + 1) % summaries.size();
+        show();
+    }
+
+    public void previousTrade(ActionEvent event) {
+        if (--index < 0) index = summaries.size() - 1;
+        show();
+    }
+
+    public void show(TradeSummary summary) {
+        index = summaries.indexOf(summary);
+        show();
+    }
+
+    public void show() {
+        showLoading();
+        updateImage(getCurrentSummary());
+
+        initializeStatistics(getCurrentSummary());
+        initializeLogs(getCurrentSummary());
     }
 
     private void initializeStatistics(TradeSummary summary) {
@@ -110,18 +141,39 @@ public class TradeDetailsController {
         logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
     }
 
-    public void updateImage(String imageUrl) {
-        plotImageView.setImage(new Image(imageUrl));
+    public void updateImage(TradeSummary tradeSummary) {
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                Path imagePath = plotService.plot(tradeSummary);
+                tradeSummary.setImageUrl(imagePath.toUri().toURL().toString());
+                return tradeSummary;
+            } catch (IOException e) {
+                handleException(e);
+            }
+            return null;
+        }).thenAccept(summary -> {
+            if (!summaries.get(index).equals(tradeSummary)) {
+                return;
+            }
 
-        plotImageView.setVisible(true);
-        loadingLabel.setVisible(false);
-        loadingProgress.setVisible(false);
+            if (tradeSummary.getImageUrl() == null) return;
+
+            plotImageView.setImage(new Image(tradeSummary.getImageUrl()));
+            plotImageView.setVisible(true);
+            loadingLabel.setVisible(false);
+            loadingProgress.setVisible(false);
+        });
+
     }
 
     public void showLoading() {
         plotImageView.setVisible(false);
         loadingLabel.setVisible(true);
         loadingProgress.setVisible(true);
+    }
+
+    private TradeSummary getCurrentSummary() {
+        return summaries.get(index);
     }
 
 }

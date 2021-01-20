@@ -7,15 +7,12 @@
 
 <AnchorPane fx:id="anchorPane" prefHeight="700.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
-      <ImageView fx:id="plotImageView" fitHeight="369.0" fitWidth="632.0" layoutX="186.0" preserveRatio="true">
+      <ImageView fx:id="plotImageView" fitHeight="369.0" fitWidth="514.0" layoutX="186.0" layoutY="60.0" preserveRatio="true">
          <viewport>
             <Rectangle2D />
          </viewport>
-         <image>
-            <Image url="@../../../../../.eJournal/plot/BDO.png" />
-         </image>
       </ImageView>
-      <TableView fx:id="logTable" layoutX="14.0" layoutY="357.0" prefHeight="329.0" prefWidth="671.0">
+      <TableView fx:id="logTable" layoutX="14.0" layoutY="436.0" prefHeight="250.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="74.0" text="Date" />
             <TableColumn fx:id="logAction" prefWidth="74.0" text="Action" />
@@ -27,7 +24,7 @@
             <TableColumn fx:id="logStrategy1" prefWidth="111.0" text="Remarks" />
          </columns>
       </TableView>
-      <TableView fx:id="statisticTable" layoutX="14.0" layoutY="14.0" prefHeight="329.0" prefWidth="200.0">
+      <TableView fx:id="statisticTable" layoutX="14.0" layoutY="14.0" prefHeight="416.0" prefWidth="200.0">
          <columns>
             <TableColumn fx:id="statisticColumn" prefWidth="100.0" text="Statistic" />
             <TableColumn fx:id="valueColumn" prefWidth="100.0" text="Value" />
@@ -35,5 +32,7 @@
       </TableView>
       <ProgressIndicator fx:id="loadingProgress" layoutX="358.0" layoutY="158.0" />
       <Label fx:id="loadingLabel" layoutX="424.0" layoutY="176.0" text="Loading Plot Image" />
+      <Button layoutX="645.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
+      <Button layoutX="578.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
    </children>
 </AnchorPane>

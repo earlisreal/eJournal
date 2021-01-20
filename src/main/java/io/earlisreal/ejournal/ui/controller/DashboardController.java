@@ -11,18 +11,17 @@ import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.*;
+import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class DashboardController implements Initializable, StartupListener {
 
@@ -83,7 +82,8 @@ public class DashboardController implements Initializable, StartupListener {
         percentColumn.setCellValueFactory(p -> new SimpleStringProperty(
                 round(getProfit(p.getValue()) / getCost(p.getValue()) * 100) + "%"));
 
-        openPositionTable.setRowFactory(unused -> UIServiceProvider.getTradeDetailsDialogService().getTableRow());
+        openPositionTable.setRowFactory(unused ->
+                UIServiceProvider.getTradeDetailsDialogService().getTableRow(tradeLogService.getOpenPositions()));
     }
 
     private double getProfit(TradeSummary summary) {
@@ -142,7 +142,7 @@ public class DashboardController implements Initializable, StartupListener {
                 win.setTextFill(Paint.valueOf("red"));
             }
 
-            pane.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary));
+            pane.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary, summaries));
         }
 
         for (int i = 0; i < panes.size() - summaries.size(); ++i) {

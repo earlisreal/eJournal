@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.paint.*?>
-<?import javafx.scene.shape.*?>
-<?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="100.0" />
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="702.0" />
@@ -26,7 +24,7 @@
             <Button layoutX="16.0" layoutY="108.0" mnemonicParsing="false" onAction="#showLog" text="Trade Log" />
             <Button layoutX="20.0" layoutY="159.0" mnemonicParsing="false" onAction="#showStrategy" text="Strategy" />
             <Button layoutX="18.0" layoutY="210.0" mnemonicParsing="false" onAction="#showBankTransaction" text="Bank Log" />
-            <Button layoutX="23.0" layoutY="255.0" mnemonicParsing="false" text="Planner" />
+            <Button layoutX="23.0" layoutY="255.0" mnemonicParsing="false" onAction="#showPlan" text="Planner" />
          </children>
       </AnchorPane>
       <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">

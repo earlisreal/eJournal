@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+
+<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.PlanController">
+   <children>
+      <TitledPane animated="false" layoutX="12.0" layoutY="14.0" prefHeight="75.0" prefWidth="679.0" text="New Plan">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <children>
+                  <Button layoutX="599.0" layoutY="12.0" mnemonicParsing="false" text="Add Plan" />
+                  <TextField layoutX="517.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="50,000" />
+                  <Label layoutX="441.0" layoutY="16.0" text="Value at Risk" />
+                  <TextField layoutX="363.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="8.9" />
+                  <Label layoutX="277.0" layoutY="16.0" text="Stop Loss Price" />
+                  <TextField layoutX="200.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="10.2" />
+                  <Label layoutX="137.0" layoutY="16.0" text="Entry Price" />
+                  <TextField layoutX="58.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="DITO" />
+                  <Label layoutX="14.0" layoutY="16.0" text="Stock" />
+               </children>
+            </AnchorPane>
+        </content>
+      </TitledPane>
+      <TableView layoutX="12.0" layoutY="103.0" prefHeight="579.0" prefWidth="679.0">
+        <columns>
+          <TableColumn prefWidth="75.0" text="Stock" />
+          <TableColumn prefWidth="75.0" text="Entry" />
+            <TableColumn prefWidth="75.0" text="Stop" />
+            <TableColumn prefWidth="75.0" text="Risk" />
+            <TableColumn prefWidth="75.0" text="Percent" />
+            <TableColumn prefWidth="75.0" text="Shares" />
+            <TableColumn prefWidth="75.0" text="Position" />
+            <TableColumn prefWidth="75.0" text="Executed" />
+            <TableColumn prefWidth="75.0" text="Delete" />
+        </columns>
+      </TableView>
+   </children>
+</AnchorPane>

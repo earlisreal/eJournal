@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.PlanController">
+<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.PlanController">
    <children>
       <TitledPane animated="false" layoutX="12.0" layoutY="14.0" prefHeight="75.0" prefWidth="679.0" text="New Plan">
         <content>
@@ -23,17 +22,18 @@
             </AnchorPane>
         </content>
       </TitledPane>
-      <TableView layoutX="12.0" layoutY="103.0" prefHeight="579.0" prefWidth="679.0">
+      <TableView fx:id="planTable" layoutX="12.0" layoutY="103.0" prefHeight="579.0" prefWidth="679.0">
         <columns>
-          <TableColumn prefWidth="75.0" text="Stock" />
-          <TableColumn prefWidth="75.0" text="Entry" />
-            <TableColumn prefWidth="75.0" text="Stop" />
-            <TableColumn prefWidth="75.0" text="Risk" />
-            <TableColumn prefWidth="75.0" text="Percent" />
-            <TableColumn prefWidth="75.0" text="Shares" />
-            <TableColumn prefWidth="75.0" text="Position" />
-            <TableColumn prefWidth="75.0" text="Executed" />
-            <TableColumn prefWidth="75.0" text="Delete" />
+            <TableColumn fx:id="dateColumn" prefWidth="75.0" text="Date" />
+          <TableColumn fx:id="stockColumn" prefWidth="58.0" text="Stock" />
+          <TableColumn fx:id="entryColumn" prefWidth="68.0" text="Entry" />
+            <TableColumn fx:id="stopColumn" prefWidth="69.0" text="Stop" />
+            <TableColumn fx:id="riskColumn" prefWidth="60.0" text="Risk" />
+            <TableColumn fx:id="percentColumn" prefWidth="54.0" text="Percent" />
+            <TableColumn fx:id="sharesColumn" prefWidth="77.0" text="Shares" />
+            <TableColumn fx:id="positionColumn" prefWidth="86.0" text="Position" />
+            <TableColumn fx:id="strategyColumn" prefWidth="75.0" text="Strategy" />
+            <TableColumn fx:id="deleteColumn" prefWidth="56.0" text="Delete" />
         </columns>
       </TableView>
    </children>

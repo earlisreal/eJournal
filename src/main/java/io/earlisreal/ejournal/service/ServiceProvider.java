@@ -13,6 +13,7 @@ public final class ServiceProvider {
     private static AnalyticsService analyticsService;
     private static StartupService startupService;
     private static PlotService plotService;
+    private static PlanService planService;
 
     private ServiceProvider() {}
 
@@ -111,6 +112,18 @@ public final class ServiceProvider {
         }
 
         return stockService;
+    }
+
+    public static PlanService getPlanService() {
+        if (planService == null) {
+            synchronized (ServiceProvider.class) {
+                if (planService == null) {
+                    planService = new SimplePlanService(DAOProvider.getPlanDAO());
+                }
+            }
+        }
+
+        return planService;
     }
 
 }

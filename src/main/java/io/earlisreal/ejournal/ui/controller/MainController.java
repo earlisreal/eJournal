@@ -140,6 +140,7 @@ public class MainController implements Initializable {
     }
 
     public void showPlan(ActionEvent event) {
+        planController.reload();
         children.clear();
         children.add(plan);
     }

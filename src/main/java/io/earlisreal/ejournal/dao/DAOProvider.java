@@ -9,6 +9,7 @@ public class DAOProvider {
     private static BankTransactionDAO bankTransactionDAO;
     private static EmailLastSyncDAO emailLastSyncDAO;
     private static StockDAO stockDAO;
+    private static PlanDAO planDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -68,6 +69,18 @@ public class DAOProvider {
         }
 
         return stockDAO;
+    }
+
+    public static PlanDAO getPlanDAO() {
+        if (planDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (planDAO == null) {
+                    planDAO = new DerbyPlanDAO();
+                }
+            }
+        }
+
+        return planDAO;
     }
 
 }

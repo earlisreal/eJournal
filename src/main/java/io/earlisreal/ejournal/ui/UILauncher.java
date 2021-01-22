@@ -17,6 +17,7 @@ public class UILauncher extends Application {
         primaryStage.setTitle("eJournal");
         primaryStage.setScene(scene);
         primaryStage.show();
+        primaryStage.setResizable(false);
     }
 
 }

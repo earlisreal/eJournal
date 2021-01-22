@@ -31,6 +31,14 @@ public enum Table {
     SETTINGS("settings", "CREATE TABLE email_sync (" +
             "email VARCHAR(30) NOT NULL CONSTRAINT EMAIL_SYNC_PK PRIMARY KEY, " +
             "last_sync TIMESTAMP)",
+            null),
+    PLAN("plan", "CREATE TABLE plan (" +
+            "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT plan_pk PRIMARY KEY, " +
+            "stock VARCHAR(5), " +
+            "entry DOUBLE, " +
+            "stop DOUBLE, " +
+            "risk DOUBLE, " +
+            "strategy_id INT CONSTRAINT plan_strategy_id_fk REFERENCES strategy ON DELETE SET null)",
             null);
 
     private final String name;

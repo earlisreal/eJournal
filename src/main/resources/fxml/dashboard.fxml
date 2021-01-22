@@ -15,7 +15,7 @@
                   <Font size="18.0" />
                </font>
             </Label>
-            <Label layoutX="47.0" layoutY="14.0" text="DITO HCM INC" />
+            <Label fx:id="stockName" layoutX="47.0" layoutY="14.0" text="DITO HCM INC" />
             <Label layoutX="47.0" layoutY="31.0" text="Profit" />
             <Label layoutX="47.0" layoutY="50.0" text="Position" />
             <Label layoutX="47.0" layoutY="64.0" text="Holding days" />
@@ -131,7 +131,7 @@
             <TableColumn fx:id="percentColumn" prefWidth="82.0" text="Percent" />
         </columns>
       </TableView>
-      <PieChart layoutX="14.0" layoutY="114.0" prefHeight="280.0" prefWidth="400.0" />
+      <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="280.0" prefWidth="400.0" />
       <TableView editable="true" layoutX="423.0" layoutY="114.0" prefHeight="280.0" prefWidth="268.0">
         <columns>
           <TableColumn prefWidth="75.0" text="Stock" />

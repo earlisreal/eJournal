@@ -1,14 +1,12 @@
 package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.service.ServiceProvider;
-import io.earlisreal.ejournal.service.StartupListener;
-import io.earlisreal.ejournal.service.StockService;
-import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.service.*;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -18,6 +16,8 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
@@ -41,7 +41,9 @@ public class DashboardController implements Initializable, StartupListener {
     public TableColumn<TradeSummary, String> profitColumn;
     public TableColumn<TradeSummary, String> percentColumn;
     public TableColumn<TradeSummary, String> lastPriceColumn;
+    public PieChart portfolioChart;
 
+    private AnalyticsService analyticsService;
     private TradeLogService tradeLogService;
     private StockService stockService;
 
@@ -50,10 +52,11 @@ public class DashboardController implements Initializable, StartupListener {
         ServiceProvider.getStartupService().addStockPriceListener(this);
         tradeLogService = ServiceProvider.getTradeLogService();
         stockService = ServiceProvider.getStockService();
-
+        analyticsService = ServiceProvider.getAnalyticsService();
 
         initializeLastTrade();
         initializePreviousTrades();
+        initializePortfolio();
     }
 
     @Override
@@ -65,6 +68,7 @@ public class DashboardController implements Initializable, StartupListener {
         initializeLastTrade();
         initializePreviousTrades();
         initializeOpenTrades();
+        initializePortfolio();
     }
 
     private void initializeOpenTrades() {
@@ -148,6 +152,20 @@ public class DashboardController implements Initializable, StartupListener {
         for (int i = 0; i < panes.size() - summaries.size(); ++i) {
             panes.get(panes.size() - 1 - i).setVisible(false);
         }
+    }
+
+    private void initializePortfolio() {
+        List<PieChart.Data> data = new ArrayList<>();
+        double equity = analyticsService.getTotalEquity();
+        var positions = tradeLogService.getOpenPositions();
+        double sum = 0;
+        for (TradeSummary summary : positions) {
+            sum += summary.getPosition();
+            data.add(new PieChart.Data(summary.getStock(), summary.getPosition()));
+        }
+
+        data.add(0, new PieChart.Data("Cash", equity - sum));
+        portfolioChart.setData(FXCollections.observableList(data));
     }
 
 }

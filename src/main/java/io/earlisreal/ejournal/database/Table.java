@@ -34,6 +34,7 @@ public enum Table {
             null),
     PLAN("plan", "CREATE TABLE plan (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT plan_pk PRIMARY KEY, " +
+            "date DATE, " +
             "stock VARCHAR(5), " +
             "entry DOUBLE, " +
             "stop DOUBLE, " +

@@ -1,7 +1,11 @@
 package io.earlisreal.ejournal.dto;
 
+import java.time.LocalDate;
+
 public class Plan {
 
+    private int id;
+    private LocalDate date;
     private String stock;
     private double entry;
     private double stop;
@@ -29,6 +33,14 @@ public class Plan {
     public double getPercent() {
         double loss = entry - stop;
         return loss / entry * 100;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 
     public String getStock() {
@@ -61,6 +73,14 @@ public class Plan {
 
     public void setRisk(double risk) {
         this.risk = risk;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
 }

@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import de.jensd.fx.glyphs.GlyphsDude;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
@@ -25,8 +27,12 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -59,6 +65,13 @@ public class MainController implements Initializable {
     public Label accuracyLabel;
     public Button emailSyncButton;
 
+    public BorderPane dashboardBorder;
+    public BorderPane analyticsBorder;
+    public BorderPane logBorder;
+    public BorderPane bankBorder;
+    public BorderPane planBorder;
+    public BorderPane strategyBorder;
+
     private Parent log;
     private Parent analytics;
     private Parent strategy;
@@ -78,6 +91,8 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        initializeIcons();
+
         bankTransactionService = ServiceProvider.getBankTransactionService();
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
@@ -118,32 +133,52 @@ public class MainController implements Initializable {
         initializeStatistics();
     }
 
-    public void showAnalytics(ActionEvent event) {
+    private void initializeIcons() {
+        Text dashboard = GlyphsDude.createIcon(FontAwesomeIcon.DASHBOARD, "40px");
+        dashboardBorder.setCenter(dashboard);
+
+        Text analytics = GlyphsDude.createIcon(FontAwesomeIcon.LINE_CHART, "40px");
+        analyticsBorder.setCenter(analytics);
+
+        Text log = GlyphsDude.createIcon(FontAwesomeIcon.EXCHANGE, "40px");
+        logBorder.setCenter(log);
+
+        Text bank = GlyphsDude.createIcon(FontAwesomeIcon.BANK, "40px");
+        bankBorder.setCenter(bank);
+
+        Text plan = GlyphsDude.createIcon(FontAwesomeIcon.PENCIL, "40px");
+        planBorder.setCenter(plan);
+
+        Text strategy = GlyphsDude.createIcon(FontAwesomeIcon.LIGHTBULB_ALT, "40px");
+        strategyBorder.setCenter(strategy);
+    }
+
+    public void showAnalytics(MouseEvent event) {
         children.clear();
         children.add(analytics);
     }
 
-    public void showLog(ActionEvent event) {
+    public void showLog(MouseEvent event) {
         children.clear();
         children.add(log);
     }
 
-    public void showBankTransaction(ActionEvent event) {
+    public void showBankTransaction(MouseEvent event) {
         children.clear();
         children.add(bankTransaction);
     }
 
-    public void showStrategy(ActionEvent event) {
+    public void showStrategy(MouseEvent event) {
         children.clear();
         children.add(strategy);
     }
 
-    public void showDashboard(ActionEvent event) {
+    public void showDashboard(MouseEvent event) {
         children.clear();
         children.add(dashboard);
     }
 
-    public void showPlan(ActionEvent event) {
+    public void showPlan(MouseEvent event) {
         planController.reload();
         children.clear();
         children.add(plan);

@@ -28,10 +28,7 @@ import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -89,6 +86,8 @@ public class MainController implements Initializable {
     private DashboardController dashboardController;
     private PlanController planController;
 
+    private BorderPane selectedPane;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeIcons();
@@ -129,6 +128,8 @@ public class MainController implements Initializable {
 
         children = stackPane.getChildren();
         children.add(dashboard);
+        selectedPane = dashboardBorder;
+        selectPane(dashboardBorder);
 
         initializeStatistics();
     }
@@ -156,32 +157,46 @@ public class MainController implements Initializable {
     public void showAnalytics(MouseEvent event) {
         children.clear();
         children.add(analytics);
+        selectPane(analyticsBorder);
     }
 
     public void showLog(MouseEvent event) {
         children.clear();
         children.add(log);
+        selectPane(logBorder);
     }
 
     public void showBankTransaction(MouseEvent event) {
         children.clear();
         children.add(bankTransaction);
+        selectPane(bankBorder);
     }
 
     public void showStrategy(MouseEvent event) {
         children.clear();
         children.add(strategy);
+        selectPane(strategyBorder);
     }
 
     public void showDashboard(MouseEvent event) {
         children.clear();
         children.add(dashboard);
+        selectPane(dashboardBorder);
     }
 
     public void showPlan(MouseEvent event) {
         planController.reload();
         children.clear();
         children.add(plan);
+        selectPane(planBorder);
+    }
+
+    private void selectPane(BorderPane pane) {
+        if (pane != null) {
+            selectedPane.setStyle("-fx-background-color:  #f4f4f4;");
+        }
+        selectedPane = pane;
+        selectedPane.setStyle("-fx-background-color: WHITE;");
     }
 
     public void importInvoice(ActionEvent event) {

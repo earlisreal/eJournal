@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.*?>
 <?import javafx.geometry.*?>
 <?import java.lang.*?>
 <?import javafx.scene.chart.*?>
@@ -19,7 +20,7 @@
       <RowConstraints maxHeight="748.0" minHeight="10.0" prefHeight="744.0" vgrow="SOMETIMES" />
    </rowConstraints>
    <children>
-      <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
+      <GridPane style="-fx-background-color: WHITE;" GridPane.columnIndex="1" GridPane.rowIndex="1">
         <columnConstraints>
           <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
         </columnConstraints>
@@ -29,40 +30,134 @@
         </rowConstraints>
          <children>
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
-            <AnchorPane prefHeight="200.0" prefWidth="200.0">
+            <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f4f4f4;">
                <children>
-                  <DatePicker fx:id="startDate" layoutX="273.0" layoutY="13.0" promptText="Start Date" />
-                  <DatePicker fx:id="endDate" layoutX="456.0" layoutY="13.0" promptText="End Date" />
+                  <DatePicker fx:id="startDate" layoutX="421.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="Start Date" />
+                  <DatePicker fx:id="endDate" layoutX="529.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="End Date" />
                   <Button layoutX="642.0" layoutY="13.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
-                  <Button layoutX="65.0" layoutY="13.0" mnemonicParsing="false" text="YTD" />
-                  <Button layoutX="118.0" layoutY="13.0" mnemonicParsing="false" text="12M" />
-                  <Button layoutX="173.0" layoutY="13.0" mnemonicParsing="false" text="1M" />
-                  <Button layoutX="225.0" layoutY="13.0" mnemonicParsing="false" text="1W" />
+                  <Button layoutX="61.0" layoutY="13.0" mnemonicParsing="false" text="YTD" />
+                  <Button layoutX="115.0" layoutY="13.0" mnemonicParsing="false" text="Last 12 Months" />
+                  <Button layoutX="224.0" layoutY="13.0" mnemonicParsing="false" text="Last 1 Month" />
+                  <Button layoutX="326.0" layoutY="13.0" mnemonicParsing="false" text="Last 1 Week" />
                   <Button layoutX="14.0" layoutY="13.0" mnemonicParsing="false" text="All" />
                </children></AnchorPane>
          </children>
       </GridPane>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+      <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f4f4f4;" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
-            <PieChart fx:id="battingChart" labelsVisible="false" layoutX="10.0" layoutY="493.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
+            <ProgressIndicator fx:id="statusProgressIndicator" layoutX="60.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
+            <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="410.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
+              <columns>
+                <TableColumn fx:id="analyticsColumn" editable="false" prefWidth="100.0" resizable="false" sortable="false" text="Analytics" />
+                <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
+              </columns>
+            </TableView>
+            <PieChart fx:id="battingChart" labelsVisible="false" layoutX="11.0" layoutY="522.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
+            <Circle fill="WHITE" layoutX="111.0" layoutY="609.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
+            <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="92.0" layoutY="601.0" text="38.46%" textAlignment="CENTER" />
             <Label fx:id="statusLabel" layoutX="90.0" layoutY="711.0" text="Syncing" textAlignment="CENTER" />
             <Label layoutX="79.0" layoutY="10.0" text="Statistics" textAlignment="CENTER" AnchorPane.topAnchor="10.0">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
-            <ProgressIndicator fx:id="statusProgressIndicator" layoutX="60.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
-            <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="450.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
-              <columns>
-                <TableColumn fx:id="analyticsColumn" editable="false" prefWidth="100.0" resizable="false" sortable="false" text="Analytics" />
-                <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
-              </columns>
-            </TableView>
-            <Circle fill="WHITE" layoutX="110.0" layoutY="580.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
-            <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="91.0" layoutY="572.0" text="38.46%" textAlignment="CENTER" />
             <Button fx:id="emailSyncButton" layoutX="140.0" layoutY="707.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
          </children>
       </AnchorPane>
+      <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" GridPane.rowIndex="1">
+         <children>
+            <VBox onMouseClicked="#showDashboard" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="dashboardBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Dashboard" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+            <VBox fx:id="testVBox1" onMouseClicked="#showAnalytics" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="analyticsBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Analytics" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+            <VBox fx:id="testVBox11" onMouseClicked="#showLog" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="logBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Trade Log" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+            <VBox fx:id="testVBox12" onMouseClicked="#showBankTransaction" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="bankBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Bank Log" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+            <VBox fx:id="testVBox13" onMouseClicked="#showPlan" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="planBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Planner" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+            <VBox fx:id="testVBox14" onMouseClicked="#showStrategy" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+               <children>
+                  <BorderPane fx:id="strategyBorder" prefHeight="90.0" prefWidth="101.0">
+                     <center>
+                        <Label text="ICON" BorderPane.alignment="CENTER" />
+                     </center>
+                     <padding>
+                        <Insets top="8.0" />
+                     </padding>
+                     <bottom>
+                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Strategy" textAlignment="CENTER" BorderPane.alignment="CENTER" />
+                     </bottom>
+                  </BorderPane>
+               </children>
+            </VBox>
+         </children>
+      </VBox>
       <MenuBar prefHeight="25.0" GridPane.columnSpan="2147483647" GridPane.valignment="TOP">
         <menus>
           <Menu mnemonicParsing="false" text="File">
@@ -93,87 +188,5 @@
             </Menu>
         </menus>
       </MenuBar>
-      <VBox prefHeight="200.0" prefWidth="100.0" GridPane.rowIndex="1">
-         <children>
-            <VBox onMouseClicked="#showDashboard" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="dashboardBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Dashboard" textAlignment="CENTER" />
-               </children>
-            </VBox>
-            <VBox fx:id="testVBox1" onMouseClicked="#showAnalytics" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="analyticsBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Analytics" textAlignment="CENTER" />
-               </children>
-            </VBox>
-            <VBox fx:id="testVBox11" onMouseClicked="#showLog" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="logBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Trade Log" textAlignment="CENTER" />
-               </children>
-            </VBox>
-            <VBox fx:id="testVBox12" onMouseClicked="#showBankTransaction" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="bankBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Bank Log" textAlignment="CENTER" />
-               </children>
-            </VBox>
-            <VBox fx:id="testVBox13" onMouseClicked="#showPlan" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="planBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Planner" textAlignment="CENTER" />
-               </children>
-            </VBox>
-            <VBox fx:id="testVBox14" onMouseClicked="#showStrategy" prefHeight="75.0" prefWidth="101.0">
-               <children>
-                  <BorderPane fx:id="strategyBorder" prefHeight="50.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                  </BorderPane>
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Strategy" textAlignment="CENTER" />
-               </children>
-            </VBox>
-         </children>
-      </VBox>
    </children>
 </GridPane>

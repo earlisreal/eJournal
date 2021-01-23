@@ -10,20 +10,19 @@
    <children>
       <Pane layoutX="13.0" layoutY="14.0" prefHeight="100.0" prefWidth="192.0">
          <children>
-            <Label fx:id="lastStock" layoutY="37.0" text="DITO">
+            <Label fx:id="lastStock" layoutX="14.0" layoutY="37.0" text="DITO">
                <font>
                   <Font size="18.0" />
                </font>
             </Label>
-            <Label fx:id="stockName" layoutX="47.0" layoutY="14.0" text="DITO HCM INC" />
-            <Label layoutX="47.0" layoutY="31.0" text="Profit" />
-            <Label layoutX="47.0" layoutY="50.0" text="Position" />
-            <Label layoutX="47.0" layoutY="64.0" text="Holding days" />
-            <Label fx:id="lastClosedDate" layoutX="47.0" layoutY="81.0" text="1/2/2021" />
-            <Label fx:id="lastProfit" layoutX="135.0" layoutY="31.0" text="+37.3%" />
-            <Label fx:id="lastPosition" layoutX="135.0" layoutY="50.0" text="34,000.00" />
-            <Label fx:id="lastHolding" layoutX="135.0" layoutY="64.0" text="13" />
-            <Label layoutX="4.0" layoutY="-1.0" text="LAST TRADE" />
+            <Label layoutX="1.0" layoutY="6.0" text="LAST TRADE" />
+            <Label layoutX="66.0" layoutY="25.0" text="Profit" />
+            <Label fx:id="lastProfit" layoutX="143.0" layoutY="25.0" text="+37.3%" />
+            <Label fx:id="lastPosition" layoutX="138.0" layoutY="43.0" text="34,000.00" />
+            <Label fx:id="lastHolding" layoutX="172.0" layoutY="60.0" text="13" />
+            <Label layoutX="66.0" layoutY="43.0" text="Position" />
+            <Label layoutX="66.0" layoutY="60.0" text="Holding days" />
+            <Label fx:id="lastClosedDate" layoutX="67.0" layoutY="78.0" text="01/2/2021" />
          </children>
       </Pane>
       <HBox fx:id="previousTradesBox" layoutX="210.0" layoutY="14.0" prefHeight="100.0" prefWidth="480.0">
@@ -31,7 +30,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -42,7 +41,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -53,7 +52,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -64,7 +63,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -75,7 +74,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -86,7 +85,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="17.0" layoutY="38.0" text="LTG" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -97,7 +96,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="24.0" layoutY="38.0" text="C" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -108,7 +107,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
                   <Label layoutX="18.0" layoutY="14.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" layoutX="12.0" layoutY="38.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutX="16.0" layoutY="38.0" text="MM" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>

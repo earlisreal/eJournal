@@ -30,7 +30,7 @@
         </rowConstraints>
          <children>
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
-            <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f4f4f4;">
+            <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: WHITE;">
                <children>
                   <DatePicker fx:id="startDate" layoutX="421.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="Start Date" />
                   <DatePicker fx:id="endDate" layoutX="529.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="End Date" />
@@ -52,9 +52,9 @@
                 <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
               </columns>
             </TableView>
-            <PieChart fx:id="battingChart" labelsVisible="false" layoutX="11.0" layoutY="522.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
-            <Circle fill="WHITE" layoutX="111.0" layoutY="609.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
-            <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="92.0" layoutY="601.0" text="38.46%" textAlignment="CENTER" />
+            <PieChart fx:id="battingChart" labelsVisible="false" layoutX="12.0" layoutY="547.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
+            <Circle fill="WHITE" layoutX="112.0" layoutY="634.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
+            <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="12.0" layoutY="626.0" prefHeight="17.0" prefWidth="200.0" text="38.46%" textAlignment="CENTER" />
             <Label fx:id="statusLabel" layoutX="90.0" layoutY="711.0" text="Syncing" textAlignment="CENTER" />
             <Label layoutX="79.0" layoutY="10.0" text="Statistics" textAlignment="CENTER" AnchorPane.topAnchor="10.0">
                <font>
@@ -62,6 +62,16 @@
                </font>
             </Label>
             <Button fx:id="emailSyncButton" layoutX="140.0" layoutY="707.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
+            <Label layoutX="50.0" layoutY="456.0" text="Risk Reward Ratio" textAlignment="CENTER">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Label fx:id="riskRewardLabel" layoutX="76.0" layoutY="487.0" text="1:3.75">
+               <font>
+                  <Font name="System Bold" size="26.0" />
+               </font>
+            </Label>
          </children>
       </AnchorPane>
       <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" GridPane.rowIndex="1">
@@ -81,7 +91,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox fx:id="testVBox1" onMouseClicked="#showAnalytics" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showAnalytics" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
                <children>
                   <BorderPane fx:id="analyticsBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -96,7 +106,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox fx:id="testVBox11" onMouseClicked="#showLog" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showLog" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
                <children>
                   <BorderPane fx:id="logBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -111,7 +121,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox fx:id="testVBox12" onMouseClicked="#showBankTransaction" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showBankTransaction" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
                <children>
                   <BorderPane fx:id="bankBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -126,7 +136,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox fx:id="testVBox13" onMouseClicked="#showPlan" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showPlan" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
                <children>
                   <BorderPane fx:id="planBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -141,7 +151,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox fx:id="testVBox14" onMouseClicked="#showStrategy" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showStrategy" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
                <children>
                   <BorderPane fx:id="strategyBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>

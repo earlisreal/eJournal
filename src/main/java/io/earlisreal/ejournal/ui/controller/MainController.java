@@ -68,6 +68,7 @@ public class MainController implements Initializable {
     public BorderPane bankBorder;
     public BorderPane planBorder;
     public BorderPane strategyBorder;
+    public Label riskRewardLabel;
 
     private Parent log;
     private Parent analytics;
@@ -193,7 +194,7 @@ public class MainController implements Initializable {
 
     private void selectPane(BorderPane pane) {
         if (pane != null) {
-            selectedPane.setStyle("-fx-background-color:  #f4f4f4;");
+            selectedPane.setStyle(null);
         }
         selectedPane = pane;
         selectedPane.setStyle("-fx-background-color: WHITE;");
@@ -346,6 +347,8 @@ public class MainController implements Initializable {
         battingChart.setData(FXCollections.observableArrayList(new PieChart.Data("Win\n" + accuracy + "%", accuracy),
                 new PieChart.Data("Loss\n" + lossAccuracy + "%", lossAccuracy)));
         accuracyLabel.setText(accuracy + "%");
+
+        riskRewardLabel.setText("1:" + analyticsService.getProfitFactor());
     }
 
 }

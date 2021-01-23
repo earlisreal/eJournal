@@ -4,17 +4,37 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.BankTransactionController">
+<AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.BankTransactionController">
     <children>
-        <TableView fx:id="bankTable" layoutX="20.0" layoutY="100.0" prefHeight="280.0" prefWidth="560.0">
+        <TableView fx:id="bankTable" layoutX="10.0" layoutY="135.0" prefHeight="545.0" prefWidth="684.0">
             <columns>
-                <TableColumn fx:id="dateColumn" prefWidth="138.0" text="Date" />
-                <TableColumn fx:id="actionColumn" prefWidth="154.0" text="Action" />
-                <TableColumn fx:id="amountColumn" prefWidth="128.0" text="Amount" />
-            <TableColumn fx:id="deleteColumn" editable="false" prefWidth="128.0" sortable="false" text="Delete" />
+                <TableColumn fx:id="dateColumn" prefWidth="185.0" text="Date" />
+                <TableColumn fx:id="actionColumn" prefWidth="156.0" text="Action" />
+                <TableColumn fx:id="amountColumn" prefWidth="192.0" text="Amount" />
+            <TableColumn fx:id="deleteColumn" editable="false" prefWidth="150.0" sortable="false" text="Delete" />
             </columns>
         </TableView>
-        <Button layoutX="20.0" layoutY="14.0" mnemonicParsing="false" onAction="#deposit" text="Deposit" />
-        <Button layoutX="91.0" layoutY="14.0" mnemonicParsing="false" onAction="#withdraw" text="withdraw" />
+      <TitledPane animated="false" layoutX="10.0" layoutY="14.0" prefHeight="115.0" prefWidth="339.0" text="Add Deposit Transaction">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <children>
+                  <DatePicker fx:id="depositDate" layoutX="14.0" layoutY="14.0" promptText="Transaction Date" />
+                  <TextField fx:id="depositAmount" layoutX="14.0" layoutY="51.0" prefHeight="25.0" prefWidth="174.0" promptText="Amount" />
+                  <Button layoutX="232.0" layoutY="32.0" mnemonicParsing="false" onAction="#deposit" text="Deposit" />
+               </children>
+            </AnchorPane>
+        </content>
+      </TitledPane>
+      <TitledPane animated="false" layoutX="355.0" layoutY="14.0" prefHeight="115.0" prefWidth="339.0" text="Add Withraw Transaction">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <children>
+                  <DatePicker fx:id="withdrawDate" layoutX="24.0" layoutY="15.0" prefHeight="25.0" prefWidth="174.0" promptText="Transaction Date" />
+                    <Button layoutX="231.0" layoutY="32.0" mnemonicParsing="false" onAction="#withdraw" text="withdraw" />
+                  <TextField fx:id="withdrawAmount" layoutX="23.0" layoutY="50.0" prefHeight="25.0" prefWidth="174.0" promptText="Amount" />
+               </children>
+            </AnchorPane>
+        </content>
+      </TitledPane>
     </children>
 </AnchorPane>

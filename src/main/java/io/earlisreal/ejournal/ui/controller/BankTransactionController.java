@@ -5,21 +5,13 @@ import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import javafx.util.Callback;
 
-import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class BankTransactionController implements Initializable {
@@ -29,41 +21,35 @@ public class BankTransactionController implements Initializable {
     public TableColumn<BankTransaction, String> amountColumn;
     public TableView<BankTransaction> bankTable;
     public TableColumn<BankTransaction, Void> deleteColumn;
+    public DatePicker depositDate;
+    public TextField depositAmount;
+    public TextField withdrawAmount;
+    public DatePicker withdrawDate;
 
     private BankTransactionService service;
-    private Stage dialogStage;
-    private BankTransactionDialogController dialogController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = ServiceProvider.getBankTransactionService();
         loadBankTransactions();
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/bank-transaction.fxml"));
-            Parent dialog = loader.load();
-            Scene scene = new Scene(dialog);
-            dialogStage = new Stage();
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
-            dialogStage.setScene(scene);
-            dialogController = loader.getController();
-            dialogController.setBankTransactionController(this);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void deposit(ActionEvent event) {
-        dialogStage.setTitle("Add Deposit Transaction");
-        dialogController.setWithdraw(false);
-        showDialog();
+        BankTransaction bankTransaction = new BankTransaction();
+        bankTransaction.setAmount(Double.parseDouble(depositAmount.getText()));
+        bankTransaction.setDate(depositDate.getValue());
+        service.insert(List.of(bankTransaction));
+
+        reload();
     }
 
     public void withdraw(ActionEvent event) {
-        dialogStage.setTitle("Add Withdraw Transaction");
-        dialogController.setWithdraw(true);
-        showDialog();
+        BankTransaction bankTransaction = new BankTransaction();
+        bankTransaction.setAmount(Double.parseDouble(withdrawAmount.getText()) * -1);
+        bankTransaction.setDate(withdrawDate.getValue());
+        service.insert(List.of(bankTransaction));
+
+        reload();
     }
 
     public void reload() {
@@ -94,14 +80,6 @@ public class BankTransactionController implements Initializable {
                 };
             }
         });
-    }
-
-    public void showDialog() {
-        dialogStage.show();
-    }
-
-    public void closeDialog() {
-        dialogStage.hide();
     }
 
 }

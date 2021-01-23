@@ -47,6 +47,7 @@ public class TradeDetailsDialogService {
 
         stage.setTitle(summary.getStock());
         stage.show();
+        stage.setResizable(false);
     }
 
 }

@@ -57,6 +57,7 @@ public class MainController implements Initializable {
     public TableColumn<Pair<String, String>, String> analyticsColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
     public Label accuracyLabel;
+    public Button emailSyncButton;
 
     private Parent log;
     private Parent analytics;
@@ -214,6 +215,7 @@ public class MainController implements Initializable {
     }
 
     public void syncEmail(ActionEvent event) {
+        emailSyncButton.setDisable(true);
         Service<Integer> service = new Service<>() {
             @Override
             protected Task<Integer> createTask() {
@@ -236,6 +238,7 @@ public class MainController implements Initializable {
             if ((int) workerStateEvent.getSource().getValue() > 0) {
                 refresh();
             }
+            emailSyncButton.setDisable(false);
         });
     }
 

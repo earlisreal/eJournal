@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
 
 import static io.earlisreal.ejournal.util.Configs.plotDirectory;
 import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
@@ -26,12 +27,14 @@ public class SimplePlotService implements PlotService {
     @Override
     public Path plot(TradeSummary tradeSummary) throws IOException {
         Path imagePath = plotDirectory.resolve(generateImageName(tradeSummary));
-        if (Files.exists(imagePath)) {
+        String stock = tradeSummary.getStock();
+        LocalDate lastDate = stockService.getLastPriceDate(stock);
+
+        if (LocalDate.now().equals(lastDate) || tradeSummary.isClosed() && Files.exists(imagePath)) {
             return imagePath;
         }
 
-        String stock = tradeSummary.getStock();
-        if (!tradeSummary.isClosed() || stockService.getLastPriceDate(stock).isBefore(tradeSummary.getCloseDate().plusDays(7))) {
+        if (!tradeSummary.isClosed() || lastDate.isBefore(tradeSummary.getCloseDate().plusDays(7))) {
             var csv = stockPriceScraper.scrapeStockPrice(tradeSummary.getStock());
             if (!csv.isEmpty()) {
                 Files.write(stocksDirectory.resolve(tradeSummary.getStock() + ".csv"), csv,
@@ -52,7 +55,8 @@ public class SimplePlotService implements PlotService {
         }
 
         ProcessBuilder processBuilder = new ProcessBuilder("python", "python/plot.py",
-                stocksDirectory.resolve(stock + ".csv").toString(), imagePath.toString(), buys.toString(), sells.toString());
+                stocksDirectory.resolve(stock + ".csv").toString(),
+                imagePath.toString(), tradeSummary.isClosed() ? "1" : "0", buys.toString(), sells.toString());
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         try {

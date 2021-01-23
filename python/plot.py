@@ -7,14 +7,14 @@ import pandas
 
 if __name__ == "__main__":
     buys = {}
-    buys_input = sys.argv[3].split(",")
+    buys_input = sys.argv[4].split(",")
     for buy in buys_input:
         buys[buy] = True
 
     sells = {}
     sells_input = None
-    if len(sys.argv) > 4:
-        sells_input = sys.argv[4].split(",")
+    if len(sys.argv) > 5:
+        sells_input = sys.argv[5].split(",")
         for sell in sells_input:
             sells[sell] = True
 
@@ -25,7 +25,10 @@ if __name__ == "__main__":
     start = dataframe.index.searchsorted(datetime.fromisoformat(buys_input[0]))
     if sells_input is not None:
         end = dataframe.index.searchsorted(datetime.fromisoformat(sells_input[-1]))
-        dataframe = dataframe[start - 5:end + 5]
+        if sys.argv[3] is "1":
+            dataframe = dataframe[start - 5:end + 5]
+        else:
+            dataframe = dataframe[start - 5:]
     else:
         dataframe = dataframe[start - 5:]
 

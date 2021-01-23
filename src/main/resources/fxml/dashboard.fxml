@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
 <?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
@@ -8,23 +10,38 @@
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DashboardController">
    <children>
-      <Pane layoutX="13.0" layoutY="14.0" prefHeight="100.0" prefWidth="192.0">
+      <HBox layoutX="14.0" layoutY="20.0" prefHeight="100.0" prefWidth="200.0">
          <children>
-            <Label fx:id="lastStock" layoutX="14.0" layoutY="37.0" text="DITO">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Label>
-            <Label layoutX="1.0" layoutY="6.0" text="LAST TRADE" />
-            <Label layoutX="66.0" layoutY="25.0" text="Profit" />
-            <Label fx:id="lastProfit" layoutX="143.0" layoutY="25.0" text="+37.3%" />
-            <Label fx:id="lastPosition" layoutX="138.0" layoutY="43.0" text="34,000.00" />
-            <Label fx:id="lastHolding" layoutX="172.0" layoutY="60.0" text="13" />
-            <Label layoutX="66.0" layoutY="43.0" text="Position" />
-            <Label layoutX="66.0" layoutY="60.0" text="Holding days" />
-            <Label fx:id="lastClosedDate" layoutX="67.0" layoutY="78.0" text="01/2/2021" />
+            <Pane prefHeight="100.0" prefWidth="49.0">
+               <children>
+                  <Label fx:id="lastStock" alignment="CENTER" layoutX="-2.0" layoutY="38.0" text="CNVRG">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+               </children>
+            </Pane>
+            <VBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="81.0">
+               <children>
+                  <Label text="Profit" />
+                  <Label text="Position" />
+                  <Label text="Holding days" />
+                  <Label fx:id="lastClosedDate" text="01/2/2021" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+            </VBox>
+            <VBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="59.0">
+               <children>
+                  <Label fx:id="lastProfit" text="+37.3%" />
+                  <Label fx:id="lastPosition" text="34,000.00" />
+                  <Label fx:id="lastHolding" text="13" />
+                  <Label fx:id="lastHolding1" />
+               </children>
+            </VBox>
          </children>
-      </Pane>
+      </HBox>
       <HBox fx:id="previousTradesBox" layoutX="210.0" layoutY="14.0" prefHeight="100.0" prefWidth="480.0">
          <children>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -36,6 +53,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="69.0" prefHeight="17.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -47,6 +65,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -58,6 +77,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -69,6 +89,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutX="-1.0" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -80,6 +101,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutX="-1.0" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -91,6 +113,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -102,6 +125,7 @@
                      </font>
                   </Label>
                   <Label alignment="CENTER" layoutY="69.0" prefWidth="60.0" text="+37%" textAlignment="CENTER" textFill="#00c800" />
+                  <Line endX="100.0" layoutX="60.0" layoutY="50.0" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
@@ -118,7 +142,7 @@
          </children>
       </HBox>
       <Label layoutX="503.0" layoutY="6.0" text="PREVIOUS TRADES PERFORMANCE" />
-      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="400.0" prefHeight="280.0" prefWidth="679.0">
+      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="450.0" prefHeight="230.0" prefWidth="679.0">
         <columns>
           <TableColumn fx:id="stockColumn" prefWidth="75.0" text="Stock" />
           <TableColumn fx:id="averageBuyColumn" prefWidth="88.0" text="Average Buy" />
@@ -130,12 +154,7 @@
             <TableColumn fx:id="percentColumn" prefWidth="82.0" text="Percent" />
         </columns>
       </TableView>
-      <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="280.0" prefWidth="400.0" />
-      <TableView editable="true" layoutX="423.0" layoutY="114.0" prefHeight="280.0" prefWidth="268.0">
-        <columns>
-          <TableColumn prefWidth="75.0" text="Stock" />
-          <TableColumn prefWidth="191.0" text="Sell Plan" />
-        </columns>
-      </TableView>
+      <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="330.0" prefWidth="679.0" />
+      <Label layoutX="9.0" layoutY="3.0" text="LAST TRADE" />
    </children>
 </AnchorPane>

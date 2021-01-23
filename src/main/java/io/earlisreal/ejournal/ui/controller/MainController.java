@@ -82,6 +82,9 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
 
+        statusLabel.setVisible(false);
+        statusProgressIndicator.setVisible(false);
+
         try {
             FXMLLoader logLoader = new FXMLLoader(getClass().getResource("/fxml/log.fxml"));
             log = logLoader.load();
@@ -229,12 +232,14 @@ public class MainController implements Initializable {
         };
 
         statusProgressIndicator.setVisible(true);
+        statusLabel.setVisible(true);
         statusLabel.setText("Syncing");
         service.start();
 
         service.setOnSucceeded(workerStateEvent -> {
             statusLabel.setText("All is well");
             statusProgressIndicator.setVisible(false);
+            statusLabel.setVisible(false);
             if ((int) workerStateEvent.getSource().getValue() > 0) {
                 refresh();
             }

@@ -9,10 +9,7 @@ import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -49,6 +46,8 @@ public class TradeDetailsController {
     public TableView<Pair<String, String>> statisticTable;
     public TableColumn<Pair<String, String>, String> statisticColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
+    public Button nextButton;
+    public Button previousButton;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -62,6 +61,9 @@ public class TradeDetailsController {
 
     public void setSummaries(List<TradeSummary> summaries) {
         this.summaries = summaries;
+        boolean disabled = summaries.size() == 1;
+        nextButton.setDisable(disabled);
+        previousButton.setDisable(disabled);
     }
 
     public void nextTrade(ActionEvent event) {

@@ -32,7 +32,7 @@
       </TableView>
       <ProgressIndicator fx:id="loadingProgress" layoutX="358.0" layoutY="158.0" />
       <Label fx:id="loadingLabel" layoutX="424.0" layoutY="176.0" text="Loading Plot Image" />
-      <Button layoutX="645.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
-      <Button layoutX="578.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
+      <Button fx:id="nextButton" layoutX="645.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
+      <Button fx:id="previousButton" layoutX="578.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
    </children>
 </AnchorPane>

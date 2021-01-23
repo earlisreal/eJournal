@@ -19,6 +19,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'org.mapdb:mapdb:3.0.8'
     implementation 'com.jsoniter:jsoniter:0.9.23'
+    implementation 'de.jensd:fontawesomefx:8.9'
 }
 
 javafx {

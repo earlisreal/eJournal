@@ -1,0 +1,4 @@
+.table-view:row-selection .table-row-cell:filled:hover {
+    -fx-background-color: #0096c9;
+    -fx-cursor: hand;
+}

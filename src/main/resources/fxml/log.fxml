@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
+<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
    <children>
       <TabPane layoutX="13.0" layoutY="11.0" prefHeight="678.0" prefWidth="678.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
@@ -11,7 +12,7 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TableView fx:id="summaryTable" layoutX="7.0" layoutY="7.0" prefHeight="635.0" prefWidth="665.0">
+                        <TableView fx:id="summaryTable" layoutX="7.0" layoutY="7.0" prefHeight="635.0" prefWidth="665.0" stylesheets="@../stylesheet/table.css">
                           <columns>
                             <TableColumn fx:id="summaryClosed" prefWidth="93.0" text="Closed" />
                             <TableColumn fx:id="summaryStock" prefWidth="65.0" text="Stock" />

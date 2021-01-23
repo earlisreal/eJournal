@@ -142,7 +142,7 @@
          </children>
       </HBox>
       <Label layoutX="503.0" layoutY="6.0" text="PREVIOUS TRADES PERFORMANCE" />
-      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="450.0" prefHeight="230.0" prefWidth="679.0">
+      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="450.0" prefHeight="230.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
         <columns>
           <TableColumn fx:id="stockColumn" prefWidth="75.0" text="Stock" />
           <TableColumn fx:id="averageBuyColumn" prefWidth="88.0" text="Average Buy" />

@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.*?>
 <?import javafx.geometry.*?>
-<?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="100.0" />
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="702.0" />
@@ -32,18 +30,18 @@
             <StackPane fx:id="stackPane" layoutX="10.0" layoutY="100.0" prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
             <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: WHITE;">
                <children>
-                  <DatePicker fx:id="startDate" layoutX="421.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="Start Date" />
-                  <DatePicker fx:id="endDate" layoutX="529.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="End Date" />
-                  <Button layoutX="642.0" layoutY="13.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
+                  <Button layoutX="14.0" layoutY="13.0" mnemonicParsing="false" text="All" />
                   <Button layoutX="61.0" layoutY="13.0" mnemonicParsing="false" text="YTD" />
                   <Button layoutX="115.0" layoutY="13.0" mnemonicParsing="false" text="Last 12 Months" />
                   <Button layoutX="224.0" layoutY="13.0" mnemonicParsing="false" text="Last 1 Month" />
                   <Button layoutX="326.0" layoutY="13.0" mnemonicParsing="false" text="Last 1 Week" />
-                  <Button layoutX="14.0" layoutY="13.0" mnemonicParsing="false" text="All" />
+                  <DatePicker fx:id="startDate" layoutX="421.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="Start Date" />
+                  <DatePicker fx:id="endDate" layoutX="529.0" layoutY="13.0" prefHeight="25.0" prefWidth="101.0" promptText="End Date" />
+                  <Button layoutX="642.0" layoutY="13.0" mnemonicParsing="false" onAction="#filterDate" text="Apply" />
                </children></AnchorPane>
          </children>
       </GridPane>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f4f4f4;" GridPane.columnIndex="2" GridPane.rowIndex="1">
+      <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: WHITE;" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
             <ProgressIndicator fx:id="statusProgressIndicator" layoutX="60.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
             <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="410.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">

@@ -42,6 +42,8 @@ public class TradeDetailsDialogService {
     }
 
     public void show(TradeSummary summary, List<TradeSummary> summaries) {
+        if (summary == null) return;
+
         controller.setSummaries(summaries);
         controller.show(summary);
 

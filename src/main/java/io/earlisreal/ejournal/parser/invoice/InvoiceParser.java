@@ -19,11 +19,6 @@ public abstract class InvoiceParser {
         this.broker = broker;
     }
 
-    public String parseAsCsv(String invoice) {
-        parse(invoice);
-        return date + "," + stock + "," + (isBuy ? "BUY" : "SELL") + "," + price + "," + shares + "," + "long";
-    }
-
     public TradeLog parseAsObject(String invoice) {
         parse(invoice);
         return new TradeLog(date, stock, isBuy, price, shares, invoiceNo, broker);

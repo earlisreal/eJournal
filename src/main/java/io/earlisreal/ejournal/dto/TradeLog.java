@@ -56,6 +56,10 @@ public class TradeLog {
         return getShares() * getPrice();
     }
 
+    public String toCsv() {
+        return date + "," + stock + "," + (isBuy ? "BUY" : "SELL") + "," + price + "," + shares + "," + "long";
+    }
+
     @Override
     public String toString() {
         return "TradeLog{" +

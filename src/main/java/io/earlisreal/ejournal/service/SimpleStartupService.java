@@ -44,9 +44,7 @@ public class SimpleStartupService implements StartupService {
             return stockMap;
         });
 
-        res.thenAcceptAsync(stockMap -> {
-            listenerList.forEach(StartupListener::onFinish);
-        });
+        res.thenAcceptAsync(stockMap -> listenerList.forEach(StartupListener::onFinish));
 
         res.thenAcceptAsync(stockMap -> {
             if (stockService.getStockCount() != stockMap.size()) {

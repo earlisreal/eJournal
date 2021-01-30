@@ -66,7 +66,7 @@ public class EJournal {
                     String invoice = PDFParser.parse(args[0]);
                     Broker broker = CommonUtil.identifyBroker(invoice);
                     System.out.println(broker.getName() + " Broker Found");
-                    System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsCsv(invoice));
+                    System.out.println(InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice));
                 }
             }
 

@@ -9,7 +9,8 @@ public enum Table {
             "date DATE," +
             "dividend BOOLEAN, " +
             "amount DOUBLE, " +
-            "ref VARCHAR(15))",
+            "ref VARCHAR(15), " +
+            "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX bank_transaction_ref_uindex ON bank_transaction (ref)")),
     STRATEGY("strategy", "CREATE TABLE strategy (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +

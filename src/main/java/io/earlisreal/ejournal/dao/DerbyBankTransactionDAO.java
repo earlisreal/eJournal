@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,6 +33,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
                 bankTransaction.setDividend(resultSet.getBoolean(3));
                 bankTransaction.setAmount(resultSet.getDouble(4));
                 bankTransaction.setReferenceNo(resultSet.getString(5));
+                bankTransaction.setBroker(Broker.values()[resultSet.getInt(6)]);
                 bankTransactions.add(bankTransaction);
             }
         } catch (SQLException sqlException) {
@@ -49,7 +51,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
 
     @Override
     public int insert(List<BankTransaction> bankTransactions) {
-        String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref)" + generateValues(bankTransactions.size());
+        String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref, broker)" + generateValues(bankTransactions.size());
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             // TODO : Remove this duplicate code
             for (int i = 0; i < bankTransactions.size(); ++i) {
@@ -77,7 +79,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
     }
 
     private String generateValues(int rows) {
-        return " VALUES (?, ?, ?, ?)" + ", (?, ?, ?, ?)".repeat(Math.max(0, rows - 1));
+        return " VALUES (?, ?, ?, ?, ?)" + ", (?, ?, ?, ?, ?)".repeat(Math.max(0, rows - 1));
     }
 
     private void setParameters(PreparedStatement preparedStatement, BankTransaction bankTransaction, int row) throws SQLException {
@@ -85,6 +87,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
         preparedStatement.setBoolean(2 + (row * COLUMN_COUNT), bankTransaction.isDividend());
         preparedStatement.setDouble(3 + (row * COLUMN_COUNT), bankTransaction.getAmount());
         preparedStatement.setString(4 + (row * COLUMN_COUNT), bankTransaction.getReferenceNo());
+        preparedStatement.setInt(5 + (row * COLUMN_COUNT), bankTransaction.getBroker().ordinal());
     }
 
 }

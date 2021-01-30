@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.util;
 
+import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 
 import java.time.LocalDate;
@@ -40,6 +41,39 @@ public interface ParseUtil {
         }
 
         return tradeLogs;
+    }
+
+    static List<BankTransaction> parseBankTransactions(List<String> csv) {
+        List<BankTransaction> bankTransactions = new ArrayList<>();
+        for (int i = 0; i < csv.size(); ++i) {
+            String[] columns = csv.get(i).split(",");
+            if (columns.length != COLUMN_COUNT) {
+                System.out.println("Missing columns in row: " + i);
+                System.out.println("Near: " + columns[i]);
+                break;
+            }
+
+            if (columns[1].isBlank()) continue;
+
+            try {
+                LocalDate date = LocalDate.parse(columns[0]);
+                if (columns[1].isBlank()) {
+                    System.out.println("Stock Cannot be blank on row: " + i);
+                }
+
+                boolean isDividend = "Dividend".equalsIgnoreCase(columns[2]);
+                double amount = Double.parseDouble(columns[3]);
+                Broker broker = Broker.valueOf(columns[6]);
+
+                BankTransaction bankTransaction = new BankTransaction(date, isDividend, amount, broker, columns[7]);
+                bankTransactions.add(bankTransaction);
+            } catch (NumberFormatException numberFormatException) {
+                System.out.println("Invalid format at row: " + i);
+                System.out.println(numberFormatException.getMessage());
+            }
+        }
+
+        return bankTransactions;
     }
 
 }

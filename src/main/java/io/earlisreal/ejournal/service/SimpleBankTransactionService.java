@@ -2,6 +2,8 @@ package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.BankTransactionDAO;
 import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.util.ParseUtil;
 
 import java.util.List;
 
@@ -39,6 +41,12 @@ public class SimpleBankTransactionService implements BankTransactionService {
             System.out.println("Bank Transaction Deleted: " + id);
         }
         return success;
+    }
+
+    @Override
+    public void insertCsv(List<String> csv) {
+        List<BankTransaction> bankTransactions = ParseUtil.parseBankTransactions(csv);
+        bankTransactionDAO.insert(bankTransactions);
     }
 
 }

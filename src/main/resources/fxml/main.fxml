@@ -177,6 +177,7 @@
             <items>
               <MenuItem mnemonicParsing="false" onAction="#importInvoice" text="Invoice" />
                   <MenuItem mnemonicParsing="false" onAction="#importLedger" text="Ledger" />
+                  <MenuItem mnemonicParsing="false" onAction="#importCsv" text="CSV" />
             </items>
           </Menu>
             <Menu mnemonicParsing="false" text="Export">

@@ -12,4 +12,6 @@ public interface BankTransactionService {
 
     boolean delete(int id);
 
+    void insertCsv(List<String> csv);
+
 }

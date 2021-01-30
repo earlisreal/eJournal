@@ -369,4 +369,19 @@ public class MainController implements Initializable {
         }
     }
 
+    public void importCsv(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV", "*.csv"));
+        Stage stage = (Stage) grid.getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+        try {
+            List<String> csv = Files.readAllLines(file.toPath());
+            tradeLogService.insertCsv(csv);
+            bankTransactionService.insertCsv(csv);
+        } catch (IOException e) {
+            handleException(e);
+        }
+    }
+
 }

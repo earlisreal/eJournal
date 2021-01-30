@@ -30,9 +30,11 @@ public interface ParseUtil {
                 boolean isBuy = "buy".equalsIgnoreCase(columns[2]);
                 double price = Double.parseDouble(columns[3]);
                 int shares = Integer.parseInt(columns[4]);
-                boolean isShort = "short".equalsIgnoreCase(columns[6]);
+                boolean isShort = "short".equalsIgnoreCase(columns[5]);
+                Broker broker = Broker.valueOf(columns[6]);
+                String reference = columns[7];
 
-                TradeLog tradeLog = new TradeLog(date, columns[1], isBuy, price, shares, columns[5], isShort);
+                TradeLog tradeLog = new TradeLog(date, columns[1], isBuy, price, shares, reference, broker);
                 tradeLogs.add(tradeLog);
             } catch (NumberFormatException numberFormatException) {
                 System.out.println("Invalid format at row: " + i);

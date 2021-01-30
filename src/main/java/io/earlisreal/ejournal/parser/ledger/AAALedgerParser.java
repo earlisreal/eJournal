@@ -53,6 +53,7 @@ public class AAALedgerParser implements LedgerParser {
                 else {
                     BankTransaction bankTransaction = new BankTransaction();
                     bankTransaction.setDate(date);
+                    bankTransaction.setBroker(Broker.AAA);
                     bankTransaction.setReferenceNo(reference);
                     double amount = 0;
                     if (line.startsWith("OR#")) {

@@ -80,6 +80,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
 
         bankTransaction.setDate(LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu")));
         double amount = parseDouble(tokens[5].trim());
+        bankTransaction.setBroker(Broker.COL);
         bankTransaction.setAmount(amount);
         String action = tokens[2].trim();
         if (action.equals("WFUNDS")) {

@@ -65,6 +65,7 @@ public class YapsterLedgerParser implements LedgerParser {
                 else {
                     BankTransaction bankTransaction = parseBank(line);
                     bankTransaction.setDate(date);
+                    bankTransaction.setBroker(Broker.YAPSTER);
                     bankTransaction.setReferenceNo(refNo);
                     bankTransactions.add(bankTransaction);
                 }

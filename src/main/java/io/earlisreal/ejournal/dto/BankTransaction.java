@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.dto;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.time.LocalDate;
 
 public class BankTransaction {
@@ -10,10 +12,21 @@ public class BankTransaction {
     private LocalDate date;
     private boolean isDividend;
     private double amount;
+    private Broker broker;
     private String referenceNo;
 
+    public BankTransaction() {}
+
+    public BankTransaction(LocalDate date, boolean isDividend, double amount, Broker broker, String referenceNo) {
+        this.date = date;
+        this.isDividend = isDividend;
+        this.amount = amount;
+        this.broker = broker;
+        this.referenceNo = referenceNo;
+    }
+
     public String toCsv() {
-        return date + ",," + getAction() + "," + getAmount() + ",,";
+        return date + ",," + getAction() + "," + amount + ",,," + referenceNo;
     }
 
     @Override
@@ -63,6 +76,14 @@ public class BankTransaction {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public Broker getBroker() {
+        return broker;
+    }
+
+    public void setBroker(Broker broker) {
+        this.broker = broker;
     }
 
     public String getReferenceNo() {

@@ -23,12 +23,6 @@ public class TradeLog {
 
     public TradeLog() {}
 
-    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String strategy, boolean isShort) {
-        this(date, stock, isBuy, price, shares);
-        this.isShort = isShort;
-        this.strategy = strategy;
-    }
-
     public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String invoiceNo, Broker broker) {
         this(date, stock, isBuy, price, shares);
         this.invoiceNo = invoiceNo;
@@ -57,7 +51,9 @@ public class TradeLog {
     }
 
     public String toCsv() {
-        return date + "," + stock + "," + (isBuy ? "BUY" : "SELL") + "," + price + "," + shares + "," + "long";
+        String action = isBuy ? "BUY" : "SELL";
+        String broker = this.broker.name();
+        return date + "," + stock + "," + action + "," + price + "," + shares + "," + "long," + broker + "," + invoiceNo;
     }
 
     @Override

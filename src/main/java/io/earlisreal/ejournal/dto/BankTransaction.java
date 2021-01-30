@@ -12,6 +12,10 @@ public class BankTransaction {
     private double amount;
     private String referenceNo;
 
+    public String toCsv() {
+        return date + ",," + getAction() + "," + getAmount() + ",,";
+    }
+
     @Override
     public String toString() {
         return "BankTransaction{" +

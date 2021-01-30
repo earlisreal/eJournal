@@ -43,8 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.prettify;
-import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class MainController implements Initializable {
 
@@ -349,6 +348,25 @@ public class MainController implements Initializable {
         accuracyLabel.setText(accuracy + "%");
 
         riskRewardLabel.setText("1:" + analyticsService.getProfitFactor());
+    }
+
+    public void exportToCsv(ActionEvent event) {
+        List<String> csv = new ArrayList<>();
+        tradeLogService.getLogs().forEach(log -> csv.add(log.toCsv()));
+        bankTransactionService.getAll().forEach(transaction -> csv.add(transaction.toCsv()));
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV", "*.csv"));
+        Stage stage = (Stage) grid.getScene().getWindow();
+        File file = fileChooser.showSaveDialog(stage);
+        if (file != null) {
+            try {
+                Files.write(file.toPath(), csv);
+            } catch (IOException e) {
+                handleException(e);
+            }
+        }
     }
 
 }

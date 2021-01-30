@@ -181,7 +181,7 @@
           </Menu>
             <Menu mnemonicParsing="false" text="Export">
                <items>
-                  <MenuItem mnemonicParsing="false" text="as CSV" />
+                  <MenuItem mnemonicParsing="false" onAction="#exportToCsv" text="to CSV" />
                </items>
             </Menu>
           <Menu mnemonicParsing="false" text="Help">

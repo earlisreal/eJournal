@@ -12,8 +12,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.earlisreal.ejournal.dto.BankTransaction.COLUMN_COUNT;
-
 public class DerbyBankTransactionDAO implements BankTransactionDAO {
 
     Connection connection = DerbyDatabase.getConnection();
@@ -45,23 +43,30 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
     }
 
     @Override
-    public boolean insert(BankTransaction bankTransaction) {
-        return insert(List.of(bankTransaction)) > 0;
+    public int insert(List<BankTransaction> bankTransactions) {
+        int res = 0;
+        for (BankTransaction bankTransaction : bankTransactions) {
+            res += insert(bankTransaction) ? 1 : 0;
+        }
+
+        return res;
     }
 
     @Override
-    public int insert(List<BankTransaction> bankTransactions) {
-        String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref, broker)" + generateValues(bankTransactions.size());
+    public boolean insert(BankTransaction bankTransaction) {
+        String sql = "INSERT INTO bank_transaction (date, dividend, amount, ref, broker) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            // TODO : Remove this duplicate code
-            for (int i = 0; i < bankTransactions.size(); ++i) {
-                setParameters(preparedStatement, bankTransactions.get(i), i);
-            }
+            preparedStatement.setObject(1, bankTransaction.getDate().toString());
+            preparedStatement.setBoolean(2, bankTransaction.isDividend());
+            preparedStatement.setDouble(3, bankTransaction.getAmount());
+            preparedStatement.setString(4, bankTransaction.getReferenceNo());
+            preparedStatement.setInt(5, bankTransaction.getBroker().ordinal());
+
             preparedStatement.execute();
-            return preparedStatement.getUpdateCount();
+            return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
             System.out.println(sqlException.getMessage());
-            return 0;
+            return false;
         }
     }
 
@@ -76,18 +81,6 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
             throwables.printStackTrace();
         }
         return false;
-    }
-
-    private String generateValues(int rows) {
-        return " VALUES (?, ?, ?, ?, ?)" + ", (?, ?, ?, ?, ?)".repeat(Math.max(0, rows - 1));
-    }
-
-    private void setParameters(PreparedStatement preparedStatement, BankTransaction bankTransaction, int row) throws SQLException {
-        preparedStatement.setObject(1 + (row * COLUMN_COUNT), bankTransaction.getDate().toString());
-        preparedStatement.setBoolean(2 + (row * COLUMN_COUNT), bankTransaction.isDividend());
-        preparedStatement.setDouble(3 + (row * COLUMN_COUNT), bankTransaction.getAmount());
-        preparedStatement.setString(4 + (row * COLUMN_COUNT), bankTransaction.getReferenceNo());
-        preparedStatement.setInt(5 + (row * COLUMN_COUNT), bankTransaction.getBroker().ordinal());
     }
 
 }

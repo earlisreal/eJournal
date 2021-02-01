@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
 import static io.earlisreal.ejournal.util.CommonUtil.toSqlDate;
 
 public class DerbyTradeLogDAO implements TradeLogDAO {
@@ -71,56 +70,41 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     @Override
+    public int insertLog(List<TradeLog> tradeLogs) {
+        int res = 0;
+        for (TradeLog log : tradeLogs) {
+            if (insertLog(log)) {
+                ++res;
+            }
+        }
+
+        return res;
+    }
+
+    @Override
     public boolean insertLog(TradeLog tradeLog) {
-        String sql = generateInsertStatement(1);
+        String sql = "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice, broker) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            setParameters(preparedStatement, tradeLog, 0);
+            setParameters(preparedStatement, tradeLog);
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
+            System.err.println(sqlException.getMessage());
             return false;
         }
     }
 
-    public int insertLog(List<TradeLog> tradeLogs) {
-        String sql = generateInsertStatement(tradeLogs.size());
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            for (int i = 0; i < tradeLogs.size(); ++i) {
-                setParameters(preparedStatement, tradeLogs.get(i), i);
-            }
-            preparedStatement.execute();
-            return preparedStatement.getUpdateCount();
-        } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
-            return 0;
-        }
-    }
-
-    private String generateInsertStatement(int rowCount) {
-        return "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice, broker) VALUES "
-                + getValues() + (", " + getValues()).repeat(Math.max(0, rowCount - 1));
-    }
-
-    private String getValues() {
-        StringBuilder builder = new StringBuilder("(");
-        for (int i = 0; i < COLUMN_COUNT; ++i) {
-            if (i > 0) builder.append(", ");
-            builder.append('?');
-        }
-        return builder.append(")").toString();
-    }
-
-    private void setParameters(PreparedStatement preparedStatement, TradeLog tradeLog, int rowIndex) throws SQLException {
-        preparedStatement.setDate(1 + (rowIndex * COLUMN_COUNT), toSqlDate(tradeLog.getDate()));
-        preparedStatement.setString(2 + (rowIndex * COLUMN_COUNT), tradeLog.getStock());
-        preparedStatement.setBoolean(3 + (rowIndex * COLUMN_COUNT), tradeLog.isBuy());
-        preparedStatement.setDouble(4 + (rowIndex * COLUMN_COUNT), tradeLog.getPrice());
-        preparedStatement.setInt(5 + (rowIndex * COLUMN_COUNT), tradeLog.getShares());
-        preparedStatement.setObject(6 + (rowIndex * COLUMN_COUNT), tradeLog.getStrategyId());
-        preparedStatement.setBoolean(7 + (rowIndex * COLUMN_COUNT), tradeLog.isShort());
-        preparedStatement.setString(8 + (rowIndex * COLUMN_COUNT), tradeLog.getInvoiceNo());
-        preparedStatement.setInt(9 + (rowIndex * COLUMN_COUNT), tradeLog.getBroker().ordinal());
+    private void setParameters(PreparedStatement preparedStatement, TradeLog tradeLog) throws SQLException {
+        preparedStatement.setDate(1, toSqlDate(tradeLog.getDate()));
+        preparedStatement.setString(2, tradeLog.getStock());
+        preparedStatement.setBoolean(3, tradeLog.isBuy());
+        preparedStatement.setDouble(4, tradeLog.getPrice());
+        preparedStatement.setInt(5, tradeLog.getShares());
+        preparedStatement.setObject(6, tradeLog.getStrategyId());
+        preparedStatement.setBoolean(7, tradeLog.isShort());
+        preparedStatement.setString(8, tradeLog.getInvoiceNo());
+        preparedStatement.setInt(9, tradeLog.getBroker().ordinal());
     }
 
 }

@@ -47,9 +47,12 @@ public class DashboardController implements Initializable, StartupListener {
     private TradeLogService tradeLogService;
     private StockService stockService;
 
+    public DashboardController() {
+        ServiceProvider.getStartupService().addStockPriceListener(this);
+    }
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        ServiceProvider.getStartupService().addStockPriceListener(this);
         tradeLogService = ServiceProvider.getTradeLogService();
         stockService = ServiceProvider.getStockService();
         analyticsService = ServiceProvider.getAnalyticsService();

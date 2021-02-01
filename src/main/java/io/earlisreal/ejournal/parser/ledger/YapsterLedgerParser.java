@@ -41,8 +41,10 @@ public class YapsterLedgerParser implements LedgerParser {
 
             try {
                 boolean isBuy = line.contains("BI#");
+                boolean isDividend = line.contains("CM#");
+                boolean isWithdrawal = line.contains("CV#");
                 int dateIndex = line.indexOf(' ');
-                if (Character.isLetter(line.charAt(0))) continue;
+                if (dateIndex == -1) continue;
 
                 String dateStr = line.substring(0, dateIndex);
                 LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MM/dd/uuuu"));
@@ -65,8 +67,9 @@ public class YapsterLedgerParser implements LedgerParser {
                 else {
                     BankTransaction bankTransaction = parseBank(line);
                     bankTransaction.setDate(date);
-                    bankTransaction.setBroker(Broker.YAPSTER);
                     bankTransaction.setReferenceNo(refNo);
+                    bankTransaction.setAmount(bankTransaction.getAmount() * (isWithdrawal ? -1 : 1));
+                    bankTransaction.setDividend(isDividend);
                     bankTransactions.add(bankTransaction);
                 }
             } catch (DateTimeParseException ignore) {
@@ -100,13 +103,9 @@ public class YapsterLedgerParser implements LedgerParser {
 
     private BankTransaction parseBank(String line) throws ParseException {
         BankTransaction bankTransaction = new BankTransaction();
-        int amountIndex = 0;
-        while (!Character.isDigit(line.charAt(amountIndex))) {
-            ++amountIndex;
-        }
-        boolean isDeposit = line.contains("Deposit");
-        line = line.substring(amountIndex);
-        bankTransaction.setAmount(CommonUtil.parseDouble(line.substring(0, line.indexOf(' '))) * (isDeposit ? 1 : -1));
+        bankTransaction.setBroker(Broker.YAPSTER);
+        var tokens = line.split(" ");
+        bankTransaction.setAmount(CommonUtil.parseDouble(tokens[tokens.length - 2]));
 
         return bankTransaction;
     }

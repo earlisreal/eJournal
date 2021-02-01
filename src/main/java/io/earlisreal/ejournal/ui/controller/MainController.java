@@ -87,6 +87,15 @@ public class MainController implements Initializable {
     private PlanController planController;
 
     private BorderPane selectedPane;
+    private final FileChooser.ExtensionFilter pdfFilter;
+    private final FileChooser.ExtensionFilter txtFilter;
+    private final FileChooser.ExtensionFilter csvFilter;
+
+    public MainController() {
+        txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
+        pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
+        csvFilter = new FileChooser.ExtensionFilter("CSV", "*.csv");
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -203,7 +212,7 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        fileChooser.getExtensionFilters().addAll();
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;
 
@@ -224,8 +233,7 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text File", "*.txt"),
-                new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        fileChooser.getExtensionFilters().addAll(pdfFilter, txtFilter);
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;
 
@@ -267,7 +275,7 @@ public class MainController implements Initializable {
         refresh();
     }
 
-    public void syncEmail(ActionEvent event) {
+    public void syncEmail(ActionEvent unused) {
         emailSyncButton.setDisable(true);
         Service<Integer> service = new Service<>() {
             @Override
@@ -287,14 +295,32 @@ public class MainController implements Initializable {
         service.start();
 
         service.setOnSucceeded(workerStateEvent -> {
-            statusLabel.setText("All is well");
-            statusProgressIndicator.setVisible(false);
-            statusLabel.setVisible(false);
+            syncingDone();
             if ((int) workerStateEvent.getSource().getValue() > 0) {
                 refresh();
             }
-            emailSyncButton.setDisable(false);
         });
+
+        service.setOnFailed(event -> {
+            String message;
+            Throwable throwable = event.getSource().getException();
+            if (throwable != null) message = throwable.getMessage();
+            else message = "Unknown Error.";
+            System.out.println("Email Sync Failed: " + message);
+            syncingDone();
+        });
+
+        service.setOnCancelled(event -> {
+            System.out.println("Email Sync Cancelled");
+            syncingDone();
+        });
+    }
+
+    private void syncingDone() {
+        statusLabel.setText("All is well");
+        statusProgressIndicator.setVisible(false);
+        statusLabel.setVisible(false);
+        emailSyncButton.setDisable(false);
     }
 
     public void clearData(ActionEvent event) {
@@ -302,6 +328,10 @@ public class MainController implements Initializable {
         ButtonType result = alert.showAndWait().orElse(ButtonType.NO);
         if (ButtonType.NO.equals(result)) {
             event.consume();
+        }
+        else {
+            // TODO:
+
         }
 
         refresh();
@@ -357,7 +387,7 @@ public class MainController implements Initializable {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save CSV");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV", "*.csv"));
+        fileChooser.getExtensionFilters().add(csvFilter);
         Stage stage = (Stage) grid.getScene().getWindow();
         File file = fileChooser.showSaveDialog(stage);
         if (file != null) {
@@ -372,7 +402,7 @@ public class MainController implements Initializable {
     public void importCsv(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save CSV");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV", "*.csv"));
+        fileChooser.getExtensionFilters().add(csvFilter);
         Stage stage = (Stage) grid.getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
         try {

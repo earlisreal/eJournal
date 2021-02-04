@@ -22,16 +22,6 @@ public class DerbyDatabase {
         return connection;
     }
 
-    public static Connection initialize(ConcurrentMap<String, Boolean> settings) throws SQLException {
-        createConnection();
-        String key = "firstRun";
-        if (settings.getOrDefault(key, true)) {
-            createTables();
-            settings.put(key, false);
-        }
-        return connection;
-    }
-
     public static Connection initialize() throws SQLException {
         createConnection();
         createTables();

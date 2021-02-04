@@ -53,17 +53,6 @@ public class MapDatabase {
         return stockSecurityMap;
     }
 
-    public static ConcurrentMap<String, Boolean> getSettingsMap() {
-        if (settings == null) {
-            synchronized (MapDatabase.class) {
-                if (settings == null) {
-                    settings = db.hashMap("settings", Serializer.STRING, Serializer.BOOLEAN).createOrOpen();
-                }
-            }
-        }
-        return settings;
-    }
-
     public static ConcurrentMap<String, Long> getStockDateMap() {
         if (stockDateMap == null) {
             synchronized (MapDatabase.class) {

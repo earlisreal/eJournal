@@ -28,9 +28,7 @@ public class EJournal {
 
     public static void main(String[] args) {
         System.out.println("Welcome to eJournal!");
-        try (DB ignored1 = MapDatabase.initialize();
-             Connection ignored = DerbyDatabase.initialize(MapDatabase.getSettingsMap())) {
-
+        try (DB ignored1 = MapDatabase.initialize(); Connection ignored = DerbyDatabase.initialize()) {
             ServiceProvider.getStartupService().run();
 
             EJournal eJournal = new EJournal();

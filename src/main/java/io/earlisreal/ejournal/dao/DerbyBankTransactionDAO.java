@@ -64,8 +64,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
 
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
-        } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
+        } catch (SQLException ignore) {
             return false;
         }
     }
@@ -77,8 +76,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
             preparedStatement.setInt(1, id);
             preparedStatement.execute();
             return true;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ignore) {
         }
         return false;
     }

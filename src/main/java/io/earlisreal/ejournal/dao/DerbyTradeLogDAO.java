@@ -28,8 +28,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
             preparedStatement.setDate(2, toSqlDate(endDate));
             ResultSet resultSet = preparedStatement.executeQuery();
             return mapToTradeLogs(resultSet);
-        } catch (SQLException sqlException) {
-            sqlException.printStackTrace();
+        } catch (SQLException ignore) {
         }
 
         return new ArrayList<>();
@@ -42,8 +41,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
              ResultSet resultSet = preparedStatement.executeQuery()) {
 
             return mapToTradeLogs(resultSet);
-        } catch (SQLException sqlException) {
-            sqlException.printStackTrace();
+        } catch (SQLException ignore) {
         }
 
         return new ArrayList<>();
@@ -96,8 +94,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
 
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
-        } catch (SQLException sqlException) {
-            System.err.println(sqlException.getMessage());
+        } catch (SQLException ignore) {
             return false;
         }
     }

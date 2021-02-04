@@ -39,10 +39,10 @@ public class SimpleStartupService implements StartupService {
     public void manageStockList() {
         var res = CompletableFuture.supplyAsync(() -> {
             var stocks = stockListScraper.scrape();
-            boolean hasNew = stockService.getStockCount() > stocks.size();
+            boolean hasNew = stockService.getStockCount() != stocks.size();
             stockService.updateStocks(stocks);
 
-            return hasNew;
+            return true;
         });
 
         res.thenAcceptAsync(unused -> listenerList.forEach(StartupListener::onFinish));

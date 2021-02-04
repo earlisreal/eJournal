@@ -59,7 +59,8 @@ public class DerbyStockDAO implements StockDAO {
                 stock.setCompanyId(resultSet.getString(3));
                 stock.setSecurityId(resultSet.getString(4));
                 stock.setPrice(resultSet.getDouble(5));
-                stock.setLastDate(LocalDate.parse(resultSet.getString(6)));
+                String lastDate = resultSet.getString(6);
+                if (lastDate != null) stock.setLastDate(LocalDate.parse(lastDate));
                 stockMap.put(stock.getCode(), stock);
             }
         } catch (SQLException sqlException) {
@@ -80,6 +81,7 @@ public class DerbyStockDAO implements StockDAO {
         } catch (SQLException sqlException) {
             CommonUtil.handleException(sqlException);
         }
+        return false;
     }
 
     private void insertStock(Stock stock) {

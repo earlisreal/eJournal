@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.scraper;
 
+import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -7,66 +8,35 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static io.earlisreal.ejournal.util.CommonUtil.trimStockName;
 
-public class PesobilityStockListScraper implements StockListScraper {
+public class PesobilityStockListScraper implements StockScraper {
 
     public static final String STOCK_SOURCE_URL = "https://www.pesobility.com/stock";
 
-    private final List<List<String>> table;
-    private final Map<String, String> stockMap;
-    private final Map<String, Double> priceMap;
-
-    PesobilityStockListScraper() {
-        table = new ArrayList<>();
-        stockMap = new HashMap<>();
-        priceMap = new HashMap<>();
-    }
-
     @Override
-    public void parse() {
-        priceMap.clear();
-        stockMap.clear();
-        table.clear();
+    public List<Stock> scrape() {
+        List<Stock> stocks = new ArrayList<>();
         try {
             Document document = Jsoup.connect(STOCK_SOURCE_URL).get();
             Elements rows = document.select("#MAIN_BODY > div > div > table > tbody > tr");
             rows.forEach(element -> {
                 var columns = element.getElementsByTag("td").eachText();
-                table.add(columns);
+
+                Stock stock = new Stock();
+                stock.setCode(columns.get(0));
+                stock.setName(trimStockName(columns.get(1)));
+                stock.setPrice(Double.parseDouble(columns.get(2).substring(0, columns.get(2).indexOf(" "))));
+                stocks.add(stock);
             });
 
         } catch (IOException e) {
             CommonUtil.handleException(e);
         }
-    }
 
-    @Override
-    public Map<String, String> getStockMap() {
-        if (!stockMap.isEmpty()) return stockMap;
-
-        for (List<String> columns : table) {
-            String code = columns.get(0);
-            String name = columns.get(1);
-            stockMap.put(trimStockName(name), code);
-        }
-        return stockMap;
-    }
-
-    @Override
-    public Map<String, Double> getPriceMap() {
-        if (!priceMap.isEmpty()) return priceMap;
-
-        for (List<String> columns : table) {
-            String code = columns.get(0);
-            double price = Double.parseDouble(columns.get(2).substring(0, columns.get(2).indexOf(" ")));
-            priceMap.put(code, price);
-        }
-        return priceMap;
+        return stocks;
     }
 
 }

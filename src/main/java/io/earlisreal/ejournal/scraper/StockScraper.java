@@ -4,8 +4,8 @@ import io.earlisreal.ejournal.dto.Stock;
 
 import java.util.List;
 
-public interface CompanyScraper {
+public interface StockScraper {
 
-    List<Stock> scrapeCompanies();
+    List<Stock> scrape();
 
 }

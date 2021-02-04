@@ -1,7 +1,9 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.dto.Stock;
+
 import java.time.LocalDate;
-import java.util.Map;
+import java.util.List;
 
 public interface StockService {
 
@@ -17,12 +19,10 @@ public interface StockService {
 
     void updateLastDate(String stock, LocalDate localDate);
 
-    void updateStockNameMap(Map<String, String> stockMap);
-
-    void updateStockSecurityMap(Map<String, String> stockSecurityMap);
-
     int getStockCount();
 
-    void updateStockPrice(Map<String, Double> priceMap);
+    void updateStocks(List<Stock> stocks);
+
+    void updateStockId(List<Stock> scrapeCompanies);
 
 }

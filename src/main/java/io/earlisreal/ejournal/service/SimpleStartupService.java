@@ -1,7 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.scraper.CompanyScraper;
-import io.earlisreal.ejournal.scraper.StockListScraper;
+import io.earlisreal.ejournal.scraper.StockScraper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,13 +15,13 @@ import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
 
 public class SimpleStartupService implements StartupService {
 
-    private final StockListScraper stockListScraper;
+    private final StockScraper stockListScraper;
     private final CompanyScraper companyScraper;
     private final StockService stockService;
 
     private final List<StartupListener> listenerList;
 
-    SimpleStartupService(StockListScraper stockListScraper, CompanyScraper companyScraper, StockService stockService) {
+    SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper, StockService stockService) {
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
         this.stockService = stockService;
@@ -38,18 +38,18 @@ public class SimpleStartupService implements StartupService {
     @Override
     public void manageStockList() {
         var res = CompletableFuture.supplyAsync(() -> {
-            stockListScraper.parse();
-            var stockMap = stockListScraper.getStockMap();
-            stockService.updateStockPrice(stockListScraper.getPriceMap());
-            return stockMap;
+            var stocks = stockListScraper.scrape();
+            boolean hasNew = stockService.getStockCount() > stocks.size();
+            stockService.updateStocks(stocks);
+
+            return hasNew;
         });
 
-        res.thenAcceptAsync(stockMap -> listenerList.forEach(StartupListener::onFinish));
+        res.thenAcceptAsync(unused -> listenerList.forEach(StartupListener::onFinish));
 
-        res.thenAcceptAsync(stockMap -> {
-            if (stockService.getStockCount() != stockMap.size()) {
-                stockService.updateStockNameMap(stockMap);
-                stockService.updateStockSecurityMap(companyScraper.scrapeCompanies());
+        res.thenAcceptAsync(hasNew -> {
+            if (hasNew) {
+                stockService.updateStockId(companyScraper.scrapeCompanies());
             }
         });
     }

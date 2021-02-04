@@ -1,82 +1,71 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.StockDAO;
+import io.earlisreal.ejournal.dto.Stock;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 public class SimpleStockService implements StockService {
 
     private final StockDAO stockDAO;
 
-    private Map<String, String> stockNameMap;
-    private Map<String, Double> stockPriceMap;
-    private Map<String, String> stockSecurityMap;
-    private final Map<String, Long> stockDateMap;
+    private Map<String, Stock> stockMap;
 
     SimpleStockService(StockDAO stockDAO) {
         this.stockDAO = stockDAO;
-        stockNameMap = stockDAO.getStockNameMap();
-        stockSecurityMap = stockDAO.getStockSecurityMap();
-        stockDateMap = stockDAO.getStockDateMap();
-        stockPriceMap = stockDAO.getStockPriceMap();
+        stockMap = stockDAO.getStockMap();
     }
 
     @Override
     public String getCode(String stock) {
-        return stockNameMap.get(stock);
+        return stockMap.get(stock).getCode();
     }
 
     @Override
     public String getSecurityId(String stock) {
-        String security = stockSecurityMap.get(stock);
-        return security.split(",")[1];
+        return stockMap.get(stock).getSecurityId();
     }
 
     @Override
     public String getCompanyId(String stock) {
-        String security = stockSecurityMap.get(stock);
-        return security.split(",")[0];
+        return stockMap.get(stock).getCompanyId();
     }
 
     @Override
     public LocalDate getLastPriceDate(String stock) {
-        Long last = stockDateMap.get(stock);
+        LocalDate last = stockMap.get(stock).getLastDate();
         if (last == null) return LocalDate.of(2000, 1, 1);
-        return LocalDate.ofEpochDay(last);
+        return last;
     }
 
     @Override
     public double getPrice(String stock) {
-        return stockPriceMap.get(stock);
+        return stockMap.get(stock).getPrice();
     }
 
     @Override
     public void updateLastDate(String stock, LocalDate localDate) {
-        stockDateMap.put(stock, localDate.toEpochDay());
-    }
-
-    @Override
-    public void updateStockNameMap(Map<String, String> stockMap) {
-        stockDAO.updateStockMap(stockMap);
-        this.stockNameMap = stockMap;
-    }
-
-    @Override
-    public void updateStockSecurityMap(Map<String, String> stockSecurityMap) {
-        stockDAO.updateStockSecurityMap(stockSecurityMap);
-        this.stockSecurityMap = stockSecurityMap;
+        if (stockDAO.updateLastDate(stock, localDate)) {
+            stockMap.get(stock).setLastDate(localDate);
+        }
     }
 
     @Override
     public int getStockCount() {
-        return stockNameMap.size();
+        return stockMap.size();
     }
 
     @Override
-    public void updateStockPrice(Map<String, Double> priceMap) {
-        stockDAO.updateStockPrice(priceMap);
-        stockPriceMap = priceMap;
+    public void updateStocks(List<Stock> stocks) {
+        stockDAO.updateStocks(stocks);
+        stockMap = stockDAO.getStockMap();
+    }
+
+    @Override
+    public void updateStockId(List<Stock> stocks) {
+        stockDAO.updateStockId(stocks);
     }
 
 }

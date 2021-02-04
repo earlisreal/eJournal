@@ -1,12 +1,13 @@
 package io.earlisreal.ejournal.scraper;
 
+import io.earlisreal.ejournal.dto.Stock;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PSECompanyScraper implements CompanyScraper {
 
@@ -15,8 +16,8 @@ public class PSECompanyScraper implements CompanyScraper {
     PSECompanyScraper() {}
 
     @Override
-    public Map<String, String> scrapeCompanies() {
-        Map<String, String> companies = new HashMap<>();
+    public List<Stock> scrapeCompanies() {
+        List<Stock> companies = new ArrayList<>();
         int limit = 1;
         for (int page = 1; page <= limit; ++page) {
             Document document;
@@ -36,9 +37,11 @@ public class PSECompanyScraper implements CompanyScraper {
             elements.forEach(element -> {
                 String onclick = element.attr("onclick");
                 onclick = onclick.substring(onclick.indexOf('(') + 2, onclick.indexOf("')"));
-                String id = onclick.substring(0, onclick.indexOf('\''));
-                String security = onclick.substring(onclick.lastIndexOf('\'') + 1);
-                companies.put(element.text(), id + "," + security);
+
+                Stock company = new Stock();
+                company.setCompanyId(onclick.substring(0, onclick.indexOf('\'')));
+                company.setSecurityId(onclick.substring(onclick.lastIndexOf('\'') + 1));
+                companies.add(company);
             });
         }
 

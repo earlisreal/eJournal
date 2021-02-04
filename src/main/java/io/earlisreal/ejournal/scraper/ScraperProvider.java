@@ -8,7 +8,7 @@ public final class ScraperProvider {
         return new PSEStockPriceScraper(ServiceProvider.getStockService());
     }
 
-    public static StockListScraper getStockListScraper() {
+    public static StockScraper getStockListScraper() {
         return new PesobilityStockListScraper();
     }
 

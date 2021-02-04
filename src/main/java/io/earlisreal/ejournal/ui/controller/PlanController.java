@@ -32,7 +32,7 @@ public class PlanController {
     public TableColumn<Plan, String> percentColumn;
     public TableColumn<Plan, String> sharesColumn;
     public TableColumn<Plan, String> positionColumn;
-    public TableColumn<Plan, String> strategyColumn;
+    public TableColumn<Plan, String> feesColumn;
     public TableColumn<Plan, String> deleteColumn;
     public TableColumn<Plan, LocalDate> dateColumn;
 
@@ -62,7 +62,8 @@ public class PlanController {
         riskColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getRisk())));
         percentColumn.setCellValueFactory(p -> new SimpleStringProperty(round(p.getValue().getPercent()) + "%"));
         sharesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
-        positionColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPosition())));
+        positionColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetPosition())));
+        feesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
     }
 
 }

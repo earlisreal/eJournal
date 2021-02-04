@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.dto;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.time.LocalDate;
 
 public class Plan {
@@ -22,10 +24,19 @@ public class Plan {
     }
 
     public double getShares() {
-        return getPosition() / entry;
+        return getNetPosition() / entry;
     }
 
-    public double getPosition() {
+    public double getNetPosition() {
+        return getGrossPosition() - getFees();
+    }
+
+    public double getFees() {
+        Broker broker = Broker.UNKNOWN;
+        return broker.getFees(getGrossPosition(), true) + broker.getFees(getGrossPosition(), false);
+    }
+
+    public double getGrossPosition() {
         double loss = (entry - stop) / entry;
         return risk / loss;
     }

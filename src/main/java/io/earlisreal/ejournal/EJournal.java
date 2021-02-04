@@ -1,21 +1,19 @@
 package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
-import io.earlisreal.ejournal.database.MapDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
 import io.earlisreal.ejournal.input.EmailParser;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
-import io.earlisreal.ejournal.scraper.StockListScraper;
+import io.earlisreal.ejournal.scraper.StockScraper;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.UILauncher;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
 import javafx.application.Application;
-import org.mapdb.DB;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -28,7 +26,7 @@ public class EJournal {
 
     public static void main(String[] args) {
         System.out.println("Welcome to eJournal!");
-        try (DB ignored1 = MapDatabase.initialize(); Connection ignored = DerbyDatabase.initialize()) {
+        try (Connection ignored = DerbyDatabase.initialize()) {
             ServiceProvider.getStartupService().run();
 
             EJournal eJournal = new EJournal();
@@ -83,11 +81,11 @@ public class EJournal {
             }
 
             if (args[0].equals("stocks")) {
-                StockListScraper stockListScraper = ScraperProvider.getStockListScraper();
-                stockListScraper.parse();
-                ServiceProvider.getStockService().updateStockNameMap(stockListScraper.getStockMap());
-                System.out.println(stockListScraper.getStockMap());
-                System.out.println(stockListScraper.getPriceMap());
+                StockScraper stockListScraper = ScraperProvider.getStockListScraper();
+                stockListScraper.scrape();
+                var stocks = stockListScraper.scrape();
+                ServiceProvider.getStockService().updateStocks(stocks);
+                System.out.println(stocks);
             }
         }
         else {

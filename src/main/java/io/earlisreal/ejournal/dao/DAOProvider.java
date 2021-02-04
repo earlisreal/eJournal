@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.dao;
 
+import static io.earlisreal.ejournal.database.DerbyDatabase.getConnection;
+
 public class DAOProvider {
 
     private DAOProvider() {}
@@ -63,7 +65,7 @@ public class DAOProvider {
         if (stockDAO == null) {
             synchronized (DAOProvider.class) {
                 if (stockDAO == null) {
-                    stockDAO = new MapDBStockDAO();
+                    stockDAO = new DerbyStockDao(getConnection());
                 }
             }
         }

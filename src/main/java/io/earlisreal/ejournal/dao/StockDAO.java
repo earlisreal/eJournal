@@ -1,21 +1,19 @@
 package io.earlisreal.ejournal.dao;
 
+import io.earlisreal.ejournal.dto.Stock;
+
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 public interface StockDAO {
 
-    Map<String, String> getStockNameMap();
+    void updateStocks(List<Stock> stocks);
 
-    Map<String, Double> getStockPriceMap();
+    void updateStockId(List<Stock> stocks);
 
-    Map<String, String> getStockSecurityMap();
+    Map<String, Stock> getStockMap();
 
-    void updateStockMap(Map<String, String> stockMap);
-
-    void updateStockSecurityMap(Map<String, String> stockSecurityMap);
-
-    Map<String, Long> getStockDateMap();
-
-    void updateStockPrice(Map<String, Double> priceMap);
+    boolean updateLastDate(String stock, LocalDate localDate);
 
 }

@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DerbyStockDao implements StockDAO {
+public class DerbyStockDAO implements StockDAO {
 
     private final Connection connection;
 
-    DerbyStockDao(Connection connection) {
+    DerbyStockDAO(Connection connection) {
         this.connection = connection;
     }
 

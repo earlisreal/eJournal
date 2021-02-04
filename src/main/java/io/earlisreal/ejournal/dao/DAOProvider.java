@@ -65,7 +65,7 @@ public class DAOProvider {
         if (stockDAO == null) {
             synchronized (DAOProvider.class) {
                 if (stockDAO == null) {
-                    stockDAO = new DerbyStockDao(getConnection());
+                    stockDAO = new DerbyStockDAO(getConnection());
                 }
             }
         }

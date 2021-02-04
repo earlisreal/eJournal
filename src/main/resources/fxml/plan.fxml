@@ -10,15 +10,16 @@
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>
-                  <TextField fx:id="stockText" layoutX="58.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="DITO" />
-                  <TextField fx:id="entryText" layoutX="200.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="10.2" />
-                  <TextField fx:id="stopText" layoutX="363.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="8.9" />
-                  <TextField fx:id="riskText" layoutX="517.0" layoutY="12.0" prefHeight="25.0" prefWidth="69.0" promptText="50,000" />
-                  <Button layoutX="599.0" layoutY="12.0" mnemonicParsing="false" onAction="#addPlan" text="Add Plan" />
-                  <Label layoutX="137.0" layoutY="16.0" text="Entry Price" />
-                  <Label layoutX="441.0" layoutY="16.0" text="Value at Risk" />
-                  <Label layoutX="277.0" layoutY="16.0" text="Stop Loss Price" />
+                  <TextField fx:id="stockText" layoutX="49.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="DITO" />
+                  <TextField fx:id="entryText" layoutX="179.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="10.2" />
+                  <TextField fx:id="stopText" layoutX="331.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="8.9" />
+                  <TextField fx:id="riskText" layoutX="474.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="50,000" />
+                  <Button layoutX="543.0" layoutY="12.0" mnemonicParsing="false" onAction="#addPlan" text="Add Plan" />
+                  <Label layoutX="117.0" layoutY="16.0" text="Entry Price" />
+                  <Label layoutX="398.0" layoutY="16.0" text="Value at Risk" />
+                  <Label layoutX="245.0" layoutY="16.0" text="Stop Loss Price" />
                   <Label layoutX="14.0" layoutY="16.0" text="Stock" />
+                  <Button layoutX="620.0" layoutY="12.0" mnemonicParsing="false" onAction="#clearFields" text="Clear" />
                </children>
             </AnchorPane>
         </content>
@@ -33,8 +34,8 @@
             <TableColumn fx:id="percentColumn" prefWidth="54.0" text="Percent" />
             <TableColumn fx:id="sharesColumn" prefWidth="77.0" text="Shares" />
             <TableColumn fx:id="feesColumn" prefWidth="75.0" text="Fees" />
-            <TableColumn fx:id="positionColumn" prefWidth="86.0" text="Position" />
-            <TableColumn fx:id="deleteColumn" prefWidth="55.0" text="Delete" />
+            <TableColumn fx:id="positionColumn" prefWidth="77.0" text="Position" />
+            <TableColumn fx:id="deleteColumn" prefWidth="64.0" text="Delete" />
         </columns>
       </TableView>
    </children>

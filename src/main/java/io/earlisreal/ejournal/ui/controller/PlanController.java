@@ -1,15 +1,15 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.Plan;
 import io.earlisreal.ejournal.service.PlanService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 
 import java.time.LocalDate;
 
@@ -33,7 +33,7 @@ public class PlanController {
     public TableColumn<Plan, String> sharesColumn;
     public TableColumn<Plan, String> positionColumn;
     public TableColumn<Plan, String> feesColumn;
-    public TableColumn<Plan, String> deleteColumn;
+    public TableColumn<Plan, Void> deleteColumn;
     public TableColumn<Plan, LocalDate> dateColumn;
 
     public PlanController() {
@@ -64,6 +64,32 @@ public class PlanController {
         sharesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         positionColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetPosition())));
         feesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
+        deleteColumn.setCellFactory(new Callback<>() {
+            @Override
+            public TableCell<Plan, Void> call(TableColumn<Plan, Void> param) {
+                return new TableCell<>() {
+                    @Override
+                    protected void updateItem(Void item, boolean empty) {
+                        final Button button = new Button("Delete");
+                        button.setOnAction(event -> {
+                            boolean res = planService.delete(getTableView().getItems().get(getIndex()).getId());
+                            if (res) {
+                                reload();
+                            }
+                        });
+                        super.updateItem(item, empty);
+                        if (!empty) setGraphic(button);
+                    }
+                };
+            }
+        });
+    }
+
+    public void clearFields(ActionEvent event) {
+        stockText.clear();
+        entryText.clear();
+        stopText.clear();
+        riskText.clear();
     }
 
 }

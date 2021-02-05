@@ -38,7 +38,6 @@ public class TradeDetailsController {
     public TableColumn<TradeLog, String> logShares;
     public TableColumn<TradeLog, String> logFees;
     public TableColumn<TradeLog, String> logNet;
-    public TableColumn<TradeLog, String> logStrategy;
     public AnchorPane anchorPane;
     public ProgressIndicator loadingProgress;
     public Label loadingLabel;
@@ -140,7 +139,6 @@ public class TradeDetailsController {
         logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
-        logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
     }
 
     public void updateImage(TradeSummary tradeSummary) {

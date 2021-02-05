@@ -19,7 +19,7 @@ public class TradeDetailsDialogService {
     private final TradeDetailsController controller;
 
     TradeDetailsDialogService() {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dialog/trade-details.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/trade-details.fxml"));
         Scene scene = null;
 
         try {

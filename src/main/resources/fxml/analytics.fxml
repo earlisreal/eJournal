@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.*?>
 <?import java.lang.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.layout.*?>
@@ -30,5 +33,113 @@
             <CategoryAxis side="LEFT" />
          </yAxis>
       </BarChart>
+      <HBox layoutX="14.0" layoutY="37.0" prefHeight="99.0" prefWidth="680.0">
+         <children>
+            <VBox fx:id="successProfit" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+               <children>
+                  <Label alignment="CENTER" prefWidth="170.0" text="DITO">
+                     <font>
+                        <Font size="26.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets bottom="5.0" top="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 70%" textFill="GREEN">
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 36,000.34" textFill="GREEN">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox fx:id="failLoss" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+               <children>
+                  <Label alignment="CENTER" prefWidth="170.0" text="DITO">
+                     <font>
+                        <Font size="26.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets bottom="5.0" top="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 70%" textFill="RED">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 36,000.34" textFill="RED">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox fx:id="successPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+               <children>
+                  <Label alignment="CENTER" prefWidth="170.0" text="DITO">
+                     <font>
+                        <Font size="26.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets bottom="5.0" top="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 70%" textFill="GREEN">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 36,000.34" textFill="GREEN">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox fx:id="failPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+               <children>
+                  <Label alignment="CENTER" prefWidth="170.0" text="DITO">
+                     <font>
+                        <Font size="26.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets bottom="5.0" top="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 70%" textFill="RED">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Label>
+                  <Label alignment="CENTER" prefWidth="170.0" text="+ 36,000.34" textFill="RED">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      <Label alignment="CENTER" layoutX="14.0" layoutY="14.0" prefWidth="170.0" text="Most Successfull Trade (Profit)" />
+      <Label alignment="CENTER" layoutX="184.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (Loss)" />
+      <Label alignment="CENTER" layoutX="352.0" layoutY="14.0" prefWidth="170.0" text="Most Successfull Trade (%)" />
+      <Label alignment="CENTER" layoutX="522.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (%)" />
    </children>
 </AnchorPane>

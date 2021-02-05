@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.ui.controller;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
@@ -80,19 +81,30 @@ public class AnalyticsController implements Initializable {
             }
         }
 
-        setTrade(successProfit, bestTradeProfit);
-        setTrade(failLoss, worstTradeProfit);
-        setTrade(successPercent, bestTradePercent);
-        setTrade(failPercent, worstTradePercentage);
+        var summaries = List.of(bestTradeProfit, worstTradeProfit, bestTradePercent, worstTradePercentage);
+        setTrade(successProfit, bestTradeProfit, summaries);
+        setTrade(failLoss, worstTradeProfit, summaries);
+        setTrade(successPercent, bestTradePercent, summaries);
+        setTrade(failPercent, worstTradePercentage, summaries);
     }
 
-    private void setTrade(VBox vBox, TradeSummary tradeSummary) {
+    private void setTrade(VBox vBox, TradeSummary summary, List<TradeSummary> summaries) {
         Label stock = (Label) vBox.getChildren().get(0);
-        stock.setText(tradeSummary.getStock());
         Label percent = (Label) vBox.getChildren().get(1);
-        percent.setText(prettify(tradeSummary.getProfitPercentage()) + "%");
         Label value = (Label) vBox.getChildren().get(2);
-        value.setText(prettify(tradeSummary.getProfit()));
+        if (summary == null) {
+            stock.setText("N/A");
+            percent.setText("");
+            value.setText("");
+            vBox.setOnMouseClicked(null);
+            return;
+        }
+
+        stock.setText(summary.getStock());
+        percent.setText(prettify(summary.getProfitPercentage()) + "%");
+        value.setText(prettify(summary.getProfit()));
+
+        vBox.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary, summaries));
     }
 
     private void initializeEquityChart() {

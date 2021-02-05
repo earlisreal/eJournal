@@ -47,7 +47,7 @@ public class TradeDetailsDialogService {
         controller.setSummaries(summaries);
         controller.show(summary);
 
-        stage.setTitle(summary.getStock());
+        stage.setTitle("Trade Summary");
         stage.show();
         stage.setResizable(false);
     }

@@ -39,6 +39,7 @@ public class PSECompanyScraper implements CompanyScraper {
                 onclick = onclick.substring(onclick.indexOf('(') + 2, onclick.indexOf("')"));
 
                 Stock company = new Stock();
+                company.setCode(element.text());
                 company.setCompanyId(onclick.substring(0, onclick.indexOf('\'')));
                 company.setSecurityId(onclick.substring(onclick.lastIndexOf('\'') + 1));
                 companies.add(company);

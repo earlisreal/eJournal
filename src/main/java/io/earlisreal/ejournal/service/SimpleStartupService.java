@@ -42,7 +42,7 @@ public class SimpleStartupService implements StartupService {
             boolean hasNew = stockService.getStockCount() != stocks.size();
             stockService.updateStocks(stocks);
 
-            return true;
+            return hasNew;
         });
 
         res.thenAcceptAsync(unused -> listenerList.forEach(StartupListener::onFinish));

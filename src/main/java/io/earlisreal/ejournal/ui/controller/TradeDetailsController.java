@@ -91,6 +91,7 @@ public class TradeDetailsController {
     private void initializeStatistics(TradeSummary summary) {
         List<Pair<String, String>> list = new ArrayList<>();
         list.add(new Pair<>("Stock", summary.getStock()));
+        list.add(new Pair<>("Name", stockService.getName(summary.getStock())));
         list.add(new Pair<>("Open", summary.getOpenDate().toString()));
         list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
         list.add(new Pair<>("Total Shares", prettify(summary.getShares())));

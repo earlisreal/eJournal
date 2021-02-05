@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface StockService {
 
+    String getName(String stock);
+
     String getCode(String stock);
 
     String getSecurityId(String stock);

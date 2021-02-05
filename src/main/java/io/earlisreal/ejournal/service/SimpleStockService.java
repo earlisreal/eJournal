@@ -19,6 +19,11 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
+    public String getName(String stock) {
+        return stockMap.get(stock).getName();
+    }
+
+    @Override
     public String getCode(String stock) {
         return stockMap.get(stock).getCode();
     }

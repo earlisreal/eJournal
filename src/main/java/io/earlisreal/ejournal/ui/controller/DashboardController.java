@@ -31,6 +31,7 @@ public class DashboardController implements Initializable, StartupListener {
     public Label lastPosition;
     public Label lastHolding;
     public Label lastStock;
+    public Label lastStockName;
 
     public TableView<TradeSummary> openPositionTable;
     public TableColumn<TradeSummary, String> stockColumn;
@@ -115,6 +116,7 @@ public class DashboardController implements Initializable, StartupListener {
         }
 
         TradeSummary lastTrade = summaries.get(summaries.size() - 1);
+        lastStockName.setText(stockService.getName(lastTrade.getStock()));
         lastStock.setText(lastTrade.getStock());
         lastClosedDate.setText(lastTrade.getCloseDate().toString());
         lastPosition.setText(prettify(lastTrade.getPosition()));

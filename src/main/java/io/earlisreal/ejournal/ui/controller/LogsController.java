@@ -12,7 +12,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.cell.TextFieldTableCell;
 
 import java.net.URL;
 import java.time.LocalDate;
@@ -30,15 +29,12 @@ public class LogsController implements Initializable {
     public TableColumn<TradeLog, String> logShares;
     public TableColumn<TradeLog, String> logFees;
     public TableColumn<TradeLog, String> logNet;
-    public TableColumn<TradeLog, String> logStrategy;
-    public TableColumn<TradeLog, String> remarksColumn;
 
     public TableView<TradeSummary> summaryTable;
     public TableColumn<TradeSummary, String> summaryClosed;
     public TableColumn<TradeSummary, String> summaryStock;
     public TableColumn<TradeSummary, String> summaryPosition;
     public TableColumn<TradeSummary, String> summaryProfit;
-    public TableColumn<TradeSummary, String> summaryStrategy;
     public TableColumn<TradeSummary, String> summaryPercent;
     public TableColumn<TradeSummary, String> summaryDays;
 
@@ -65,8 +61,6 @@ public class LogsController implements Initializable {
         logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
-        logStrategy.setCellValueFactory(new PropertyValueFactory<>("strategyId"));
-        remarksColumn.setCellFactory(TextFieldTableCell.forTableColumn());
     }
 
     private void initSummary() {
@@ -82,10 +76,6 @@ public class LogsController implements Initializable {
         summaryPercent.setCellValueFactory(s ->
                 new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
         summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
-    }
-
-    public void saveRemarks(TableColumn.CellEditEvent<TradeLog, String> tradeLogStringCellEditEvent) {
-        System.out.println(tradeLogStringCellEditEvent.getNewValue());
     }
 
 }

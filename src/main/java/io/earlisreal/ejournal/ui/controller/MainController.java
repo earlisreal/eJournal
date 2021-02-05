@@ -66,12 +66,10 @@ public class MainController implements Initializable {
     public BorderPane logBorder;
     public BorderPane bankBorder;
     public BorderPane planBorder;
-    public BorderPane strategyBorder;
     public Label riskRewardLabel;
 
     private Parent log;
     private Parent analytics;
-    private Parent strategy;
     private Parent bankTransaction;
     private Parent dashboard;
     private Parent plan;
@@ -117,8 +115,6 @@ public class MainController implements Initializable {
             analytics = analyticsLoader.load();
             analyticsController = analyticsLoader.getController();
 
-            strategy = FXMLLoader.load(getClass().getResource("/fxml/strategy.fxml"));
-
             FXMLLoader bankLoader = new FXMLLoader(getClass().getResource("/fxml/bank-transaction.fxml"));
             bankTransaction = bankLoader.load();
             bankTransactionController = bankLoader.getController();
@@ -158,9 +154,6 @@ public class MainController implements Initializable {
 
         Text plan = GlyphsDude.createIcon(FontAwesomeIcon.PENCIL, "40px");
         planBorder.setCenter(plan);
-
-        Text strategy = GlyphsDude.createIcon(FontAwesomeIcon.LIGHTBULB_ALT, "40px");
-        strategyBorder.setCenter(strategy);
     }
 
     public void showAnalytics(MouseEvent event) {
@@ -179,12 +172,6 @@ public class MainController implements Initializable {
         children.clear();
         children.add(bankTransaction);
         selectPane(bankBorder);
-    }
-
-    public void showStrategy(MouseEvent event) {
-        children.clear();
-        children.add(strategy);
-        selectPane(strategyBorder);
     }
 
     public void showDashboard(MouseEvent event) {

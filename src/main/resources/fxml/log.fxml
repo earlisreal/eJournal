@@ -14,13 +14,12 @@
                      <children>
                         <TableView fx:id="summaryTable" layoutX="7.0" layoutY="7.0" prefHeight="635.0" prefWidth="665.0" stylesheets="@../stylesheet/table.css">
                           <columns>
-                            <TableColumn fx:id="summaryClosed" prefWidth="93.0" text="Closed" />
-                            <TableColumn fx:id="summaryStock" prefWidth="65.0" text="Stock" />
-                              <TableColumn fx:id="summaryPosition" prefWidth="106.0" text="Position" />
-                              <TableColumn fx:id="summaryProfit" prefWidth="119.0" text="Profit" />
-                              <TableColumn fx:id="summaryPercent" prefWidth="73.0" text="Percent" />
-                              <TableColumn fx:id="summaryDays" prefWidth="71.0" text="Days" />
-                              <TableColumn fx:id="summaryStrategy" prefWidth="123.0" text="Strategy" />
+                            <TableColumn fx:id="summaryClosed" prefWidth="122.0" text="Closed" />
+                            <TableColumn fx:id="summaryStock" prefWidth="81.0" text="Stock" />
+                              <TableColumn fx:id="summaryPosition" prefWidth="137.0" text="Position" />
+                              <TableColumn fx:id="summaryProfit" prefWidth="106.0" text="Profit" />
+                              <TableColumn fx:id="summaryPercent" prefWidth="86.0" text="Percent" />
+                              <TableColumn fx:id="summaryDays" prefWidth="116.0" text="Days" />
                           </columns>
                         </TableView>
                      </children></AnchorPane>
@@ -33,14 +32,12 @@
                         <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="9.0" prefHeight="632.0" prefWidth="661.0">
                           <columns>
                               <TableColumn fx:id="logDate" editable="false" prefWidth="74.0" text="Date" />
-                              <TableColumn fx:id="logStock" editable="false" prefWidth="51.0" text="Stock" />
-                              <TableColumn fx:id="logAction" editable="false" prefWidth="57.0" text="Action" />
-                              <TableColumn fx:id="logPrice" editable="false" prefWidth="77.0" text="Price" />
-                              <TableColumn fx:id="logShares" editable="false" prefWidth="59.0" text="Shares" />
-                              <TableColumn fx:id="logFees" editable="false" prefWidth="67.0" text="Fees" />
-                              <TableColumn fx:id="logNet" editable="false" prefWidth="87.0" text="Net Amount" />
-                              <TableColumn fx:id="logStrategy" prefWidth="67.0" text="Strategy" />
-                              <TableColumn fx:id="remarksColumn" onEditCommit="#saveRemarks" prefWidth="120.0" text="Remarks" />
+                              <TableColumn fx:id="logStock" editable="false" prefWidth="74.0" text="Stock" />
+                              <TableColumn fx:id="logAction" editable="false" prefWidth="78.0" text="Action" />
+                              <TableColumn fx:id="logPrice" editable="false" prefWidth="71.0" text="Price" />
+                              <TableColumn fx:id="logShares" editable="false" prefWidth="84.0" text="Shares" />
+                              <TableColumn fx:id="logFees" editable="false" prefWidth="105.0" text="Fees" />
+                              <TableColumn fx:id="logNet" editable="false" prefWidth="156.0" text="Net Amount" />
                           </columns>
                         </TableView>
                      </children></AnchorPane>

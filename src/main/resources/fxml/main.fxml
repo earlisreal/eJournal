@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
@@ -7,7 +8,7 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="100.0" />
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="702.0" />
@@ -145,21 +146,6 @@
                      </padding>
                      <bottom>
                         <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Planner" textAlignment="CENTER" BorderPane.alignment="CENTER" />
-                     </bottom>
-                  </BorderPane>
-               </children>
-            </VBox>
-            <VBox onMouseClicked="#showStrategy" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
-               <children>
-                  <BorderPane fx:id="strategyBorder" prefHeight="90.0" prefWidth="101.0">
-                     <center>
-                        <Label text="ICON" BorderPane.alignment="CENTER" />
-                     </center>
-                     <padding>
-                        <Insets top="8.0" />
-                     </padding>
-                     <bottom>
-                        <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="25.0" prefWidth="101.0" text="Strategy" textAlignment="CENTER" BorderPane.alignment="CENTER" />
                      </bottom>
                   </BorderPane>
                </children>

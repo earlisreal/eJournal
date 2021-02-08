@@ -22,4 +22,6 @@ public interface TradeLogService {
 
     List<TradeSummary> getOpenPositions();
 
+    void delete(int id);
+
 }

@@ -15,4 +15,6 @@ public interface TradeLogDAO {
 
     int insertLog(List<TradeLog> tradeLog);
 
+    boolean delete(int id);
+
 }

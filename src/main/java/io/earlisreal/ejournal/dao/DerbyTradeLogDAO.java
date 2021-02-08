@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.toSqlDate;
 
 public class DerbyTradeLogDAO implements TradeLogDAO {
@@ -75,6 +76,20 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         }
 
         return res;
+    }
+
+    @Override
+    public boolean delete(int id) {
+        String sql = "DELETE FROM log WHERE id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, id);
+            preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
+        } catch (SQLException sqlException) {
+            handleException(sqlException);
+        }
+
+        return false;
     }
 
     @Override

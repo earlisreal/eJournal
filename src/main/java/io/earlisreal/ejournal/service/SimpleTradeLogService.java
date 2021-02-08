@@ -67,6 +67,11 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
+    public void delete(int id) {
+        tradeLogDAO.delete(id);
+    }
+
+    @Override
     public void initialize() {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());

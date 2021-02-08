@@ -11,7 +11,7 @@ import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
 
 public interface ParseUtil {
 
-    static List<TradeLog> parseCsv(List<String> csv) {
+    static List<TradeLog> parseTradeLogs(List<String> csv) {
         List<TradeLog> tradeLogs = new ArrayList<>();
         for (int i = 0; i < csv.size(); ++i) {
             String[] columns = csv.get(i).split(",");

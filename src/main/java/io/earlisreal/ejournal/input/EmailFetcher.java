@@ -14,7 +14,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.ListMessagesResponse;
-import io.earlisreal.ejournal.scraper.EmailAttachmentScraper;
+import io.earlisreal.ejournal.scraper.EmailScraper;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.util.Broker;
@@ -30,7 +30,7 @@ import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
 
-import static io.earlisreal.ejournal.scraper.EmailAttachmentScraper.USER;
+import static io.earlisreal.ejournal.scraper.EmailScraper.USER;
 
 public class EmailParser {
 
@@ -86,7 +86,7 @@ public class EmailParser {
                     .setMaxResults(10_000L)
                     .setQ(query.toString())
                     .execute();
-            EmailAttachmentScraper scraper = EmailAttachmentScraper.getInstance();
+            EmailScraper scraper = EmailScraper.getInstance();
             var messages = messageResponse.getMessages();
             if (messages != null) {
                 res = messages.parallelStream().reduce(0, (i, m) -> i + scraper.scrape(service, m.getId()), Integer::sum);

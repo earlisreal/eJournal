@@ -26,7 +26,7 @@ public abstract class InvoiceParser {
 
     abstract void parse(String invoice);
 
-    public final void setInvoiceNo(String invoiceNo) {
+    protected final void setInvoiceNo(String invoiceNo) {
         this.invoiceNo = invoiceNo;
     }
 
@@ -56,6 +56,10 @@ public abstract class InvoiceParser {
 
     protected final String getStock() {
         return stock;
+    }
+
+    public boolean isBuy() {
+        return isBuy;
     }
 
 }

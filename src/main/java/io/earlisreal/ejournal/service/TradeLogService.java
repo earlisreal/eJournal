@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface TradeLogService {
 
+    void initialize();
+
     void applyFilter(LocalDate startDate, LocalDate endDate);
 
     int insertCsv(List<String> csv);

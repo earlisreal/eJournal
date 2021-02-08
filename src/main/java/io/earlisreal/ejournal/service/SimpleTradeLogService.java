@@ -19,8 +19,8 @@ public class SimpleTradeLogService implements TradeLogService {
     private final List<TradeSummary> summaries;
     private final List<TradeSummary> openPositions;
 
-    private LocalDate startDateFilter;
-    private LocalDate endDateFilter;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
         this.tradeLogDAO = tradeLogDAO;
@@ -29,12 +29,15 @@ public class SimpleTradeLogService implements TradeLogService {
         logs = new ArrayList<>();
         summaries = new ArrayList<>();
         openPositions = new ArrayList<>();
+
+        endDate = LocalDate.now();
+        startDate = LocalDate.ofEpochDay(0);
     }
 
     @Override
     public int insertCsv(List<String> csv) {
         Map<String, Integer> strategies = strategyDAO.queryAll().stream().collect(Collectors.toMap(Strategy::getName, Strategy::getId));
-        List<TradeLog> tradeLogs = ParseUtil.parseCsv(csv);
+        List<TradeLog> tradeLogs = ParseUtil.parseTradeLogs(csv);
         for (TradeLog tradeLog : tradeLogs) {
             tradeLog.setStrategyId(strategies.getOrDefault(tradeLog.getStrategy(), null));
         }
@@ -50,23 +53,11 @@ public class SimpleTradeLogService implements TradeLogService {
 
         int inserted = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(inserted + " Records Inserted");
-
-        if (inserted > 0) {
-            logs.clear();
-            logs.addAll(tradeLogDAO.queryAll());
-            // TODO : Apply filter using startDate and endDateFilter
-            getSummaries(logs);
-        }
-
         return inserted;
     }
 
     @Override
     public List<TradeLog> getLogs() {
-        if (logs.isEmpty()) {
-            logs.addAll(tradeLogDAO.queryAll());
-            getSummaries(logs);
-        }
         return logs;
     }
 
@@ -76,15 +67,21 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
-    public void applyFilter(LocalDate startDate, LocalDate endDate) {
+    public void initialize() {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());
         logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
 
-        startDateFilter = startDate;
-        endDateFilter = endDate;
+        calculateSummaries(logs);
+    }
 
-        getSummaries(logs);
+    @Override
+    public void applyFilter(LocalDate startDate, LocalDate endDate) {
+        logs.clear();
+        logs.addAll(tradeLogDAO.queryAll());
+
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     @Override
@@ -92,7 +89,7 @@ public class SimpleTradeLogService implements TradeLogService {
         return summaries;
     }
 
-    private void getSummaries(List<TradeLog> logs) {
+    private void calculateSummaries(List<TradeLog> logs) {
         summaries.clear();
         openPositions.clear();
 

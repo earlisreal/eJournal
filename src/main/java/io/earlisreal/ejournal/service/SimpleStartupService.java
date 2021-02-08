@@ -18,13 +18,18 @@ public class SimpleStartupService implements StartupService {
     private final StockScraper stockListScraper;
     private final CompanyScraper companyScraper;
     private final StockService stockService;
+    private final AnalyticsService analyticsService;
+    private final TradeLogService tradeLogService;
 
     private final List<StartupListener> listenerList;
 
-    SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper, StockService stockService) {
+    SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper, StockService stockService,
+                         TradeLogService tradeLogService, AnalyticsService analyticsService) {
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
         this.stockService = stockService;
+        this.tradeLogService = tradeLogService;
+        this.analyticsService = analyticsService;
 
         listenerList = new ArrayList<>();
     }
@@ -33,6 +38,9 @@ public class SimpleStartupService implements StartupService {
     public void run() {
         createDirectories();
         manageStockList();
+
+        tradeLogService.initialize();
+        analyticsService.initialize();
     }
 
     @Override
@@ -58,7 +66,6 @@ public class SimpleStartupService implements StartupService {
     public void createDirectories() {
         CompletableFuture.runAsync(() -> {
             try {
-                // TODO : Move this to the checker if first run
                 Files.createDirectories(stocksDirectory);
                 Files.createDirectories(plotDirectory);
             } catch (IOException e) {

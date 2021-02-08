@@ -3,7 +3,7 @@ package io.earlisreal.ejournal.ui.controller;
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.TradeLog;
-import io.earlisreal.ejournal.input.EmailParser;
+import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -157,18 +157,24 @@ public class MainController implements Initializable {
     }
 
     public void showAnalytics(MouseEvent event) {
+        analyticsController.reload();
+
         children.clear();
         children.add(analytics);
         selectPane(analyticsBorder);
     }
 
     public void showLog(MouseEvent event) {
+        logController.reload();
+
         children.clear();
         children.add(log);
         selectPane(logBorder);
     }
 
     public void showBankTransaction(MouseEvent event) {
+        bankTransactionController.reload();
+
         children.clear();
         children.add(bankTransaction);
         selectPane(bankBorder);
@@ -182,6 +188,7 @@ public class MainController implements Initializable {
 
     public void showPlan(MouseEvent event) {
         planController.reload();
+
         children.clear();
         children.add(plan);
         selectPane(planBorder);
@@ -256,9 +263,28 @@ public class MainController implements Initializable {
         }
     }
 
+    public void importCsv(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save CSV");
+        fileChooser.getExtensionFilters().add(csvFilter);
+        Stage stage = (Stage) grid.getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+        int res = 0;
+        try {
+            List<String> csv = Files.readAllLines(file.toPath());
+            res += tradeLogService.insertCsv(csv);
+            res += bankTransactionService.insertCsv(csv);
+        } catch (IOException e) {
+            handleException(e);
+        }
+
+        if (res > 0) {
+            reload();
+        }
+    }
+
     public void filterDate(ActionEvent event) {
         tradeLogService.applyFilter(startDate.getValue(), endDate.getValue());
-        analyticsService.initialize();
         refresh();
     }
 
@@ -270,7 +296,7 @@ public class MainController implements Initializable {
                 return new Task<>() {
                     @Override
                     protected Integer call() throws Exception {
-                        return EmailParser.getInstance().parse();
+                        return EmailFetcher.getInstance().parse();
                     }
                 };
             }
@@ -291,8 +317,13 @@ public class MainController implements Initializable {
         service.setOnFailed(event -> {
             String message;
             Throwable throwable = event.getSource().getException();
-            if (throwable != null) message = throwable.getMessage();
-            else message = "Unknown Error.";
+            if (throwable != null) {
+                message = throwable.getMessage();
+                throwable.printStackTrace();
+            }
+            else {
+                message = "Unknown Error.";
+            }
             System.out.println("Email Sync Failed: " + message);
             syncingDone();
         });
@@ -325,6 +356,9 @@ public class MainController implements Initializable {
     }
 
     private void refresh() {
+        tradeLogService.initialize();
+        analyticsService.initialize();
+
         reload();
         logController.reload();
         analyticsController.reload();
@@ -383,21 +417,6 @@ public class MainController implements Initializable {
             } catch (IOException e) {
                 handleException(e);
             }
-        }
-    }
-
-    public void importCsv(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save CSV");
-        fileChooser.getExtensionFilters().add(csvFilter);
-        Stage stage = (Stage) grid.getScene().getWindow();
-        File file = fileChooser.showOpenDialog(stage);
-        try {
-            List<String> csv = Files.readAllLines(file.toPath());
-            tradeLogService.insertCsv(csv);
-            bankTransactionService.insertCsv(csv);
-        } catch (IOException e) {
-            handleException(e);
         }
     }
 

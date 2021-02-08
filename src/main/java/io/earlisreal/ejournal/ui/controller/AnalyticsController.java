@@ -5,21 +5,18 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
-import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
-public class AnalyticsController implements Initializable {
+public class AnalyticsController {
 
     public LineChart<String, Double> equityChart;
     public BarChart<Double, String> topWinners;
@@ -29,14 +26,10 @@ public class AnalyticsController implements Initializable {
     public VBox successPercent;
     public VBox failPercent;
 
-    private AnalyticsService service;
+    private final AnalyticsService service;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    public AnalyticsController() {
         service = ServiceProvider.getAnalyticsService();
-        service.initialize();
-
-        reload();
     }
 
     public void reload() {

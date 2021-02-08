@@ -44,9 +44,9 @@ public class SimpleBankTransactionService implements BankTransactionService {
     }
 
     @Override
-    public void insertCsv(List<String> csv) {
+    public int insertCsv(List<String> csv) {
         List<BankTransaction> bankTransactions = ParseUtil.parseBankTransactions(csv);
-        bankTransactionDAO.insert(bankTransactions);
+        return bankTransactionDAO.insert(bankTransactions);
     }
 
 }

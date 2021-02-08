@@ -8,18 +8,15 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import java.net.URL;
 import java.time.LocalDate;
-import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
-public class LogsController implements Initializable {
+public class LogsController {
 
     public TableView<TradeLog> logTable;
     public TableColumn<TradeLog, LocalDate> logDate;
@@ -38,13 +35,10 @@ public class LogsController implements Initializable {
     public TableColumn<TradeSummary, String> summaryPercent;
     public TableColumn<TradeSummary, String> summaryDays;
 
-    private TradeLogService tradeLogService;
+    private final TradeLogService tradeLogService;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    public LogsController() {
         tradeLogService = ServiceProvider.getTradeLogService();
-
-        reload();
     }
 
     public void reload() {

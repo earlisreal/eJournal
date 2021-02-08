@@ -5,16 +5,13 @@ import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
 
-import java.net.URL;
 import java.util.List;
-import java.util.ResourceBundle;
 
-public class BankTransactionController implements Initializable {
+public class BankTransactionController {
 
     public TableColumn<BankTransaction, String> dateColumn;
     public TableColumn<BankTransaction, String> actionColumn;
@@ -26,12 +23,10 @@ public class BankTransactionController implements Initializable {
     public TextField withdrawAmount;
     public DatePicker withdrawDate;
 
-    private BankTransactionService service;
+    private final BankTransactionService service;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    public BankTransactionController() {
         service = ServiceProvider.getBankTransactionService();
-        loadBankTransactions();
     }
 
     public void deposit(ActionEvent event) {

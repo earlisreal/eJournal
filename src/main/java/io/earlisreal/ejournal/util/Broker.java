@@ -6,7 +6,7 @@ public enum Broker {
     AAA(
             "AAA",
             System.lineSeparator() + "AAA" + System.lineSeparator(),
-            "subject:(AAA EQUITIES) PDFAPAR has:attachment"
+            "subject:(AAA EQUITIES) (PDFAPAR OR SAP) has:attachment"
     ),
     YAPSTER(
             "2TradeAsia",

@@ -6,12 +6,12 @@ public enum Broker {
     AAA(
             "AAA",
             System.lineSeparator() + "AAA" + System.lineSeparator(),
-            null
+            "subject:(AAA EQUITIES) PDFAPAR has:attachment"
     ),
     YAPSTER(
             "2TradeAsia",
             "YAPSTER",
-            null
+            "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA)) has:attachment"
     ) {
         @Override
         public double getFees(double grossAmount, boolean isBuy) {
@@ -21,10 +21,10 @@ public enum Broker {
     },
     COL(
             "COL Financial",
-            "COL FINANCIAL GROUP, INC.",
+            "COL Financial Group, Inc.",
             "from:(alert@colfinancial.com OR Helpdesk@colfinancial.com OR withdrawals@colfinancial.com) " +
                     "subject:(\"COL Trading Confirmation\" OR \"Notice of Cash Dividend\" " +
-                    "OR \"Acknowledgement of Deposit\" OR \"NOTICE OF RECEIPT OF WITHDRAWAL REQUEST\")"
+                    "OR \"Acknowledgement of Deposit\" OR \"Notice of Debit Adjustment\")"
     );
 
     private final String name;

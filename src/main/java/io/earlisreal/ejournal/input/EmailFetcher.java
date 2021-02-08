@@ -32,25 +32,25 @@ import java.util.List;
 
 import static io.earlisreal.ejournal.scraper.EmailScraper.USER;
 
-public class EmailParser {
+public class EmailFetcher {
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-    private static EmailParser instance;
+    private static EmailFetcher instance;
 
     private Gmail service;
 
     private final Path tokenPath;
 
-    private EmailParser() {
+    private EmailFetcher() {
         tokenPath = Paths.get(Configs.DATA_DIR, "tokens");
     }
 
-    public static EmailParser getInstance() {
+    public static EmailFetcher getInstance() {
         if (instance == null) {
-            synchronized (EmailParser.class) {
+            synchronized (EmailFetcher.class) {
                 if (instance == null) {
-                    instance = new EmailParser();
+                    instance = new EmailFetcher();
                 }
             }
         }

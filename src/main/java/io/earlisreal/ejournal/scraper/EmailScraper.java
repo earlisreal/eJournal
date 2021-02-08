@@ -80,8 +80,9 @@ public class EmailScraper {
 
             Broker broker = CommonUtil.identifyBroker(body);
             EmailParser parser = EmailParserFactory.getEmailParser(broker);
-            tradeLogs.addAll(parser.parseTradeLogs(getSubject(message.getPayload()), body));
-            bankTransactions.addAll(parser.parseBankTransactions(message.getSnippet(), body));
+            String subject = getSubject(message.getPayload());
+            tradeLogs.addAll(parser.parseTradeLogs(subject, body));
+            bankTransactions.addAll(parser.parseBankTransactions(subject, body));
         }
 
         int res = 0;

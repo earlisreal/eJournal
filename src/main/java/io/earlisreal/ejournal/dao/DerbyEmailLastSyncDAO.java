@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.EmailLastSync;
+import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.sql.*;
 import java.time.Instant;
@@ -25,8 +26,7 @@ public class DerbyEmailLastSyncDAO implements EmailLastSyncDAO {
                 return  emailLastSync;
             }
         } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
-            sqlException.printStackTrace();
+            CommonUtil.handleException(sqlException);
         }
 
         return null;
@@ -44,6 +44,19 @@ public class DerbyEmailLastSyncDAO implements EmailLastSyncDAO {
         return execute(sql, emailLastSync);
     }
 
+    @Override
+    public boolean deleteAll(int secretParam) {
+        String sql = "DELETE FROM email_sync WHERE 1 = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, secretParam);
+            preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
+        } catch (SQLException sqlException) {
+            CommonUtil.handleException(sqlException);
+        }
+        return false;
+    }
+
     private boolean execute(String sql, EmailLastSync emailLastSync) {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setTimestamp(1, new Timestamp(emailLastSync.getLastSync().toEpochMilli()));
@@ -51,8 +64,7 @@ public class DerbyEmailLastSyncDAO implements EmailLastSyncDAO {
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
-            System.out.println(sqlException.getMessage());
-            sqlException.printStackTrace();
+            CommonUtil.handleException(sqlException);
         }
         return false;
     }

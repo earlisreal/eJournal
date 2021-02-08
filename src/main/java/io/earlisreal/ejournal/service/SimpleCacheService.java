@@ -15,6 +15,11 @@ public class SimpleCacheService implements CacheService {
 
 
     @Override
+    public void deleteAllEmailSync(int secretParam) {
+        emailLastSyncDAO.deleteAll(secretParam);
+    }
+
+    @Override
     public Instant getLastSync(String email) {
         EmailLastSync emailLastSync = emailLastSyncDAO.query(stripEmail(email));
         if (emailLastSync == null) return null;

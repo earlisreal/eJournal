@@ -10,4 +10,6 @@ public interface EmailLastSyncDAO {
 
     boolean update(EmailLastSync emailLastSync);
 
+    boolean deleteAll(int secretParam);
+    
 }

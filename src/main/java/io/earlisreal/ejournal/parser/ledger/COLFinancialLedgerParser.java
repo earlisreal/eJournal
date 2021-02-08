@@ -14,10 +14,14 @@ import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class COLFinancialLedgerParser implements LedgerParser {
 
+    private final DateTimeFormatter referenceFormatter;
+
     private List<TradeLog> tradeLogs;
     private List<BankTransaction> bankTransactions;
 
-    COLFinancialLedgerParser() {}
+    COLFinancialLedgerParser() {
+        referenceFormatter = DateTimeFormatter.ofPattern("MMdduu");
+    }
 
     public void parse(List<String> lines) {
         tradeLogs = new ArrayList<>();
@@ -85,11 +89,16 @@ public class COLFinancialLedgerParser implements LedgerParser {
         String action = tokens[2].trim();
         if (action.equals("WFUNDS")) {
             bankTransaction.setAmount(bankTransaction.getAmount() * -1);
+            bankTransaction.setReferenceNo(referenceFormatter.format(bankTransaction.getDate()));
         }
-        if (action.equals("CDIV+")) {
+        else if (action.equals("CDIV+")) {
             bankTransaction.setDividend(true);
+            String stock = tokens[4].trim().split(" ")[1];
+            bankTransaction.setReferenceNo(stock + DateTimeFormatter.ofPattern("MMuu").format(bankTransaction.getDate()));
         }
-        bankTransaction.setReferenceNo(tokens[3].trim());
+        else {
+            bankTransaction.setReferenceNo(tokens[3].trim());
+        }
 
         return bankTransaction;
     }
@@ -101,7 +110,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         String stock = tokens[4].trim();
         int shares = parseInt(tokens[5].trim());
         double price = parseDouble(tokens[7].trim());
-        String referenceNo = date.format(DateTimeFormatter.ofPattern("MMdduu")) + (isBuy ? "1" : "0") + stock;
+        String referenceNo = date.format(referenceFormatter) + (isBuy ? "1" : "0") + stock;
         return new TradeLog(date, stock, isBuy, price, shares, referenceNo, Broker.COL);
     }
 

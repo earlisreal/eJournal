@@ -101,7 +101,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
         String stock = tokens[4].trim();
         int shares = parseInt(tokens[5].trim());
         double price = parseDouble(tokens[7].trim());
-        String referenceNo = tokens[3].trim();
+        String referenceNo = date.format(DateTimeFormatter.ofPattern("MMdduu")) + (isBuy ? "1" : "0") + stock;
         return new TradeLog(date, stock, isBuy, price, shares, referenceNo, Broker.COL);
     }
 

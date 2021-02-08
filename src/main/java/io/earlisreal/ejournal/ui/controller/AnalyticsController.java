@@ -13,6 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -55,7 +56,7 @@ public class AnalyticsController implements Initializable {
         TradeSummary bestTradePercent = null;
         TradeSummary worstTradeProfit = null;
         TradeSummary worstTradePercentage = null;
-        for (TradeSummary summary : service.getSummaries()) {
+        for (TradeSummary summary : service.getWins()) {
             double profit = summary.getProfit();
             double percent = summary.getProfitPercentage();
             if (profit > maxProfit) {
@@ -67,7 +68,9 @@ public class AnalyticsController implements Initializable {
                 maxProfitPercent = percent;
                 bestTradePercent = summary;
             }
+        }
 
+        for (TradeSummary summary : service.getLosses()) {
             double lossPercent = summary.getProfitPercentage();
             double loss = summary.getProfit();
             if (lossPercent < minProfitPercent) {
@@ -81,7 +84,11 @@ public class AnalyticsController implements Initializable {
             }
         }
 
-        var summaries = List.of(bestTradeProfit, worstTradeProfit, bestTradePercent, worstTradePercentage);
+        List<TradeSummary> summaries = new ArrayList<>();
+        if (bestTradeProfit != null) summaries.add(bestTradeProfit);
+        if (worstTradeProfit != null) summaries.add(worstTradeProfit);
+        if (bestTradePercent != null) summaries.add(bestTradePercent);
+        if (worstTradePercentage != null) summaries.add(worstTradePercentage);
         setTrade(successProfit, bestTradeProfit, summaries);
         setTrade(failLoss, worstTradeProfit, summaries);
         setTrade(successPercent, bestTradePercent, summaries);

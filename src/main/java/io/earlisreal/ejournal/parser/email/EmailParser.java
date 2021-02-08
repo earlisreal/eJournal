@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface EmailParser {
 
-    List<TradeLog> parseTradeLogs(String emailBody);
+    List<TradeLog> parseTradeLogs(String subject, String body);
 
-    List<BankTransaction> parseBankTransactions(String emailBody);
+    List<BankTransaction> parseBankTransactions(String subject, String body);
 
 }

@@ -80,15 +80,21 @@ public class EmailScraper {
 
             Broker broker = CommonUtil.identifyBroker(body);
             EmailParser parser = EmailParserFactory.getEmailParser(broker);
-            tradeLogs.addAll(parser.parseTradeLogs(body));
-            bankTransactions.addAll(parser.parseBankTransactions(body));
-
+            tradeLogs.addAll(parser.parseTradeLogs(getSubject(message.getPayload()), body));
+            bankTransactions.addAll(parser.parseBankTransactions(message.getSnippet(), body));
         }
 
         int res = 0;
         res += tradeLogService.insert(tradeLogs);
         res += bankTransactionService.insert(bankTransactions);
         return res;
+    }
+
+    private String getSubject(MessagePart payload) {
+        for (var header : payload.getHeaders()) {
+            if (header.getName().equals("Subject")) return header.getValue();
+        }
+        return null;
     }
 
     private String getHtmlContent(MessagePart messagePart) {

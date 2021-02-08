@@ -5,6 +5,8 @@ import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.parser.email.EmailParser;
+import io.earlisreal.ejournal.parser.email.EmailParserFactory;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -14,21 +16,22 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
+import org.apache.http.entity.ContentType;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class EmailAttachmentScraper {
+public class EmailScraper {
 
     public static final String USER = "me";
 
     private final TradeLogService tradeLogService;
     private final BankTransactionService bankTransactionService;
-    private static EmailAttachmentScraper emailAttachmentScraper;
+    private static EmailScraper emailAttachmentScraper;
 
-    EmailAttachmentScraper(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
+    EmailScraper(TradeLogService tradeLogService, BankTransactionService bankTransactionService) {
         this.tradeLogService = tradeLogService;
         this.bankTransactionService = bankTransactionService;
     }
@@ -71,10 +74,36 @@ public class EmailAttachmentScraper {
             }
         }
 
+        if (attachments.isEmpty()) {
+            String body = getHtmlContent(message.getPayload());
+            assert body != null;
+
+            Broker broker = CommonUtil.identifyBroker(body);
+            EmailParser parser = EmailParserFactory.getEmailParser(broker);
+            tradeLogs.addAll(parser.parseTradeLogs(body));
+            bankTransactions.addAll(parser.parseBankTransactions(body));
+
+        }
+
         int res = 0;
         res += tradeLogService.insert(tradeLogs);
         res += bankTransactionService.insert(bankTransactions);
         return res;
+    }
+
+    private String getHtmlContent(MessagePart messagePart) {
+        if (messagePart.getMimeType().equals(ContentType.TEXT_HTML.getMimeType())) {
+            return new String(messagePart.getBody().decodeData());
+        }
+
+        for (MessagePart part : messagePart.getParts()) {
+            if (part.getBody().getData() != null) {
+                String body = getHtmlContent(part);
+                if (body != null) return body;
+            }
+        }
+
+        return null;
     }
 
     private List<MessagePart> getAttachments(MessagePart messagePart) {
@@ -92,11 +121,11 @@ public class EmailAttachmentScraper {
         return attachmentIds;
     }
 
-    public static EmailAttachmentScraper getInstance() {
+    public static EmailScraper getInstance() {
         if (emailAttachmentScraper == null) {
-            synchronized (EmailAttachmentScraper.class) {
+            synchronized (EmailScraper.class) {
                 if (emailAttachmentScraper == null) {
-                    emailAttachmentScraper = new EmailAttachmentScraper(ServiceProvider.getTradeLogService(),
+                    emailAttachmentScraper = new EmailScraper(ServiceProvider.getTradeLogService(),
                             ServiceProvider.getBankTransactionService());
                 }
             }

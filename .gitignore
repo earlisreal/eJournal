@@ -4,6 +4,9 @@ build/
 .gradle/
 out/
 
+# Experiment Files
+src/main/java/io/earlisreal/ejournal/Test.java
+
 # eJournal Files
 .eJournal/
 eJournalDB/

@@ -110,10 +110,11 @@ public class COLFinancialEmailParser implements EmailParser {
         for (String text : texts) {
             if (text.startsWith("Stock Code")) {
                 bankTransaction.setReferenceNo(text.split("Stock Code : ")[1]
-                        + referenceFormatter.format(bankTransaction.getDate()));
+                        + DateTimeFormatter.ofPattern("MMuu").format(bankTransaction.getDate()));
             }
-            if (text.startsWith("Net Amount")) {
-                bankTransaction.setAmount(parseDouble(text.split("Net Amount (Php) : ")[1]));
+            String net = "Net Amount (Php) : ";
+            if (text.startsWith(net)) {
+                bankTransaction.setAmount(parseDouble(text.substring(net.length())));
             }
         }
 
@@ -146,6 +147,7 @@ public class COLFinancialEmailParser implements EmailParser {
 
         var texts = document.getElementsByTag("font").eachText();
         bankTransaction.setDate(LocalDate.parse(texts.get(0), formatter));
+        bankTransaction.setReferenceNo(referenceFormatter.format(bankTransaction.getDate()));
         for (String text : texts) {
             String amount = "Amount : Php ";
             if (text.startsWith(amount)) {

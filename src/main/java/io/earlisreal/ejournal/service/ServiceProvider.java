@@ -22,7 +22,9 @@ public final class ServiceProvider {
             synchronized (ServiceProvider.class) {
                 if (startupService == null) {
                     // TODO : Remove this circular dependency of ScraperProvider and ServiceProvider
-                    startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(), ScraperProvider.getCompanyScraper(), getStockService());
+                    startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(),
+                            ScraperProvider.getCompanyScraper(), getStockService(), getTradeLogService(),
+                            getAnalyticsService());
                 }
             }
         }

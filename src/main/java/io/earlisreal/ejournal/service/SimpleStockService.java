@@ -2,8 +2,10 @@ package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.StockDAO;
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,10 +14,12 @@ public class SimpleStockService implements StockService {
     private final StockDAO stockDAO;
 
     private Map<String, Stock> stockMap;
+    private Map<String, String> stockCodeMap;
 
     SimpleStockService(StockDAO stockDAO) {
         this.stockDAO = stockDAO;
         stockMap = stockDAO.getStockMap();
+        updateStockCodeMap();
     }
 
     @Override
@@ -25,7 +29,7 @@ public class SimpleStockService implements StockService {
 
     @Override
     public String getCode(String stock) {
-        return stockMap.get(stock).getCode();
+        return stockCodeMap.get(stock);
     }
 
     @Override
@@ -66,11 +70,19 @@ public class SimpleStockService implements StockService {
     public void updateStocks(List<Stock> stocks) {
         stockDAO.updateStocks(stocks);
         stockMap = stockDAO.getStockMap();
+        updateStockCodeMap();
     }
 
     @Override
     public void updateStockId(List<Stock> stocks) {
         stockDAO.updateStockId(stocks);
+    }
+
+    private void updateStockCodeMap() {
+        stockCodeMap = new HashMap<>();
+        for (var stock : stockMap.values()) {
+            stockCodeMap.put(CommonUtil.trimStockName(stock.getName()), stock.getCode());
+        }
     }
 
 }

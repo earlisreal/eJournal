@@ -25,6 +25,17 @@ public interface CommonUtil {
         throw new RuntimeException("Invoice of this format is not supported");
     }
 
+    static Broker identifyBrokerLenient(String invoice) {
+        for (Broker broker : Broker.values()) {
+            if (broker.getUniqueIdentifier() != null
+                    && invoice.toUpperCase().contains(broker.getUniqueIdentifier().toUpperCase())) {
+                return broker;
+            }
+        }
+
+        throw new RuntimeException("Invoice of this format is not supported");
+    }
+
     static int parseInt(String text) throws ParseException {
         if (text.isBlank()) return 0;
         return NumberFormat.getNumberInstance().parse(text).intValue();
@@ -36,7 +47,7 @@ public interface CommonUtil {
     }
 
     static String trimStockName(String name) {
-        var extensions = List.of(", INC", " INCORPORATED", " CORP", " CORPORATION");
+        var extensions = List.of(" PHILIPPINES, INC", ", INC", " INCORPORATED", " CORP", " CORPORATION");
         name = name.toUpperCase();
         for (String extension : extensions) {
             int index = name.lastIndexOf(extension);

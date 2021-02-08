@@ -239,7 +239,7 @@ public class MainController implements Initializable {
             if (filename.endsWith(".txt")) {
                 try {
                     lines = Files.readAllLines(Paths.get(file.toURI()));
-                    broker = CommonUtil.identifyBroker(lines.get(0));
+                    broker = CommonUtil.identifyBrokerLenient(lines.get(0));
                 } catch (IOException e) {
                     CommonUtil.handleException(e);
                     continue;

@@ -36,11 +36,7 @@ public class SimpleBankTransactionService implements BankTransactionService {
 
     @Override
     public boolean delete(int id) {
-        boolean success = bankTransactionDAO.delete(id);
-        if (success) {
-            System.out.println("Bank Transaction Deleted: " + id);
-        }
-        return success;
+        return bankTransactionDAO.delete(id);
     }
 
     @Override

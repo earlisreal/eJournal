@@ -2,7 +2,7 @@ package io.earlisreal.ejournal;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.input.ConsoleParser;
-import io.earlisreal.ejournal.input.EmailParser;
+import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -77,7 +77,7 @@ public class EJournal {
             }
 
             if (args[0].equals("email")) {
-                EmailParser.getInstance().parse();
+                EmailFetcher.getInstance().parse();
             }
 
             if (args[0].equals("stocks")) {

@@ -75,7 +75,7 @@ public class DerbyBankTransactionDAO implements BankTransactionDAO {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setInt(1, id);
             preparedStatement.execute();
-            return true;
+            return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException ignore) {
         }
         return false;

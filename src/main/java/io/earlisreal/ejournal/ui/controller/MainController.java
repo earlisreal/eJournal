@@ -2,15 +2,13 @@ package io.earlisreal.ejournal.ui.controller;
 
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
-import io.earlisreal.ejournal.service.AnalyticsService;
-import io.earlisreal.ejournal.service.BankTransactionService;
-import io.earlisreal.ejournal.service.ServiceProvider;
-import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.service.*;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
@@ -83,6 +81,7 @@ public class MainController implements Initializable {
     private BankTransactionController bankTransactionController;
     private DashboardController dashboardController;
     private PlanController planController;
+    private final CacheService cacheService;
 
     private BorderPane selectedPane;
     private final FileChooser.ExtensionFilter pdfFilter;
@@ -90,6 +89,8 @@ public class MainController implements Initializable {
     private final FileChooser.ExtensionFilter csvFilter;
 
     public MainController() {
+        cacheService = ServiceProvider.getCacheService();
+
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
         csvFilter = new FileChooser.ExtensionFilter("CSV", "*.csv");
@@ -348,11 +349,15 @@ public class MainController implements Initializable {
             event.consume();
         }
         else {
-            // TODO:
-
+            for (TradeLog tradeLog : tradeLogService.getLogs()) {
+                tradeLogService.delete(tradeLog.getId());
+            }
+            for (BankTransaction bankTransaction : bankTransactionService.getAll()) {
+                bankTransactionService.delete(bankTransaction.getId());
+            }
+            cacheService.deleteAllEmailSync(1);
+            refresh();
         }
-
-        refresh();
     }
 
     private void refresh() {

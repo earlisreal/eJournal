@@ -453,4 +453,14 @@ public class MainController implements Initializable {
         refresh();
     }
 
+    public void showAbout(ActionEvent event) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("About");
+        alert.setHeaderText(null);
+        alert.setContentText("Developed by: Earl Savadera\n" +
+                "Email: earl.stock.trader@gmail.com\n" +
+                "GitHub Page: https://github.com/earlisreal/eJournal");
+        alert.show();
+    }
+
 }

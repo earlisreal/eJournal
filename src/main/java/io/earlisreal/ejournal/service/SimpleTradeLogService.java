@@ -85,8 +85,8 @@ public class SimpleTradeLogService implements TradeLogService {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());
 
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startDate = Objects.requireNonNullElseGet(startDate, () -> LocalDate.ofEpochDay(0));
+        this.endDate = Objects.requireNonNullElseGet(endDate, LocalDate::now);
     }
 
     @Override

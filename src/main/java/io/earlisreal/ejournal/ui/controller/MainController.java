@@ -36,12 +36,14 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.*;
+import static java.time.LocalDate.now;
 
 public class MainController implements Initializable {
 
@@ -285,8 +287,7 @@ public class MainController implements Initializable {
     }
 
     public void filterDate(ActionEvent event) {
-        tradeLogService.applyFilter(startDate.getValue(), endDate.getValue());
-        refresh();
+        filterDate(startDate.getValue(), endDate.getValue());
     }
 
     public void syncEmail(ActionEvent unused) {
@@ -423,6 +424,33 @@ public class MainController implements Initializable {
                 handleException(e);
             }
         }
+    }
+
+    public void filterAll(ActionEvent event) {
+        filterDate(null, null);
+    }
+
+    public void filterYearToDate(ActionEvent event) {
+        filterDate(LocalDate.of(now().getYear(), 1, 1), now());
+    }
+
+    public void filter12Months(ActionEvent event) {
+        filterDate(now().minusDays(360), now());
+    }
+
+    public void filterLastMonth(ActionEvent event) {
+        filterDate(now().minusDays(30), now());
+    }
+
+    public void filterLastWeek(ActionEvent event) {
+        filterDate(now().minusDays(7), now());
+    }
+
+    private void filterDate(LocalDate start, LocalDate end) {
+        startDate.setValue(start);
+        endDate.setValue(end);
+        tradeLogService.applyFilter(start, end);
+        refresh();
     }
 
 }

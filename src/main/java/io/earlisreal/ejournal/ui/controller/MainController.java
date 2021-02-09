@@ -25,8 +25,9 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -160,7 +161,7 @@ public class MainController implements Initializable {
         planBorder.setCenter(plan);
     }
 
-    public void showAnalytics(MouseEvent event) {
+    public void showAnalytics() {
         analyticsController.reload();
 
         children.clear();
@@ -168,7 +169,7 @@ public class MainController implements Initializable {
         selectPane(analyticsBorder);
     }
 
-    public void showLog(MouseEvent event) {
+    public void showLog() {
         logController.reload();
 
         children.clear();
@@ -176,7 +177,7 @@ public class MainController implements Initializable {
         selectPane(logBorder);
     }
 
-    public void showBankTransaction(MouseEvent event) {
+    public void showBankTransaction() {
         bankTransactionController.reload();
 
         children.clear();
@@ -184,13 +185,13 @@ public class MainController implements Initializable {
         selectPane(bankBorder);
     }
 
-    public void showDashboard(MouseEvent event) {
+    public void showDashboard() {
         children.clear();
         children.add(dashboard);
         selectPane(dashboardBorder);
     }
 
-    public void showPlan(MouseEvent event) {
+    public void showPlan() {
         planController.reload();
 
         children.clear();
@@ -206,7 +207,7 @@ public class MainController implements Initializable {
         selectedPane.setStyle("-fx-background-color: WHITE;");
     }
 
-    public void importInvoice(ActionEvent event) {
+    public void importInvoice() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
@@ -227,7 +228,7 @@ public class MainController implements Initializable {
         }
     }
 
-    public void importLedger(ActionEvent event) {
+    public void importLedger() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
@@ -267,7 +268,7 @@ public class MainController implements Initializable {
         }
     }
 
-    public void importCsv(ActionEvent event) {
+    public void importCsv() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save CSV");
         fileChooser.getExtensionFilters().add(csvFilter);
@@ -287,11 +288,11 @@ public class MainController implements Initializable {
         }
     }
 
-    public void filterDate(ActionEvent event) {
+    public void filterDate() {
         filterDate(startDate.getValue(), endDate.getValue());
     }
 
-    public void syncEmail(ActionEvent unused) {
+    public void syncEmail() {
         emailSyncButton.setDisable(true);
         Service<Integer> service = new Service<>() {
             @Override
@@ -418,7 +419,7 @@ public class MainController implements Initializable {
         return age;
     }
 
-    public void exportToCsv(ActionEvent event) {
+    public void exportToCsv() {
         List<String> csv = new ArrayList<>();
         tradeLogService.getLogs().forEach(log -> csv.add(log.toCsv()));
         bankTransactionService.getAll().forEach(transaction -> csv.add(transaction.toCsv()));
@@ -437,23 +438,23 @@ public class MainController implements Initializable {
         }
     }
 
-    public void filterAll(ActionEvent event) {
+    public void filterAll() {
         filterDate(null, null);
     }
 
-    public void filterYearToDate(ActionEvent event) {
+    public void filterYearToDate() {
         filterDate(LocalDate.of(now().getYear(), 1, 1), now());
     }
 
-    public void filter12Months(ActionEvent event) {
+    public void filter12Months() {
         filterDate(now().minusDays(360), now());
     }
 
-    public void filterLastMonth(ActionEvent event) {
+    public void filterLastMonth() {
         filterDate(now().minusDays(30), now());
     }
 
-    public void filterLastWeek(ActionEvent event) {
+    public void filterLastWeek() {
         filterDate(now().minusDays(7), now());
     }
 
@@ -464,7 +465,7 @@ public class MainController implements Initializable {
         refresh();
     }
 
-    public void showAbout(ActionEvent event) {
+    public void showAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About");
         alert.setHeaderText(null);

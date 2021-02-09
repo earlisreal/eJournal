@@ -7,19 +7,19 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.earlisreal.ejournal.dto.TradeLog.COLUMN_COUNT;
-
 public interface ParseUtil {
 
     static List<TradeLog> parseTradeLogs(List<String> csv) {
         List<TradeLog> tradeLogs = new ArrayList<>();
         for (int i = 0; i < csv.size(); ++i) {
             String[] columns = csv.get(i).split(",");
-            if (columns.length != COLUMN_COUNT) {
+            if (columns.length != 8) {
                 System.out.println("Missing columns in row: " + i);
                 System.out.println("Near: " + columns[i]);
                 break;
             }
+
+            if (columns[1].isBlank()) continue;
 
             try {
                 LocalDate date = LocalDate.parse(columns[0]);
@@ -35,6 +35,7 @@ public interface ParseUtil {
                 String reference = columns[7];
 
                 TradeLog tradeLog = new TradeLog(date, columns[1], isBuy, price, shares, reference, broker);
+                tradeLog.setShort(isShort);
                 tradeLogs.add(tradeLog);
             } catch (NumberFormatException numberFormatException) {
                 System.out.println("Invalid format at row: " + i);
@@ -49,20 +50,16 @@ public interface ParseUtil {
         List<BankTransaction> bankTransactions = new ArrayList<>();
         for (int i = 0; i < csv.size(); ++i) {
             String[] columns = csv.get(i).split(",");
-            if (columns.length != COLUMN_COUNT) {
+            if (columns.length != 8) {
                 System.out.println("Missing columns in row: " + i);
                 System.out.println("Near: " + columns[i]);
                 break;
             }
 
-            if (columns[1].isBlank()) continue;
+            if (!columns[1].isBlank()) continue;
 
             try {
                 LocalDate date = LocalDate.parse(columns[0]);
-                if (columns[1].isBlank()) {
-                    System.out.println("Stock Cannot be blank on row: " + i);
-                }
-
                 boolean isDividend = "Dividend".equalsIgnoreCase(columns[2]);
                 double amount = Double.parseDouble(columns[3]);
                 Broker broker = Broker.valueOf(columns[6]);

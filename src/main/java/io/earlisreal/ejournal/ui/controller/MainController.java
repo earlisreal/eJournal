@@ -280,7 +280,7 @@ public class MainController implements Initializable {
         }
 
         if (res > 0) {
-            reload();
+            refresh();
         }
     }
 

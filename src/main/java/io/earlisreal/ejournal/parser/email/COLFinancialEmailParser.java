@@ -49,6 +49,7 @@ public class COLFinancialEmailParser implements EmailParser {
 
     private TradeLog parseLog(String body) {
         TradeLog tradeLog = new TradeLog();
+        tradeLog.setBroker(Broker.COL);
         String[] lines = body.split(System.lineSeparator());
 
         for (int i = 0; i < lines.length; ++i) {

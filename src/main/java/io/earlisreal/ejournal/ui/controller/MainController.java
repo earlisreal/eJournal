@@ -37,6 +37,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -393,6 +394,7 @@ public class MainController implements Initializable {
         analytics.add(new Pair<>("Transactions", prettify(tradeLogService.getLogs().size())));
         analytics.add(new Pair<>("Losses", prettify(analyticsService.getLosses().size())));
         analytics.add(new Pair<>("Wins", prettify(analyticsService.getWins().size())));
+        analytics.add(new Pair<>("Trading Age", getTradingAge()));
 
         analyticsTable.setItems(FXCollections.observableList(analytics));
         analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
@@ -405,6 +407,15 @@ public class MainController implements Initializable {
         accuracyLabel.setText(accuracy + "%");
 
         riskRewardLabel.setText("1:" + analyticsService.getProfitFactor());
+    }
+
+    private String getTradingAge() {
+        Period period = tradeLogService.getLogs().get(0).getDate().until(now());
+        String age = "";
+        if (period.getYears() > 0) age += period.getYears() + "yr ";
+        if (period.getMonths() > 0) age += period.getMonths() + "m ";
+        if (period.getDays() > 0) age += period.getDays() + "day" + (period.getDays() > 1 ? "s" : "");
+        return age;
     }
 
     public void exportToCsv(ActionEvent event) {

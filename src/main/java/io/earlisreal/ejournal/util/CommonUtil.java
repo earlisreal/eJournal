@@ -47,12 +47,12 @@ public interface CommonUtil {
     }
 
     static String trimStockName(String name) {
-        var extensions = List.of(" PHILIPPINES, INC", ", INC", " INCORPORATED", " CORP", " CORPORATION");
+        var extensions = List.of(" PHILIPPINES, INC", " PHILIPPINES, INC.", ", INC", ", INC.",
+                " INCORPORATED", " CORP", " CORP.", " CORPORATION");
         name = name.toUpperCase();
         for (String extension : extensions) {
-            int index = name.lastIndexOf(extension);
-            if (index != -1) {
-                name = name.substring(0, index);
+            if (name.endsWith(extension)) {
+                name = name.substring(0, name.lastIndexOf(extension));
             }
         }
         return name.toUpperCase();

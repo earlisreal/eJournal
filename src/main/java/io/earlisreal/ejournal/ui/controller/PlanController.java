@@ -1,12 +1,10 @@
 package io.earlisreal.ejournal.ui.controller;
 
-import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.Plan;
 import io.earlisreal.ejournal.service.PlanService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
@@ -40,12 +38,11 @@ public class PlanController {
         planService = ServiceProvider.getPlanService();
     }
 
-    public void addPlan(ActionEvent event) {
-        Plan plan = new Plan();
-        plan.setStock(stockText.getText());
-        plan.setEntry(Double.parseDouble(entryText.getText()));
-        plan.setStop(Double.parseDouble(stopText.getText()));
-        plan.setRisk(Double.parseDouble(riskText.getText()));
+    public void addPlan() {
+        double entry = Double.parseDouble(entryText.getText());
+        double stop = Double.parseDouble(stopText.getText());
+        double risk = Double.parseDouble(riskText.getText());
+        Plan plan = new Plan(LocalDate.now(), stockText.getText(), entry, stop, risk);
 
         if (planService.insert(plan)) {
             System.out.println("Plan inserted");
@@ -85,7 +82,7 @@ public class PlanController {
         });
     }
 
-    public void clearFields(ActionEvent event) {
+    public void clearFields() {
         stockText.clear();
         entryText.clear();
         stopText.clear();

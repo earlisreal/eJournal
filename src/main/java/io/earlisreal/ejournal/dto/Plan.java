@@ -9,9 +9,23 @@ public class Plan {
     private int id;
     private LocalDate date;
     private String stock;
-    private double entry;
-    private double stop;
-    private double risk;
+    private final double entry;
+    private final double stop;
+    private final double risk;
+
+    private final long shares;
+    private final double amount;
+
+    public Plan(LocalDate date, String stock, double entry, double stop, double risk) {
+        this.date = date;
+        this.stock = stock;
+        this.entry = entry;
+        this.stop = stop;
+        this.risk = risk;
+
+        shares = calculateShares();
+        amount = shares * entry;
+    }
 
     @Override
     public String toString() {
@@ -23,22 +37,40 @@ public class Plan {
                 '}';
     }
 
-    public double getShares() {
-        return getNetPosition() / entry;
-    }
-
     public double getNetPosition() {
-        return getGrossPosition() - getFees();
+        return amount + getFees(amount);
     }
 
     public double getFees() {
-        Broker broker = Broker.UNKNOWN;
-        return broker.getFees(getGrossPosition(), true) + broker.getFees(getGrossPosition(), false);
+        return getFees(amount);
     }
 
-    public double getGrossPosition() {
+    public double getShares() {
+        return shares;
+    }
+
+    private long calculateShares() {
         double loss = (entry - stop) / entry;
-        return risk / loss;
+        long high = Math.round(risk / loss / entry);
+        long low = 1;
+        while (low < high) {
+            long mid = (low + high + 1) / 2;
+            double position = mid * entry;
+            double amount = getFees(position) + position * loss;
+            if (amount > risk) {
+                high = mid - 1;
+            }
+            else {
+                low = mid;
+            }
+        }
+
+        return low;
+    }
+
+    private double getFees(double amount) {
+        Broker broker = Broker.UNKNOWN;
+        return broker.getFees(amount, true) + broker.getFees(amount, false);
     }
 
     public double getPercent() {
@@ -66,24 +98,12 @@ public class Plan {
         return entry;
     }
 
-    public void setEntry(double entry) {
-        this.entry = entry;
-    }
-
     public double getStop() {
         return stop;
     }
 
-    public void setStop(double stop) {
-        this.stop = stop;
-    }
-
     public double getRisk() {
         return risk;
-    }
-
-    public void setRisk(double risk) {
-        this.risk = risk;
     }
 
     public int getId() {

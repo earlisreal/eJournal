@@ -3,7 +3,6 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dao.PlanDAO;
 import io.earlisreal.ejournal.dto.Plan;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class SimplePlanService implements PlanService {
@@ -16,7 +15,6 @@ public class SimplePlanService implements PlanService {
 
     @Override
     public boolean insert(Plan plan) {
-        plan.setDate(LocalDate.now());
         return planDAO.insert(plan);
     }
 

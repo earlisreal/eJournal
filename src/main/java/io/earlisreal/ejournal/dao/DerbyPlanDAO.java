@@ -44,13 +44,13 @@ public class DerbyPlanDAO implements PlanDAO {
              ResultSet resultSet = preparedStatement.executeQuery()) {
 
             while (resultSet.next()) {
-                Plan plan = new Plan();
+                LocalDate date = LocalDate.parse(resultSet.getString(2));
+                String stock = resultSet.getString(3);
+                double entry = resultSet.getDouble(4);
+                double stop = resultSet.getDouble(5);
+                double risk = resultSet.getDouble(6);
+                Plan plan = new Plan(date, stock, entry, stop, risk);
                 plan.setId(resultSet.getInt(1));
-                plan.setDate(LocalDate.parse(resultSet.getString(2)));
-                plan.setStock(resultSet.getString(3));
-                plan.setEntry(resultSet.getDouble(4));
-                plan.setStop(resultSet.getDouble(5));
-                plan.setRisk(resultSet.getDouble(6));
                 plans.add(plan);
             }
         } catch (SQLException sqlException) {

@@ -27,4 +27,6 @@ public interface StockService {
 
     void updateStockId(List<Stock> scrapeCompanies);
 
+    List<Stock> getEmptyIds();
+
 }

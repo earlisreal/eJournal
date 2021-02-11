@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SimpleStockService implements StockService {
 
@@ -75,7 +76,13 @@ public class SimpleStockService implements StockService {
 
     @Override
     public void updateStockId(List<Stock> stocks) {
+        if (stocks.isEmpty()) return;
         stockDAO.updateStockId(stocks);
+    }
+
+    @Override
+    public List<Stock> getEmptyIds() {
+        return stockMap.values().stream().filter(stock -> stock.getCompanyId() == null).collect(Collectors.toList());
     }
 
     private void updateStockCodeMap() {

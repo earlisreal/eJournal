@@ -1,6 +1,8 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.scraper.CompanyScraper;
+import io.earlisreal.ejournal.scraper.ScraperProvider;
 import io.earlisreal.ejournal.scraper.StockScraper;
 
 import java.io.IOException;
@@ -45,7 +47,8 @@ public class SimpleStartupService implements StartupService {
 
     @Override
     public void manageStockList() {
-        var res = CompletableFuture.supplyAsync(() -> {
+        // TODO Try to replace this with java fx service
+        var scrapeList = CompletableFuture.supplyAsync(() -> {
             var stocks = stockListScraper.scrape();
             boolean hasNew = stockService.getStockCount() != stocks.size();
             stockService.updateStocks(stocks);
@@ -53,12 +56,17 @@ public class SimpleStartupService implements StartupService {
             return hasNew;
         });
 
-        res.thenAcceptAsync(unused -> listenerList.forEach(StartupListener::onFinish));
+        scrapeList.thenAcceptAsync(unused -> listenerList.forEach(StartupListener::onFinish));
 
-        res.thenAcceptAsync(hasNew -> {
+        var scrapeCompanies = scrapeList.thenAcceptAsync(hasNew -> {
             if (hasNew) {
                 stockService.updateStockId(companyScraper.scrapeCompanies());
             }
+        });
+
+        scrapeCompanies.thenAcceptAsync(unused -> {
+            var stocks = ScraperProvider.getEmptyIdCompanyScraper().scrapeCompanies();
+            stockService.updateStockId(stocks);
         });
     }
 

@@ -16,4 +16,8 @@ public final class ScraperProvider {
         return new PSECompanyScraper();
     }
 
+    public static CompanyScraper getEmptyIdCompanyScraper() {
+        return new PesobilityCompanyScraper(ServiceProvider.getStockService());
+    }
+
 }

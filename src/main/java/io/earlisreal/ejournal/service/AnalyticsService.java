@@ -43,4 +43,8 @@ public interface AnalyticsService {
 
     List<TradeSummary> getWins();
 
+    String getTradingAge();
+
+    double getAveragePosition();
+    
 }

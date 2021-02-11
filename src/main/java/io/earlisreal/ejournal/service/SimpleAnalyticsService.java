@@ -5,10 +5,12 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static java.time.LocalDate.now;
 
 public class SimpleAnalyticsService implements AnalyticsService {
 
@@ -162,6 +164,23 @@ public class SimpleAnalyticsService implements AnalyticsService {
     @Override
     public List<TradeSummary> getWins() {
         return wins;
+    }
+
+    @Override
+    public String getTradingAge() {
+        Period period = tradeLogService.getLogs().get(0).getDate().until(now());
+        String age = "";
+        if (period.getYears() > 0) age += period.getYears() + "yr ";
+        if (period.getMonths() > 0) age += period.getMonths() + "m ";
+        if (period.getDays() > 0) age += period.getDays() + "day" + (period.getDays() > 1 ? "s" : "");
+        return age;
+    }
+
+    @Override
+    public double getAveragePosition() {
+        return tradeLogService.getTradeSummaries()
+                .stream()
+                .collect(Collectors.averagingDouble(TradeSummary::getPosition));
     }
 
 }

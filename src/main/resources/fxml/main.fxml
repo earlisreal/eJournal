@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
@@ -7,7 +8,7 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
+<GridPane fx:id="grid" prefHeight="768.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.MainController">
    <columnConstraints>
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="795.0" minWidth="10.0" prefWidth="100.0" />
       <ColumnConstraints hgrow="SOMETIMES" maxWidth="849.0" minWidth="10.0" prefWidth="702.0" />
@@ -44,7 +45,7 @@
       <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: WHITE;" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
             <ProgressIndicator fx:id="statusProgressIndicator" layoutX="60.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
-            <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="410.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
+            <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="434.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
               <columns>
                 <TableColumn fx:id="analyticsColumn" editable="false" prefWidth="100.0" resizable="false" sortable="false" text="Analytics" />
                 <TableColumn fx:id="valueColumn" editable="false" prefWidth="98.0" resizable="false" sortable="false" text="Value" />
@@ -60,12 +61,12 @@
                </font>
             </Label>
             <Button fx:id="emailSyncButton" layoutX="140.0" layoutY="707.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
-            <Label layoutX="50.0" layoutY="456.0" text="Risk Reward Ratio" textAlignment="CENTER">
+            <Label layoutX="49.0" layoutY="478.0" text="Risk Reward Ratio" textAlignment="CENTER">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
-            <Label fx:id="riskRewardLabel" layoutX="76.0" layoutY="487.0" text="1:3.75">
+            <Label fx:id="riskRewardLabel" layoutX="75.0" layoutY="509.0" text="1:3.75">
                <font>
                   <Font name="System Bold" size="26.0" />
                </font>

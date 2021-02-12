@@ -38,7 +38,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -313,7 +312,9 @@ public class MainController implements Initializable {
 
         service.setOnSucceeded(workerStateEvent -> {
             syncingDone();
-            if ((int) workerStateEvent.getSource().getValue() > 0) {
+            int added = (int) workerStateEvent.getSource().getValue();
+            showInfo("Email Sync Success", added + " Records Added");
+            if (added > 0) {
                 refresh();
             }
         });
@@ -328,7 +329,8 @@ public class MainController implements Initializable {
             else {
                 message = "Unknown Error.";
             }
-            System.out.println("Email Sync Failed: " + message);
+
+            showInfo("Email Sync Failed", message);
             syncingDone();
         });
 
@@ -464,6 +466,14 @@ public class MainController implements Initializable {
         alert.setContentText("Developed by: Earl Savadera\n" +
                 "Email: earl.stock.trader@gmail.com\n" +
                 "GitHub Page: https://github.com/earlisreal/eJournal");
+        alert.show();
+    }
+
+    private void showInfo(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
         alert.show();
     }
 

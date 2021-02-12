@@ -10,6 +10,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
@@ -51,7 +52,9 @@ public class PlanController {
     }
 
     public void reload() {
-        planTable.setItems(FXCollections.observableArrayList(planService.getAll()));
+        var plans = planService.getAll();
+        plans.sort(Comparator.comparing(Plan::getDate).reversed());
+        planTable.setItems(FXCollections.observableArrayList(plans));
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         stockColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getStock()));
         entryColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getEntry())));

@@ -158,5 +158,6 @@
       <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="330.0" prefWidth="679.0" />
       <Label layoutX="9.0" layoutY="3.0" text="LAST TRADE" />
       <Label fx:id="lastStockName" layoutX="73.0" layoutY="22.0" text="Some Very very Long Stock Name" />
+      <Label fx:id="noDataLabel" layoutX="341.0" layoutY="271.0" text="N/A" />
    </children>
 </AnchorPane>

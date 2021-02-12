@@ -32,6 +32,7 @@ public class DashboardController implements Initializable, StartupListener {
     public Label lastHolding;
     public Label lastStock;
     public Label lastStockName;
+    public Label noDataLabel;
 
     public TableView<TradeSummary> openPositionTable;
     public TableColumn<TradeSummary, String> stockColumn;
@@ -107,6 +108,7 @@ public class DashboardController implements Initializable, StartupListener {
     private void initializeLastTrade() {
         var summaries = tradeLogService.getTradeSummaries();
         if (summaries.isEmpty()) {
+            lastStockName.setText("");
             lastStock.setText("");
             lastClosedDate.setText("");
             lastPosition.setText("");
@@ -163,6 +165,13 @@ public class DashboardController implements Initializable, StartupListener {
         List<PieChart.Data> data = new ArrayList<>();
         double equity = analyticsService.getTotalEquity();
         var positions = tradeLogService.getOpenPositions();
+        if (positions.isEmpty()) {
+            portfolioChart.setData(FXCollections.emptyObservableList());
+            noDataLabel.setVisible(true);
+            return;
+        }
+
+        noDataLabel.setVisible(false);
         double sum = 0;
         for (TradeSummary summary : positions) {
             sum += summary.getPosition();

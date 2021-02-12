@@ -168,6 +168,9 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
     @Override
     public String getTradingAge() {
+        if (tradeLogService.getLogs().isEmpty()) {
+            return "N/A";
+        }
         Period period = tradeLogService.getLogs().get(0).getDate().until(now());
         String age = "";
         if (period.getYears() > 0) age += period.getYears() + "yr ";

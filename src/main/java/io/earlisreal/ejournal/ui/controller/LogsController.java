@@ -13,6 +13,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
@@ -47,7 +48,9 @@ public class LogsController {
     }
 
     private void initLogs() {
-        logTable.setItems(FXCollections.observableList(tradeLogService.getLogs()));
+        var logs = tradeLogService.getLogs();
+        logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
+        logTable.setItems(FXCollections.observableList(logs));
         logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         logPrice.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPrice())));
@@ -58,10 +61,12 @@ public class LogsController {
     }
 
     private void initSummary() {
+        var summaries = tradeLogService.getTradeSummaries();
+        summaries.sort(Comparator.comparing(TradeSummary::getCloseDate).reversed());
         summaryTable.setRowFactory(param ->
-                UIServiceProvider.getTradeDetailsDialogService().getTableRow(tradeLogService.getTradeSummaries()));
+                UIServiceProvider.getTradeDetailsDialogService().getTableRow(summaries));
 
-        summaryTable.setItems(FXCollections.observableList(tradeLogService.getTradeSummaries()));
+        summaryTable.setItems(FXCollections.observableList(summaries));
         summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         summaryPosition.setCellValueFactory(s -> new SimpleStringProperty(prettify(s.getValue().getPosition())));

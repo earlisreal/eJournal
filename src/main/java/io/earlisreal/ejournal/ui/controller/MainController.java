@@ -222,6 +222,7 @@ public class MainController implements Initializable {
             res += tradeLogService.insert(List.of(log));
         }
 
+        showInfo("Ledger successfully imported", res + " Records Added");
         if (res > 0) {
             refresh();
         }
@@ -262,6 +263,7 @@ public class MainController implements Initializable {
             res += bankTransactionService.insert(parser.getBankTransactions());
         }
 
+        showInfo("Ledger successfully imported", res + " Records Added");
         if (res > 0) {
             refresh();
         }
@@ -282,6 +284,7 @@ public class MainController implements Initializable {
             handleException(e);
         }
 
+        showInfo("CSV successfully imported", res + " Records Added");
         if (res > 0) {
             refresh();
         }
@@ -330,7 +333,7 @@ public class MainController implements Initializable {
                 message = "Unknown Error.";
             }
 
-            showInfo("Email Sync Failed", message);
+            showError("Email Sync Failed", message);
             syncingDone();
         });
 
@@ -426,8 +429,9 @@ public class MainController implements Initializable {
         if (file != null) {
             try {
                 Files.write(file.toPath(), csv);
+                showInfo("Export Success", "Trade Logs and Bank Transactions successfully exported");
             } catch (IOException e) {
-                handleException(e);
+                showError("Fail to Save CSV File", e.getMessage());
             }
         }
     }
@@ -469,8 +473,17 @@ public class MainController implements Initializable {
         alert.show();
     }
 
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        showAlert(alert, title, message);
+    }
+
     private void showInfo(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        showAlert(alert, title, message);
+    }
+
+    private void showAlert(Alert alert, String title, String message) {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

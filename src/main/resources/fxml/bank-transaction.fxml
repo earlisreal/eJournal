@@ -25,7 +25,7 @@
             </AnchorPane>
         </content>
       </TitledPane>
-      <TitledPane animated="false" layoutX="355.0" layoutY="14.0" prefHeight="115.0" prefWidth="339.0" text="Add Withraw Transaction">
+      <TitledPane animated="false" layoutX="355.0" layoutY="14.0" prefHeight="115.0" prefWidth="339.0" text="Add Withdraw Transaction">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>

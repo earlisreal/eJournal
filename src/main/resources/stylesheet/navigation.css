@@ -1,3 +1,4 @@
 .hover:hover {
     -fx-background-color: WHITE;
+    -fx-cursor: hand;
 }

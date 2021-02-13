@@ -142,7 +142,11 @@
             </Pane>
          </children>
       </HBox>
-      <Label layoutX="503.0" layoutY="6.0" text="PREVIOUS TRADES PERFORMANCE" />
+      <Label layoutX="503.0" layoutY="6.0" text="PREVIOUS TRADES PERFORMANCE">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
       <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="450.0" prefHeight="230.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
         <columns>
           <TableColumn fx:id="stockColumn" prefWidth="75.0" text="Stock" />
@@ -156,8 +160,17 @@
         </columns>
       </TableView>
       <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="330.0" prefWidth="679.0" />
-      <Label layoutX="9.0" layoutY="3.0" text="LAST TRADE" />
+      <Label layoutX="9.0" layoutY="3.0" text="LAST TRADE">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
       <Label fx:id="lastStockName" layoutX="73.0" layoutY="22.0" text="Some Very very Long Stock Name" />
       <Label fx:id="noDataLabel" layoutX="341.0" layoutY="271.0" text="N/A" />
+      <Label layoutX="14.0" layoutY="427.0" text="Open Positions">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
    </children>
 </AnchorPane>

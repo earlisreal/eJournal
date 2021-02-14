@@ -15,6 +15,12 @@ public class PlanBuilder {
     private long shares;
     private double amount;
 
+    private Broker broker;
+
+    public PlanBuilder() {
+        broker = Broker.UNKNOWN;
+    }
+
     public Plan build() {
         return new Plan(date, stock, entry, stop, risk, getFees(amount), shares, getNetPosition());
     }
@@ -60,7 +66,6 @@ public class PlanBuilder {
     }
 
     private double getFees(double amount) {
-        Broker broker = Broker.UNKNOWN;
         return broker.getFees(amount, true) + broker.getFees(amount, false);
     }
 
@@ -74,6 +79,10 @@ public class PlanBuilder {
 
     public void setStock(String stock) {
         this.stock = stock;
+    }
+
+    public void setBroker(Broker broker) {
+        this.broker = broker;
     }
 
 }

@@ -12,13 +12,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
 
 import java.net.URL;
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.prettify;
-import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.*;
 
 public class PlanController implements Initializable, StartupListener {
 
@@ -29,7 +29,6 @@ public class PlanController implements Initializable, StartupListener {
     public TextField riskText;
     public TextField stopText;
     public TextField entryText;
-    public TextField stockText;
     public TableView<Plan> planTable;
     public TableColumn<Plan, String> stockColumn;
     public TableColumn<Plan, String> entryColumn;
@@ -58,6 +57,8 @@ public class PlanController implements Initializable, StartupListener {
     public RadioButton riskPercentRadio;
     public Label entryLabel;
 
+    private double oneVar;
+
     public PlanController() {
         planService = ServiceProvider.getPlanService();
         stockService = ServiceProvider.getStockService();
@@ -68,6 +69,8 @@ public class PlanController implements Initializable, StartupListener {
     }
 
     public void addPlan() {
+        planner.setDate(LocalDate.now());
+        planner.setStock(stockCombo.getValue());
         if (planService.insert(planner.build())) {
             System.out.println("Plan inserted");
             reload();
@@ -75,8 +78,9 @@ public class PlanController implements Initializable, StartupListener {
     }
 
     public void reload() {
+        oneVar = analyticsService.getTotalEquity() * 0.01;
         var plans = planService.getAll();
-        plans.sort(Comparator.comparing(Plan::getDate).reversed());
+        plans.sort(Comparator.comparing(Plan::getDate).thenComparing(Plan::getId).reversed());
         planTable.setItems(FXCollections.observableArrayList(plans));
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         stockColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getStock()));
@@ -109,7 +113,6 @@ public class PlanController implements Initializable, StartupListener {
     }
 
     public void clearFields() {
-        stockText.clear();
         entryText.clear();
         stopText.clear();
         riskText.clear();
@@ -136,7 +139,7 @@ public class PlanController implements Initializable, StartupListener {
             risk = Double.parseDouble(riskStr);
 
             if (riskPercentRadio.isSelected()) {
-                risk = analyticsService.getTotalEquity() * (risk / 100);
+                risk = risk * oneVar;
             }
             planner.reset(entry, stop, risk);
             planShares.setText(prettify(planner.getShares()));
@@ -161,10 +164,12 @@ public class PlanController implements Initializable, StartupListener {
 
     public void showValueRisk() {
         riskLabel.setText("Value at Risk");
+        riskText.setText(prettify(getRisk() * oneVar));
     }
 
     public void showPercentRisk() {
         riskLabel.setText("Value at Risk %");
+        riskText.setText(prettify(getRisk() /  oneVar));
     }
 
     @Override
@@ -178,6 +183,16 @@ public class PlanController implements Initializable, StartupListener {
         var brokers = Broker.values();
         brokerChoice.setItems(FXCollections.observableList(Arrays.asList(brokers).subList(1, brokers.length)));
         brokerChoice.setValue(Broker.YAPSTER);
+        planner.setBroker(brokerChoice.getValue());
+    }
+
+    private double getRisk() {
+        try {
+            return parseDouble(riskText.getText());
+        }
+        catch (ParseException ignore) {
+            return 0;
+        }
     }
 
 }

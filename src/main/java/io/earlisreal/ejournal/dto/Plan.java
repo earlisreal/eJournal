@@ -1,30 +1,28 @@
 package io.earlisreal.ejournal.dto;
 
-import io.earlisreal.ejournal.util.Broker;
-
 import java.time.LocalDate;
 
 public class Plan {
 
     private int id;
-    private LocalDate date;
-    private String stock;
+    private final LocalDate date;
+    private final String stock;
     private final double entry;
     private final double stop;
     private final double risk;
-
+    private final double fees;
     private final long shares;
-    private final double amount;
+    private final double position;
 
-    public Plan(LocalDate date, String stock, double entry, double stop, double risk) {
+    public Plan(LocalDate date, String stock, double entry, double stop, double risk, double fees, long shares, double position) {
         this.date = date;
         this.stock = stock;
         this.entry = entry;
         this.stop = stop;
         this.risk = risk;
-
-        shares = calculateShares();
-        amount = shares * entry;
+        this.fees = fees;
+        this.shares = shares;
+        this.position = position;
     }
 
     @Override
@@ -37,40 +35,12 @@ public class Plan {
                 '}';
     }
 
-    public double getNetPosition() {
-        return amount + getFees(amount);
-    }
-
     public double getFees() {
-        return getFees(amount);
+        return fees;
     }
 
     public double getShares() {
         return shares;
-    }
-
-    private long calculateShares() {
-        double loss = (entry - stop) / entry;
-        long high = Math.round(risk / loss / entry);
-        long low = 1;
-        while (low < high) {
-            long mid = (low + high + 1) / 2;
-            double position = mid * entry;
-            double amount = getFees(position) + position * loss;
-            if (amount > risk) {
-                high = mid - 1;
-            }
-            else {
-                low = mid;
-            }
-        }
-
-        return low;
-    }
-
-    private double getFees(double amount) {
-        Broker broker = Broker.UNKNOWN;
-        return broker.getFees(amount, true) + broker.getFees(amount, false);
     }
 
     public double getPercent() {
@@ -82,16 +52,8 @@ public class Plan {
         return date;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
     public String getStock() {
         return stock;
-    }
-
-    public void setStock(String stock) {
-        this.stock = stock;
     }
 
     public double getEntry() {
@@ -112,6 +74,10 @@ public class Plan {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public double getPosition() {
+        return position;
     }
 
 }

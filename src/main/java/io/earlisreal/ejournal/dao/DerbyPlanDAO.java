@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.dao;
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.Plan;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.PlanBuilder;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -49,7 +50,11 @@ public class DerbyPlanDAO implements PlanDAO {
                 double entry = resultSet.getDouble(4);
                 double stop = resultSet.getDouble(5);
                 double risk = resultSet.getDouble(6);
-                Plan plan = new Plan(date, stock, entry, stop, risk);
+                PlanBuilder planBuilder = new PlanBuilder();
+                planBuilder.reset(entry, stop, risk);
+                planBuilder.setDate(date);
+                planBuilder.setStock(stock);
+                Plan plan = planBuilder.build();
                 plan.setId(resultSet.getInt(1));
                 plans.add(plan);
             }

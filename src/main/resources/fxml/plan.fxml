@@ -1,30 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.shape.*?>
 <?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.PlanController">
    <children>
-      <TitledPane animated="false" layoutX="12.0" layoutY="14.0" prefHeight="75.0" prefWidth="679.0" text="New Plan">
+      <TitledPane animated="false" collapsible="false" layoutX="12.0" layoutY="14.0" prefHeight="142.0" prefWidth="679.0" text="New Plan">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>
-                  <TextField fx:id="stockText" layoutX="49.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="DITO" />
-                  <TextField fx:id="entryText" layoutX="179.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="10.2" />
-                  <TextField fx:id="stopText" layoutX="331.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="8.9" />
-                  <TextField fx:id="riskText" layoutX="474.0" layoutY="12.0" prefHeight="25.0" prefWidth="60.0" promptText="50,000" />
-                  <Button layoutX="543.0" layoutY="12.0" mnemonicParsing="false" onAction="#addPlan" text="Add Plan" />
-                  <Label layoutX="117.0" layoutY="16.0" text="Entry Price" />
-                  <Label layoutX="398.0" layoutY="16.0" text="Value at Risk" />
-                  <Label layoutX="245.0" layoutY="16.0" text="Stop Loss Price" />
+                  <TextField fx:id="entryText" layoutX="227.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="75.0" promptText="10.02" />
+                  <TextField fx:id="stopText" layoutX="396.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="75.0" promptText="8.9" />
+                  <TextField fx:id="riskText" layoutX="566.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="99.0" promptText="5,000" text="1" />
+                  <Button layoutX="517.0" layoutY="83.0" mnemonicParsing="false" onAction="#addPlan" prefHeight="25.0" prefWidth="69.0" text="Add Plan" />
+                  <Label fx:id="entryLabel" layoutX="161.0" layoutY="47.0" text="Entry Price" />
+                  <Label fx:id="riskLabel" layoutX="480.0" layoutY="47.0" text="Value at Risk %" />
+                  <Label fx:id="stopLabel" layoutX="308.0" layoutY="47.0" text="Stop Loss Price" />
                   <Label layoutX="14.0" layoutY="16.0" text="Stock" />
-                  <Button layoutX="620.0" layoutY="12.0" mnemonicParsing="false" onAction="#clearFields" text="Clear" />
+                  <Button layoutX="598.0" layoutY="83.0" mnemonicParsing="false" onAction="#clearFields" prefHeight="25.0" prefWidth="69.0" text="Clear" />
+                  <Label layoutX="11.0" layoutY="87.0" text="Max Shares" />
+                  <Label layoutX="336.0" layoutY="87.0" text="Position" />
+                  <Label layoutX="171.0" layoutY="87.0" text="Est. Fees" />
+                  <TextField fx:id="planShares" editable="false" layoutX="81.0" layoutY="83.0" prefHeight="25.0" prefWidth="80.0" text="0" />
+                  <TextField fx:id="planFees" editable="false" layoutX="240.0" layoutY="83.0" prefHeight="25.0" prefWidth="80.0" text="0" />
+                  <TextField fx:id="planPosition" editable="false" layoutX="405.0" layoutY="83.0" prefHeight="25.0" prefWidth="80.0" text="0" />
+                  <ChoiceBox fx:id="brokerChoice" layoutX="56.0" layoutY="42.0" prefHeight="25.0" prefWidth="90.0" />
+                  <Label layoutX="14.0" layoutY="46.0" text="Broker" />
+                  <ComboBox fx:id="stockCombo" editable="true" layoutX="56.0" layoutY="12.0" prefHeight="25.0" prefWidth="90.0" promptText="DITO" />
+                  <Line endX="550.0" layoutX="115.0" layoutY="75.0" startX="-100.0" strokeMiterLimit="100.0" strokeWidth="0.8" />
+                  <RadioButton fx:id="entryStopRadio" layoutX="227.0" layoutY="17.0" mnemonicParsing="false" onAction="#showEntryStop" selected="true" text="Entry / Stop Price">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="entryGroup" />
+                     </toggleGroup>
+                  </RadioButton>
+                  <RadioButton fx:id="percentRadio" layoutX="352.0" layoutY="17.0" mnemonicParsing="false" onAction="#showPercentage" text="Percentage" toggleGroup="$entryGroup" />
+                  <RadioButton fx:id="riskPercentRadio" layoutX="541.0" layoutY="16.0" mnemonicParsing="false" onAction="#showPercentRisk" selected="true" text="Percent">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="riskGroup" />
+                     </toggleGroup>
+                  </RadioButton>
+                  <RadioButton fx:id="riskValueRadio" layoutX="607.0" layoutY="16.0" mnemonicParsing="false" onAction="#showValueRisk" text="Value" toggleGroup="$riskGroup" />
+                  <Label layoutX="480.0" layoutY="17.0" text="Risk Type:" />
+                  <Label layoutX="161.0" layoutY="17.0" text="Plan Type:" />
                </children>
             </AnchorPane>
         </content>
       </TitledPane>
-      <TableView fx:id="planTable" layoutX="12.0" layoutY="103.0" prefHeight="579.0" prefWidth="679.0">
+      <TableView fx:id="planTable" layoutX="12.0" layoutY="162.0" prefHeight="520.0" prefWidth="679.0">
         <columns>
             <TableColumn fx:id="dateColumn" prefWidth="75.0" text="Date" />
           <TableColumn fx:id="stockColumn" prefWidth="58.0" text="Stock" />

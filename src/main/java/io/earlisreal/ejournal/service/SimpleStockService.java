@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,11 @@ public class SimpleStockService implements StockService {
     @Override
     public List<Stock> getEmptyIds() {
         return stockMap.values().stream().filter(stock -> stock.getCompanyId() == null).collect(Collectors.toList());
+    }
+
+    @Override
+    public Collection<String> getStockList() {
+        return stockMap.keySet();
     }
 
     private void updateStockCodeMap() {

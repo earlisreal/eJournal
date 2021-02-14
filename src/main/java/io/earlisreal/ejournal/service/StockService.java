@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dto.Stock;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface StockService {
@@ -28,5 +29,7 @@ public interface StockService {
     void updateStockId(List<Stock> scrapeCompanies);
 
     List<Stock> getEmptyIds();
+
+    Collection<String> getStockList();
 
 }

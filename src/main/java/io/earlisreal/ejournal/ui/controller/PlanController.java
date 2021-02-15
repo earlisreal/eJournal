@@ -58,6 +58,8 @@ public class PlanController implements Initializable, StartupListener {
     public Label entryLabel;
 
     private double oneVar;
+    private String percentLoss;
+    private String entryPrice;
 
     public PlanController() {
         planService = ServiceProvider.getPlanService();
@@ -118,48 +120,53 @@ public class PlanController implements Initializable, StartupListener {
         riskText.clear();
     }
 
-    public void calculateShares() {
-        String entryStr = entryText.getText();
-        String stopStr = stopText.getText();
-        String riskStr = riskText.getText();
-        double entry, stop, risk;
+    public void showEntryStop() {
+        percentLoss = entryText.getText();
+        entryText.setText(entryPrice);
 
-        if (entryStopRadio.isSelected() && (entryStr.isBlank() || riskStr.isBlank())) {
+        stopLabel.setVisible(true);
+        stopText.setVisible(true);
+        entryLabel.setText("Entry Price");
+        calculateShares();
+    }
+
+    public void showPercentage() {
+        entryPrice = entryText.getText();
+        entryText.setText(percentLoss);
+
+        stopLabel.setVisible(false);
+        stopText.setVisible(false);
+        entryLabel.setText("Percent");
+        calculateShares();
+    }
+
+    public void calculateShares() {
+        if (entryText.getText() == null || entryText.getText().isBlank()) {
             planShares.setText("0");
             planFees.setText("0");
             planPosition.setText("0");
             return;
         }
-        else if (stopStr.isBlank()) return;
 
-        try {
-            entry = Double.parseDouble(entryStr);
-            if (entryStopRadio.isSelected()) stop = Double.parseDouble(stopStr);
-            else stop = 100 - entry;
-            risk = Double.parseDouble(riskStr);
+        double entry, stop, risk;
 
-            if (riskPercentRadio.isSelected()) {
-                risk = risk * oneVar;
-            }
-            planner.reset(entry, stop, risk);
-            planShares.setText(prettify(planner.getShares()));
-            planFees.setText(prettify(planner.getFees()));
-            planPosition.setText(prettify(planner.getNetPosition()));
+        entry = getEntry();
+        if (entryStopRadio.isSelected()) {
+            stop = getStop();
         }
-        catch (NumberFormatException ignore) {
+        else {
+            stop = 100 - entry;
+            entry = 100;
         }
-    }
+        risk = getRisk();
 
-    public void showEntryStop() {
-        stopLabel.setVisible(true);
-        stopText.setVisible(true);
-        entryLabel.setText("Entry Price");
-    }
-
-    public void showPercentage() {
-        stopLabel.setVisible(false);
-        stopText.setVisible(false);
-        entryLabel.setText("Percent");
+        if (riskPercentRadio.isSelected()) {
+            risk = risk * oneVar;
+        }
+        planner.reset(entry, stop, risk);
+        planShares.setText(prettify(planner.getShares()));
+        planFees.setText(prettify(planner.getFees()));
+        planPosition.setText(prettify(planner.getNetPosition()));
     }
 
     public void showValueRisk() {
@@ -184,11 +191,24 @@ public class PlanController implements Initializable, StartupListener {
         brokerChoice.setItems(FXCollections.observableList(Arrays.asList(brokers).subList(1, brokers.length)));
         brokerChoice.setValue(Broker.YAPSTER);
         planner.setBroker(brokerChoice.getValue());
+        brokerChoice.setOnAction(event -> planner.setBroker(brokerChoice.getValue()));
     }
 
     private double getRisk() {
+        return getValue(riskText);
+    }
+
+    private double getEntry() {
+        return getValue(entryText);
+    }
+
+    private double getStop() {
+        return getValue(stopText);
+    }
+
+    private double getValue(TextField textField) {
         try {
-            return parseDouble(riskText.getText());
+            return parseDouble(textField.getText());
         }
         catch (ParseException ignore) {
             return 0;

@@ -7,7 +7,6 @@ import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 

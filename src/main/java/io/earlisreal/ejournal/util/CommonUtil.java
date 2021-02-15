@@ -41,7 +41,7 @@ public interface CommonUtil {
     }
 
     static double parseDouble(String text) throws ParseException {
-        if (text.isBlank()) return 0;
+        if (text == null || text.isBlank()) return 0;
         return NumberFormat.getNumberInstance().parse(text).doubleValue();
     }
 

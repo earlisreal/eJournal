@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.Plan;
+import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PlanBuilder;
 
@@ -21,13 +22,14 @@ public class DerbyPlanDAO implements PlanDAO {
 
     @Override
     public boolean insert(Plan plan) {
-        String sql = "INSERT INTO plan (date, stock, entry, stop, risk) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO plan (date, stock, entry, stop, risk, broker) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setDate(1, toSqlDate(plan.getDate()));
             preparedStatement.setString(2, plan.getStock());
             preparedStatement.setDouble(3, plan.getEntry());
             preparedStatement.setDouble(4, plan.getStop());
             preparedStatement.setDouble(5, plan.getRisk());
+            preparedStatement.setInt(6, plan.getBroker().ordinal());
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
@@ -50,10 +52,12 @@ public class DerbyPlanDAO implements PlanDAO {
                 double entry = resultSet.getDouble(4);
                 double stop = resultSet.getDouble(5);
                 double risk = resultSet.getDouble(6);
+                int broker = resultSet.getInt(7);
                 PlanBuilder planBuilder = new PlanBuilder();
                 planBuilder.reset(entry, stop, risk);
                 planBuilder.setDate(date);
                 planBuilder.setStock(stock);
+                planBuilder.setBroker(Broker.values()[broker]);
                 Plan plan = planBuilder.build();
                 plan.setId(resultSet.getInt(1));
                 plans.add(plan);

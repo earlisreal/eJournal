@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.dto;
 
+import io.earlisreal.ejournal.util.Broker;
+
 import java.time.LocalDate;
 
 public class Plan {
@@ -13,8 +15,9 @@ public class Plan {
     private final double fees;
     private final long shares;
     private final double position;
+    private final Broker broker;
 
-    public Plan(LocalDate date, String stock, double entry, double stop, double risk, double fees, long shares, double position) {
+    public Plan(LocalDate date, String stock, double entry, double stop, double risk, double fees, long shares, double position, Broker broker) {
         this.date = date;
         this.stock = stock;
         this.entry = entry;
@@ -23,6 +26,7 @@ public class Plan {
         this.fees = fees;
         this.shares = shares;
         this.position = position;
+        this.broker = broker;
     }
 
     @Override
@@ -78,6 +82,10 @@ public class Plan {
 
     public double getPosition() {
         return position;
+    }
+
+    public Broker getBroker() {
+        return broker;
     }
 
 }

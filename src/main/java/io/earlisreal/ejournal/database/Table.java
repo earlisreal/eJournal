@@ -48,7 +48,7 @@ public enum Table {
             "entry DOUBLE, " +
             "stop DOUBLE, " +
             "risk DOUBLE, " +
-            "strategy_id INT CONSTRAINT plan_strategy_id_fk REFERENCES strategy ON DELETE SET null)",
+            "broker SMALLINT)",
             null);
 
     private final String name;

@@ -22,7 +22,7 @@ public class PlanBuilder {
     }
 
     public Plan build() {
-        return new Plan(date, stock, entry, stop, risk, getFees(amount), shares, getNetPosition());
+        return new Plan(date, stock, entry, stop, risk, getFees(amount), shares, getNetPosition(), broker);
     }
 
     public double getNetPosition() {

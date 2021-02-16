@@ -171,7 +171,8 @@ public class SimpleAnalyticsService implements AnalyticsService {
         if (tradeLogService.getLogs().isEmpty()) {
             return "N/A";
         }
-        Period period = tradeLogService.getLogs().get(0).getDate().until(now());
+        var logs = tradeLogService.getLogs();
+        Period period = logs.get(logs.size() - 1).getDate().until(now());
         String age = "";
         if (period.getYears() > 0) age += period.getYears() + "yr ";
         if (period.getMonths() > 0) age += period.getMonths() + "m ";

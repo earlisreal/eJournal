@@ -175,11 +175,18 @@ public class DashboardController implements Initializable, StartupListener {
         double sum = 0;
         for (TradeSummary summary : positions) {
             sum += summary.getPosition();
-            data.add(new PieChart.Data(summary.getStock(), summary.getPosition()));
+            double position = summary.getPosition();
+            data.add(new PieChart.Data(summary.getStock() + getPositionPercentage(position, equity), position));
         }
 
-        data.add(0, new PieChart.Data("Cash", equity - sum));
+        double cash = equity - sum;
+        data.add(0, new PieChart.Data("Cash" + getPositionPercentage(cash, equity), cash));
+        portfolioChart.setLegendVisible(false);
         portfolioChart.setData(FXCollections.observableList(data));
+    }
+
+    private String getPositionPercentage(double part, double total) {
+        return " (" + prettify(part / total * 100) + "%)";
     }
 
 }

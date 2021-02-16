@@ -75,7 +75,8 @@ public class SimpleTradeLogService implements TradeLogService {
     public void initialize() {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());
-        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate) || tradeLog.getDate().isBefore(startDate));
+        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate));
+        logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
 
         calculateSummaries(logs);
     }
@@ -121,6 +122,10 @@ public class SimpleTradeLogService implements TradeLogService {
                 trades.put(stock, trade);
             }
         }
+
+        summaries.removeIf(summary -> summary.getCloseDate().isAfter(endDate) || summary.getCloseDate().isBefore(startDate));
+        summaries.sort(Comparator.comparing(TradeSummary::getCloseDate).reversed());
+        logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
 
         openPositions.addAll(trades.values());
     }

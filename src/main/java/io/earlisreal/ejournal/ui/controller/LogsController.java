@@ -49,7 +49,6 @@ public class LogsController {
 
     private void initLogs() {
         var logs = tradeLogService.getLogs();
-        logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
         logTable.setItems(FXCollections.observableList(logs));
         logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
@@ -62,7 +61,6 @@ public class LogsController {
 
     private void initSummary() {
         var summaries = tradeLogService.getTradeSummaries();
-        summaries.sort(Comparator.comparing(TradeSummary::getCloseDate).reversed());
         summaryTable.setRowFactory(param ->
                 UIServiceProvider.getTradeDetailsDialogService().getTableRow(summaries));
 

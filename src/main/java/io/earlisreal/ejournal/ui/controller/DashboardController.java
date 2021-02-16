@@ -117,7 +117,7 @@ public class DashboardController implements Initializable, StartupListener {
             return;
         }
 
-        TradeSummary lastTrade = summaries.get(summaries.size() - 1);
+        TradeSummary lastTrade = summaries.get(0);
         lastStockName.setText(stockService.getName(lastTrade.getStock()));
         lastStock.setText(lastTrade.getStock());
         lastClosedDate.setText(lastTrade.getCloseDate().toString());
@@ -138,7 +138,7 @@ public class DashboardController implements Initializable, StartupListener {
             Label stock = (Label) labels.get(1);
             Label profit = (Label) labels.get(2);
 
-            TradeSummary summary = summaries.get(summaries.size() - 1 - i);
+            TradeSummary summary = summaries.get(i);
             stock.setText(summary.getStock());
             profit.setText(round(summary.getProfitPercentage()) + "%");
             boolean isWin = summary.getProfit() > 0;

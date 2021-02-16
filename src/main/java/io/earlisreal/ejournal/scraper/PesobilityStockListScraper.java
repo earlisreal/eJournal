@@ -24,6 +24,7 @@ public class PesobilityStockListScraper implements StockScraper {
             Elements rows = document.select("#MAIN_BODY > div > div > table > tbody > tr");
             rows.forEach(element -> {
                 var columns = element.getElementsByTag("td").eachText();
+                if (columns.size() != 7) return;
 
                 Stock stock = new Stock();
                 stock.setCode(columns.get(0));

@@ -363,7 +363,7 @@ public class MainController implements Initializable {
             for (BankTransaction bankTransaction : bankTransactionService.getAll()) {
                 bankTransactionService.delete(bankTransaction.getId());
             }
-            cacheService.deleteAllEmailSync(1);
+            cacheService.clear(1);
             refresh();
         }
     }

@@ -15,7 +15,7 @@ public class SimpleCacheService implements CacheService {
     }
 
     @Override
-    public void deleteAllEmailSync(int secretParam) {
+    public void clear(int secretParam) {
         cacheDAO.clear(secretParam);
     }
 

@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public interface CacheService {
 
-    void deleteAllEmailSync(int secretParam);
+    void clear(int secretParam);
 
     Instant getLastSync(String email);
 

@@ -4,6 +4,10 @@ import java.util.List;
 
 public enum Table {
 
+    CACHE ("cache", "CREATE TABLE cache (" +
+            "\"key\" VARCHAR(35) CONSTRAINT cache_pk PRIMARY KEY, " +
+            "value VARCHAR(35))",
+            null),
     STOCK ("stock", "CREATE TABLE stock (" +
             "code VARCHAR(5) CONSTRAINT stock_pk PRIMARY KEY, " +
             "name VARCHAR(69), " +
@@ -37,10 +41,6 @@ public enum Table {
             "invoice VARCHAR(12), " +
             "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
-    SETTINGS ("settings", "CREATE TABLE email_sync (" +
-            "email VARCHAR(30) NOT NULL CONSTRAINT EMAIL_SYNC_PK PRIMARY KEY, " +
-            "last_sync TIMESTAMP)",
-            null),
     PLAN ("plan", "CREATE TABLE plan (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT plan_pk PRIMARY KEY, " +
             "date DATE, " +

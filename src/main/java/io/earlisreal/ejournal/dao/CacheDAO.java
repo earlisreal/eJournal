@@ -6,4 +6,8 @@ public interface CacheDAO {
 
     boolean insert(String key, String value);
 
+    boolean clear(int secretParam);
+
+    boolean update(String s, String toString);
+    
 }

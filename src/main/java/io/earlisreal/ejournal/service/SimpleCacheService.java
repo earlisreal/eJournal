@@ -1,44 +1,39 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dao.CacheDAO;
-import io.earlisreal.ejournal.dao.EmailLastSyncDAO;
-import io.earlisreal.ejournal.dto.EmailLastSync;
 
 import java.time.Instant;
 
 public class SimpleCacheService implements CacheService {
 
-    private final EmailLastSyncDAO emailLastSyncDAO;
+    private static final String EMAIL_KEY = "email";
+
     private final CacheDAO cacheDAO;
 
-    SimpleCacheService(EmailLastSyncDAO emailLastSyncDAO, CacheDAO cacheDAO) {
-        this.emailLastSyncDAO = emailLastSyncDAO;
+    SimpleCacheService(CacheDAO cacheDAO) {
         this.cacheDAO = cacheDAO;
     }
 
-
     @Override
     public void deleteAllEmailSync(int secretParam) {
-        emailLastSyncDAO.deleteAll(secretParam);
+        cacheDAO.clear(secretParam);
     }
 
     @Override
     public Instant getLastSync(String email) {
-        EmailLastSync emailLastSync = emailLastSyncDAO.query(stripEmail(email));
-        if (emailLastSync == null) return null;
-        return emailLastSync.getLastSync();
+        String last = cacheDAO.get("email" + stripEmail(email));
+        if (last == null) return null;
+        return Instant.parse(last);
     }
 
     @Override
     public void updateEmailLastSync(String email, Instant lastSync) {
-        email = stripEmail(email);
-        emailLastSyncDAO.update(new EmailLastSync(email, lastSync));
+        cacheDAO.update(EMAIL_KEY + stripEmail(email), lastSync.toString());
     }
 
     @Override
     public void insertEmailLastSync(String email, Instant lastSync) {
-        email = stripEmail(email);
-        emailLastSyncDAO.insert(new EmailLastSync(email, lastSync));
+        cacheDAO.insert(EMAIL_KEY + stripEmail(email), lastSync.toString());
     }
 
     @Override

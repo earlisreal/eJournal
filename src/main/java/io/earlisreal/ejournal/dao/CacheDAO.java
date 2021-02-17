@@ -1,8 +1,10 @@
 package io.earlisreal.ejournal.dao;
 
+import java.util.Optional;
+
 public interface CacheDAO {
 
-    String get(String key);
+    Optional<String> get(String key);
 
     boolean insert(String key, String value);
 

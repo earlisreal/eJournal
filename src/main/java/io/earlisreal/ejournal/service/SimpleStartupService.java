@@ -7,8 +7,10 @@ import io.earlisreal.ejournal.scraper.StockScraper;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
@@ -22,16 +24,18 @@ public class SimpleStartupService implements StartupService {
     private final StockService stockService;
     private final AnalyticsService analyticsService;
     private final TradeLogService tradeLogService;
+    private final CacheService cacheService;
 
     private final List<StartupListener> listenerList;
 
     SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper, StockService stockService,
-                         TradeLogService tradeLogService, AnalyticsService analyticsService) {
+                         TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService) {
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
         this.stockService = stockService;
         this.tradeLogService = tradeLogService;
         this.analyticsService = analyticsService;
+        this.cacheService = cacheService;
 
         listenerList = new ArrayList<>();
     }
@@ -40,6 +44,8 @@ public class SimpleStartupService implements StartupService {
     public void run() {
         createDirectories();
         manageStockList();
+
+        tradeLogService.applyFilter(cacheService.getStartFilter(), cacheService.getEndFilter());
 
         tradeLogService.initialize();
         analyticsService.initialize();

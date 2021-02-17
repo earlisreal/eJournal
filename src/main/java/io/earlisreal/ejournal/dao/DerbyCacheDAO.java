@@ -1,11 +1,13 @@
 package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.util.CommonUtil;
+import org.apache.derby.shared.common.reference.SQLState;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
@@ -18,19 +20,19 @@ public class DerbyCacheDAO implements CacheDAO {
     }
 
     @Override
-    public String get(String key) {
+    public Optional<String> get(String key) {
         String sql = "SELECT value FROM cache WHERE \"key\" = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, key);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
-                return resultSet.getString(1);
+                return Optional.ofNullable(resultSet.getString(1));
             }
         } catch (SQLException sqlException) {
             CommonUtil.handleException(sqlException);
         }
 
-        return null;
+        return Optional.empty();
     }
 
     @Override
@@ -42,7 +44,9 @@ public class DerbyCacheDAO implements CacheDAO {
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
-            CommonUtil.handleException(sqlException);
+            if (!sqlException.getSQLState().equals(SQLState.LANG_DUPLICATE_KEY_CONSTRAINT)) {
+                CommonUtil.handleException(sqlException);
+            }
             return false;
         }
     }

@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public interface CacheService {
 
@@ -12,8 +13,18 @@ public interface CacheService {
 
     void insertEmailLastSync(String email, Instant lastSync);
 
+    void updateStartFilter(LocalDate start);
+
+    void updateEndFilter(LocalDate end);
+
+    LocalDate getStartFilter();
+
+    LocalDate getEndFilter();
+
     void insert(String key, String value);
 
     String get(String key);
+
+    String get(String key, String defaultValue);
 
 }

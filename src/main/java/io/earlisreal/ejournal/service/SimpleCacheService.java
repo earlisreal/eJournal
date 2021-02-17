@@ -3,10 +3,14 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dao.CacheDAO;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Optional;
 
 public class SimpleCacheService implements CacheService {
 
-    private static final String EMAIL_KEY = "email";
+    private enum Key {
+        EMAIL, START_FILTER, END_FILTER
+    }
 
     private final CacheDAO cacheDAO;
 
@@ -21,19 +25,47 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public Instant getLastSync(String email) {
-        String last = cacheDAO.get("email" + stripEmail(email));
-        if (last == null) return null;
-        return Instant.parse(last);
+        Optional<String> last = cacheDAO.get(Key.EMAIL + stripEmail(email));
+        if (last.isEmpty()) return null;
+        return Instant.parse(last.get());
     }
 
     @Override
     public void updateEmailLastSync(String email, Instant lastSync) {
-        cacheDAO.update(EMAIL_KEY + stripEmail(email), lastSync.toString());
+        cacheDAO.update(Key.EMAIL + stripEmail(email), lastSync.toString());
     }
 
     @Override
     public void insertEmailLastSync(String email, Instant lastSync) {
-        cacheDAO.insert(EMAIL_KEY + stripEmail(email), lastSync.toString());
+        cacheDAO.insert(Key.EMAIL + stripEmail(email), lastSync.toString());
+    }
+
+    @Override
+    public void updateStartFilter(LocalDate start) {
+        if (!cacheDAO.update(Key.START_FILTER.toString(), start.toString())) {
+            cacheDAO.insert(Key.START_FILTER.toString(), start.toString());
+        }
+    }
+
+    @Override
+    public void updateEndFilter(LocalDate end) {
+        if (!cacheDAO.update(Key.END_FILTER.toString(), end.toString())) {
+            cacheDAO.insert(Key.END_FILTER.toString(), end.toString());
+        }
+    }
+
+    @Override
+    public LocalDate getStartFilter() {
+        Optional<String> start = cacheDAO.get(Key.START_FILTER.toString());
+        if (start.isEmpty()) return null;
+        return LocalDate.parse(start.get());
+    }
+
+    @Override
+    public LocalDate getEndFilter() {
+        Optional<String> end = cacheDAO.get(Key.END_FILTER.toString());
+        if (end.isEmpty()) return null;
+        return LocalDate.parse(end.get());
     }
 
     @Override
@@ -43,7 +75,12 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public String get(String key) {
-        return cacheDAO.get(key);
+        return cacheDAO.get(key).orElse(null);
+    }
+
+    @Override
+    public String get(String key, String defaultValue) {
+        return cacheDAO.get(key).orElse(defaultValue);
     }
 
     private String stripEmail(String email) {

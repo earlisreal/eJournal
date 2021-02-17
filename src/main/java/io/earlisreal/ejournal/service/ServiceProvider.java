@@ -24,7 +24,7 @@ public final class ServiceProvider {
                     // TODO : Remove this circular dependency of ScraperProvider and ServiceProvider
                     startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(),
                             ScraperProvider.getCompanyScraper(), getStockService(), getTradeLogService(),
-                            getAnalyticsService());
+                            getAnalyticsService(), getCacheService());
                 }
             }
         }

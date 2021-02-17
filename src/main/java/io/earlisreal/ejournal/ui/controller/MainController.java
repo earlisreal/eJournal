@@ -135,12 +135,19 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
 
+        applyFilterCache();
+
         children = stackPane.getChildren();
         children.add(dashboard);
         selectedPane = dashboardBorder;
         selectPane(dashboardBorder);
 
         initializeStatistics();
+    }
+
+    private void applyFilterCache() {
+        startDate.setValue(cacheService.getStartFilter());
+        endDate.setValue(cacheService.getEndFilter());
     }
 
     private void initializeIcons() {
@@ -461,6 +468,9 @@ public class MainController implements Initializable {
         endDate.setValue(end);
         tradeLogService.applyFilter(start, end);
         refresh();
+
+        if (start != null) cacheService.updateStartFilter(start);
+        if (end != null) cacheService.updateEndFilter(end);
     }
 
     public void showAbout() {

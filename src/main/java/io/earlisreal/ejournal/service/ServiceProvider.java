@@ -96,7 +96,7 @@ public final class ServiceProvider {
         if (cacheService == null) {
             synchronized (ServiceProvider.class) {
                 if (cacheService == null) {
-                    cacheService = new SimpleCacheService(DAOProvider.getEmailLastSyncDAO());
+                    cacheService = new SimpleCacheService(DAOProvider.getEmailLastSyncDAO(), DAOProvider.getCacheDAO());
                 }
             }
         }

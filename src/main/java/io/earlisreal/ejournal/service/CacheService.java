@@ -12,4 +12,6 @@ public interface CacheService {
 
     void insertEmailLastSync(String email, Instant lastSync);
 
+    void insert(String key, String value);
+
 }

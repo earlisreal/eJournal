@@ -39,6 +39,7 @@ public class PlanBuilder {
 
     private void init() {
         shares = calculateShares();
+        shares -= shares % getBoardLot(entry);
         amount = shares * entry;
     }
 
@@ -59,6 +60,17 @@ public class PlanBuilder {
         }
 
         return low;
+    }
+
+    public static int getBoardLot(double price) {
+        if (price < 0.01) return 1_000_000;
+        if (price < 0.05) return 100_000;
+        if (price < 0.5) return 10_000;
+        if (price < 5) return 1_000;
+        if (price < 50) return 100;
+        if (price < 1000) return 10;
+
+        return 5;
     }
 
     public double getFees() {

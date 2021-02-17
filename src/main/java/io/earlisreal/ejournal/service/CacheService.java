@@ -14,4 +14,6 @@ public interface CacheService {
 
     void insert(String key, String value);
 
+    String get(String key);
+
 }

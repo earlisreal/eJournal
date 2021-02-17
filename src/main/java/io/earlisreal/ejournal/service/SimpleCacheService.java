@@ -41,6 +41,11 @@ public class SimpleCacheService implements CacheService {
         cacheDAO.insert(key, value);
     }
 
+    @Override
+    public String get(String key) {
+        return cacheDAO.get(key);
+    }
+
     private String stripEmail(String email) {
         return email.split("@")[0];
     }

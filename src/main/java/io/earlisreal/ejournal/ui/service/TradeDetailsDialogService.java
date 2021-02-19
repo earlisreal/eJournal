@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.ui.controller.TradeDetailsController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
+import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -48,8 +49,9 @@ public class TradeDetailsDialogService {
         controller.show(summary);
 
         stage.setTitle("Trade Summary");
-        stage.show();
         stage.setResizable(false);
+        stage.getIcons().add(new Image(getClass().getResourceAsStream("/eJournal-logo.png")));
+        stage.show();
     }
 
 }

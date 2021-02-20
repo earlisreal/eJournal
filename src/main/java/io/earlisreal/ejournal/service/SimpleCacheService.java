@@ -42,15 +42,17 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public void updateStartFilter(LocalDate start) {
-        if (!cacheDAO.update(Key.START_FILTER.toString(), start.toString())) {
-            cacheDAO.insert(Key.START_FILTER.toString(), start.toString());
+        String value = start == null ? null : start.toString();
+        if (!cacheDAO.update(Key.START_FILTER.toString(), value)) {
+            cacheDAO.insert(Key.START_FILTER.toString(), value);
         }
     }
 
     @Override
     public void updateEndFilter(LocalDate end) {
-        if (!cacheDAO.update(Key.END_FILTER.toString(), end.toString())) {
-            cacheDAO.insert(Key.END_FILTER.toString(), end.toString());
+        String value = end == null ? null : end.toString();
+        if (!cacheDAO.update(Key.END_FILTER.toString(), value)) {
+            cacheDAO.insert(Key.END_FILTER.toString(), value);
         }
     }
 

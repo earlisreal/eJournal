@@ -469,8 +469,8 @@ public class MainController implements Initializable {
         tradeLogService.applyFilter(start, end);
         refresh();
 
-        if (start != null) cacheService.updateStartFilter(start);
-        if (end != null) cacheService.updateEndFilter(end);
+        cacheService.updateStartFilter(start);
+        cacheService.updateEndFilter(end);
     }
 
     public void showAbout() {

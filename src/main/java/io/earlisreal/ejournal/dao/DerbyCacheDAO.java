@@ -69,8 +69,8 @@ public class DerbyCacheDAO implements CacheDAO {
     public boolean update(String key, String value) {
         String sql = "UPDATE cache SET value = ? WHERE \"key\" = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, key);
-            preparedStatement.setString(2, value);
+            preparedStatement.setString(2, key);
+            preparedStatement.setString(1, value);
             preparedStatement.execute();
             return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {

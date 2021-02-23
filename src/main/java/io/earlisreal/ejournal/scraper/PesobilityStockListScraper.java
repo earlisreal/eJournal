@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.trimStockName;
 
 public class PesobilityStockListScraper implements StockScraper {
@@ -24,17 +25,19 @@ public class PesobilityStockListScraper implements StockScraper {
             Elements rows = document.select("#MAIN_BODY > div > div > table > tbody > tr");
             rows.forEach(element -> {
                 var columns = element.getElementsByTag("td").eachText();
-                if (columns.size() != 7) return;
 
                 Stock stock = new Stock();
                 stock.setCode(columns.get(0));
                 stock.setName(trimStockName(columns.get(1)));
-                stock.setPrice(Double.parseDouble(columns.get(2).substring(0, columns.get(2).indexOf(" "))));
+                if (columns.size() > 2) {
+                    int spaceIndex = columns.get(2).indexOf(" ");
+                    if (spaceIndex == -1) return;
+                    stock.setPrice(Double.parseDouble(columns.get(2).substring(0, spaceIndex)));
+                }
                 stocks.add(stock);
             });
-
-        } catch (IOException e) {
-            CommonUtil.handleException(e);
+        } catch (Exception e) {
+            handleException(e);
         }
 
         return stocks;

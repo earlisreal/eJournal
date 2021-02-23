@@ -155,8 +155,16 @@ public class PlanController implements Initializable, StartupListener {
             stop = getStop();
         }
         else {
-            stop = 100 - entry;
-            entry = 100;
+            String stock = stockCombo.getValue();
+            Double lastPrice = stockService.getPrice(stock);
+            if (stock != null && lastPrice != null) {
+                entry = lastPrice;
+                stop = entry - ((getEntry() / 100) * entry);
+            }
+            else {
+                stop = 100 - entry;
+                entry = 100;
+            }
         }
         risk = getRisk();
 

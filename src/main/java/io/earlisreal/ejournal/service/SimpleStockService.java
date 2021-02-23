@@ -52,8 +52,9 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
-    public double getPrice(String stock) {
-        return stockMap.get(stock).getPrice();
+    public Double getPrice(String stock) {
+        if (stockMap.containsKey(stock)) return stockMap.get(stock).getPrice();
+        return null;
     }
 
     @Override

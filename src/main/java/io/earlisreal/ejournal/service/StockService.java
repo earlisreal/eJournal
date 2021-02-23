@@ -18,7 +18,7 @@ public interface StockService {
 
     LocalDate getLastPriceDate(String stock);
 
-    double getPrice(String stock);
+    Double getPrice(String stock);
 
     void updateLastDate(String stock, LocalDate localDate);
 

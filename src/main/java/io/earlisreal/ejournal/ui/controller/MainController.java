@@ -216,6 +216,7 @@ public class MainController implements Initializable {
     public void importInvoice() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
+        setInitialDirectory(fileChooser, "import-invoice-path");
         Stage stage = (Stage) grid.getScene().getWindow();
         fileChooser.getExtensionFilters().addAll();
         var files = fileChooser.showOpenMultipleDialog(stage);
@@ -240,6 +241,7 @@ public class MainController implements Initializable {
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
         fileChooser.getExtensionFilters().addAll(pdfFilter, txtFilter);
+        setInitialDirectory(fileChooser, "import-ledger-path");
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;
 
@@ -280,13 +282,18 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save CSV");
         fileChooser.getExtensionFilters().add(csvFilter);
+        setInitialDirectory(fileChooser, "import-csv-path");
         Stage stage = (Stage) grid.getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
+        if (file == null) return;
+
         int res = 0;
         try {
             List<String> csv = Files.readAllLines(file.toPath());
             res += tradeLogService.insertCsv(csv);
             res += bankTransactionService.insertCsv(csv);
+            String newPath = file.toPath().getParent().toAbsolutePath().toString();
+            cacheService.save("import-csv-path", newPath);
         } catch (IOException e) {
             handleException(e);
         }
@@ -431,15 +438,25 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save CSV");
         fileChooser.getExtensionFilters().add(csvFilter);
+        setInitialDirectory(fileChooser, "export-path");
         Stage stage = (Stage) grid.getScene().getWindow();
         File file = fileChooser.showSaveDialog(stage);
         if (file != null) {
             try {
                 Files.write(file.toPath(), csv);
+                String newPath = file.toPath().getParent().toAbsolutePath().toString();
+                cacheService.save("export-path", newPath);
                 showInfo("Export Success", "Trade Logs and Bank Transactions successfully exported");
             } catch (IOException e) {
                 showError("Fail to Save CSV File", e.getMessage());
             }
+        }
+    }
+
+    private void setInitialDirectory(FileChooser fileChooser, String key) {
+        String lastPath = cacheService.get(key);
+        if (lastPath != null) {
+            fileChooser.setInitialDirectory(new File(lastPath));
         }
     }
 

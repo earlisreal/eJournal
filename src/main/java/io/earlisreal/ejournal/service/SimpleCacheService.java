@@ -85,6 +85,13 @@ public class SimpleCacheService implements CacheService {
         return cacheDAO.get(key).orElse(defaultValue);
     }
 
+    @Override
+    public void save(String key, String value) {
+        if (!cacheDAO.update(key, value)) {
+            cacheDAO.insert(key, value);
+        }
+    }
+
     private String stripEmail(String email) {
         return email.split("@")[0];
     }

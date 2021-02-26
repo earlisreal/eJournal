@@ -27,4 +27,6 @@ public interface CacheService {
 
     String get(String key, String defaultValue);
 
+    void save(String key, String value);
+
 }

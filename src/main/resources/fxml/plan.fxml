@@ -13,7 +13,7 @@
                <children>
                   <TextField fx:id="entryText" layoutX="227.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="75.0" promptText="10.02" />
                   <TextField fx:id="stopText" layoutX="396.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="75.0" promptText="8.9" />
-                  <TextField fx:id="riskText" layoutX="566.0" layoutY="43.0" onKeyReleased="#calculateShares" prefHeight="25.0" prefWidth="99.0" promptText="5,000" text="1" />
+                  <TextField fx:id="riskText" layoutX="566.0" layoutY="43.0" onKeyReleased="#onVarChanged" prefHeight="25.0" prefWidth="99.0" promptText="1" text="1" />
                   <Button layoutX="517.0" layoutY="83.0" mnemonicParsing="false" onAction="#addPlan" prefHeight="25.0" prefWidth="69.0" text="Add Plan" />
                   <Label fx:id="entryLabel" layoutX="161.0" layoutY="47.0" text="Entry Price" />
                   <Label fx:id="riskLabel" layoutX="480.0" layoutY="47.0" text="Value at Risk %" />

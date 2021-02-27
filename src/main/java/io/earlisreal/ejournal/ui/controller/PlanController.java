@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 
 import java.net.URL;
@@ -25,6 +26,7 @@ public class PlanController implements Initializable, StartupListener {
     private final PlanService planService;
     private final StockService stockService;
     private final AnalyticsService analyticsService;
+    private final CacheService cacheService;
 
     public TextField riskText;
     public TextField stopText;
@@ -65,6 +67,7 @@ public class PlanController implements Initializable, StartupListener {
         planService = ServiceProvider.getPlanService();
         stockService = ServiceProvider.getStockService();
         analyticsService = ServiceProvider.getAnalyticsService();
+        cacheService = ServiceProvider.getCacheService();
         ServiceProvider.getStartupService().addStockPriceListener(this);
 
         planner = new PlanBuilder();
@@ -140,6 +143,13 @@ public class PlanController implements Initializable, StartupListener {
         calculateShares();
     }
 
+    public void onVarChanged(KeyEvent keyEvent) {
+        if (riskPercentRadio.isSelected()) {
+            cacheService.save("plan-var", riskText.getText());
+        }
+        calculateShares();
+    }
+
     public void calculateShares() {
         if (entryText.getText() == null || entryText.getText().isBlank()) {
             planShares.setText("0");
@@ -156,15 +166,8 @@ public class PlanController implements Initializable, StartupListener {
         }
         else {
             String stock = stockCombo.getValue();
-            Double lastPrice = stockService.getPrice(stock);
-            if (stock != null && lastPrice != null) {
-                entry = lastPrice;
-                stop = entry - ((getEntry() / 100) * entry);
-            }
-            else {
-                stop = 100 - entry;
-                entry = 100;
-            }
+            entry = stockService.getPrice(stock);
+            stop = entry - ((getEntry() / 100) * entry);
         }
         risk = getRisk();
 
@@ -197,9 +200,21 @@ public class PlanController implements Initializable, StartupListener {
     public void initialize(URL location, ResourceBundle resources) {
         var brokers = Broker.values();
         brokerChoice.setItems(FXCollections.observableList(Arrays.asList(brokers).subList(1, brokers.length)));
-        brokerChoice.setValue(Broker.YAPSTER);
+        String lastBroker = cacheService.get("plan-broker");
+        if (lastBroker != null) {
+            brokerChoice.setValue(Broker.valueOf(lastBroker));
+        }
+        else {
+            brokerChoice.setValue(Broker.YAPSTER);
+        }
         planner.setBroker(brokerChoice.getValue());
-        brokerChoice.setOnAction(event -> planner.setBroker(brokerChoice.getValue()));
+        brokerChoice.setOnAction(event -> {
+            planner.setBroker(brokerChoice.getValue());
+            cacheService.save("plan-broker", brokerChoice.getValue().name());
+        });
+
+        String lastRisk = cacheService.get("plan-var");
+        riskText.setText(lastRisk.isBlank() ? "1" : lastRisk);
     }
 
     private double getRisk() {

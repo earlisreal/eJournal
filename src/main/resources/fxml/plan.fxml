@@ -28,7 +28,7 @@
                   <TextField fx:id="planPosition" editable="false" layoutX="405.0" layoutY="83.0" prefHeight="25.0" prefWidth="80.0" text="0" />
                   <ChoiceBox fx:id="brokerChoice" layoutX="56.0" layoutY="42.0" prefHeight="25.0" prefWidth="90.0" />
                   <Label layoutX="14.0" layoutY="46.0" text="Broker" />
-                  <ComboBox fx:id="stockCombo" editable="true" layoutX="56.0" layoutY="12.0" prefHeight="25.0" prefWidth="90.0" promptText="DITO" />
+                  <ComboBox fx:id="stockCombo" editable="true" layoutX="56.0" layoutY="12.0" onKeyReleased="#autoCompleteStock" prefHeight="25.0" prefWidth="90.0" promptText="DITO" />
                   <Line endX="550.0" layoutX="115.0" layoutY="75.0" startX="-100.0" strokeMiterLimit="100.0" strokeWidth="0.8" />
                   <RadioButton fx:id="entryStopRadio" layoutX="227.0" layoutY="17.0" mnemonicParsing="false" onAction="#showEntryStop" selected="true" text="Entry / Stop Price">
                      <toggleGroup>

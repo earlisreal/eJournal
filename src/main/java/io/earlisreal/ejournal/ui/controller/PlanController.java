@@ -6,6 +6,7 @@ import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.PlanBuilder;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -58,6 +59,8 @@ public class PlanController implements Initializable, StartupListener {
     public ToggleGroup riskGroup;
     public RadioButton riskPercentRadio;
     public Label entryLabel;
+
+    private ObservableList<String> stockList;
 
     private double oneVar;
     private String percentLoss;
@@ -165,6 +168,7 @@ public class PlanController implements Initializable, StartupListener {
             stop = getStop();
         }
         else {
+            if (stockCombo.getValue() == null) return;
             String stock = stockCombo.getValue();
             entry = stockService.getPrice(stock);
             stop = entry - ((getEntry() / 100) * entry);
@@ -192,8 +196,8 @@ public class PlanController implements Initializable, StartupListener {
 
     @Override
     public void onFinish() {
-        var list = FXCollections.observableArrayList(stockService.getStockList());
-        stockCombo.setItems(list.sorted());
+        stockList = FXCollections.observableArrayList(stockService.getStockList());
+        stockCombo.setItems(stockList.sorted());
     }
 
     @Override
@@ -236,6 +240,12 @@ public class PlanController implements Initializable, StartupListener {
         catch (ParseException ignore) {
             return 0;
         }
+    }
+
+    public void autoCompleteStock(KeyEvent keyEvent) {
+        var filtered = stockList.filtered(stock -> stock.startsWith(stockCombo.getEditor().getText().toUpperCase()));
+        stockCombo.show();
+        stockCombo.setItems(FXCollections.observableList(filtered));
     }
 
 }

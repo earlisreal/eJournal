@@ -25,6 +25,7 @@ public class AnalyticsController {
     public VBox failLoss;
     public VBox successPercent;
     public VBox failPercent;
+    public BarChart<String, Double> monthlyBarChart;
 
     private final AnalyticsService service;
 
@@ -37,6 +38,7 @@ public class AnalyticsController {
         initializeTopLoser();
         initializeTopWinner();
         initializeRemarkableTrades();
+        initializeMonthlyChart();
     }
 
     private void initializeRemarkableTrades() {
@@ -124,6 +126,10 @@ public class AnalyticsController {
         XYChart.Series<Double, String> series = new XYChart.Series<>();
         series.setData(FXCollections.observableList(service.getTopLosers()));
         topLosers.setData(FXCollections.observableList(List.of(series)));
+    }
+
+    private void initializeMonthlyChart() {
+        // TODO
     }
 
 }

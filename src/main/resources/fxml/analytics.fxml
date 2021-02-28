@@ -9,14 +9,6 @@
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
    <children>
-      <LineChart fx:id="equityChart" layoutX="17.0" layoutY="341.0" prefHeight="339.0" prefWidth="680.0" title="Equity">
-        <xAxis>
-          <CategoryAxis label="Date" side="BOTTOM" />
-        </xAxis>
-        <yAxis>
-          <NumberAxis label="Value" side="LEFT" />
-        </yAxis>
-      </LineChart>
       <BarChart fx:id="topWinners" layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
         <xAxis>
            <NumberAxis side="BOTTOM" />
@@ -141,5 +133,41 @@
       <Label alignment="CENTER" layoutX="184.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (Loss)" />
       <Label alignment="CENTER" layoutX="352.0" layoutY="14.0" prefWidth="170.0" text="Most Successfull Trade (%)" />
       <Label alignment="CENTER" layoutX="522.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (%)" />
+      <TabPane layoutX="12.0" layoutY="340.0" prefHeight="354.0" prefWidth="680.0" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+          <Tab closable="false" text="Equity">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <LineChart fx:id="equityChart" layoutY="-2.0" legendVisible="false" prefHeight="327.0" prefWidth="680.0">
+                           <xAxis>
+                              <CategoryAxis label="Date" side="BOTTOM" />
+                           </xAxis>
+                           <yAxis>
+                              <NumberAxis label="Value" side="LEFT" />
+                           </yAxis>
+                        </LineChart>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+          <Tab closable="false" text="Monthly">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <BarChart fx:id="monthlyBarChart" layoutY="2.0" prefHeight="322.0" prefWidth="680.0">
+                          <xAxis>
+                            <CategoryAxis side="BOTTOM" />
+                          </xAxis>
+                          <yAxis>
+                            <NumberAxis side="LEFT" />
+                          </yAxis>
+                        </BarChart>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+        </tabs>
+      </TabPane>
    </children>
 </AnchorPane>

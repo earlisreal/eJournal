@@ -10,7 +10,7 @@
             <columns>
                 <TableColumn fx:id="dateColumn" prefWidth="185.0" text="Date" />
                 <TableColumn fx:id="actionColumn" prefWidth="156.0" text="Action" />
-                <TableColumn fx:id="amountColumn" prefWidth="192.0" text="Amount" />
+                <TableColumn fx:id="amountColumn" editable="false" prefWidth="192.0" sortable="false" text="Amount" />
             <TableColumn fx:id="deleteColumn" editable="false" prefWidth="150.0" sortable="false" text="Delete" />
             </columns>
         </TableView>

@@ -46,5 +46,7 @@ public interface AnalyticsService {
     String getTradingAge();
 
     double getAveragePosition();
-    
+
+    List<XYChart.Data<String, Double>> getMonthlyProfit();
+
 }

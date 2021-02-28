@@ -5,7 +5,9 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.Period;
+import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -185,6 +187,28 @@ public class SimpleAnalyticsService implements AnalyticsService {
         return tradeLogService.getTradeSummaries()
                 .stream()
                 .collect(Collectors.averagingDouble(TradeSummary::getPosition));
+    }
+
+    @Override
+    public List<XYChart.Data<String, Double>> getMonthlyProfit() {
+        List<XYChart.Data<String, Double>> chartData = new ArrayList<>();
+        var map = tradeLogService.getTradeSummaries().stream()
+                .filter(summary -> summary.getCloseDate().getYear() == LocalDate.now().getYear())
+                .collect(Collectors.toMap(summary -> summary.getCloseDate().getMonth(), TradeSummary::getProfit, Double::sum));
+        for (Month month : Month.values()) {
+            String monthStr = month.getDisplayName(TextStyle.SHORT, Locale.getDefault());
+            double percentage = round(map.getOrDefault(month, 0.0) / totalEquity * 100);
+            var data = new XYChart.Data<>(monthStr, percentage);
+            if (percentage > 0) {
+                data.nodeProperty().addListener((observable, oldValue, newValue) -> newValue.setStyle("-fx-bar-fill: green"));
+            }
+            else {
+                data.nodeProperty().addListener((observable, oldValue, newValue) -> newValue.setStyle("-fx-bar-fill: red"));
+            }
+            chartData.add(data);
+        }
+
+        return chartData;
     }
 
 }

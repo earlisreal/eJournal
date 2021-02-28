@@ -111,7 +111,6 @@ public class AnalyticsController {
 
     private void initializeEquityChart() {
         XYChart.Series<String, Double> series = new XYChart.Series<>();
-        series.setName("Original Portfolio");
         series.setData(FXCollections.observableList(service.getEquityData()));
         equityChart.setData(FXCollections.observableList(List.of(series)));
     }
@@ -129,7 +128,9 @@ public class AnalyticsController {
     }
 
     private void initializeMonthlyChart() {
-        // TODO
+        XYChart.Series<String, Double> series = new XYChart.Series<>();
+        series.setData(FXCollections.observableList(service.getMonthlyProfit()));
+        monthlyBarChart.setData(FXCollections.observableList(List.of(series)));
     }
 
 }

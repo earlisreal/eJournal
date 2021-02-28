@@ -155,12 +155,12 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <BarChart fx:id="monthlyBarChart" layoutY="2.0" prefHeight="322.0" prefWidth="680.0">
+                        <BarChart fx:id="monthlyBarChart" layoutY="2.0" legendVisible="false" prefHeight="322.0" prefWidth="680.0">
                           <xAxis>
-                            <CategoryAxis side="BOTTOM" />
+                            <CategoryAxis label="Month" side="BOTTOM" />
                           </xAxis>
                           <yAxis>
-                            <NumberAxis side="LEFT" />
+                            <NumberAxis label="Profit %" side="LEFT" />
                           </yAxis>
                         </BarChart>
                      </children>

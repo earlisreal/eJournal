@@ -10,6 +10,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 
@@ -244,7 +245,12 @@ public class PlanController implements Initializable, StartupListener {
 
     public void autoCompleteStock(KeyEvent keyEvent) {
         var filtered = stockList.filtered(stock -> stock.startsWith(stockCombo.getEditor().getText().toUpperCase()));
-        stockCombo.show();
+        if (keyEvent.getCode().equals(KeyCode.ENTER)) {
+            stockCombo.hide();
+        }
+        else {
+            stockCombo.show();
+        }
         stockCombo.setItems(FXCollections.observableList(filtered));
     }
 

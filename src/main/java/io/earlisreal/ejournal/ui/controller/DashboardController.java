@@ -98,7 +98,7 @@ public class DashboardController implements Initializable, StartupListener {
     private double getProfit(TradeSummary summary) {
         double cost = getCost(summary);
         double current = stockService.getPrice(summary.getStock()) * summary.getRemainingShares();
-        return current - cost;
+        return current - cost - summary.getBroker().getFees(current, false);
     }
 
     private double getCost(TradeSummary summary) {

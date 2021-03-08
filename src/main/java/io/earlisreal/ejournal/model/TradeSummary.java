@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.model;
 
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.util.Broker;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -26,6 +27,10 @@ public class TradeSummary {
         this.openDate = initialTrade.getDate();
         logs = new ArrayList<>();
         buy(initialTrade);
+    }
+
+    public Broker getBroker() {
+        return logs.get(0).getBroker();
     }
 
     public void buy(TradeLog log) {

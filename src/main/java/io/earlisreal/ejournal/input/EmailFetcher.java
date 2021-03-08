@@ -106,7 +106,7 @@ public class EmailFetcher {
 
             Files.delete(storedCredential);
             newService();
-            parse();
+            res = parse();
         }
         return res;
     }

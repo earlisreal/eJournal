@@ -491,13 +491,10 @@ public class MainController implements Initializable {
     }
 
     public void showAbout() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("About");
-        alert.setHeaderText(null);
-        alert.setContentText("Developed by: Earl Savadera\n" +
+        String content = "Developed by: Earl Savadera\n" +
                 "Email: earl.stock.trader@gmail.com\n" +
-                "GitHub Page: https://github.com/earlisreal/eJournal");
-        alert.show();
+                "GitHub Page: https://github.com/earlisreal/eJournal";
+        showInfo("About", content);
     }
 
     private void showError(String title, String message) {
@@ -514,6 +511,7 @@ public class MainController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        alert.initOwner(grid.getScene().getWindow());
         alert.show();
     }
 

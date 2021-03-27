@@ -12,9 +12,9 @@
    <children>
       <HBox layoutX="14.0" layoutY="20.0" prefHeight="100.0" prefWidth="200.0">
          <children>
-            <Pane prefHeight="100.0" prefWidth="49.0">
+            <Pane prefHeight="100.0" prefWidth="60.0">
                <children>
-                  <Label fx:id="lastStock" alignment="CENTER" layoutY="29.0" prefHeight="25.0" prefWidth="49.0" text="BDO">
+                  <Label fx:id="lastStock" alignment="CENTER" contentDisplay="CENTER" layoutY="29.0" prefHeight="25.0" prefWidth="60.0" text="DDMPR">
                      <font>
                         <Font size="16.0" />
                      </font>
@@ -32,13 +32,16 @@
                   <Insets left="10.0" />
                </padding>
             </VBox>
-            <VBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="59.0">
+            <VBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="62.0">
                <children>
                   <Label fx:id="lastProfit" text="+37.3%" />
                   <Label fx:id="lastPosition" text="34,000.00" />
                   <Label fx:id="lastHolding" text="13" />
                   <Label fx:id="lastHolding1" />
                </children>
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
             </VBox>
          </children>
       </HBox>
@@ -47,7 +50,7 @@
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
-                  <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
+                  <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DDMPR" textAlignment="CENTER">
                      <font>
                         <Font size="16.0" />
                      </font>

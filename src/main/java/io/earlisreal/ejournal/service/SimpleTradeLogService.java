@@ -46,6 +46,13 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
+    public boolean insert(TradeLog tradeLog) {
+        boolean inserted = tradeLogDAO.insertLog(tradeLog);
+        System.out.println("Trade Log Inserted");
+        return inserted;
+    }
+
+    @Override
     public int insert(List<TradeLog> tradeLogs) {
         if (tradeLogs.isEmpty()) {
             return 0;

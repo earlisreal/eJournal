@@ -14,6 +14,8 @@ public interface TradeLogService {
 
     int insertCsv(List<String> csv);
 
+    boolean insert(TradeLog tradeLog);
+
     int insert(List<TradeLog> tradeLogs);
 
     List<TradeSummary> getTradeSummaries();

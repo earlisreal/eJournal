@@ -26,7 +26,12 @@ public class SimpleStockService implements StockService {
 
     @Override
     public String getName(String stock) {
-        return stockMap.get(stock).getName();
+        if (stockMap.containsKey(stock)) {
+            return stockMap.get(stock).getName();
+        }
+        else {
+            return "N/A";
+        }
     }
 
     @Override
@@ -54,7 +59,7 @@ public class SimpleStockService implements StockService {
     @Override
     public Double getPrice(String stock) {
         if (stockMap.containsKey(stock)) return stockMap.get(stock).getPrice();
-        return null;
+        return 0.0;
     }
 
     @Override

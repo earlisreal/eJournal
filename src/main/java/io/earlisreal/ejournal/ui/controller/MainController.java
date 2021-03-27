@@ -408,7 +408,7 @@ public class MainController implements Initializable {
         analytics.add(new Pair<>("Average Loss", prettify(analyticsService.getAverageLoss())));
         analytics.add(new Pair<>("Average Loss %", analyticsService.getAverageLossPercentage() + "%"));
         analytics.add(new Pair<>("Average Position", prettify(analyticsService.getAveragePosition())));
-        analytics.add(new Pair<>("Accuracy", analyticsService.getAccuracy() + "%"));
+        analytics.add(new Pair<>("Accuracy", analyticsService.getWinAccuracy() + "%"));
         analytics.add(new Pair<>("Profit Factor", String.valueOf(analyticsService.getProfitFactor())));
         analytics.add(new Pair<>("Average Length", prettify(analyticsService.getAverageHoldingDays()) + " Days"));
         analytics.add(new Pair<>("Trades Taken", prettify(analyticsService.getSummaries().size())));
@@ -421,8 +421,8 @@ public class MainController implements Initializable {
         analyticsColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
         valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
 
-        double accuracy = analyticsService.getAccuracy();
-        double lossAccuracy = 100 - analyticsService.getAccuracy();
+        double accuracy = analyticsService.getWinAccuracy();
+        double lossAccuracy = analyticsService.getLossAccuracy();
         battingChart.setData(FXCollections.observableArrayList(new PieChart.Data("Win\n" + accuracy + "%", accuracy),
                 new PieChart.Data("Loss\n" + lossAccuracy + "%", lossAccuracy)));
         accuracyLabel.setText(accuracy + "%");

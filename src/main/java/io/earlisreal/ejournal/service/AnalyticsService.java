@@ -25,7 +25,9 @@ public interface AnalyticsService {
 
     double getAverageLossPercentage();
 
-    double getAccuracy();
+    double getWinAccuracy();
+
+    double getLossAccuracy();
 
     double getProfitFactor();
 

@@ -94,15 +94,20 @@ public class SimpleAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public double getAccuracy() {
+    public double getWinAccuracy() {
         return round((double) wins.size() / summaries.size() * 100);
     }
 
     @Override
+    public double getLossAccuracy() {
+        return round((double) losses.size() / summaries.size() * 100);
+    }
+
+    @Override
     public double getProfitFactor() {
-        double profits = wins.stream().mapToDouble(TradeSummary::getProfit).sum();
-        double mistakes = losses.stream().mapToDouble(TradeSummary::getProfit).sum();
-        return round(profits / mistakes * -1);
+        double averageLoss = getAverageLoss();
+        double averageWin = getAverageProfit();
+        return round((getWinAccuracy() * averageWin) / (getLossAccuracy() * averageLoss * -1));
     }
 
     @Override

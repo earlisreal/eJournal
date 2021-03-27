@@ -29,7 +29,7 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="9.0" prefHeight="632.0" prefWidth="661.0">
+                        <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="41.0" prefHeight="600.0" prefWidth="661.0">
                           <columns>
                               <TableColumn fx:id="logDate" editable="false" prefWidth="74.0" text="Date" />
                               <TableColumn fx:id="logStock" editable="false" prefWidth="74.0" text="Stock" />
@@ -40,6 +40,15 @@
                               <TableColumn fx:id="logNet" editable="false" prefWidth="156.0" sortable="false" text="Net Amount" />
                           </columns>
                         </TableView>
+                        <Label fx:id="entryLabel" layoutX="9.0" layoutY="12.0" text="Date" />
+                        <Label fx:id="riskLabel" layoutX="314.0" layoutY="12.0" text="Price" />
+                        <Label fx:id="stopLabel" layoutX="163.0" layoutY="12.0" text="Stock" />
+                        <Label fx:id="riskLabel1" layoutX="466.0" layoutY="12.0" text="Shares" />
+                        <DatePicker fx:id="datePicker" layoutX="46.0" layoutY="8.0" prefHeight="25.0" prefWidth="110.0" promptText="3/24/2021" />
+                        <TextField fx:id="stockText" layoutX="198.0" layoutY="8.0" prefHeight="25.0" prefWidth="110.0" promptText="DDMPR" />
+                        <TextField fx:id="priceText" layoutX="347.0" layoutY="8.0" prefHeight="25.0" prefWidth="110.0" promptText="2.25" />
+                        <TextField fx:id="sharesText" layoutX="507.0" layoutY="8.0" prefHeight="25.0" prefWidth="110.0" promptText="5,000" />
+                        <Button layoutX="626.0" layoutY="8.0" mnemonicParsing="false" onAction="#addLog" text="Add" />
                      </children></AnchorPane>
             </content>
           </Tab>

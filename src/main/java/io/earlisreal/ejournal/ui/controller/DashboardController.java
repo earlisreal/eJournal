@@ -165,11 +165,6 @@ public class DashboardController implements Initializable, StartupListener {
         List<PieChart.Data> data = new ArrayList<>();
         double equity = analyticsService.getTotalEquity();
         var positions = tradeLogService.getOpenPositions();
-        if (positions.isEmpty()) {
-            portfolioChart.setData(FXCollections.emptyObservableList());
-            noDataLabel.setVisible(true);
-            return;
-        }
 
         noDataLabel.setVisible(false);
         double sum = 0;

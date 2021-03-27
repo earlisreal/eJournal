@@ -8,12 +8,13 @@ import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.time.LocalDate;
-import java.util.Comparator;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
@@ -35,6 +36,11 @@ public class LogsController {
     public TableColumn<TradeSummary, String> summaryProfit;
     public TableColumn<TradeSummary, String> summaryPercent;
     public TableColumn<TradeSummary, String> summaryDays;
+
+    public DatePicker datePicker;
+    public TextField stockText;
+    public TextField priceText;
+    public TextField sharesText;
 
     private final TradeLogService tradeLogService;
 
@@ -73,6 +79,23 @@ public class LogsController {
         summaryPercent.setCellValueFactory(s ->
                 new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
         summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
+    }
+
+    public void addLog() {
+        double price = Double.parseDouble(priceText.getText());
+        int shares = Integer.parseInt(sharesText.getText());
+        TradeLog log = new TradeLog(datePicker.getValue(), stockText.getText(), true, price, shares);
+        tradeLogService.insert(log);
+        clearInputs();
+
+        // TODO Reload dashboard and analytics
+    }
+
+    public void clearInputs() {
+        datePicker.setValue(null);
+        stockText.clear();
+        priceText.clear();
+        sharesText.clear();
     }
 
 }

@@ -10,16 +10,20 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class YapsterLedgerParser implements LedgerParser {
 
     private final List<TradeLog> tradeLogs;
     private final List<BankTransaction> bankTransactions;
+    private final Map<String, Double> ipoPrice;
 
     YapsterLedgerParser() {
         tradeLogs = new ArrayList<>();
         bankTransactions = new ArrayList<>();
+        ipoPrice = new HashMap<>();
     }
 
     @Override
@@ -40,8 +44,31 @@ public class YapsterLedgerParser implements LedgerParser {
             }
 
             try {
+                if (line.contains("DM#")) {
+                    // TODO : If there is a case where DM and SCM is in different Ledger, save ipo price to DB
+                    var tokens = line.split(" ");
+                    double total = CommonUtil.parseDouble(tokens[tokens.length - 2]);
+                    double shares = CommonUtil.parseDouble(tokens[tokens.length - 3]);
+                    double price = total / shares;
+
+                    while (true) {
+                        ++i;
+                        if (lines.get(i).contains(" IPO")) {
+                            tokens = lines.get(i).split(" ");
+                            String stock = tokens[tokens.length - 2];
+                            ipoPrice.put(stock, price);
+                            break;
+                        }
+                    }
+
+                    continue;
+                }
+
+                boolean isDividend = line.contains(" CM#");
+                if (isDividend && !line.contains("Cash Dividend")) continue;
+
+                boolean isIpo = line.contains("SCM#");
                 boolean isBuy = line.contains("BI#");
-                boolean isDividend = line.contains("CM#");
                 boolean isWithdrawal = line.contains("CV#");
                 int dateIndex = line.indexOf(' ');
                 if (dateIndex == -1) continue;
@@ -58,10 +85,12 @@ public class YapsterLedgerParser implements LedgerParser {
 
                 line = line.substring(refEndIndex).trim();
                 if (Character.isDigit(line.charAt(0))) {
-                    TradeLog tradeLog = parseTrade(line);
+                    TradeLog tradeLog = parseTrade(line, isIpo);
+                    tradeLog.setBuy(isIpo || isBuy);
+
+                    tradeLog.setBroker(Broker.YAPSTER);
                     tradeLog.setDate(date);
                     tradeLog.setInvoiceNo(refNo);
-                    tradeLog.setBuy(isBuy);
                     tradeLogs.add(tradeLog);
                 }
                 else {
@@ -73,7 +102,7 @@ public class YapsterLedgerParser implements LedgerParser {
                     bankTransactions.add(bankTransaction);
                 }
             } catch (DateTimeParseException ignore) {
-                // Dividend Just ignore
+                // Line not starts with a date. Just ignore
             } catch (ParseException e) {
                 CommonUtil.handleException(e);
             }
@@ -90,13 +119,17 @@ public class YapsterLedgerParser implements LedgerParser {
         return bankTransactions;
     }
 
-    private TradeLog parseTrade(String line) throws ParseException {
+    private TradeLog parseTrade(String line, boolean isIpo) throws ParseException {
         TradeLog tradeLog = new TradeLog();
         var tokens = line.split(" ");
         tradeLog.setShares(CommonUtil.parseInt(tokens[0]));
         tradeLog.setStock(tokens[1]);
-        tradeLog.setPrice(CommonUtil.parseDouble(tokens[2]));
-        tradeLog.setBroker(Broker.YAPSTER);
+        if (isIpo) {
+            tradeLog.setPrice(ipoPrice.get(tokens[1]));
+        }
+        else {
+            tradeLog.setPrice(CommonUtil.parseDouble(tokens[2]));
+        }
 
         return tradeLog;
     }

@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.scraper.CompanyScraper;
+import io.earlisreal.ejournal.scraper.ExchangeRateScraper;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
 import io.earlisreal.ejournal.scraper.StockScraper;
 
@@ -21,6 +22,7 @@ public class SimpleStartupService implements StartupService {
 
     private final StockScraper stockListScraper;
     private final CompanyScraper companyScraper;
+    private final ExchangeRateScraper exchangeRateScraper;
     private final StockService stockService;
     private final AnalyticsService analyticsService;
     private final TradeLogService tradeLogService;
@@ -28,10 +30,13 @@ public class SimpleStartupService implements StartupService {
 
     private final List<StartupListener> listenerList;
 
-    SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper, StockService stockService,
+    SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper,
+                         ExchangeRateScraper exchangeRateScraper, StockService stockService,
                          TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService) {
+
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
+        this.exchangeRateScraper = exchangeRateScraper;
         this.stockService = stockService;
         this.tradeLogService = tradeLogService;
         this.analyticsService = analyticsService;
@@ -54,6 +59,9 @@ public class SimpleStartupService implements StartupService {
     @Override
     public void manageStockList() {
         // TODO Try to replace this with java fx service
+        var usdToPhp = CompletableFuture.supplyAsync(exchangeRateScraper::getUsdToPhp);
+        usdToPhp.thenAcceptAsync(cacheService::saveUsdToPhp);
+
         var scrapeList = CompletableFuture.supplyAsync(() -> {
             var stocks = stockListScraper.scrape();
             boolean hasNew = stockService.getStockCount() != stocks.size();

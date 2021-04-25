@@ -20,4 +20,8 @@ public final class ScraperProvider {
         return new PesobilityCompanyScraper(ServiceProvider.getStockService());
     }
 
+    public static ExchangeRateScraper getExchangeRateScraper() {
+        return new BSPExchangeRateScraper();
+    }
+
 }

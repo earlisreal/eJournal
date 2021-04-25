@@ -9,7 +9,7 @@ import java.util.Optional;
 public class SimpleCacheService implements CacheService {
 
     private enum Key {
-        EMAIL, START_FILTER, END_FILTER
+        EMAIL, START_FILTER, END_FILTER, USD_TO_PHP
     }
 
     private final CacheDAO cacheDAO;
@@ -68,6 +68,16 @@ public class SimpleCacheService implements CacheService {
         Optional<String> end = cacheDAO.get(Key.END_FILTER.toString());
         if (end.isEmpty()) return null;
         return LocalDate.parse(end.get());
+    }
+
+    @Override
+    public void saveUsdToPhp(double value) {
+        cacheDAO.insert(Key.USD_TO_PHP.toString(), String.valueOf(value));
+    }
+
+    @Override
+    public double getUsdToPhp() {
+        return Double.parseDouble(get(Key.USD_TO_PHP.toString(), "50"));
     }
 
     @Override

@@ -21,6 +21,10 @@ public interface CacheService {
 
     LocalDate getEndFilter();
 
+    void saveUsdToPhp(double value);
+
+    double getUsdToPhp();
+
     void insert(String key, String value);
 
     String get(String key);

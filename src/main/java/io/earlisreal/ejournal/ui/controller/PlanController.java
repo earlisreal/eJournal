@@ -219,7 +219,7 @@ public class PlanController implements Initializable, StartupListener {
         });
 
         String lastRisk = cacheService.get("plan-var");
-        riskText.setText(lastRisk.isBlank() ? "1" : lastRisk);
+        riskText.setText(lastRisk == null || lastRisk.isBlank() ? "1" : lastRisk);
     }
 
     private double getRisk() {

@@ -57,7 +57,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
             tradeLog.setStock(resultSet.getString(3));
             tradeLog.setBuy(resultSet.getBoolean(4));
             tradeLog.setPrice(resultSet.getDouble(5));
-            tradeLog.setShares(resultSet.getInt(6));
+            tradeLog.setShares(resultSet.getDouble(6));
             tradeLog.setStrategyId(resultSet.getInt(7));
             tradeLog.setShort(resultSet.getBoolean(8));
             tradeLog.setInvoiceNo(resultSet.getString(9));
@@ -101,7 +101,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
             preparedStatement.setString(2, tradeLog.getStock());
             preparedStatement.setBoolean(3, tradeLog.isBuy());
             preparedStatement.setDouble(4, tradeLog.getPrice());
-            preparedStatement.setInt(5, tradeLog.getShares());
+            preparedStatement.setDouble(5, tradeLog.getShares());
             preparedStatement.setObject(6, tradeLog.getStrategyId());
             preparedStatement.setBoolean(7, tradeLog.isShort());
             preparedStatement.setString(8, tradeLog.getInvoiceNo());

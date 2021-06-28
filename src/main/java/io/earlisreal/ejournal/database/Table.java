@@ -6,7 +6,7 @@ public enum Table {
 
     CACHE ("cache", "CREATE TABLE cache (" +
             "\"key\" VARCHAR(35) CONSTRAINT cache_pk PRIMARY KEY, " +
-            "value VARCHAR(35))",
+            "value VARCHAR(200))",
             null),
     STOCK ("stock", "CREATE TABLE stock (" +
             "code VARCHAR(5) CONSTRAINT stock_pk PRIMARY KEY, " +
@@ -35,7 +35,7 @@ public enum Table {
             "stock VARCHAR(5), " +
             "buy BOOLEAN, " +
             "price DOUBLE, " +
-            "shares INT, " +
+            "shares DOUBLE, " +
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
             "invoice VARCHAR(12), " +

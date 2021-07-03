@@ -18,6 +18,8 @@ public interface TradeLogService {
 
     int insert(List<TradeLog> tradeLogs);
 
+    int upsert(List<TradeLog> tradeLogs);
+
     List<TradeSummary> getTradeSummaries();
 
     List<TradeLog> getLogs();

@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 
+import javax.swing.text.html.Option;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +12,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.toSqlDate;
@@ -51,18 +53,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     private List<TradeLog> mapToTradeLogs(ResultSet resultSet) throws SQLException {
         List<TradeLog> logs = new ArrayList<>();
         while (resultSet.next()) {
-            TradeLog tradeLog = new TradeLog();
-            tradeLog.setId(resultSet.getInt(1));
-            tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
-            tradeLog.setStock(resultSet.getString(3));
-            tradeLog.setBuy(resultSet.getBoolean(4));
-            tradeLog.setPrice(resultSet.getDouble(5));
-            tradeLog.setShares(resultSet.getDouble(6));
-            tradeLog.setStrategyId(resultSet.getInt(7));
-            tradeLog.setShort(resultSet.getBoolean(8));
-            tradeLog.setInvoiceNo(resultSet.getString(9));
-            tradeLog.setBroker(Broker.values()[resultSet.getInt(10)]);
-            logs.add(tradeLog);
+            logs.add(map(resultSet));
         }
 
         return logs;
@@ -73,6 +64,16 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         int res = 0;
         for (TradeLog log : tradeLogs) {
             res += insertLog(log) ? 1 : 0;
+        }
+
+        return res;
+    }
+
+    @Override
+    public int upsert(List<TradeLog> tradeLogs) {
+        int res = 0;
+        for (TradeLog log : tradeLogs) {
+            res += upsert(log) ? 1 : 0;
         }
 
         return res;
@@ -90,6 +91,28 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean upsert(TradeLog tradeLog) {
+        if (update(tradeLog)) {
+            return true;
+        }
+        return insertLog(tradeLog);
+    }
+
+    @Override
+    public boolean update(TradeLog tradeLog) {
+        String sql = "UPDATE log SET price = ?, shares = ? WHERE invoice = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setDouble(1, tradeLog.getPrice());
+            preparedStatement.setDouble(2, tradeLog.getShares());
+            preparedStatement.setString(3, tradeLog.getInvoiceNo());
+            preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
+        } catch (SQLException ignore) {
+            return false;
+        }
     }
 
     @Override
@@ -112,6 +135,36 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         } catch (SQLException ignore) {
             return false;
         }
+    }
+
+    private Optional<TradeLog> query(String reference) {
+        String sql = "SELECT * FROM log WHERE invoice = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, reference);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return Optional.of(map(resultSet));
+            }
+        } catch (SQLException e) {
+            handleException(e);
+        }
+
+        return Optional.empty();
+    }
+
+    private TradeLog map(ResultSet resultSet) throws SQLException {
+        TradeLog tradeLog = new TradeLog();
+        tradeLog.setId(resultSet.getInt(1));
+        tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
+        tradeLog.setStock(resultSet.getString(3));
+        tradeLog.setBuy(resultSet.getBoolean(4));
+        tradeLog.setPrice(resultSet.getDouble(5));
+        tradeLog.setShares(resultSet.getDouble(6));
+        tradeLog.setStrategyId(resultSet.getInt(7));
+        tradeLog.setShort(resultSet.getBoolean(8));
+        tradeLog.setInvoiceNo(resultSet.getString(9));
+        tradeLog.setBroker(Broker.values()[resultSet.getInt(10)]);
+        return tradeLog;
     }
 
 }

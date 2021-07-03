@@ -64,6 +64,17 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
+    public int upsert(List<TradeLog> tradeLogs) {
+        if (tradeLogs.isEmpty()) {
+            return 0;
+        }
+
+        int upserted = tradeLogDAO.upsert(tradeLogs);
+        System.out.println(upserted + " Records Upserted");
+        return upserted;
+    }
+
+    @Override
     public List<TradeLog> getLogs() {
         return logs;
     }

@@ -7,7 +7,13 @@ import java.util.List;
 
 public interface LedgerParser {
 
-    void parse(List<String> lines);
+    default void parse(List<String> lines) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void parse(String filename) {
+        throw new UnsupportedOperationException();
+    }
 
     List<TradeLog> getTradeLogs();
 

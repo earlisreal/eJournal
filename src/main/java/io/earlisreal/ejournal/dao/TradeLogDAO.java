@@ -11,9 +11,15 @@ public interface TradeLogDAO {
 
     List<TradeLog> queryAll();
 
+    boolean upsert(TradeLog tradeLog);
+
+    boolean update(TradeLog tradeLog);
+
     boolean insertLog(TradeLog tradeLog);
 
     int insertLog(List<TradeLog> tradeLog);
+
+    int upsert(List<TradeLog> tradeLogs);
 
     boolean delete(int id);
 

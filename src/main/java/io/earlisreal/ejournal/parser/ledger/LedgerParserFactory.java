@@ -14,6 +14,9 @@ public interface LedgerParserFactory {
         if (Broker.AAA == broker) {
             return new AAALedgerParser();
         }
+        if (Broker.ETORO == broker) {
+            return new EToroLedgerParser();
+        }
 
         throw new RuntimeException("Ledger Parser of Broker name " + broker + " is not supported");
     }

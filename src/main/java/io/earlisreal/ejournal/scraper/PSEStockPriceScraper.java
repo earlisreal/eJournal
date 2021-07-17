@@ -31,7 +31,6 @@ public class PSEStockPriceScraper implements StockPriceScraper {
         return scrapeStockPrice(stockCode, service.getCompanyId(stockCode), service.getSecurityId(stockCode));
     }
 
-    @Override
     public List<String> scrapeStockPrice(String stock, String id, String security) {
         List<String> csv = new ArrayList<>();
         try {
@@ -51,7 +50,9 @@ public class PSEStockPriceScraper implements StockPriceScraper {
 
             var records = JsonIterator.deserialize(json).get("chartData");
             for (Any record : records) {
-                String row = "\"" + record.get("CHART_DATE") + "\","
+                formatter = DateTimeFormatter.ofPattern("MMM dd, uuuu HH:mm:ss");
+                LocalDate date = LocalDate.parse(record.get("CHART_DATE").toString(), formatter);
+                String row = date.format(DateTimeFormatter.ofPattern("uuuu-MM-dd")) + ","
                         + record.get("OPEN") + ","
                         + record.get("HIGH") + ","
                         + record.get("LOW") + ","

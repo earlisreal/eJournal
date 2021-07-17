@@ -90,6 +90,7 @@ public class MainController implements Initializable {
     private final FileChooser.ExtensionFilter pdfFilter;
     private final FileChooser.ExtensionFilter txtFilter;
     private final FileChooser.ExtensionFilter csvFilter;
+    private final FileChooser.ExtensionFilter xlsxFilter;
 
     public MainController() {
         cacheService = ServiceProvider.getCacheService();
@@ -97,6 +98,7 @@ public class MainController implements Initializable {
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
         csvFilter = new FileChooser.ExtensionFilter("CSV", "*.csv");
+        xlsxFilter = new FileChooser.ExtensionFilter("Excel Sheet", "*.xlsx");
     }
 
     @Override
@@ -240,7 +242,7 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
-        fileChooser.getExtensionFilters().addAll(pdfFilter, txtFilter);
+        fileChooser.getExtensionFilters().addAll(pdfFilter, txtFilter, xlsxFilter);
         setInitialDirectory(fileChooser, "import-ledger-path");
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;
@@ -248,6 +250,16 @@ public class MainController implements Initializable {
         int res = 0;
         for (File file : files) {
             String filename = file.getName();
+
+            if (filename.endsWith(".xlsx") && filename.contains("eToroAccountStatement")) {
+                LedgerParser parser = LedgerParserFactory.getLedgerParser(Broker.ETORO);
+                parser.parse(file.getAbsolutePath());
+                res += tradeLogService.upsert(parser.getTradeLogs());
+                res += bankTransactionService.insert(parser.getBankTransactions());
+
+                continue;
+            }
+
             List<String> lines;
             Broker broker;
             if (filename.endsWith(".txt")) {

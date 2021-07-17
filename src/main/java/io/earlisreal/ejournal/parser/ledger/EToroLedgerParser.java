@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.earlisreal.ejournal.util.CommonUtil.parseDouble;
-
 public class EToroLedgerParser implements LedgerParser {
 
     private final List<TradeLog> tradeLogs;

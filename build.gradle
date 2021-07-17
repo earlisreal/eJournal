@@ -19,6 +19,8 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'com.jsoniter:jsoniter:0.9.23'
     implementation 'de.jensd:fontawesomefx:8.9'
+    implementation 'org.apache.poi:poi:5.0.0'
+    implementation 'org.apache.poi:poi-ooxml:5.0.0'
 }
 
 javafx {

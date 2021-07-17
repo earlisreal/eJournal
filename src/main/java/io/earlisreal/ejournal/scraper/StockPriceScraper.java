@@ -6,6 +6,4 @@ public interface StockPriceScraper {
 
     List<String> scrapeStockPrice(String stockCode);
 
-    List<String> scrapeStockPrice(String stock, String id, String security);
-
 }

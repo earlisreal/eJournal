@@ -24,7 +24,7 @@ public class USCompanyScraper implements CompanyScraper {
     private List<Stock> getStocks(String url) {
         List<Stock> stocks = new ArrayList<>();
         try {
-            var lines = Jsoup.connect(NYSE_URL).execute().body().split(System.lineSeparator());
+            var lines = Jsoup.connect(url).execute().body().split("\r\n");
             boolean first = true;
             for (String line : lines) {
                 if (first) {

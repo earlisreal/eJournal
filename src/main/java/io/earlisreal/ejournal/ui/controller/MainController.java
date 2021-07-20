@@ -68,6 +68,7 @@ public class MainController implements Initializable {
     public BorderPane bankBorder;
     public BorderPane planBorder;
     public Label riskRewardLabel;
+    public Menu brokerMenu;
 
     private Parent log;
     private Parent analytics;
@@ -109,6 +110,8 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
 
+        initializeBrokerMenu();
+
         statusLabel.setVisible(false);
         statusProgressIndicator.setVisible(false);
 
@@ -145,6 +148,19 @@ public class MainController implements Initializable {
         selectPane(dashboardBorder);
 
         initializeStatistics();
+    }
+
+    private void initializeBrokerMenu() {
+        ToggleGroup brokerGroup = new ToggleGroup();
+        var items = brokerMenu.getItems();
+        for (Broker broker : Broker.values()) {
+            if (Broker.UNKNOWN == broker) continue;
+
+            RadioMenuItem item = new RadioMenuItem(broker.getName());
+            item.setToggleGroup(brokerGroup);
+            item.setUserData(broker);
+            items.add(item);
+        }
     }
 
     private void applyFilterCache() {

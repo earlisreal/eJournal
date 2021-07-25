@@ -31,7 +31,7 @@ public enum Table {
             List.of("CREATE UNIQUE INDEX strategy_name_uindex ON strategy (name)")),
     LOG ("log", "CREATE TABLE log (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT log_pk PRIMARY KEY, " +
-            "date DATE, " +
+            "datetime TIMESTAMP, " +
             "stock VARCHAR(5), " +
             "buy BOOLEAN, " +
             "price DOUBLE, " +

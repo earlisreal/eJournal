@@ -1,9 +1,11 @@
 package io.earlisreal.ejournal.util;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -67,6 +69,10 @@ public interface CommonUtil {
 
     static Date toSqlDate(LocalDate localDate) {
         return new Date(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+    }
+
+    static Timestamp toTimestamp(LocalDateTime localDateTime) {
+        return new Timestamp(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
 }

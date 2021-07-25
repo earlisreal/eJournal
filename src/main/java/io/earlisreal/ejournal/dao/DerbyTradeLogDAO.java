@@ -4,18 +4,19 @@ import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 
-import javax.swing.text.html.Option;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.toSqlDate;
+import static io.earlisreal.ejournal.util.CommonUtil.toTimestamp;
 
 public class DerbyTradeLogDAO implements TradeLogDAO {
 
@@ -25,7 +26,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
 
     @Override
     public List<TradeLog> queryInBetween(LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT * FROM log WHERE date BETWEEN ? AND ?";
+        String sql = "SELECT * FROM log WHERE datetime BETWEEN ? AND ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setDate(1, toSqlDate(startDate));
             preparedStatement.setDate(2, toSqlDate(endDate));
@@ -117,10 +118,10 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
 
     @Override
     public boolean insertLog(TradeLog tradeLog) {
-        String sql = "INSERT INTO log (date, stock, buy, price, shares, strategy_id, short, invoice, broker) " +
+        String sql = "INSERT INTO log (datetime, stock, buy, price, shares, strategy_id, short, invoice, broker) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setDate(1, toSqlDate(tradeLog.getDate()));
+            preparedStatement.setTimestamp(1, toTimestamp(tradeLog.getDate()));
             preparedStatement.setString(2, tradeLog.getStock());
             preparedStatement.setBoolean(3, tradeLog.isBuy());
             preparedStatement.setDouble(4, tradeLog.getPrice());
@@ -155,7 +156,7 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     private TradeLog map(ResultSet resultSet) throws SQLException {
         TradeLog tradeLog = new TradeLog();
         tradeLog.setId(resultSet.getInt(1));
-        tradeLog.setDate(LocalDate.parse(resultSet.getString(2)));
+        tradeLog.setDate(LocalDateTime.parse(resultSet.getString(2).replace(' ', 'T')));
         tradeLog.setStock(resultSet.getString(3));
         tradeLog.setBuy(resultSet.getBoolean(4));
         tradeLog.setPrice(resultSet.getDouble(5));

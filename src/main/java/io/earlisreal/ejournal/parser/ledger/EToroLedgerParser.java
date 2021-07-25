@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -95,11 +94,11 @@ public class EToroLedgerParser implements LedgerParser {
             String positionId = row.getCell(0).getStringCellValue();
             double shares = parseDouble(row.getCell(4));
 
-            LocalDate openDate = LocalDate.parse(row.getCell(9).getStringCellValue(), formatter);
+            LocalDateTime openDate = LocalDateTime.parse(row.getCell(9).getStringCellValue(), formatter);
             double openPrice = parseDouble(row.getCell(5));
             TradeLog open = makeLog(openDate, shares, openPrice, true, positionId);
 
-            LocalDate closeDate = LocalDate.parse(row.getCell(10).getStringCellValue(), formatter);
+            LocalDateTime closeDate = LocalDateTime.parse(row.getCell(10).getStringCellValue(), formatter);
             double closePrice = parseDouble(row.getCell(6));
             TradeLog close = makeLog(closeDate, shares, closePrice, false, positionId);
 
@@ -112,7 +111,7 @@ public class EToroLedgerParser implements LedgerParser {
         return CommonUtil.parseDouble(cell.getStringCellValue());
     }
 
-    private TradeLog makeLog(LocalDate date, double shares, double price, boolean isBuy, String positionId) {
+    private TradeLog makeLog(LocalDateTime date, double shares, double price, boolean isBuy, String positionId) {
         TradeLog log = new TradeLog();
         log.setDate(date);
         log.setBroker(Broker.ETORO);

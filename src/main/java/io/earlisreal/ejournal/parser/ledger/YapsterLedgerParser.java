@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -89,7 +90,7 @@ public class YapsterLedgerParser implements LedgerParser {
                     tradeLog.setBuy(isIpo || isBuy);
 
                     tradeLog.setBroker(Broker.YAPSTER);
-                    tradeLog.setDate(date);
+                    tradeLog.setDate(date.atStartOfDay());
                     tradeLog.setInvoiceNo(refNo);
                     tradeLogs.add(tradeLog);
                 }

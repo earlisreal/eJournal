@@ -46,7 +46,7 @@ public class YapsterInvoiceParser extends InvoiceParser {
     }
 
     private void parseDate(String line) {
-        setDate(LocalDate.parse(line.substring(5), DateTimeFormatter.ofPattern("dd -MMM-uu")));
+        setDate(LocalDate.parse(line.substring(5), DateTimeFormatter.ofPattern("dd -MMM-uu")).atStartOfDay());
     }
 
     private void parseStock(String line) {

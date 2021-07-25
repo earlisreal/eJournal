@@ -34,7 +34,7 @@ public class SimplePlotService implements PlotService {
             return imagePath;
         }
 
-        if (!tradeSummary.isClosed() || lastDate.isBefore(tradeSummary.getCloseDate().plusDays(7))) {
+        if (!tradeSummary.isClosed() || lastDate.isBefore(tradeSummary.getCloseDate().toLocalDate().plusDays(7))) {
             var csv = stockPriceScraper.scrapeStockPrice(tradeSummary.getStock());
             if (!csv.isEmpty()) {
                 Files.write(stocksDirectory.resolve(tradeSummary.getStock() + ".csv"), csv,

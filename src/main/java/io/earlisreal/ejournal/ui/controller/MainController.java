@@ -92,6 +92,7 @@ public class MainController implements Initializable {
     private final FileChooser.ExtensionFilter txtFilter;
     private final FileChooser.ExtensionFilter csvFilter;
     private final FileChooser.ExtensionFilter xlsxFilter;
+    private final FileChooser.ExtensionFilter combinedFilter;
 
     public MainController() {
         cacheService = ServiceProvider.getCacheService();
@@ -100,6 +101,7 @@ public class MainController implements Initializable {
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
         csvFilter = new FileChooser.ExtensionFilter("CSV", "*.csv");
         xlsxFilter = new FileChooser.ExtensionFilter("Excel Sheet", "*.xlsx");
+        combinedFilter = new FileChooser.ExtensionFilter("Supported Files", "*.txt", "*.pdf", "*.csv", "*.xlsx");
     }
 
     @Override
@@ -258,7 +260,7 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Invoice");
         Stage stage = (Stage) grid.getScene().getWindow();
-        fileChooser.getExtensionFilters().addAll(pdfFilter, txtFilter, xlsxFilter);
+        fileChooser.getExtensionFilters().addAll(combinedFilter, pdfFilter, txtFilter, xlsxFilter);
         setInitialDirectory(fileChooser, "import-ledger-path");
         var files = fileChooser.showOpenMultipleDialog(stage);
         if (files == null) return;

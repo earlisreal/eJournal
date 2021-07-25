@@ -4,10 +4,11 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public abstract class InvoiceParser {
 
-    private LocalDate date;
+    private LocalDateTime date;
     private String stock;
     private int shares;
     private boolean isBuy;
@@ -30,7 +31,7 @@ public abstract class InvoiceParser {
         this.invoiceNo = invoiceNo;
     }
 
-    protected final void setDate(LocalDate date) {
+    protected final void setDate(LocalDateTime date) {
         this.date = date;
     }
 
@@ -50,7 +51,7 @@ public abstract class InvoiceParser {
         this.price = price;
     }
 
-    protected final LocalDate getDate() {
+    protected final LocalDateTime getDate() {
         return date;
     }
 

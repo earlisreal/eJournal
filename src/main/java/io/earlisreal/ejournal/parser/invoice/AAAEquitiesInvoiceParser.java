@@ -55,7 +55,7 @@ public class AAAEquitiesInvoiceParser extends InvoiceParser {
         }
 
         String dateStr = line.substring(l + left.length(), r);
-        setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")));
+        setDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM dd, uuuu")).atStartOfDay());
     }
 
     private void parseStock(String line, String nextLine) throws ParseException {

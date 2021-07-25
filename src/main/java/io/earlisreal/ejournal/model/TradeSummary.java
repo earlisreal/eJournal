@@ -3,7 +3,8 @@ package io.earlisreal.ejournal.model;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,9 +12,9 @@ import java.util.Objects;
 public class TradeSummary {
 
     private final String stock;
-    private final LocalDate openDate;
-    private int shares;
-    private LocalDate closeDate;
+    private final LocalDateTime openDate;
+    private double shares;
+    private LocalDateTime closeDate;
 
     private final List<TradeLog> logs;
     private double totalBuy;
@@ -70,15 +71,15 @@ public class TradeSummary {
         return getProfit() / totalBuy * 100;
     }
 
-    public int getTradeLength() {
-        return getOpenDate().until(getCloseDate()).getDays();
+    public long getTradeLength() {
+        return getOpenDate().until(getCloseDate(), ChronoUnit.DAYS);
     }
 
-    public int getShares() {
+    public double getShares() {
         return shares;
     }
 
-    public void setCloseDate(LocalDate date) {
+    public void setCloseDate(LocalDateTime date) {
         closeDate = date;
     }
 
@@ -86,11 +87,11 @@ public class TradeSummary {
         return stock;
     }
 
-    public LocalDate getOpenDate() {
+    public LocalDateTime getOpenDate() {
         return openDate;
     }
 
-    public LocalDate getCloseDate() {
+    public LocalDateTime getCloseDate() {
         return closeDate;
     }
 
@@ -148,7 +149,8 @@ public class TradeSummary {
         long temp;
         result = stock.hashCode();
         result = 31 * result + openDate.hashCode();
-        result = 31 * result + shares;
+        temp = Double.doubleToLongBits(shares);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (closeDate != null ? closeDate.hashCode() : 0);
         temp = Double.doubleToLongBits(totalBuy);
         result = 31 * result + (int) (temp ^ (temp >>> 32));

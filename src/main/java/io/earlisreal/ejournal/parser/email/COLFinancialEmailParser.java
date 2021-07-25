@@ -57,7 +57,7 @@ public class COLFinancialEmailParser implements EmailParser {
                 tradeLog.setBuy(true);
             }
             if (lines[i].equals("Trade Date:")) {
-                tradeLog.setDate(LocalDate.parse(lines[i + 1], formatter));
+                tradeLog.setDate(LocalDate.parse(lines[i + 1], formatter).atStartOfDay());
             }
             if (lines[i].equals("Symbol:")) {
                 tradeLog.setStock(lines[i + 1]);

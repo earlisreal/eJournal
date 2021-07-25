@@ -2,14 +2,14 @@ package io.earlisreal.ejournal.dto;
 
 import io.earlisreal.ejournal.util.Broker;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class TradeLog {
 
     public static final int COLUMN_COUNT = 9;
 
     private int id;
-    private LocalDate date;
+    private LocalDateTime date;
     private String stock;
     private boolean isBuy;
     private double price;
@@ -23,13 +23,13 @@ public class TradeLog {
 
     public TradeLog() {}
 
-    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, int shares, String invoiceNo, Broker broker) {
+    public TradeLog(LocalDateTime date, String stock, boolean isBuy, double price, int shares, String invoiceNo, Broker broker) {
         this(date, stock, isBuy, price, shares);
         this.invoiceNo = invoiceNo;
         this.broker = broker;
     }
 
-    public TradeLog(LocalDate date, String stock, boolean isBuy, double price, double shares) {
+    public TradeLog(LocalDateTime date, String stock, boolean isBuy, double price, double shares) {
         this.date = date;
         this.stock = stock;
         this.isBuy = isBuy;
@@ -81,11 +81,11 @@ public class TradeLog {
         this.id = id;
     }
 
-    public LocalDate getDate() {
+    public LocalDateTime getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(LocalDateTime date) {
         this.date = date;
     }
 

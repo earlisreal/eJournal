@@ -18,6 +18,7 @@ import javafx.scene.layout.AnchorPane;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +112,7 @@ public class TradeDetailsController {
             list.add(new Pair<>("Realized Profit %", round(profit / (soldShares * summary.getAverageBuy()) * 100) + "%"));
 
             String hold = "";
-            Period period = summary.getOpenDate().until(LocalDate.now());
+            Period period = summary.getOpenDate().toLocalDate().until(LocalDate.now());
             if (period.getYears() > 0) {
                 hold += period.getYears() + " Years ";
             }

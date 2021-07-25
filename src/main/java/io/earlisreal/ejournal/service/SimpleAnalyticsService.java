@@ -38,7 +38,7 @@ public class SimpleAnalyticsService implements AnalyticsService {
 
         var transactions = bankTransactionService.getAll();
         dateMap = summaries.stream()
-                .collect(Collectors.toMap(TradeSummary::getCloseDate, TradeSummary::getProfit, Double::sum, TreeMap::new));
+                .collect(Collectors.toMap(tradeSummary -> tradeSummary.getCloseDate().toLocalDate(), TradeSummary::getProfit, Double::sum, TreeMap::new));
         for (BankTransaction transaction : transactions) {
             dateMap.merge(transaction.getDate(), transaction.getAmount(), Double::sum);
         }
@@ -179,7 +179,7 @@ public class SimpleAnalyticsService implements AnalyticsService {
             return "N/A";
         }
         var logs = tradeLogService.getLogs();
-        Period period = logs.get(logs.size() - 1).getDate().until(now());
+        Period period = logs.get(logs.size() - 1).getDate().toLocalDate().until(now());
         String age = "";
         if (period.getYears() > 0) age += period.getYears() + "yr ";
         if (period.getMonths() > 0) age += period.getMonths() + "m ";

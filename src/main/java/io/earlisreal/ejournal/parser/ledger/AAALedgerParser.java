@@ -43,7 +43,7 @@ public class AAALedgerParser implements LedgerParser {
                     TradeLog tradeLog = new TradeLog();
                     tradeLog.setBuy(line.startsWith("BI#"));
                     tradeLog.setStock(tokens[2]);
-                    tradeLog.setDate(date);
+                    tradeLog.setDate(date.atStartOfDay());
                     tradeLog.setInvoiceNo(reference);
                     tradeLog.setShares(CommonUtil.parseInt(tokens[1]));
                     tradeLog.setPrice(CommonUtil.parseDouble(tokens[4]));

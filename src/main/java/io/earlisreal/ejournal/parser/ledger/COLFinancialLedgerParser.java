@@ -6,6 +6,7 @@ import io.earlisreal.ejournal.util.Broker;
 
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -105,7 +106,7 @@ public class COLFinancialLedgerParser implements LedgerParser {
 
     private TradeLog parseTradeLog(String line) throws ParseException {
         String[] tokens = line.split(":");
-        LocalDate date = LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu"));
+        LocalDateTime date = LocalDate.parse(tokens[1], DateTimeFormatter.ofPattern("MMdduuuu")).atStartOfDay();
         boolean isBuy = tokens[2].trim().equals("BUY");
         String stock = tokens[4].trim();
         int shares = parseInt(tokens[5].trim());

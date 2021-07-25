@@ -8,6 +8,7 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.ParseUtil;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,8 +20,8 @@ public class SimpleTradeLogService implements TradeLogService {
     private final List<TradeSummary> summaries;
     private final List<TradeSummary> openPositions;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDate startDateFilter;
+    private LocalDate endDateFilter;
 
     SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
         this.tradeLogDAO = tradeLogDAO;
@@ -30,8 +31,8 @@ public class SimpleTradeLogService implements TradeLogService {
         summaries = new ArrayList<>();
         openPositions = new ArrayList<>();
 
-        endDate = LocalDate.now();
-        startDate = LocalDate.ofEpochDay(0);
+        endDateFilter = LocalDate.now();
+        startDateFilter = LocalDate.MIN;
     }
 
     @Override
@@ -93,7 +94,7 @@ public class SimpleTradeLogService implements TradeLogService {
     public void initialize() {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());
-        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDate));
+        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDateFilter.atTime(LocalTime.MAX)));
         logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
 
         calculateSummaries(logs);
@@ -104,8 +105,8 @@ public class SimpleTradeLogService implements TradeLogService {
         logs.clear();
         logs.addAll(tradeLogDAO.queryAll());
 
-        this.startDate = Objects.requireNonNullElseGet(startDate, () -> LocalDate.ofEpochDay(0));
-        this.endDate = Objects.requireNonNullElseGet(endDate, LocalDate::now);
+        this.startDateFilter = Objects.requireNonNullElseGet(startDate, () -> LocalDate.ofEpochDay(0));
+        this.endDateFilter = Objects.requireNonNullElseGet(endDate, LocalDate::now);
     }
 
     @Override
@@ -141,7 +142,8 @@ public class SimpleTradeLogService implements TradeLogService {
             }
         }
 
-        summaries.removeIf(summary -> summary.getCloseDate().isAfter(endDate) || summary.getCloseDate().isBefore(startDate));
+        summaries.removeIf(summary -> summary.getCloseDate().isAfter(endDateFilter.atTime(LocalTime.MAX))
+                || summary.getCloseDate().isBefore(startDateFilter.atStartOfDay()));
         summaries.sort(Comparator.comparing(TradeSummary::getCloseDate).reversed());
         logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
 

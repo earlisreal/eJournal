@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public interface ParseUtil {
             if (columns[1].isBlank()) continue;
 
             try {
-                LocalDate date = LocalDate.parse(columns[0]);
+                LocalDateTime date = LocalDateTime.parse(columns[0]);
                 if (columns[1].isBlank()) {
                     System.out.println("Stock Cannot be blank on row: " + i);
                 }

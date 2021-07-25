@@ -84,7 +84,7 @@ public class LogsController {
     public void addLog() {
         double price = Double.parseDouble(priceText.getText());
         int shares = Integer.parseInt(sharesText.getText());
-        TradeLog log = new TradeLog(datePicker.getValue(), stockText.getText(), true, price, shares);
+        TradeLog log = new TradeLog(datePicker.getValue().atStartOfDay(), stockText.getText(), true, price, shares);
         tradeLogService.insert(log);
         clearInputs();
 

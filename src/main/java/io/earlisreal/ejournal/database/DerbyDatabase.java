@@ -35,7 +35,7 @@ public class DerbyDatabase {
     private static void createTables() throws SQLException {
         for (Table table : Table.values()) {
             if (!execute(table.getCreateStatement())) {
-                break;
+                continue;
             }
             System.out.println(table.getName() + " Table Created");
 

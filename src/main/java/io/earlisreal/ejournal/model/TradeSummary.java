@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static io.earlisreal.ejournal.util.CommonUtil.round;
+
 public class TradeSummary {
 
     private final String stock;
@@ -20,7 +22,7 @@ public class TradeSummary {
     private double totalBuy;
     private double totalSell;
 
-    private int remainingShares;
+    private double remainingShares;
     private String imageUrl;
 
     public TradeSummary(TradeLog initialTrade) {
@@ -100,10 +102,10 @@ public class TradeSummary {
     }
 
     public boolean isClosed() {
-        return remainingShares == 0;
+        return remainingShares <= 0.000001;
     }
 
-    public int getRemainingShares() {
+    public double getRemainingShares() {
         return remainingShares;
     }
 
@@ -156,7 +158,8 @@ public class TradeSummary {
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         temp = Double.doubleToLongBits(totalSell);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + remainingShares;
+        temp = Double.doubleToLongBits(remainingShares);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
 

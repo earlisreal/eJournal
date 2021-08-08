@@ -24,11 +24,6 @@ public enum Table {
             "ref VARCHAR(15), " +
             "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX bank_transaction_ref_uindex ON bank_transaction (ref)")),
-    STRATEGY ("strategy", "CREATE TABLE strategy (" +
-            "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT strategy_pk PRIMARY KEY, " +
-            "name VARCHAR(20), " +
-            "description LONG VARCHAR)",
-            List.of("CREATE UNIQUE INDEX strategy_name_uindex ON strategy (name)")),
     LOG ("log", "CREATE TABLE log (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT log_pk PRIMARY KEY, " +
             "datetime TIMESTAMP, " +
@@ -37,7 +32,6 @@ public enum Table {
             "price DOUBLE, " +
             "shares DOUBLE, " +
             "fees DOUBLE, " +
-            "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
             "invoice VARCHAR(16), " +
             "broker SMALLINT)",

@@ -7,7 +7,6 @@ public class DAOProvider {
     private DAOProvider() {}
 
     private static TradeLogDAO tradeLogDAO;
-    private static StrategyDAO strategyDAO;
     private static BankTransactionDAO bankTransactionDAO;
     private static StockDAO stockDAO;
     private static PlanDAO planDAO;
@@ -23,18 +22,6 @@ public class DAOProvider {
         }
 
         return tradeLogDAO;
-    }
-
-    public static StrategyDAO getStrategyDAO() {
-        if (strategyDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (strategyDAO == null) {
-                    strategyDAO = new DerbyStrategyDAO();
-                }
-            }
-        }
-
-        return strategyDAO;
     }
 
     public static BankTransactionDAO getBankTransactionDAO() {

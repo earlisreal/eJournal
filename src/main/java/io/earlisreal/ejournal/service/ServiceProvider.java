@@ -6,7 +6,6 @@ import io.earlisreal.ejournal.scraper.ScraperProvider;
 public final class ServiceProvider {
 
     private static TradeLogService tradeLogService;
-    private static StrategyService strategyService;
     private static BankTransactionService bankTransactionService;
     private static CacheService cacheService;
     private static StockService stockService;
@@ -60,24 +59,12 @@ public final class ServiceProvider {
         if (tradeLogService == null) {
             synchronized (ServiceProvider.class) {
                 if (tradeLogService == null) {
-                    tradeLogService = new SimpleTradeLogService(DAOProvider.getTradeLogDAO(), DAOProvider.getStrategyDAO());
+                    tradeLogService = new SimpleTradeLogService(DAOProvider.getTradeLogDAO());
                 }
             }
         }
 
         return tradeLogService;
-    }
-
-    public static StrategyService getStrategyService() {
-        if (strategyService == null) {
-            synchronized (ServiceProvider.class) {
-                if (strategyService == null) {
-                    strategyService = new SimpleStrategyService(DAOProvider.getStrategyDAO());
-                }
-            }
-        }
-
-        return strategyService;
     }
 
     public static BankTransactionService getBankTransactionService() {

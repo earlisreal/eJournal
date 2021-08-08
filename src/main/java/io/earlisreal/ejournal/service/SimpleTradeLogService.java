@@ -1,8 +1,6 @@
 package io.earlisreal.ejournal.service;
 
-import io.earlisreal.ejournal.dao.StrategyDAO;
 import io.earlisreal.ejournal.dao.TradeLogDAO;
-import io.earlisreal.ejournal.dto.Strategy;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.ParseUtil;
@@ -10,12 +8,10 @@ import io.earlisreal.ejournal.util.ParseUtil;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SimpleTradeLogService implements TradeLogService {
 
     private final TradeLogDAO tradeLogDAO;
-    private final StrategyDAO strategyDAO;
     private final List<TradeLog> logs;
     private final List<TradeSummary> summaries;
     private final List<TradeSummary> openPositions;
@@ -23,9 +19,8 @@ public class SimpleTradeLogService implements TradeLogService {
     private LocalDate startDateFilter;
     private LocalDate endDateFilter;
 
-    SimpleTradeLogService(TradeLogDAO tradeLogDAO, StrategyDAO strategyDAO) {
+    SimpleTradeLogService(TradeLogDAO tradeLogDAO) {
         this.tradeLogDAO = tradeLogDAO;
-        this.strategyDAO = strategyDAO;
 
         logs = new ArrayList<>();
         summaries = new ArrayList<>();
@@ -37,11 +32,7 @@ public class SimpleTradeLogService implements TradeLogService {
 
     @Override
     public int insertCsv(List<String> csv) {
-        Map<String, Integer> strategies = strategyDAO.queryAll().stream().collect(Collectors.toMap(Strategy::getName, Strategy::getId));
         List<TradeLog> tradeLogs = ParseUtil.parseTradeLogs(csv);
-        for (TradeLog tradeLog : tradeLogs) {
-            tradeLog.setStrategyId(strategies.getOrDefault(tradeLog.getStrategy(), null));
-        }
 
         return insert(tradeLogs);
     }
@@ -61,6 +52,9 @@ public class SimpleTradeLogService implements TradeLogService {
 
         int inserted = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(inserted + " Records Inserted");
+
+        // TODO : download price
+
         return inserted;
     }
 

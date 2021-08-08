@@ -36,9 +36,10 @@ public enum Table {
             "buy BOOLEAN, " +
             "price DOUBLE, " +
             "shares DOUBLE, " +
+            "fees DOUBLE, " +
             "strategy_id INT CONSTRAINT log_strategy_id_fk REFERENCES strategy ON DELETE SET null, " +
             "short BOOLEAN DEFAULT FALSE, " +
-            "invoice VARCHAR(12), " +
+            "invoice VARCHAR(16), " +
             "broker SMALLINT)",
             List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
     PLAN ("plan", "CREATE TABLE plan (" +

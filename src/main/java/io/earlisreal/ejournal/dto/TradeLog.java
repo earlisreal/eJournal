@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 public class TradeLog {
 
-    public static final int COLUMN_COUNT = 9;
-
     private int id;
     private LocalDateTime date;
     private String stock;
@@ -20,6 +18,7 @@ public class TradeLog {
     private String invoiceNo;
     private Broker broker;
     private String remarks;
+    private Double fees;
 
     public TradeLog() {}
 
@@ -43,7 +42,11 @@ public class TradeLog {
     }
 
     public double getFees() {
-        return broker.getFees(getGrossAmount(), isBuy());
+        if (fees == null) {
+            return broker.getFees(getGrossAmount(), isBuy());
+        }
+
+        return fees;
     }
 
     public double getGrossAmount() {
@@ -160,6 +163,10 @@ public class TradeLog {
 
     public void setBroker(Broker broker) {
         this.broker = broker;
+    }
+
+    public void setFees(double fees) {
+        this.fees = fees;
     }
 
 }

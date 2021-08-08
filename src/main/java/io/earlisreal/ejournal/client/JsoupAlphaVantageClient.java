@@ -18,13 +18,13 @@ public class JsoupAlphaVantageClient implements AlphaVantageClient {
     }
 
     @Override
-    public List<String> get1minuteHistory(String symbol) {
+    public List<String> get1minuteHistory(String symbol, String slice) {
         try {
             String url = new URIBuilder(URL)
                     .addParameter("function", "TIME_SERIES_INTRADAY_EXTENDED")
                     .addParameter("symbol", symbol)
                     .addParameter("interval", "1min")
-                    .addParameter("slice", "year1month1")
+                    .addParameter("slice", slice)
                     .addParameter("apikey", apiKey)
                     .addParameter("adjusted", "false")
                     .toString();

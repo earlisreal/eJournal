@@ -6,6 +6,6 @@ public interface AlphaVantageClient {
 
     String URL = "https://www.alphavantage.co/query";
 
-    List<String> get1minuteHistory(String symbol);
+    List<String> get1minuteHistory(String symbol, String slice);
 
 }

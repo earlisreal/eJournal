@@ -42,10 +42,10 @@ public class AsyncIntradayService implements IntradayService {
                 ++month;
                 if (leftDate.getYear() != now.getYear()) {
                     month = 1;
-                    year = 2;
+                    ++year;
                 }
 
-                if (year == 2 && month == 12) break;
+                if (year > 2) break;
             }
 
             while (rightDate.minusDays(30).isAfter(maxDate)) {
@@ -66,6 +66,13 @@ public class AsyncIntradayService implements IntradayService {
                 }
 
                 leftDate = leftDate.plusDays(30);
+                --month;
+                if (month < 1) {
+                    month = 12;
+                    --year;
+                }
+
+                if (year < 1) break;
             }
 
             clientIndex = (clientIndex + 1 ) % alphaVantageClients.size();

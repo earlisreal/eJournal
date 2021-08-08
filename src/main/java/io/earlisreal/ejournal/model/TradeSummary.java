@@ -17,7 +17,7 @@ public class TradeSummary {
     private final LocalDateTime openDate;
     private double shares;
     private LocalDateTime closeDate;
-    private boolean isShort;
+    private final boolean isShort;
 
     private final List<TradeLog> logs;
     private double totalBuy;
@@ -122,6 +122,10 @@ public class TradeSummary {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public boolean isShort() {
+        return isShort;
     }
 
     @Override

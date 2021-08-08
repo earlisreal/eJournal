@@ -39,7 +39,8 @@ public enum Broker {
         protected double getCommission(double grossAmount, boolean isBuy) {
             return 0;
         }
-    };
+    },
+    TRADE_ZERO("TradeZero", "Account,T/D,S/D", null, true);
 
     private final String name;
     private final String uniqueIdentifier;

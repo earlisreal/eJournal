@@ -17,6 +17,9 @@ public interface LedgerParserFactory {
         if (Broker.ETORO == broker) {
             return new EToroLedgerParser();
         }
+        if (Broker.TRADE_ZERO == broker) {
+            return new TradeZeroLedgerParser();
+        }
 
         throw new RuntimeException("Ledger Parser of Broker name " + broker + " is not supported");
     }

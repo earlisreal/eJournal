@@ -228,9 +228,9 @@ public class MainController implements Initializable {
     private void selectPane(BorderPane pane) {
         if (pane != null) {
             selectedPane.setStyle(null);
+            selectedPane = pane;
+            selectedPane.setStyle("-fx-background-color: WHITE;");
         }
-        selectedPane = pane;
-        selectedPane.setStyle("-fx-background-color: WHITE;");
     }
 
     public void importInvoice() {
@@ -284,6 +284,15 @@ public class MainController implements Initializable {
                 try {
                     lines = Files.readAllLines(Paths.get(file.toURI()));
                     broker = CommonUtil.identifyBrokerLenient(lines.get(0));
+                } catch (IOException e) {
+                    CommonUtil.handleException(e);
+                    continue;
+                }
+            }
+            else if (filename.endsWith(".csv")) {
+                try {
+                    lines = Files.readAllLines(Paths.get(file.toURI()));
+                    broker = Broker.TRADE_ZERO;
                 } catch (IOException e) {
                     CommonUtil.handleException(e);
                     continue;

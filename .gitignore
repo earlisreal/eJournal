@@ -3,6 +3,7 @@
 build/
 .gradle/
 out/
+*.iml
 
 # Experiment Files
 src/main/java/io/earlisreal/ejournal/Test.java

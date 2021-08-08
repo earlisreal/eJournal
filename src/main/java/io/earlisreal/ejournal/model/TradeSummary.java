@@ -17,6 +17,7 @@ public class TradeSummary {
     private final LocalDateTime openDate;
     private double shares;
     private LocalDateTime closeDate;
+    private boolean isShort;
 
     private final List<TradeLog> logs;
     private double totalBuy;
@@ -28,8 +29,14 @@ public class TradeSummary {
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
         this.openDate = initialTrade.getDate();
+        this.isShort = initialTrade.isShort();
         logs = new ArrayList<>();
-        buy(initialTrade);
+        if (isShort) {
+            sell(initialTrade);
+        }
+        else {
+            buy(initialTrade);
+        }
     }
 
     public Broker getBroker() {
@@ -102,7 +109,7 @@ public class TradeSummary {
     }
 
     public boolean isClosed() {
-        return remainingShares <= 0.000001;
+        return Math.abs(remainingShares) <= 0.000001;
     }
 
     public double getRemainingShares() {

@@ -56,7 +56,7 @@ public class SimplePlotService implements PlotService {
             }
         }
 
-        ProcessBuilder processBuilder = new ProcessBuilder("python", "python/plot.py",
+        ProcessBuilder processBuilder = new ProcessBuilder("python", "python/scripts/plot.py",
                 stocksDirectory.resolve(stock + ".csv").toString(),
                 imagePath.toString(), tradeSummary.isClosed() ? "1" : "0", buys.toString(), sells.toString());
         processBuilder.redirectErrorStream(true);

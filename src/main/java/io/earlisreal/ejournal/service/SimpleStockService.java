@@ -50,10 +50,10 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
-    public LocalDate getLastPriceDate(String stock) {
-        LocalDate last = stockMap.get(stock).getLastDate();
-        if (last == null) return LocalDate.of(2000, 1, 1);
-        return last;
+    public LocalDate getLastPriceDate(String stockCode) {
+        Stock stock = stockMap.get(stockCode);
+        if (stock == null || stock.getLastDate() == null) return LocalDate.of(2000, 1, 1);
+        return stock.getLastDate();
     }
 
     @Override

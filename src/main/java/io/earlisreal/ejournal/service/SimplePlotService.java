@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.scraper.StockPriceScraper;
 import io.earlisreal.ejournal.util.CommonUtil;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,6 +27,7 @@ public class SimplePlotService implements PlotService {
 
     @Override
     public Path plot(TradeSummary tradeSummary) throws IOException {
+        // TODO : Check open and close date if same for intra day or swing plot
         Path imagePath = plotDirectory.resolve(generateImageName(tradeSummary));
         String stock = tradeSummary.getStock();
         LocalDate lastDate = stockService.getLastPriceDate(stock);
@@ -60,7 +62,10 @@ public class SimplePlotService implements PlotService {
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         try {
-            process.waitFor();
+            int res = process.waitFor();
+            String output = IOUtils.toString(process.getInputStream());
+            System.out.println("plot.py returned " + res);
+            System.out.println(output);
         } catch (InterruptedException e) {
             CommonUtil.handleException(e);
         }

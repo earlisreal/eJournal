@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.service;
 
-import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.scraper.CompanyScraper;
 import io.earlisreal.ejournal.scraper.ExchangeRateScraper;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
@@ -8,13 +7,12 @@ import io.earlisreal.ejournal.scraper.StockScraper;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
+import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
 import static io.earlisreal.ejournal.util.Configs.plotDirectory;
 import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
 
@@ -27,12 +25,14 @@ public class SimpleStartupService implements StartupService {
     private final AnalyticsService analyticsService;
     private final TradeLogService tradeLogService;
     private final CacheService cacheService;
+    private final CompanyScraper usCompanyScraper;
 
     private final List<StartupListener> listenerList;
 
     SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper,
                          ExchangeRateScraper exchangeRateScraper, StockService stockService,
-                         TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService) {
+                         TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService,
+                         CompanyScraper usCompanyScraper) {
 
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
@@ -41,6 +41,7 @@ public class SimpleStartupService implements StartupService {
         this.tradeLogService = tradeLogService;
         this.analyticsService = analyticsService;
         this.cacheService = cacheService;
+        this.usCompanyScraper = usCompanyScraper;
 
         listenerList = new ArrayList<>();
     }
@@ -49,11 +50,20 @@ public class SimpleStartupService implements StartupService {
     public void run() {
         createDirectories();
         manageStockList();
+        manageUsStockList();
 
         tradeLogService.applyFilter(cacheService.getStartFilter(), cacheService.getEndFilter());
 
         tradeLogService.initialize();
         analyticsService.initialize();
+    }
+
+    private void manageUsStockList() {
+        runAsync(() -> {
+            var list = usCompanyScraper.scrapeCompanies();
+            stockService.updateStocks(list);
+            System.out.println("Managing US Stock List Done");
+        });
     }
 
     @Override
@@ -66,6 +76,7 @@ public class SimpleStartupService implements StartupService {
             var stocks = stockListScraper.scrape();
             boolean hasNew = stockService.getStockCount() != stocks.size();
             stockService.updateStocks(stocks);
+            System.out.println("Downloading PH companies done");
 
             return hasNew;
         });
@@ -75,24 +86,29 @@ public class SimpleStartupService implements StartupService {
         var scrapeCompanies = scrapeList.thenAcceptAsync(hasNew -> {
             if (hasNew) {
                 stockService.updateStockId(companyScraper.scrapeCompanies());
+                System.out.println("Updating Stock ID done");
             }
         });
 
         scrapeCompanies.thenAcceptAsync(unused -> {
             var stocks = ScraperProvider.getEmptyIdCompanyScraper().scrapeCompanies();
-            stockService.updateStockId(stocks);
+            if (!stocks.isEmpty()) {
+                stockService.updateStockId(stocks);
+                System.out.println("Updating empty stock IDs Done");
+            }
         });
     }
 
     @Override
     public void createDirectories() {
-        CompletableFuture.runAsync(() -> {
+        runAsync(() -> {
             try {
                 Files.createDirectories(stocksDirectory);
                 Files.createDirectories(plotDirectory);
             } catch (IOException e) {
                 handleException(e);
             }
+            System.out.println("Creating data directories Done");
         });
     }
 

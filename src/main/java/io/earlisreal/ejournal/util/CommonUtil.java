@@ -75,4 +75,8 @@ public interface CommonUtil {
         return new Timestamp(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
+    static void runAsync(Runnable runnable) {
+        new Thread(runnable).start();
+    }
+
 }

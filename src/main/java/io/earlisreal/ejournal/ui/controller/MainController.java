@@ -3,12 +3,19 @@ package io.earlisreal.ejournal.ui.controller;
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
-import io.earlisreal.ejournal.service.*;
+import io.earlisreal.ejournal.service.AnalyticsService;
+import io.earlisreal.ejournal.service.BankTransactionService;
+import io.earlisreal.ejournal.service.CacheService;
+import io.earlisreal.ejournal.service.IntradayService;
+import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.service.StockService;
+import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
@@ -24,7 +31,17 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
@@ -40,10 +57,17 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 
-import static io.earlisreal.ejournal.util.CommonUtil.*;
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
+import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 import static java.time.LocalDate.now;
 
 public class MainController implements Initializable {
@@ -70,6 +94,13 @@ public class MainController implements Initializable {
     public Label riskRewardLabel;
     public Menu brokerMenu;
 
+    private final BankTransactionService bankTransactionService;
+    private final TradeLogService tradeLogService;
+    private final AnalyticsService analyticsService;
+    private final CacheService cacheService;
+    private final IntradayService intradayService;
+    private final StockService stockService;
+
     private Parent log;
     private Parent analytics;
     private Parent bankTransaction;
@@ -77,15 +108,11 @@ public class MainController implements Initializable {
     private Parent plan;
 
     private ObservableList<Node> children;
-    private BankTransactionService bankTransactionService;
-    private TradeLogService tradeLogService;
-    private AnalyticsService analyticsService;
     private AnalyticsController analyticsController;
     private LogsController logController;
     private BankTransactionController bankTransactionController;
     private DashboardController dashboardController;
     private PlanController planController;
-    private final CacheService cacheService;
 
     private BorderPane selectedPane;
     private final FileChooser.ExtensionFilter pdfFilter;
@@ -96,6 +123,11 @@ public class MainController implements Initializable {
 
     public MainController() {
         cacheService = ServiceProvider.getCacheService();
+        bankTransactionService = ServiceProvider.getBankTransactionService();
+        tradeLogService = ServiceProvider.getTradeLogService();
+        analyticsService = ServiceProvider.getAnalyticsService();
+        intradayService = ServiceProvider.getIntradayService();
+        stockService = ServiceProvider.getStockService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
@@ -107,10 +139,6 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeIcons();
-
-        bankTransactionService = ServiceProvider.getBankTransactionService();
-        tradeLogService = ServiceProvider.getTradeLogService();
-        analyticsService = ServiceProvider.getAnalyticsService();
 
         initializeBrokerMenu();
 
@@ -247,7 +275,7 @@ public class MainController implements Initializable {
             String invoice = PDFParser.parse(file);
             Broker broker = CommonUtil.identifyBroker(invoice);
             TradeLog log = InvoiceParserFactory.getInvoiceParser(broker).parseAsObject(invoice);
-            res += tradeLogService.insert(List.of(log));
+            res += tradeLogService.insert(List.of(log)).size();
         }
 
         showInfo("Ledger successfully imported", res + " Records Added");
@@ -307,13 +335,37 @@ public class MainController implements Initializable {
 
             LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
             parser.parse(lines);
-            res += tradeLogService.insert(parser.getTradeLogs());
+            var logs = tradeLogService.insert(parser.getTradeLogs());
+            res += logs.size();
+
+            downloadIntradayHistory(logs);
+
             res += bankTransactionService.insert(parser.getBankTransactions());
         }
 
         showInfo("Ledger successfully imported", res + " Records Added");
         if (res > 0) {
             refresh();
+        }
+    }
+
+    private void downloadIntradayHistory(List<TradeLog> tradeLogs) {
+        Map<Stock, Set<LocalDate>> map = new HashMap<>();
+        tradeLogs.sort(Comparator.comparing(TradeLog::getDate));
+        for (TradeLog log : tradeLogs) {
+            Stock stock = stockService.getStock(log.getStock());
+            if (map.containsKey(stock)) {
+                map.get(stock).add(log.getDate().toLocalDate());
+            }
+            else {
+                Set<LocalDate> list = new LinkedHashSet<>();
+                list.add(log.getDate().toLocalDate());
+                map.put(stock, list);
+            }
+        }
+
+        for (var entry : map.entrySet()) {
+            intradayService.download(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
     }
 
@@ -329,7 +381,7 @@ public class MainController implements Initializable {
         int res = 0;
         try {
             List<String> csv = Files.readAllLines(file.toPath());
-            res += tradeLogService.insertCsv(csv);
+            res += tradeLogService.insertCsv(csv).size();
             res += bankTransactionService.insertCsv(csv);
             String newPath = file.toPath().getParent().toAbsolutePath().toString();
             cacheService.save("import-csv-path", newPath);

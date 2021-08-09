@@ -31,6 +31,7 @@ public class AsyncIntradayService implements IntradayService {
     @Override
     public void download(Stock stock, List<LocalDate> dates) {
         executorService.execute(() -> {
+            System.out.println("Downloading Intraday data for " + stock.getCode());
             int year = 1;
             int month = 1;
             LocalDate now = LocalDate.now();
@@ -55,8 +56,9 @@ public class AsyncIntradayService implements IntradayService {
             int dateIndex = 0;
             while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
                 LocalDate date = dates.get(dateIndex);
-                while (date.isBefore(leftDate.plusDays(31))) {
+                while (dateIndex < dates.size() - 1 && date.isAfter(leftDate.plusDays(30))) {
                     ++dateIndex;
+                    date = dates.get(dateIndex);
                 }
 
                 if (date.isAfter(leftDate.minusDays(1))) {
@@ -80,17 +82,21 @@ public class AsyncIntradayService implements IntradayService {
     }
 
     private void saveCsv(Stock stock, List<String> csv) {
-        String lastDate = stock.getLastDate().format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+        LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
         for (int i = csv.size() - 1; i >= 0; --i) {
-            if (csv.get(i).startsWith(lastDate)) continue;
-            records.add(csv.get(i));
+            String record = csv.get(i);
+            var formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd");
+            LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), formatter);
+            if (date.isBefore(lastDate)) continue;
+            records.add(record);
         }
 
         if (!records.isEmpty()) {
             try {
-                Files.write(stocksDirectory.resolve("us").resolve(stock.getCode() + ".csv"), records,
+                Files.write(stocksDirectory.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+                System.out.println(records.size() + " records added to " + stock.getCode());
             } catch (IOException e) {
                 CommonUtil.handleException(e);
             }

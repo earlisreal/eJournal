@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.scraper;
 
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -29,6 +30,7 @@ public class PesobilityStockListScraper implements StockScraper {
                 Stock stock = new Stock();
                 stock.setCode(columns.get(0));
                 stock.setName(trimStockName(columns.get(1)));
+                stock.setCountry(Country.PH);
                 if (columns.size() > 2) {
                     int spaceIndex = columns.get(2).indexOf(" ");
                     if (spaceIndex == -1) return;

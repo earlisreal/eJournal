@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.scraper;
 
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.util.Country;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -42,6 +43,7 @@ public class PSECompanyScraper implements CompanyScraper {
                 company.setCode(element.text());
                 company.setCompanyId(onclick.substring(0, onclick.indexOf('\'')));
                 company.setSecurityId(onclick.substring(onclick.lastIndexOf('\'') + 1));
+                company.setCountry(Country.PH);
                 companies.add(company);
             });
         }

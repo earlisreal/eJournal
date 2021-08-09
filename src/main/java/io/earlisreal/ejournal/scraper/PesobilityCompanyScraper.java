@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.scraper;
 
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.service.StockService;
+import io.earlisreal.ejournal.util.Country;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -33,6 +34,7 @@ public class PesobilityCompanyScraper implements CompanyScraper {
                 String securityId = tokens[1].split("=")[1];
                 stock.setCompanyId(companyId);
                 stock.setSecurityId(securityId);
+                stock.setCountry(Country.PH);
             } catch (IOException e) {
                 handleException(e);
             }

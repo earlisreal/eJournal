@@ -24,4 +24,8 @@ public final class ScraperProvider {
         return new BSPExchangeRateScraper();
     }
 
+    public static USCompanyScraper getUsCompanyScraper() {
+        return new USCompanyScraper();
+    }
+
 }

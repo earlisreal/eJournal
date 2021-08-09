@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.dto;
 import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class Stock {
 
@@ -81,6 +82,19 @@ public class Stock {
                 ", lastDate=" + lastDate +
                 ", country='" + country + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Stock stock = (Stock) o;
+        return code.equals(stock.code) && country == stock.country;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(code, country);
     }
 
 }

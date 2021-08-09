@@ -2,18 +2,18 @@ package io.earlisreal.ejournal.util;
 
 public enum Broker {
 
-    UNKNOWN("Unknown", null, null, false),
+    UNKNOWN("Unknown", null, null, null),
     AAA(
             "AAA",
             System.lineSeparator() + "AAA" + System.lineSeparator(),
             "subject:(AAA EQUITIES) (PDFAPAR OR SAP) has:attachment",
-            false
+            Country.PH
     ),
     YAPSTER(
             "2TradeAsia",
             "YAPSTER",
             "subject:(YAPSTER E-TRADE, INC. (2TRADE ASIA)) has:attachment",
-            false
+            Country.PH
     ) {
         @Override
         public double getFees(double grossAmount, boolean isBuy) {
@@ -27,9 +27,9 @@ public enum Broker {
             "from:(alert@colfinancial.com OR Helpdesk@colfinancial.com OR withdrawals@colfinancial.com) " +
                     "subject:(\"COL Trading Confirmation\" OR \"Notice of Cash Dividend\" " +
                     "OR \"Acknowledgement of Deposit\" OR \"Notice of Debit Adjustment\")",
-            false
+            Country.PH
     ),
-    ETORO("eToro", "eToro AUS", null, true) {
+    ETORO("eToro", "eToro AUS", null, Country.US) {
         @Override
         public double getFees(double grossAmount, boolean isBuy) {
             return 0;
@@ -40,18 +40,18 @@ public enum Broker {
             return 0;
         }
     },
-    TRADE_ZERO("TradeZero", "Account,T/D,S/D", null, true);
+    TRADE_ZERO("TradeZero", "Account,T/D,S/D", null, Country.US);
 
     private final String name;
     private final String uniqueIdentifier;
     private final String emailFilter;
-    private final boolean isUsd;
+    private final Country country;
 
-    Broker(String name, String uniqueIdentifier, String emailFilter, boolean isUsd) {
+    Broker(String name, String uniqueIdentifier, String emailFilter, Country country) {
         this.name = name;
         this.uniqueIdentifier = uniqueIdentifier;
         this.emailFilter = emailFilter;
-        this.isUsd = isUsd;
+        this.country = country;
     }
 
     public double getFees(double grossAmount, boolean isBuy) {
@@ -78,6 +78,10 @@ public enum Broker {
 
     public String getEmailFilter() {
         return emailFilter;
+    }
+
+    public Country getCountry() {
+        return country;
     }
 
 }

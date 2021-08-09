@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.scraper.CompanyScraper;
 import io.earlisreal.ejournal.scraper.ExchangeRateScraper;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
 import io.earlisreal.ejournal.scraper.StockScraper;
+import io.earlisreal.ejournal.util.Country;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -103,7 +104,9 @@ public class SimpleStartupService implements StartupService {
     public void createDirectories() {
         runAsync(() -> {
             try {
-                Files.createDirectories(stocksDirectory);
+                for (Country country : Country.values()) {
+                    Files.createDirectories(stocksDirectory.resolve(country.name()));
+                }
                 Files.createDirectories(plotDirectory);
             } catch (IOException e) {
                 handleException(e);

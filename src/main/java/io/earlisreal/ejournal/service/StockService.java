@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface StockService {
 
+    Stock getStock(String code);
+
     String getName(String stock);
 
     String getCode(String stock);

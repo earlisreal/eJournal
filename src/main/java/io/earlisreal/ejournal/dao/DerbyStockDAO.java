@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -60,6 +61,7 @@ public class DerbyStockDAO implements StockDAO {
                 stock.setSecurityId(resultSet.getString(4));
                 stock.setPrice(resultSet.getDouble(5));
                 String lastDate = resultSet.getString(6);
+                stock.setCountry(Country.valueOf(resultSet.getString(7)));
                 if (lastDate != null) stock.setLastDate(LocalDate.parse(lastDate));
                 stockMap.put(stock.getCode(), stock);
             }
@@ -84,16 +86,19 @@ public class DerbyStockDAO implements StockDAO {
         return false;
     }
 
-    private void insertStock(Stock stock) {
-        String sql = "INSERT INTO stock (code, name, price) VALUES (?, ?, ?)";
+    private boolean insertStock(Stock stock) {
+        String sql = "INSERT INTO stock (code, name, price, country) VALUES (?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, stock.getCode());
             preparedStatement.setString(2, stock.getName());
             preparedStatement.setDouble(3, stock.getPrice());
+            preparedStatement.setString(4, stock.getCountry().name());
             preparedStatement.execute();
+            return preparedStatement.getUpdateCount() > 0;
         } catch (SQLException sqlException) {
             CommonUtil.handleException(sqlException);
         }
+        return false;
     }
 
     private void updateStockPrice(Stock stock) {

@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.dto;
 
+import io.earlisreal.ejournal.util.Country;
+
 import java.time.LocalDate;
 
 public class Stock {
@@ -10,6 +12,7 @@ public class Stock {
     private String securityId;
     private double price;
     private LocalDate lastDate;
+    private Country country;
 
     public String getCode() {
         return code;
@@ -55,6 +58,14 @@ public class Stock {
         return lastDate;
     }
 
+    public Country getCountry() {
+        return country;
+    }
+
+    public void setCountry(Country country) {
+        this.country = country;
+    }
+
     public void setLastDate(LocalDate lastDate) {
         this.lastDate = lastDate;
     }
@@ -68,6 +79,7 @@ public class Stock {
                 ", securityId='" + securityId + '\'' +
                 ", price=" + price +
                 ", lastDate=" + lastDate +
+                ", country='" + country + '\'' +
                 '}';
     }
 

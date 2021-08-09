@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dao.StockDAO;
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -89,7 +90,9 @@ public class SimpleStockService implements StockService {
 
     @Override
     public List<Stock> getEmptyIds() {
-        return stockMap.values().stream().filter(stock -> stock.getCompanyId() == null).collect(Collectors.toList());
+        return stockMap.values().stream()
+                .filter(stock -> stock.getCompanyId() == null && stock.getCountry() == Country.PH)
+                .collect(Collectors.toList());
     }
 
     @Override

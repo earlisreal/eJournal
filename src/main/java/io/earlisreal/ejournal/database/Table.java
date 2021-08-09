@@ -9,12 +9,14 @@ public enum Table {
             "value VARCHAR(200))",
             null),
     STOCK ("stock", "CREATE TABLE stock (" +
-            "code VARCHAR(5) CONSTRAINT stock_pk PRIMARY KEY, " +
+            "code VARCHAR(5), " +
             "name VARCHAR(69), " +
             "company_id VARCHAR(4), " +
             "security_id VARCHAR(4), " +
             "price DOUBLE, " +
-            "last_date DATE)",
+            "last_date DATE, " +
+            "country VARCHAR(2), " +
+            "CONSTRAINT stock_pk PRIMARY KEY (code, country))",
             null),
     BANK_TRANSACTION ("bank_transaction", "CREATE TABLE bank_transaction (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT bank_transaction_pk PRIMARY KEY, " +

@@ -31,7 +31,7 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
-    public int insertCsv(List<String> csv) {
+    public List<TradeLog> insertCsv(List<String> csv) {
         List<TradeLog> tradeLogs = ParseUtil.parseTradeLogs(csv);
 
         return insert(tradeLogs);
@@ -45,17 +45,15 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
-    public int insert(List<TradeLog> tradeLogs) {
+    public List<TradeLog> insert(List<TradeLog> tradeLogs) {
         if (tradeLogs.isEmpty()) {
-            return 0;
+            return tradeLogs;
         }
 
-        int inserted = tradeLogDAO.insertLog(tradeLogs);
-        System.out.println(inserted + " Records Inserted");
+        var logs = tradeLogDAO.insertLog(tradeLogs);
+        System.out.println(logs.size() + " Records Inserted");
 
-        // TODO : download price
-
-        return inserted;
+        return tradeLogs;
     }
 
     @Override

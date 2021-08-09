@@ -61,10 +61,12 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     @Override
-    public int insertLog(List<TradeLog> tradeLogs) {
-        int res = 0;
+    public List<TradeLog> insertLog(List<TradeLog> tradeLogs) {
+        List<TradeLog> res = new ArrayList<>();
         for (TradeLog log : tradeLogs) {
-            res += insertLog(log) ? 1 : 0;
+            if (insertLog(log)) {
+                res.add(log);
+            }
         }
 
         return res;

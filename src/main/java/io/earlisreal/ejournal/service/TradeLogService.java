@@ -12,11 +12,11 @@ public interface TradeLogService {
 
     void applyFilter(LocalDate startDate, LocalDate endDate);
 
-    int insertCsv(List<String> csv);
+    List<TradeLog> insertCsv(List<String> csv);
 
     boolean insert(TradeLog tradeLog);
 
-    int insert(List<TradeLog> tradeLogs);
+    List<TradeLog> insert(List<TradeLog> tradeLogs);
 
     int upsert(List<TradeLog> tradeLogs);
 

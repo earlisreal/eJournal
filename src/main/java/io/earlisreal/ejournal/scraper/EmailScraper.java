@@ -86,7 +86,7 @@ public class EmailScraper {
         }
 
         int res = 0;
-        res += tradeLogService.insert(tradeLogs);
+        res += tradeLogService.insert(tradeLogs).size();
         res += bankTransactionService.insert(bankTransactions);
         return res;
     }

@@ -17,7 +17,7 @@ public interface TradeLogDAO {
 
     boolean insertLog(TradeLog tradeLog);
 
-    int insertLog(List<TradeLog> tradeLog);
+    List<TradeLog> insertLog(List<TradeLog> tradeLog);
 
     int upsert(List<TradeLog> tradeLogs);
 

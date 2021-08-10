@@ -53,7 +53,7 @@ public class SimpleTradeLogService implements TradeLogService {
         var logs = tradeLogDAO.insertLog(tradeLogs);
         System.out.println(logs.size() + " Records Inserted");
 
-        return tradeLogs;
+        return logs;
     }
 
     @Override

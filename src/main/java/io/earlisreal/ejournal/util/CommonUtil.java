@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface CommonUtil {
 
-    static void handleException(Exception e) {
+    static void handleException(Throwable e) {
         System.out.println(e.getMessage());
         e.printStackTrace();
     }

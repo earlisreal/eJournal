@@ -84,11 +84,12 @@ public class AsyncIntradayService implements IntradayService {
     private void saveCsv(Stock stock, List<String> csv) {
         LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
+        var formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd");
         for (int i = csv.size() - 1; i >= 0; --i) {
             String record = csv.get(i);
-            var formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd");
+            if (record.trim().isEmpty()) continue;
             LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), formatter);
-            if (date.isBefore(lastDate)) continue;
+            if (lastDate != null && date.isBefore(lastDate)) continue;
             records.add(record);
         }
 

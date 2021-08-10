@@ -8,6 +8,8 @@ import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -16,6 +18,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -144,28 +147,46 @@ public class TradeDetailsController {
     }
 
     public void updateImage(TradeSummary tradeSummary) {
-        CompletableFuture.supplyAsync(() -> {
-            try {
-                Path imagePath = plotService.plot(tradeSummary);
-                tradeSummary.setImageUrl(imagePath.toUri().toURL().toString());
-                return tradeSummary;
-            } catch (IOException e) {
-                handleException(e);
+        // TODO : Add caching of imagePath, maybe load it all on startup
+
+        Service<Path> service = new Service<>() {
+            @Override
+            protected Task<Path> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Path call() {
+                        try {
+                            return plotService.plot(tradeSummary);
+                        } catch (IOException e) {
+                            handleException(e);
+                        }
+                        return null;
+                    }
+                };
             }
-            return null;
-        }).thenAccept(summary -> {
+        };
+
+        service.setOnSucceeded(event -> {
             if (!summaries.get(index).equals(tradeSummary)) {
                 return;
             }
-
-            if (tradeSummary.getImageUrl() == null) return;
-
-            plotImageView.setImage(new Image(tradeSummary.getImageUrl()));
-            plotImageView.setVisible(true);
-            loadingLabel.setVisible(false);
-            loadingProgress.setVisible(false);
+            Path imagePath = (Path) event.getSource().getValue();
+            try {
+                plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
+                plotImageView.setVisible(true);
+                loadingLabel.setVisible(false);
+                loadingProgress.setVisible(false);
+            } catch (MalformedURLException e) {
+                handleException(e);
+            }
         });
 
+        service.setOnFailed(event -> {
+            var exception = event.getSource().getException();
+            handleException(exception);
+        });
+
+        service.start();
     }
 
     public void showLoading() {

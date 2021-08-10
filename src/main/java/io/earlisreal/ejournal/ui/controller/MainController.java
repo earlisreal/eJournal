@@ -338,6 +338,7 @@ public class MainController implements Initializable {
             var logs = tradeLogService.insert(parser.getTradeLogs());
             res += logs.size();
 
+            // TODO : download only when trade log is part of intraday trade
             downloadIntradayHistory(logs);
 
             res += bankTransactionService.insert(parser.getBankTransactions());

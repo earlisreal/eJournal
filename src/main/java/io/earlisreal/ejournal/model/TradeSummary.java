@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.model;
 
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
+import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -9,8 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.earlisreal.ejournal.util.CommonUtil.round;
-
+// TODO : Make this a builder and create immutable class for TradeSummary
 public class TradeSummary {
 
     private final String stock;
@@ -18,18 +18,19 @@ public class TradeSummary {
     private double shares;
     private LocalDateTime closeDate;
     private final boolean isShort;
+    private final Country country;
 
     private final List<TradeLog> logs;
     private double totalBuy;
     private double totalSell;
 
     private double remainingShares;
-    private String imageUrl;
 
     public TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
         this.openDate = initialTrade.getDate();
         this.isShort = initialTrade.isShort();
+        this.country = initialTrade.getBroker().getCountry();
         logs = new ArrayList<>();
         if (isShort) {
             sell(initialTrade);
@@ -54,6 +55,10 @@ public class TradeSummary {
         remainingShares -= log.getShares();
         logs.add(log);
         totalSell += log.getNetAmount();
+    }
+
+    public boolean isDayTrade() {
+        return openDate.equals(closeDate);
     }
 
     public double getPosition() {
@@ -116,16 +121,12 @@ public class TradeSummary {
         return remainingShares;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
     public boolean isShort() {
         return isShort;
+    }
+
+    public Country getCountry() {
+        return country;
     }
 
     @Override

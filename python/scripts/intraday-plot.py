@@ -7,6 +7,10 @@ import numpy
 import pandas
 
 
+def make_plot(markers, color):
+    return mplfinance.make_addplot(markers, type="scatter", alpha=0.8, marker="D", markersize=40, color=color)
+
+
 def main():
     print("Starting Intraday Plotting")
     args = json.loads(sys.argv[1])
@@ -31,9 +35,9 @@ def main():
         sell_markers.append(sells.get(d, numpy.nan))
         short_markers.append(shorts.get(d, numpy.nan))
 
-    buy_plot = mplfinance.make_addplot(buy_markers, type="scatter", marker="^", markersize=200, color="green")
-    sell_plot = mplfinance.make_addplot(sell_markers, type="scatter", alpha=0.8, marker="v", markersize=200, color="red")
-    short_plot = mplfinance.make_addplot(short_markers, type="scatter", marker="v", markersize=200, color="violet")
+    buy_plot = make_plot(buy_markers, "green")
+    sell_plot = make_plot(sell_markers, "red")
+    short_plot = make_plot(short_markers, "blue")
     plot = []
     if bool(shorts):
         plot.append(short_plot)
@@ -41,6 +45,7 @@ def main():
         plot.append(buy_plot)
     if bool(sells):
         plot.append(sell_plot)
+
     mplfinance.plot(dataframe, type="candle", volume=True, addplot=plot, savefig=args["outputPath"])
 
 

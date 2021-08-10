@@ -132,7 +132,7 @@ public final class ServiceProvider {
                     for (String key : apiKey.split(",")) {
                         clients.add(new JsoupAlphaVantageClient(key));
                     }
-                    intradayService = new AsyncIntradayService(clients);
+                    intradayService = new AsyncIntradayService(clients, DAOProvider.getStockDAO());
                 }
             }
         }

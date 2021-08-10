@@ -1,7 +1,9 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.client.AlphaVantageClient;
+import io.earlisreal.ejournal.dao.StockDAO;
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.exception.AlphaVantageLimitException;
 import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.io.IOException;
@@ -19,12 +21,14 @@ import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
 public class AsyncIntradayService implements IntradayService {
 
     private final List<AlphaVantageClient> alphaVantageClients;
+    private final StockDAO stockDAO;
     private final ExecutorService executorService;
 
     private int clientIndex;
 
-    AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients) {
+    AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockDAO stockDAO) {
         this.alphaVantageClients = alphaVantageClients;
+        this.stockDAO = stockDAO;
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -63,8 +67,14 @@ public class AsyncIntradayService implements IntradayService {
 
                 if (date.isAfter(leftDate.minusDays(1))) {
                     String slice =  "year" + year + "month" + month;
-                    var csv = alphaVantageClients.get(clientIndex).get1minuteHistory(stock.getCode(), slice);
-                    saveCsv(stock, csv);
+                    try {
+                        var csv = alphaVantageClients.get(clientIndex).get1minuteHistory(stock.getCode(), slice);
+                        saveCsv(stock, csv);
+                    }
+                    catch (AlphaVantageLimitException e) {
+                        CommonUtil.handleException(e);
+                        return;
+                    }
                 }
 
                 leftDate = leftDate.plusDays(30);
@@ -85,10 +95,12 @@ public class AsyncIntradayService implements IntradayService {
         LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
         var formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd");
+        LocalDate maxDate = null;
         for (int i = csv.size() - 1; i >= 0; --i) {
             String record = csv.get(i);
             if (record.trim().isEmpty()) continue;
             LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), formatter);
+            if (maxDate == null) maxDate = date;
             if (lastDate != null && date.isBefore(lastDate)) continue;
             records.add(record);
         }
@@ -98,6 +110,7 @@ public class AsyncIntradayService implements IntradayService {
                 Files.write(stocksDirectory.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
+                stockDAO.updateLastDate(stock.getCode(), maxDate);
             } catch (IOException e) {
                 CommonUtil.handleException(e);
             }

@@ -7,9 +7,12 @@ import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public interface CommonUtil {
+
+    DateTimeFormatter COMMON_FORMATTER = DateTimeFormatter.ofPattern("MM-dd-uuuu HH:mm");
 
     static void handleException(Throwable e) {
         System.out.println(e.getMessage());
@@ -57,6 +60,10 @@ public interface CommonUtil {
             }
         }
         return name.toUpperCase();
+    }
+
+    static String prettify(LocalDateTime localDateTime) {
+        return COMMON_FORMATTER.format(localDateTime);
     }
 
     static String prettify(double num) {

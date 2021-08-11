@@ -10,9 +10,11 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
@@ -21,13 +23,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
-import static io.earlisreal.ejournal.util.CommonUtil.*;
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
+import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class TradeDetailsController {
 
@@ -36,7 +38,7 @@ public class TradeDetailsController {
 
     public ImageView plotImageView;
     public TableView<TradeLog> logTable;
-    public TableColumn<TradeLog, LocalDate> logDate;
+    public TableColumn<TradeLog, String> logDate;
     public TableColumn<TradeLog, String> logAction;
     public TableColumn<TradeLog, String> logPrice;
     public TableColumn<TradeLog, String> logShares;
@@ -69,12 +71,12 @@ public class TradeDetailsController {
         previousButton.setDisable(disabled);
     }
 
-    public void nextTrade(ActionEvent event) {
+    public void nextTrade() {
         index = (index + 1) % summaries.size();
         show();
     }
 
-    public void previousTrade(ActionEvent event) {
+    public void previousTrade() {
         if (--index < 0) index = summaries.size() - 1;
         show();
     }
@@ -96,14 +98,14 @@ public class TradeDetailsController {
         List<Pair<String, String>> list = new ArrayList<>();
         list.add(new Pair<>("Stock", summary.getStock()));
         list.add(new Pair<>("Name", stockService.getName(summary.getStock())));
-        list.add(new Pair<>("Open", summary.getOpenDate().toString()));
+        list.add(new Pair<>("Open", prettify(summary.getOpenDate())));
         list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
         list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
         list.add(new Pair<>("Position", prettify(summary.getPosition())));
 
         if (summary.isClosed()) {
-            list.add(new Pair<>("Closed", summary.getCloseDate().toString()));
-            list.add(new Pair<>("Holding Days", String.valueOf(summary.getTradeLength())));
+            list.add(new Pair<>("Closed", prettify(summary.getCloseDate())));
+            list.add(new Pair<>("Holding Period", String.valueOf(summary.getTradeLength())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
             list.add(new Pair<>("Profit", prettify(summary.getProfit())));
             list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
@@ -138,7 +140,7 @@ public class TradeDetailsController {
 
     private void initializeLogs(TradeSummary tradeSummary) {
         logTable.setItems(FXCollections.observableList(tradeSummary.getLogs()));
-        logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        logDate.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getDate())));
         logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
         logPrice.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPrice())));
         logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));

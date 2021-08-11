@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Rectangle2D?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane fx:id="anchorPane" prefHeight="700.0" prefWidth="700.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
+<AnchorPane fx:id="anchorPane" prefHeight="700.0" prefWidth="700.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
-      <ImageView fx:id="plotImageView" fitHeight="369.0" fitWidth="514.0" layoutX="186.0" layoutY="60.0" preserveRatio="true">
-         <viewport>
-            <Rectangle2D />
-         </viewport>
-      </ImageView>
+      <Group layoutX="376.0" layoutY="177.0">
+         <children>
+            <ImageView fx:id="plotImageView" fitHeight="309.0" fitWidth="436.0" layoutX="-127.0" layoutY="-109.0" preserveRatio="true">
+               <viewport>
+                  <Rectangle2D />
+               </viewport>
+            </ImageView>
+            <ProgressIndicator fx:id="loadingProgress" layoutX="6.0" layoutY="19.0" />
+            <Label fx:id="loadingLabel" layoutX="72.0" layoutY="37.0" text="Loading Plot Image" />
+         </children>
+      </Group>
       <TableView fx:id="logTable" layoutX="14.0" layoutY="436.0" prefHeight="250.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="120.0" text="Date" />
@@ -23,14 +33,12 @@
             <TableColumn fx:id="logNet" prefWidth="165.0" text="Net Amount" />
          </columns>
       </TableView>
-      <TableView fx:id="statisticTable" layoutX="14.0" layoutY="14.0" prefHeight="416.0" prefWidth="200.0">
+      <TableView fx:id="statisticTable" layoutX="14.0" layoutY="14.0" prefHeight="416.0" prefWidth="225.0">
          <columns>
             <TableColumn fx:id="statisticColumn" prefWidth="100.0" text="Statistic" />
-            <TableColumn fx:id="valueColumn" prefWidth="100.0" text="Value" />
+            <TableColumn fx:id="valueColumn" prefWidth="124.0" text="Value" />
          </columns>
       </TableView>
-      <ProgressIndicator fx:id="loadingProgress" layoutX="358.0" layoutY="158.0" />
-      <Label fx:id="loadingLabel" layoutX="424.0" layoutY="176.0" text="Loading Plot Image" />
       <Button fx:id="nextButton" layoutX="645.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Button fx:id="previousButton" layoutX="578.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
    </children>

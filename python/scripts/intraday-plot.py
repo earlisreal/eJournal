@@ -46,7 +46,7 @@ def main():
     if bool(sells):
         plot.append(sell_plot)
 
-    mplfinance.plot(dataframe, type="candle", volume=True, addplot=plot, savefig=args["outputPath"])
+    mplfinance.plot(dataframe, type="candle", volume=True, addplot=plot, savefig=args["outputPath"], tight_layout=True)
 
 
 if __name__ == "__main__":

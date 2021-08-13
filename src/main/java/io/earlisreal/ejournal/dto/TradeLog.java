@@ -76,6 +76,14 @@ public class TradeLog {
                 '}';
     }
 
+    public String getAction() {
+        if (isShort) {
+            if (isBuy) return "Cover Buy";
+            return "Short Sell";
+        }
+        return isBuy ? "Buy" : "Sell";
+    }
+
     public int getId() {
         return id;
     }

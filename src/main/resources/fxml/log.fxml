@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
+<AnchorPane prefHeight="700.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.LogsController">
    <children>
       <TabPane layoutX="13.0" layoutY="11.0" prefHeight="678.0" prefWidth="678.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
@@ -16,10 +22,11 @@
                           <columns>
                             <TableColumn fx:id="summaryClosed" prefWidth="122.0" text="Closed" />
                             <TableColumn fx:id="summaryStock" prefWidth="81.0" text="Stock" />
-                              <TableColumn fx:id="summaryPosition" editable="false" prefWidth="137.0" sortable="false" text="Position" />
-                              <TableColumn fx:id="summaryProfit" editable="false" prefWidth="106.0" sortable="false" text="Profit" />
+                              <TableColumn fx:id="summaryType" prefWidth="75.0" text="Type" />
+                              <TableColumn fx:id="summaryPosition" editable="false" prefWidth="102.0" sortable="false" text="Position" />
+                              <TableColumn fx:id="summaryProfit" editable="false" prefWidth="104.0" sortable="false" text="Profit" />
                               <TableColumn fx:id="summaryPercent" editable="false" prefWidth="86.0" sortable="false" text="Percent" />
-                              <TableColumn fx:id="summaryDays" prefWidth="116.0" text="Days" />
+                              <TableColumn fx:id="summaryDays" prefWidth="94.0" text="Period" />
                           </columns>
                         </TableView>
                      </children></AnchorPane>
@@ -31,13 +38,13 @@
                      <children>
                         <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="41.0" prefHeight="600.0" prefWidth="661.0">
                           <columns>
-                              <TableColumn fx:id="logDate" editable="false" prefWidth="74.0" text="Date" />
+                              <TableColumn fx:id="logDate" editable="false" prefWidth="111.0" text="Date" />
                               <TableColumn fx:id="logStock" editable="false" prefWidth="74.0" text="Stock" />
-                              <TableColumn fx:id="logAction" editable="false" prefWidth="78.0" text="Action" />
-                              <TableColumn fx:id="logPrice" editable="false" prefWidth="71.0" sortable="false" text="Price" />
-                              <TableColumn fx:id="logShares" editable="false" prefWidth="84.0" sortable="false" text="Shares" />
-                              <TableColumn fx:id="logFees" editable="false" prefWidth="105.0" sortable="false" text="Fees" />
-                              <TableColumn fx:id="logNet" editable="false" prefWidth="156.0" sortable="false" text="Net Amount" />
+                              <TableColumn fx:id="logAction" editable="false" prefWidth="81.0" text="Action" />
+                              <TableColumn fx:id="logPrice" editable="false" prefWidth="77.0" sortable="false" text="Price" />
+                              <TableColumn fx:id="logShares" editable="false" sortable="false" text="Shares" />
+                              <TableColumn fx:id="logFees" editable="false" prefWidth="108.0" sortable="false" text="Fees" />
+                              <TableColumn fx:id="logNet" editable="false" prefWidth="129.0" sortable="false" text="Net Amount" />
                           </columns>
                         </TableView>
                         <Label fx:id="entryLabel" layoutX="9.0" layoutY="12.0" text="Date" />

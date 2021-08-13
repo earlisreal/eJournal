@@ -98,6 +98,7 @@ public class TradeDetailsController {
         List<Pair<String, String>> list = new ArrayList<>();
         list.add(new Pair<>("Stock", summary.getStock()));
         list.add(new Pair<>("Name", stockService.getName(summary.getStock())));
+        list.add(new Pair<>("Type", summary.getTradeType()));
         list.add(new Pair<>("Open", prettify(summary.getOpenDate())));
         list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
         list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
@@ -141,7 +142,7 @@ public class TradeDetailsController {
     private void initializeLogs(TradeSummary tradeSummary) {
         logTable.setItems(FXCollections.observableList(tradeSummary.getLogs()));
         logDate.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getDate())));
-        logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
+        logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().getAction()));
         logPrice.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPrice())));
         logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));

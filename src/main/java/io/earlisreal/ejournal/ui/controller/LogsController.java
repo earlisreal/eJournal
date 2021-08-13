@@ -14,14 +14,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import java.time.LocalDate;
-
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 
 public class LogsController {
 
     public TableView<TradeLog> logTable;
-    public TableColumn<TradeLog, LocalDate> logDate;
+    public TableColumn<TradeLog, String> logDate;
     public TableColumn<TradeLog, String> logStock;
     public TableColumn<TradeLog, String> logAction;
     public TableColumn<TradeLog, String> logPrice;
@@ -36,6 +34,7 @@ public class LogsController {
     public TableColumn<TradeSummary, String> summaryProfit;
     public TableColumn<TradeSummary, String> summaryPercent;
     public TableColumn<TradeSummary, String> summaryDays;
+    public TableColumn<TradeSummary, String> summaryType;
 
     public DatePicker datePicker;
     public TextField stockText;
@@ -56,10 +55,10 @@ public class LogsController {
     private void initLogs() {
         var logs = tradeLogService.getLogs();
         logTable.setItems(FXCollections.observableList(logs));
-        logDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        logDate.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getDate())));
         logStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         logPrice.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPrice())));
-        logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().isBuy() ? "BUY" : "SELL"));
+        logAction.setCellValueFactory(t -> new SimpleStringProperty(t.getValue().getAction()));
         logShares.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
         logFees.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getFees())));
         logNet.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getNetAmount())));
@@ -71,7 +70,7 @@ public class LogsController {
                 UIServiceProvider.getTradeDetailsDialogService().getTableRow(summaries));
 
         summaryTable.setItems(FXCollections.observableList(summaries));
-        summaryClosed.setCellValueFactory(new PropertyValueFactory<>("closeDate"));
+        summaryClosed.setCellValueFactory(s -> new SimpleStringProperty(prettify(s.getValue().getCloseDate())));
         summaryStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         summaryPosition.setCellValueFactory(s -> new SimpleStringProperty(prettify(s.getValue().getPosition())));
         summaryProfit.setCellValueFactory(s ->
@@ -79,6 +78,7 @@ public class LogsController {
         summaryPercent.setCellValueFactory(s ->
                 new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
         summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
+        summaryType.setCellValueFactory(s -> new SimpleStringProperty(s.getValue().getTradeType()));
     }
 
     public void addLog() {

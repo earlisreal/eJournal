@@ -179,7 +179,7 @@ public class SimpleAnalyticsService implements AnalyticsService {
             return "N/A";
         }
         var logs = tradeLogService.getLogs();
-        Period period = logs.get(logs.size() - 1).getDate().toLocalDate().until(now());
+        Period period = logs.get(logs.size() - 1).getDate().toLocalDate().until(now()).normalized();
         String age = "";
         if (period.getYears() > 0) age += period.getYears() + "yr ";
         if (period.getMonths() > 0) age += period.getMonths() + "m ";

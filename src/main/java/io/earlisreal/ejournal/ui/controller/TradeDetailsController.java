@@ -106,7 +106,7 @@ public class TradeDetailsController {
 
         if (summary.isClosed()) {
             list.add(new Pair<>("Closed", prettify(summary.getCloseDate())));
-            list.add(new Pair<>("Holding Period", String.valueOf(summary.getTradeLength())));
+            list.add(new Pair<>("Holding Period", String.valueOf(summary.getHoldingPeriod())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
             list.add(new Pair<>("Profit", prettify(summary.getProfit())));
             list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));

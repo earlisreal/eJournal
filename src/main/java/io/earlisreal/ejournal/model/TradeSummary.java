@@ -4,7 +4,9 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.Country;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +60,7 @@ public class TradeSummary {
     }
 
     public boolean isDayTrade() {
-        return openDate.equals(closeDate);
+        return openDate.toLocalDate().equals(closeDate.toLocalDate());
     }
 
     public double getPosition() {
@@ -87,6 +89,17 @@ public class TradeSummary {
 
     public long getTradeLength() {
         return getOpenDate().until(getCloseDate(), ChronoUnit.DAYS);
+    }
+
+    public String getHoldingPeriod() {
+        var open = getOpenDate();
+        var close = getCloseDate();
+        if (isDayTrade()) {
+            long seconds = open.until(close, ChronoUnit.SECONDS);
+            return (seconds / 60) + "m " + (seconds % 60) + "s";
+        }
+        Period period = open.toLocalDate().until(close.toLocalDate());
+        return period.getDays() + "d";
     }
 
     public double getShares() {

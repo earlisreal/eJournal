@@ -77,7 +77,7 @@ public class LogsController {
                 new SimpleStringProperty("" + prettify(s.getValue().getProfit())));
         summaryPercent.setCellValueFactory(s ->
                 new SimpleStringProperty(prettify(s.getValue().getProfitPercentage()) + "%"));
-        summaryDays.setCellValueFactory(new PropertyValueFactory<>("tradeLength"));
+        summaryDays.setCellValueFactory(s -> new SimpleStringProperty(s.getValue().getHoldingPeriod()));
         summaryType.setCellValueFactory(s -> new SimpleStringProperty(s.getValue().getTradeType()));
     }
 

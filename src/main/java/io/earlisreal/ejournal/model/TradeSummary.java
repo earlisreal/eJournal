@@ -125,6 +125,10 @@ public class TradeSummary {
         return isShort;
     }
 
+    public String getTradeType() {
+        return isShort ? "Short" : "Long";
+    }
+
     public Country getCountry() {
         return country;
     }

@@ -38,12 +38,12 @@
                      <children>
                         <TableView fx:id="logTable" editable="true" layoutX="9.0" layoutY="41.0" prefHeight="600.0" prefWidth="661.0">
                           <columns>
-                              <TableColumn fx:id="logDate" editable="false" prefWidth="111.0" text="Date" />
-                              <TableColumn fx:id="logStock" editable="false" prefWidth="74.0" text="Stock" />
-                              <TableColumn fx:id="logAction" editable="false" prefWidth="81.0" text="Action" />
-                              <TableColumn fx:id="logPrice" editable="false" prefWidth="77.0" sortable="false" text="Price" />
-                              <TableColumn fx:id="logShares" editable="false" sortable="false" text="Shares" />
-                              <TableColumn fx:id="logFees" editable="false" prefWidth="108.0" sortable="false" text="Fees" />
+                              <TableColumn fx:id="logDate" editable="false" prefWidth="129.0" text="Date" />
+                              <TableColumn fx:id="logStock" editable="false" prefWidth="81.0" text="Stock" />
+                              <TableColumn fx:id="logAction" editable="false" prefWidth="72.0" text="Action" />
+                              <TableColumn fx:id="logPrice" editable="false" prefWidth="72.0" sortable="false" text="Price" />
+                              <TableColumn fx:id="logShares" editable="false" prefWidth="87.0" sortable="false" text="Shares" />
+                              <TableColumn fx:id="logFees" editable="false" prefWidth="90.0" sortable="false" text="Fees" />
                               <TableColumn fx:id="logNet" editable="false" prefWidth="129.0" sortable="false" text="Net Amount" />
                           </columns>
                         </TableView>

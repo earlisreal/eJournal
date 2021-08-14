@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-// TODO : Make this a builder and create immutable class for TradeSummary
 public class TradeSummary {
 
     private final String stock;
@@ -27,7 +26,7 @@ public class TradeSummary {
 
     private double remainingShares;
 
-    public TradeSummary(TradeLog initialTrade) {
+    TradeSummary(TradeLog initialTrade) {
         this.stock = initialTrade.getStock();
         this.openDate = initialTrade.getDate();
         this.isShort = initialTrade.isShort();
@@ -45,20 +44,21 @@ public class TradeSummary {
         return logs.get(0).getBroker();
     }
 
-    public void buy(TradeLog log) {
+    void buy(TradeLog log) {
         shares += log.getShares();
         remainingShares += log.getShares();
         logs.add(log);
         totalBuy += log.getNetAmount();
     }
 
-    public void sell(TradeLog log) {
+    void sell(TradeLog log) {
         remainingShares -= log.getShares();
         logs.add(log);
         totalSell += log.getNetAmount();
     }
 
     public boolean isDayTrade() {
+        if (closeDate == null) return false;
         return openDate.toLocalDate().equals(closeDate.toLocalDate());
     }
 

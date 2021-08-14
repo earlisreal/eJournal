@@ -3,7 +3,9 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dao.TradeLogDAO;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.model.TradeSummaryBuilder;
 import io.earlisreal.ejournal.util.ParseUtil;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -110,36 +112,15 @@ public class SimpleTradeLogService implements TradeLogService {
         summaries.clear();
         openPositions.clear();
 
-        logs.sort(Comparator.comparing(TradeLog::getDate).thenComparing(tradeLog -> !tradeLog.isBuy()));
-        Map<String, TradeSummary> trades = new HashMap<>();
-        for (TradeLog log : logs) {
-            String stock = log.getStock();
-            if (trades.containsKey(stock)) {
-                var trade = trades.get(stock);
-                if (log.isBuy()) {
-                    trade.buy(log);
-                }
-                else {
-                    trade.sell(log);
-                }
-                if (trade.isClosed()) {
-                    trades.remove(stock);
-                    trade.setCloseDate(log.getDate());
-                    summaries.add(trade);
-                }
-            }
-            else {
-                var trade = new TradeSummary(log);
-                trades.put(stock, trade);
-            }
-        }
+        TradeSummaryBuilder tradeSummaryBuilder = new TradeSummaryBuilder(logs);
 
+        summaries.addAll(tradeSummaryBuilder.getSummaries());
         summaries.removeIf(summary -> summary.getCloseDate().isAfter(endDateFilter.atTime(LocalTime.MAX))
                 || summary.getCloseDate().isBefore(startDateFilter.atStartOfDay()));
         summaries.sort(Comparator.comparing(TradeSummary::getCloseDate).reversed());
         logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
 
-        openPositions.addAll(trades.values());
+        openPositions.addAll(tradeSummaryBuilder.getOpenPositions());
     }
 
 }

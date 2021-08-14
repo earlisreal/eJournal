@@ -172,6 +172,11 @@ public class TradeDetailsController {
                 return;
             }
             Path imagePath = (Path) event.getSource().getValue();
+            if (imagePath == null) {
+                // TODO : Add text to display fail
+                System.out.println("Failed to plot image");
+                return;
+            }
             try {
                 plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
                 plotImageView.setVisible(true);

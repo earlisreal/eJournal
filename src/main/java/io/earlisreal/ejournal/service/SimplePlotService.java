@@ -95,8 +95,9 @@ public class SimplePlotService implements PlotService {
 
         IntradayPlotArgument argument = new IntradayPlotArgument();
         argument.setOutputPath(imagePath.toString());
-        var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock());
-        argument.setDataPath(dataPath + ".csv");
+        var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock() + ".csv");
+        if (!Files.exists(dataPath)) return null;
+        argument.setDataPath(dataPath.toString());
 
         Map<String, Double> buys = new HashMap<>();
         Map<String, Double> shorts = new HashMap<>();

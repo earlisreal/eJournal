@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface CommonUtil {
 
-    DateTimeFormatter COMMON_FORMATTER = DateTimeFormatter.ofPattern("MM-dd-uuuu HH:mm");
+    DateTimeFormatter COMMON_FORMATTER = DateTimeFormatter.ofPattern("MM-dd-uuuu HH:mm:ss");
 
     static void handleException(Throwable e) {
         System.out.println(e.getMessage());

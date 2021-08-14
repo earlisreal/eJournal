@@ -5,7 +5,6 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.IntradayPlotArgument;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.scraper.StockPriceScraper;
-import io.earlisreal.ejournal.util.CommonUtil;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -15,19 +14,38 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-import static io.earlisreal.ejournal.util.Configs.plotDirectory;
-import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
+import static io.earlisreal.ejournal.util.Configs.INTRADAY_PLOT_DIRECTORY;
+import static io.earlisreal.ejournal.util.Configs.PLOT_DIRECTORY;
+import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class SimplePlotService implements PlotService {
 
     private final StockService stockService;
     private final StockPriceScraper stockPriceScraper;
 
+    private final Set<Path> imageCache;
+
     SimplePlotService(StockService stockService, StockPriceScraper stockPriceScraper) {
         this.stockService = stockService;
         this.stockPriceScraper = stockPriceScraper;
+        imageCache = new HashSet<>();
+    }
+
+    @Override
+    public void reloadCache() {
+        try {
+            Files.list(INTRADAY_PLOT_DIRECTORY).forEach(imageCache::add);
+            Files.list(PLOT_DIRECTORY).forEach(path -> {
+                if (!Files.isDirectory(path)) imageCache.add(path);
+            });
+        } catch (IOException e) {
+            handleException(e);
+        }
     }
 
     @Override
@@ -36,18 +54,19 @@ public class SimplePlotService implements PlotService {
             return plotIntraday(tradeSummary);
         }
 
-        Path imagePath = plotDirectory.resolve(generateImageName(tradeSummary));
+        Path imagePath = PLOT_DIRECTORY.resolve(generateImageName(tradeSummary));
+
         String stock = tradeSummary.getStock();
         LocalDate lastDate = stockService.getLastPriceDate(stock);
 
-        if (LocalDate.now().equals(lastDate) || tradeSummary.isClosed() && Files.exists(imagePath)) {
+        if (LocalDate.now().equals(lastDate) || tradeSummary.isClosed() && imageCache.contains(imagePath)) {
             return imagePath;
         }
 
         if (!tradeSummary.isClosed() || lastDate.isBefore(tradeSummary.getCloseDate().toLocalDate().plusDays(7))) {
             var csv = stockPriceScraper.scrapeStockPrice(tradeSummary.getStock());
             if (!csv.isEmpty()) {
-                Files.write(stocksDirectory.resolve(tradeSummary.getStock() + ".csv"), csv,
+                Files.write(STOCKS_DIRECTORY.resolve(tradeSummary.getStock() + ".csv"), csv,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             }
         }
@@ -64,17 +83,19 @@ public class SimplePlotService implements PlotService {
             }
         }
 
-        run("python", "python/scripts/plot.py", stocksDirectory.resolve(stock + ".csv").toString(),
+        run("python", "python/scripts/plot.py", STOCKS_DIRECTORY.resolve(stock + ".csv").toString(),
                 imagePath.toString(), tradeSummary.isClosed() ? "1" : "0", buys.toString(), sells.toString());
-
+        cacheImage(imagePath);
         return imagePath;
     }
 
     private Path plotIntraday(TradeSummary tradeSummary) throws IOException {
-        Path imagePath = plotDirectory.resolve("intraday").resolve(generateImageName(tradeSummary));
+        Path imagePath = INTRADAY_PLOT_DIRECTORY.resolve(generateImageName(tradeSummary));
+        if (imageCache.contains(imagePath)) return imagePath;
+
         IntradayPlotArgument argument = new IntradayPlotArgument();
         argument.setOutputPath(imagePath.toString());
-        var dataPath = stocksDirectory.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock());
+        var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock());
         argument.setDataPath(dataPath + ".csv");
 
         Map<String, Double> buys = new HashMap<>();
@@ -112,7 +133,12 @@ public class SimplePlotService implements PlotService {
         }
 
         run("python", "python/scripts/intraday-plot.py", args.toString());
+        cacheImage(imagePath);
         return imagePath;
+    }
+
+    private void cacheImage(Path path) {
+        imageCache.add(path);
     }
 
     private String generateImageName(TradeSummary tradeSummary) {
@@ -137,7 +163,7 @@ public class SimplePlotService implements PlotService {
                 System.out.println(output);
             }
         } catch (InterruptedException e) {
-            CommonUtil.handleException(e);
+            handleException(e);
         }
 
     }

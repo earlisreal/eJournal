@@ -9,4 +9,6 @@ public interface PlotService {
 
     Path plot(TradeSummary tradeSummary) throws IOException;
 
+    void reloadCache();
+
 }

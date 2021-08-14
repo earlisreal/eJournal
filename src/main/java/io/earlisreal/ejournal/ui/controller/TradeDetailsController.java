@@ -150,8 +150,6 @@ public class TradeDetailsController {
     }
 
     public void updateImage(TradeSummary tradeSummary) {
-        // TODO : Add caching of imagePath, maybe load it all on startup
-
         Service<Path> service = new Service<>() {
             @Override
             protected Task<Path> createTask() {

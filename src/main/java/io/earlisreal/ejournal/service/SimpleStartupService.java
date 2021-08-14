@@ -14,8 +14,9 @@ import java.util.concurrent.CompletableFuture;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
-import static io.earlisreal.ejournal.util.Configs.plotDirectory;
-import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
+import static io.earlisreal.ejournal.util.Configs.INTRADAY_PLOT_DIRECTORY;
+import static io.earlisreal.ejournal.util.Configs.PLOT_DIRECTORY;
+import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class SimpleStartupService implements StartupService {
 
@@ -27,13 +28,14 @@ public class SimpleStartupService implements StartupService {
     private final TradeLogService tradeLogService;
     private final CacheService cacheService;
     private final CompanyScraper usCompanyScraper;
+    private final PlotService plotService;
 
     private final List<StartupListener> listenerList;
 
     SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper,
                          ExchangeRateScraper exchangeRateScraper, StockService stockService,
                          TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService,
-                         CompanyScraper usCompanyScraper) {
+                         CompanyScraper usCompanyScraper, PlotService plotService) {
 
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
@@ -43,6 +45,7 @@ public class SimpleStartupService implements StartupService {
         this.analyticsService = analyticsService;
         this.cacheService = cacheService;
         this.usCompanyScraper = usCompanyScraper;
+        this.plotService = plotService;
 
         listenerList = new ArrayList<>();
     }
@@ -50,6 +53,7 @@ public class SimpleStartupService implements StartupService {
     @Override
     public void run() {
         createDirectories();
+        loadPlotCache();
         manageStockList();
         manageUsStockList();
 
@@ -57,6 +61,10 @@ public class SimpleStartupService implements StartupService {
 
         tradeLogService.initialize();
         analyticsService.initialize();
+    }
+
+    private void loadPlotCache() {
+        runAsync(plotService::reloadCache);
     }
 
     private void manageUsStockList() {
@@ -105,9 +113,10 @@ public class SimpleStartupService implements StartupService {
         runAsync(() -> {
             try {
                 for (Country country : Country.values()) {
-                    Files.createDirectories(stocksDirectory.resolve(country.name()));
+                    Files.createDirectories(STOCKS_DIRECTORY.resolve(country.name()));
                 }
-                Files.createDirectories(plotDirectory);
+                Files.createDirectories(PLOT_DIRECTORY);
+                Files.createDirectories(INTRADAY_PLOT_DIRECTORY);
             } catch (IOException e) {
                 handleException(e);
             }

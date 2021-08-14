@@ -30,7 +30,7 @@ public final class ServiceProvider {
                     startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(),
                             ScraperProvider.getCompanyScraper(), ScraperProvider.getExchangeRateScraper(),
                             getStockService(), getTradeLogService(), getAnalyticsService(), getCacheService(),
-                            ScraperProvider.getUsCompanyScraper());
+                            ScraperProvider.getUsCompanyScraper(), ServiceProvider.getPlotService());
                 }
             }
         }

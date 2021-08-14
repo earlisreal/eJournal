@@ -4,7 +4,6 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.Country;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
@@ -171,6 +170,7 @@ public class TradeSummary {
         if (remainingShares != summary.remainingShares) return false;
         if (!stock.equals(summary.stock)) return false;
         if (!openDate.equals(summary.openDate)) return false;
+        if (!logs.equals(summary.logs)) return false;
         return Objects.equals(closeDate, summary.closeDate);
     }
 

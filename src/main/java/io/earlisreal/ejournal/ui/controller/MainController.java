@@ -3,7 +3,6 @@ package io.earlisreal.ejournal.ui.controller;
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.BankTransaction;
-import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.model.TradeSummary;
@@ -15,6 +14,7 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.IntradayService;
+import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
@@ -59,17 +59,13 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
 import static java.time.LocalDate.now;
 
 public class MainController implements Initializable {
@@ -102,6 +98,7 @@ public class MainController implements Initializable {
     private final CacheService cacheService;
     private final IntradayService intradayService;
     private final StockService stockService;
+    private final PlotService plotService;
 
     private Parent log;
     private Parent analytics;
@@ -130,6 +127,7 @@ public class MainController implements Initializable {
         analyticsService = ServiceProvider.getAnalyticsService();
         intradayService = ServiceProvider.getIntradayService();
         stockService = ServiceProvider.getStockService();
+        plotService = ServiceProvider.getPlotService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
@@ -353,30 +351,17 @@ public class MainController implements Initializable {
     }
 
     private void downloadIntradayHistory(List<TradeSummary> summaries) {
-        List<TradeLog> tradeLogs = new ArrayList<>();
-        for (TradeSummary summary : summaries) {
-            if (summary.isDayTrade()) {
-                tradeLogs.addAll(summary.getLogs());
+        intradayService.download(summaries, list -> {
+            for (TradeSummary summary : list) {
+                runAsync(() -> {
+                    try {
+                        plotService.plot(summary);
+                    } catch (IOException e) {
+                        handleException(e);
+                    }
+                });
             }
-        }
-
-        Map<Stock, Set<LocalDate>> map = new HashMap<>();
-        tradeLogs.sort(Comparator.comparing(TradeLog::getDate));
-        for (TradeLog log : tradeLogs) {
-            Stock stock = stockService.getStock(log.getStock());
-            if (map.containsKey(stock)) {
-                map.get(stock).add(log.getDate().toLocalDate());
-            }
-            else {
-                Set<LocalDate> list = new LinkedHashSet<>();
-                list.add(log.getDate().toLocalDate());
-                map.put(stock, list);
-            }
-        }
-
-        for (var entry : map.entrySet()) {
-            intradayService.download(entry.getKey(), new ArrayList<>(entry.getValue()));
-        }
+        });
     }
 
     public void importCsv() {

@@ -1,12 +1,14 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.model.TradeSummary;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface IntradayService {
 
-    void download(Stock stock, List<LocalDate> dates);
+    void download(List<TradeSummary> tradeSummaries, Consumer<List<TradeSummary>> onDownloadFinish);
 
 }

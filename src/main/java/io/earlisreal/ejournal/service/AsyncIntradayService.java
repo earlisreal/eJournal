@@ -3,7 +3,9 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.client.AlphaVantageClient;
 import io.earlisreal.ejournal.dao.StockDAO;
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.exception.AlphaVantageLimitException;
+import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.io.IOException;
@@ -12,9 +14,15 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
@@ -33,7 +41,45 @@ public class AsyncIntradayService implements IntradayService {
     }
 
     @Override
-    public void download(Stock stock, List<LocalDate> dates) {
+    public void download(List<TradeSummary> summaries, Consumer<List<TradeSummary>> onDownloadFinish) {
+        List<TradeLog> tradeLogs = new ArrayList<>();
+        Map<String, List<TradeSummary>> summaryMap = new HashMap<>();
+        for (TradeSummary summary : summaries) {
+            if (summary.isDayTrade()) {
+                tradeLogs.addAll(summary.getLogs());
+            }
+
+            if (summaryMap.containsKey(summary.getStock())) {
+                summaryMap.get(summary.getStock()).add(summary);
+            }
+            else {
+                List<TradeSummary> summaryList = new ArrayList<>();
+                summaryList.add(summary);
+                summaryMap.put(summary.getStock(), summaryList);
+            }
+        }
+
+        Map<Stock, Set<LocalDate>> map = new HashMap<>();
+        tradeLogs.sort(Comparator.comparing(TradeLog::getDate));
+        for (TradeLog log : tradeLogs) {
+            Stock stock = stockDAO.getStockMap().get(log.getStock());
+            if (stock == null) continue;
+            if (map.containsKey(stock)) {
+                map.get(stock).add(log.getDate().toLocalDate());
+            }
+            else {
+                Set<LocalDate> list = new LinkedHashSet<>();
+                list.add(log.getDate().toLocalDate());
+                map.put(stock, list);
+            }
+        }
+
+        for (var entry : map.entrySet()) {
+            download(entry.getKey(), new ArrayList<>(entry.getValue()), () -> onDownloadFinish.accept(summaryMap.get(entry.getKey().getCode())));
+        }
+    }
+
+    public void download(Stock stock, List<LocalDate> dates, Runnable onDownloadFinish) {
         executorService.execute(() -> {
             System.out.println("Downloading Intraday data for " + stock.getCode());
             int year = 1;
@@ -88,6 +134,7 @@ public class AsyncIntradayService implements IntradayService {
             }
 
             clientIndex = (clientIndex + 1 ) % alphaVantageClients.size();
+            onDownloadFinish.run();
         });
     }
 

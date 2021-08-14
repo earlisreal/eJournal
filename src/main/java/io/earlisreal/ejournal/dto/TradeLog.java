@@ -76,6 +76,40 @@ public class TradeLog {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TradeLog log = (TradeLog) o;
+
+        if (isBuy != log.isBuy) return false;
+        if (Double.compare(log.price, price) != 0) return false;
+        if (Double.compare(log.shares, shares) != 0) return false;
+        if (isShort != log.isShort) return false;
+        if (!date.equals(log.date)) return false;
+        if (!stock.equals(log.stock)) return false;
+        if (!invoiceNo.equals(log.invoiceNo)) return false;
+        return broker == log.broker;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = date.hashCode();
+        result = 31 * result + stock.hashCode();
+        result = 31 * result + (isBuy ? 1 : 0);
+        temp = Double.doubleToLongBits(price);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(shares);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (isShort ? 1 : 0);
+        result = 31 * result + invoiceNo.hashCode();
+        result = 31 * result + broker.hashCode();
+        return result;
+    }
+
     public String getAction() {
         if (isShort) {
             if (isBuy) return "Cover Buy";

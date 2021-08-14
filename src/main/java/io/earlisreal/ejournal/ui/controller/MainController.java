@@ -6,6 +6,8 @@ import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
+import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.model.TradeSummaryBuilder;
 import io.earlisreal.ejournal.parser.invoice.InvoiceParserFactory;
 import io.earlisreal.ejournal.parser.ledger.LedgerParser;
 import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
@@ -338,8 +340,8 @@ public class MainController implements Initializable {
             var logs = tradeLogService.insert(parser.getTradeLogs());
             res += logs.size();
 
-            // TODO : download only when trade log is part of intraday trade
-            downloadIntradayHistory(logs);
+            TradeSummaryBuilder tradeSummaryBuilder = new TradeSummaryBuilder(logs);
+            downloadIntradayHistory(tradeSummaryBuilder.getSummaries());
 
             res += bankTransactionService.insert(parser.getBankTransactions());
         }
@@ -350,7 +352,14 @@ public class MainController implements Initializable {
         }
     }
 
-    private void downloadIntradayHistory(List<TradeLog> tradeLogs) {
+    private void downloadIntradayHistory(List<TradeSummary> summaries) {
+        List<TradeLog> tradeLogs = new ArrayList<>();
+        for (TradeSummary summary : summaries) {
+            if (summary.isDayTrade()) {
+                tradeLogs.addAll(summary.getLogs());
+            }
+        }
+
         Map<Stock, Set<LocalDate>> map = new HashMap<>();
         tradeLogs.sort(Comparator.comparing(TradeLog::getDate));
         for (TradeLog log : tradeLogs) {

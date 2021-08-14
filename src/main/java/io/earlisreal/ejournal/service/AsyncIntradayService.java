@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static io.earlisreal.ejournal.util.Configs.stocksDirectory;
+import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class AsyncIntradayService implements IntradayService {
 
@@ -107,7 +107,7 @@ public class AsyncIntradayService implements IntradayService {
 
         if (!records.isEmpty()) {
             try {
-                Files.write(stocksDirectory.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
+                Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
                 stockDAO.updateLastDate(stock.getCode(), maxDate);

@@ -86,7 +86,8 @@ public class DerbyStockDAO implements StockDAO {
         return false;
     }
 
-    private boolean insertStock(Stock stock) {
+    @Override
+    public boolean insertStock(Stock stock) {
         String sql = "INSERT INTO stock (code, name, price, country) VALUES (?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, stock.getCode());

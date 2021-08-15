@@ -105,6 +105,15 @@ public class SimpleStockService implements StockService {
         return stockMap.keySet();
     }
 
+    @Override
+    public boolean insertStock(Stock stock) {
+        if (stockDAO.insertStock(stock)) {
+            stockMap.put(stock.getCode(), stock);
+            return true;
+        }
+        return false;
+    }
+
     private void updateStockCodeMap() {
         stockCodeMap = new HashMap<>();
         for (var stock : stockMap.values()) {

@@ -34,4 +34,6 @@ public interface StockService {
 
     Collection<String> getStockList();
 
+    boolean insertStock(Stock stock);
+
 }

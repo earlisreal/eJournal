@@ -16,4 +16,6 @@ public interface StockDAO {
 
     boolean updateLastDate(String stock, LocalDate localDate);
 
+    boolean insertStock(Stock stock);
+
 }

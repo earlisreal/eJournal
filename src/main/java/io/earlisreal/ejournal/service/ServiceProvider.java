@@ -42,7 +42,8 @@ public final class ServiceProvider {
         if (plotService == null) {
             synchronized (ServiceProvider.class) {
                 if (plotService == null) {
-                    plotService = new SimplePlotService(getStockService(), ScraperProvider.getStockPriceScraper());
+                    plotService = new SimplePlotService(getStockService(), ScraperProvider.getStockPriceScraper(),
+                            getIntradayService());
                 }
             }
         }
@@ -132,7 +133,7 @@ public final class ServiceProvider {
                     for (String key : apiKey.split(",")) {
                         clients.add(new JsoupAlphaVantageClient(key));
                     }
-                    intradayService = new AsyncIntradayService(clients, DAOProvider.getStockDAO());
+                    intradayService = new AsyncIntradayService(clients, getStockService());
                 }
             }
         }

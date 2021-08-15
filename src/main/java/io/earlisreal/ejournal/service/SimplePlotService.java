@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,12 +28,14 @@ public class SimplePlotService implements PlotService {
 
     private final StockService stockService;
     private final StockPriceScraper stockPriceScraper;
+    private final IntradayService intradayService;
 
     private final Set<Path> imageCache;
 
-    SimplePlotService(StockService stockService, StockPriceScraper stockPriceScraper) {
+    SimplePlotService(StockService stockService, StockPriceScraper stockPriceScraper, IntradayService intradayService) {
         this.stockService = stockService;
         this.stockPriceScraper = stockPriceScraper;
+        this.intradayService = intradayService;
         imageCache = new HashSet<>();
     }
 
@@ -96,7 +99,11 @@ public class SimplePlotService implements PlotService {
         IntradayPlotArgument argument = new IntradayPlotArgument();
         argument.setOutputPath(imagePath.toString());
         var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock() + ".csv");
-        if (!Files.exists(dataPath)) return null;
+        if (!Files.exists(dataPath)) {
+            intradayService.download(List.of(tradeSummary));
+            System.out.println("Trying to download unknown stock. Try to comeback later");
+            return null;
+        }
         argument.setDataPath(dataPath.toString());
 
         Map<String, Double> buys = new HashMap<>();

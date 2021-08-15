@@ -1,7 +1,6 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.client.AlphaVantageClient;
-import io.earlisreal.ejournal.dao.StockDAO;
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.exception.AlphaVantageLimitException;
@@ -29,14 +28,14 @@ import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 public class AsyncIntradayService implements IntradayService {
 
     private final List<AlphaVantageClient> alphaVantageClients;
-    private final StockDAO stockDAO;
+    private final StockService stockService;
     private final ExecutorService executorService;
 
     private int clientIndex;
 
-    AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockDAO stockDAO) {
+    AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockService stockService) {
         this.alphaVantageClients = alphaVantageClients;
-        this.stockDAO = stockDAO;
+        this.stockService = stockService;
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
@@ -62,8 +61,15 @@ public class AsyncIntradayService implements IntradayService {
         Map<Stock, Set<LocalDate>> map = new HashMap<>();
         tradeLogs.sort(Comparator.comparing(TradeLog::getDate));
         for (TradeLog log : tradeLogs) {
-            Stock stock = stockDAO.getStockMap().get(log.getStock());
-            if (stock == null) continue;
+            Stock stock = stockService.getStock(log.getStock());
+            if (stock == null) {
+                stock = new Stock();
+                stock.setCode(log.getStock());
+                stock.setCountry(log.getBroker().getCountry());
+                if (stockService.insertStock(stock)) {
+                    System.out.println("Stock " + stock.getCode() + " not found and was inserted");
+                }
+            }
             if (map.containsKey(stock)) {
                 map.get(stock).add(log.getDate().toLocalDate());
             }
@@ -141,12 +147,11 @@ public class AsyncIntradayService implements IntradayService {
     private void saveCsv(Stock stock, List<String> csv) {
         LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
-        var formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd");
         LocalDate maxDate = null;
         for (int i = csv.size() - 1; i >= 0; --i) {
             String record = csv.get(i);
             if (record.trim().isEmpty()) continue;
-            LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), formatter);
+            LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), DateTimeFormatter.ISO_LOCAL_DATE);
             if (maxDate == null) maxDate = date;
             if (lastDate != null && date.isBefore(lastDate)) continue;
             records.add(record);
@@ -157,7 +162,7 @@ public class AsyncIntradayService implements IntradayService {
                 Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
-                stockDAO.updateLastDate(stock.getCode(), maxDate);
+                stockService.updateLastDate(stock.getCode(), maxDate);
             } catch (IOException e) {
                 CommonUtil.handleException(e);
             }

@@ -117,6 +117,7 @@ public class SimpleStockService implements StockService {
     private void updateStockCodeMap() {
         stockCodeMap = new HashMap<>();
         for (var stock : stockMap.values()) {
+            if (stock.getName() == null) continue;
             stockCodeMap.put(CommonUtil.trimStockName(stock.getName()), stock.getCode());
         }
     }

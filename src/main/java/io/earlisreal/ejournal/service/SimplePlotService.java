@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,9 +107,12 @@ public class SimplePlotService implements PlotService {
         }
         argument.setDataPath(dataPath.toString());
 
-        Map<String, Double> buys = new HashMap<>();
-        Map<String, Double> shorts = new HashMap<>();
-        Map<String, Double> sells = new HashMap<>();
+        Map<String, List<Double>> buys = new HashMap<>();
+        Map<String, List<Double>> shorts = new HashMap<>();
+        Map<String, List<Double>> sells = new HashMap<>();
+        int buysLength = 0;
+        int sellsLength = 0;
+        int shortsLength = 0;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:'00'");
         for (TradeLog log : tradeSummary.getLogs()) {
             var date = log.getDate();
@@ -117,11 +121,21 @@ public class SimplePlotService implements PlotService {
             }
             String dateStr = date.format(formatter);
             if (log.isBuy()) {
-                buys.put(dateStr, log.getPrice());
+                if (!buys.containsKey(dateStr)) buys.put(dateStr, new ArrayList<>());
+                buys.get(dateStr).add(log.getPrice());
+                buysLength = Math.max(buysLength, buys.get(dateStr).size());
             }
             else {
-                if (log.isShort()) shorts.put(dateStr, log.getPrice());
-                else sells.put(dateStr, log.getPrice());
+                if (log.isShort()) {
+                    if (!shorts.containsKey(dateStr)) shorts.put(dateStr, new ArrayList<>());
+                    shorts.get(dateStr).add(log.getPrice());
+                    shortsLength = Math.max(shortsLength, shorts.get(dateStr).size());
+                }
+                else {
+                    if (!sells.containsKey(dateStr)) sells.put(dateStr, new ArrayList<>());
+                    sells.get(dateStr).add(log.getPrice());
+                    sellsLength = Math.max(sellsLength, sells.get(dateStr).size());
+                }
             }
         }
 
@@ -130,6 +144,9 @@ public class SimplePlotService implements PlotService {
         argument.setShorts(shorts);
         argument.setStart(tradeSummary.getOpenDate().format(formatter));
         argument.setEnd(tradeSummary.getCloseDate().format(formatter));
+        argument.setBuysLength(buysLength);
+        argument.setSellsLength(sellsLength);
+        argument.setShortsLength(shortsLength);
         String json = JsonStream.serialize(argument);
 
         StringBuilder args = new StringBuilder();

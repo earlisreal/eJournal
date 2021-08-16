@@ -23,28 +23,46 @@ def main():
     end = dataframe.index.searchsorted(datetime.fromisoformat(args["end"]))
     dataframe = dataframe[start - 5:end + 5]
 
+    buys_length = args["buysLength"]
+    sells_length = args["sellsLength"]
+    shorts_length = args["shortsLength"]
     buy_markers = []
+    for i in range(buys_length):
+        buy_markers.append([])
+
     sell_markers = []
+    for i in range(sells_length):
+        sell_markers.append([])
+
     short_markers = []
+    for i in range(shorts_length):
+        short_markers.append([])
+
     buys = args["buys"]
     sells = args["sells"]
     shorts = args["shorts"]
     for index, row in dataframe.iterrows():
         d = str(index)
-        buy_markers.append(buys.get(d, numpy.nan))
-        sell_markers.append(sells.get(d, numpy.nan))
-        short_markers.append(shorts.get(d, numpy.nan))
 
-    buy_plot = make_plot(buy_markers, "green")
-    sell_plot = make_plot(sell_markers, "red")
-    short_plot = make_plot(short_markers, "blue")
+        for i in range(args["buysLength"]):
+            cur = buys.get(d, [])
+            buy_markers[i].append(cur[i] if i < len(cur) else numpy.nan)
+
+        for i in range(args["sellsLength"]):
+            cur = sells.get(d, [])
+            sell_markers[i].append(cur[i] if i < len(cur) else numpy.nan)
+
+        for i in range(args["shortsLength"]):
+            cur = shorts.get(d, [])
+            short_markers[i].append(cur[i] if i < len(cur) else numpy.nan)
+
     plot = []
-    if bool(shorts):
-        plot.append(short_plot)
-    if bool(buys):
-        plot.append(buy_plot)
-    if bool(sells):
-        plot.append(sell_plot)
+    for marker in buy_markers:
+        plot.append(make_plot(marker, "green"))
+    for marker in sell_markers:
+        plot.append(make_plot(marker, "red"))
+    for marker in short_markers:
+        plot.append(make_plot(marker, "blue"))
 
     mplfinance.plot(dataframe, type="candle", volume=True, addplot=plot, savefig=args["outputPath"], tight_layout=True)
 

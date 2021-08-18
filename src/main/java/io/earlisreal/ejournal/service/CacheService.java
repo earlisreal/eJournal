@@ -5,6 +5,10 @@ import java.time.LocalDate;
 
 public interface CacheService {
 
+    String TRADEZERO_USERNAME = "tradeZeroUsername";
+    String TRADEZERO_PASSWORD = "tradeZeroPassword";
+    String TRADEZERO_LAST_SYNC = "tradeZeroLastSync";
+
     void clear(int secretParam);
 
     Instant getLastSync(String email);

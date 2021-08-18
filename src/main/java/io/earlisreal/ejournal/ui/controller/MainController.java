@@ -2,6 +2,8 @@ package io.earlisreal.ejournal.ui.controller;
 
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import io.earlisreal.ejournal.client.JsoupTradeZeroClient;
+import io.earlisreal.ejournal.client.TradeZeroClient;
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
@@ -22,6 +24,7 @@ import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
 import io.earlisreal.ejournal.util.Pair;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,19 +33,24 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -60,6 +68,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
@@ -333,15 +342,7 @@ public class MainController implements Initializable {
                 broker = CommonUtil.identifyBroker(ledger);
             }
 
-            LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
-            parser.parse(lines);
-            var logs = tradeLogService.insert(parser.getTradeLogs());
-            res += logs.size();
-
-            TradeSummaryBuilder tradeSummaryBuilder = new TradeSummaryBuilder(logs);
-            downloadIntradayHistory(tradeSummaryBuilder.getSummaries());
-
-            res += bankTransactionService.insert(parser.getBankTransactions());
+            res += parseData(broker, lines);
         }
 
         showInfo("Ledger successfully imported", res + " Records Added");
@@ -599,6 +600,107 @@ public class MainController implements Initializable {
         alert.setContentText(message);
         alert.initOwner(grid.getScene().getWindow());
         alert.show();
+    }
+
+    public void importTradeZero() {
+        String username = cacheService.get(CacheService.TRADEZERO_USERNAME);
+        String password = cacheService.get(CacheService.TRADEZERO_PASSWORD);
+        if (username == null || password == null) {
+            var pair = showLogin();
+            if (pair.isPresent()) {
+                username = pair.get().getT();
+                password = pair.get().getU();
+
+                TradeZeroClient client = new JsoupTradeZeroClient(username, password);
+                try {
+                    if (client.login()) {
+                        cacheService.insert(CacheService.TRADEZERO_USERNAME, username);
+                        cacheService.insert(CacheService.TRADEZERO_PASSWORD, password);
+                        downloadTradeZeroData(username, password);
+                    }
+                    else {
+                        showError("Invalid Username or Password", "Please enter a valid credentials");
+                    }
+                } catch (IOException e) {
+                    handleException(e);
+                }
+            }
+        }
+        else {
+            downloadTradeZeroData(username, password);
+        }
+    }
+
+    private void downloadTradeZeroData(String username, String password) {
+        TradeZeroClient client = new JsoupTradeZeroClient(username, password);
+        LocalDate last = LocalDate.parse(cacheService.get(CacheService.TRADEZERO_LAST_SYNC, "2021-08-01"));
+        var csv = client.getTradesCsv(last, LocalDate.now());
+        System.out.println(csv.size() + " TradeZero Trades downloaded");
+        if (!csv.isEmpty()) {
+            cacheService.insert(CacheService.TRADEZERO_LAST_SYNC, LocalDate.now().toString());
+            int inserted = parseData(Broker.TRADE_ZERO, csv);
+            showInfo("TradeZero import success", "Inserted " + inserted + " Records");
+            if (inserted > 0) {
+                refresh();
+            }
+        }
+    }
+
+    private Optional<Pair<String, String>> showLogin() {
+        Dialog<Pair<String, String>> dialog = new Dialog<>();
+        dialog.setTitle("Login to TradeZero");
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField username = new TextField();
+        username.setPromptText("Username");
+        PasswordField password = new PasswordField();
+        password.setPromptText("Password");
+
+        grid.add(new Label("Username:"), 0, 0);
+        grid.add(username, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(password, 1, 1);
+
+        Node loginButton = dialog.getDialogPane().lookupButton(loginButtonType);
+        loginButton.setDisable(true);
+
+        username.textProperty().addListener((observable, oldValue, newValue) -> {
+            loginButton.setDisable(newValue.trim().isEmpty());
+        });
+
+        dialog.getDialogPane().setContent(grid);
+
+        Platform.runLater(username::requestFocus);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return new Pair<>(username.getText(), password.getText());
+            }
+            return null;
+        });
+
+        return dialog.showAndWait();
+    }
+
+    private int parseData(Broker broker, List<String> lines) {
+        int res = 0;
+        LedgerParser parser = LedgerParserFactory.getLedgerParser(broker);
+        parser.parse(lines);
+        var logs = tradeLogService.insert(parser.getTradeLogs());
+        res += logs.size();
+
+        TradeSummaryBuilder tradeSummaryBuilder = new TradeSummaryBuilder(logs);
+        downloadIntradayHistory(tradeSummaryBuilder.getSummaries());
+
+        res += bankTransactionService.insert(parser.getBankTransactions());
+
+        return res;
     }
 
 }

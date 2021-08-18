@@ -62,14 +62,15 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
 
             refreshExpiration();
             String raw = response.body();
-            return List.of(raw.split(System.lineSeparator()));
+            return List.of(raw.split("\n"));
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private boolean login() throws IOException {
+    @Override
+    public boolean login() throws IOException {
         var response = Jsoup.connect(loginUrl)
                 .data("username", username)
                 .data("password", password)

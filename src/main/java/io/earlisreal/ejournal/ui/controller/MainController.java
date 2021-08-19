@@ -644,9 +644,6 @@ public class MainController implements Initializable {
                 return new Task<>() {
                     @Override
                     protected Void call() {
-                        showLoading("Syncing TradeZero");
-                        syncTradeZero.setDisable(true);
-
                         LocalDate last = LocalDate.parse(cacheService.get(CacheService.TRADEZERO_LAST_SYNC, "2021-08-01"));
                         var csv = tradeZeroClient.getTradesCsv(last, LocalDate.now());
                         System.out.println(csv.size() + " TradeZero Trades downloaded");
@@ -668,6 +665,8 @@ public class MainController implements Initializable {
         service.setOnSucceeded(event -> syncingDone());
         service.setOnCancelled(event -> syncingDone());
 
+        showLoading("Syncing TradeZero");
+        syncTradeZero.setDisable(true);
         service.start();
     }
 

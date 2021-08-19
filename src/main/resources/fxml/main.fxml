@@ -57,7 +57,7 @@
       </GridPane>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: WHITE;" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
-            <ProgressIndicator fx:id="statusProgressIndicator" layoutX="60.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
+            <ProgressIndicator fx:id="statusProgressIndicator" layoutX="76.0" layoutY="710.0" prefHeight="20.0" prefWidth="20.0" />
             <TableView fx:id="analyticsTable" layoutX="10.0" layoutY="35.0" prefHeight="434.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="35.0">
               <columns>
                 <TableColumn fx:id="analyticsColumn" editable="false" prefWidth="100.0" resizable="false" sortable="false" text="Analytics" />
@@ -67,13 +67,12 @@
             <PieChart fx:id="battingChart" labelsVisible="false" layoutX="12.0" layoutY="547.0" legendVisible="false" prefHeight="120.0" prefWidth="120.0" title="Accuracy" />
             <Circle fill="WHITE" layoutX="112.0" layoutY="634.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
             <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="12.0" layoutY="626.0" prefHeight="17.0" prefWidth="200.0" text="38.46%" textAlignment="CENTER" />
-            <Label fx:id="statusLabel" layoutX="90.0" layoutY="711.0" text="Syncing" textAlignment="CENTER" />
+            <Label fx:id="statusLabel" layoutX="106.0" layoutY="711.0" text="Syncing" textAlignment="CENTER" />
             <Label layoutX="79.0" layoutY="10.0" text="Statistics" textAlignment="CENTER" AnchorPane.topAnchor="10.0">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
-            <Button fx:id="emailSyncButton" layoutX="140.0" layoutY="707.0" mnemonicParsing="false" onAction="#syncEmail" text="Email Sync" />
             <Label layoutX="49.0" layoutY="478.0" text="Risk Reward Ratio" textAlignment="CENTER">
                <font>
                   <Font size="16.0" />
@@ -175,10 +174,11 @@
             <Menu fx:id="brokerMenu" mnemonicParsing="false" text="Broker" />
           <Menu mnemonicParsing="false" text="Import">
             <items>
+                  <MenuItem fx:id="importEmail" mnemonicParsing="false" onAction="#syncEmail" text="Email" />
               <MenuItem mnemonicParsing="false" onAction="#importInvoice" text="Invoice" />
                   <MenuItem mnemonicParsing="false" onAction="#importLedger" text="Ledger" />
                   <MenuItem mnemonicParsing="false" onAction="#importCsv" text="CSV" />
-                  <MenuItem mnemonicParsing="false" onAction="#importTradeZero" text="TradeZero" />
+                  <MenuItem fx:id="syncTradeZero" mnemonicParsing="false" onAction="#importTradeZero" text="TradeZero" />
             </items>
           </Menu>
             <Menu mnemonicParsing="false" text="Export">

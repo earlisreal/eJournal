@@ -18,7 +18,6 @@ import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.IntradayService;
 import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
-import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
@@ -38,13 +37,13 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.RadioMenuItem;
@@ -91,7 +90,8 @@ public class MainController implements Initializable {
     public TableColumn<Pair<String, String>, String> analyticsColumn;
     public TableColumn<Pair<String, String>, String> valueColumn;
     public Label accuracyLabel;
-    public Button emailSyncButton;
+    public MenuItem importEmail;
+    public MenuItem syncTradeZero;
 
     public BorderPane dashboardBorder;
     public BorderPane analyticsBorder;
@@ -106,7 +106,6 @@ public class MainController implements Initializable {
     private final AnalyticsService analyticsService;
     private final CacheService cacheService;
     private final IntradayService intradayService;
-    private final StockService stockService;
     private final PlotService plotService;
 
     private Parent log;
@@ -122,6 +121,8 @@ public class MainController implements Initializable {
     private DashboardController dashboardController;
     private PlanController planController;
 
+    private TradeZeroClient tradeZeroClient;
+
     private BorderPane selectedPane;
     private final FileChooser.ExtensionFilter pdfFilter;
     private final FileChooser.ExtensionFilter txtFilter;
@@ -135,7 +136,6 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
         intradayService = ServiceProvider.getIntradayService();
-        stockService = ServiceProvider.getStockService();
         plotService = ServiceProvider.getPlotService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
@@ -396,7 +396,7 @@ public class MainController implements Initializable {
     }
 
     public void syncEmail() {
-        emailSyncButton.setDisable(true);
+        importEmail.setDisable(true);
         Service<Integer> service = new Service<>() {
             @Override
             protected Task<Integer> createTask() {
@@ -409,9 +409,7 @@ public class MainController implements Initializable {
             }
         };
 
-        statusProgressIndicator.setVisible(true);
-        statusLabel.setVisible(true);
-        statusLabel.setText("Syncing");
+        showLoading("Syncing Email");
         service.start();
 
         service.setOnSucceeded(workerStateEvent -> {
@@ -448,7 +446,8 @@ public class MainController implements Initializable {
         statusLabel.setText("All is well");
         statusProgressIndicator.setVisible(false);
         statusLabel.setVisible(false);
-        emailSyncButton.setDisable(false);
+        importEmail.setDisable(false);
+        syncTradeZero.setDisable(false);
     }
 
     public void clearData(ActionEvent event) {
@@ -611,12 +610,12 @@ public class MainController implements Initializable {
                 username = pair.get().getT();
                 password = pair.get().getU();
 
-                TradeZeroClient client = new JsoupTradeZeroClient(username, password);
+                tradeZeroClient = new JsoupTradeZeroClient(username, password);
                 try {
-                    if (client.login()) {
+                    if (tradeZeroClient.login()) {
                         cacheService.insert(CacheService.TRADEZERO_USERNAME, username);
                         cacheService.insert(CacheService.TRADEZERO_PASSWORD, password);
-                        downloadTradeZeroData(username, password);
+                        downloadTradeZeroData();
                     }
                     else {
                         showError("Invalid Username or Password", "Please enter a valid credentials");
@@ -632,18 +631,44 @@ public class MainController implements Initializable {
     }
 
     private void downloadTradeZeroData(String username, String password) {
-        TradeZeroClient client = new JsoupTradeZeroClient(username, password);
-        LocalDate last = LocalDate.parse(cacheService.get(CacheService.TRADEZERO_LAST_SYNC, "2021-08-01"));
-        var csv = client.getTradesCsv(last, LocalDate.now());
-        System.out.println(csv.size() + " TradeZero Trades downloaded");
-        if (!csv.isEmpty()) {
-            cacheService.insert(CacheService.TRADEZERO_LAST_SYNC, LocalDate.now().toString());
-            int inserted = parseData(Broker.TRADE_ZERO, csv);
-            showInfo("TradeZero import success", "Inserted " + inserted + " Records");
-            if (inserted > 0) {
-                refresh();
-            }
+        if (tradeZeroClient == null) {
+            tradeZeroClient = new JsoupTradeZeroClient(username, password);
         }
+        downloadTradeZeroData();
+    }
+
+    private void downloadTradeZeroData() {
+        Service<Void> service = new Service<>() {
+            @Override
+            protected Task<Void> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Void call() {
+                        showLoading("Syncing TradeZero");
+                        syncTradeZero.setDisable(true);
+
+                        LocalDate last = LocalDate.parse(cacheService.get(CacheService.TRADEZERO_LAST_SYNC, "2021-08-01"));
+                        var csv = tradeZeroClient.getTradesCsv(last, LocalDate.now());
+                        System.out.println(csv.size() + " TradeZero Trades downloaded");
+                        if (!csv.isEmpty()) {
+                            cacheService.insert(CacheService.TRADEZERO_LAST_SYNC, LocalDate.now().toString());
+                            int inserted = parseData(Broker.TRADE_ZERO, csv);
+                            showInfo("TradeZero import success", "Inserted " + inserted + " Records");
+                            if (inserted > 0) {
+                                refresh();
+                            }
+                        }
+                        return null;
+                    }
+                };
+            }
+        };
+
+        service.setOnFailed(event -> syncingDone());
+        service.setOnSucceeded(event -> syncingDone());
+        service.setOnCancelled(event -> syncingDone());
+
+        service.start();
     }
 
     private Optional<Pair<String, String>> showLogin() {
@@ -670,9 +695,7 @@ public class MainController implements Initializable {
         Node loginButton = dialog.getDialogPane().lookupButton(loginButtonType);
         loginButton.setDisable(true);
 
-        username.textProperty().addListener((observable, oldValue, newValue) -> {
-            loginButton.setDisable(newValue.trim().isEmpty());
-        });
+        username.textProperty().addListener((observable, oldValue, newValue) -> loginButton.setDisable(newValue.trim().isEmpty()));
 
         dialog.getDialogPane().setContent(grid);
 
@@ -701,6 +724,12 @@ public class MainController implements Initializable {
         res += bankTransactionService.insert(parser.getBankTransactions());
 
         return res;
+    }
+
+    private void showLoading(String text) {
+        statusProgressIndicator.setVisible(true);
+        statusLabel.setVisible(true);
+        statusLabel.setText(text);
     }
 
 }

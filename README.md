@@ -18,3 +18,5 @@ Visualize your trading performance with One Click!
 - COL Financial
 - AAA Equities
 - 2TradeAsia
+- eToro
+- TradeZero

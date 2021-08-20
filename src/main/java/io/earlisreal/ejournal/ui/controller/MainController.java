@@ -638,31 +638,33 @@ public class MainController implements Initializable {
     }
 
     private void downloadTradeZeroData() {
-        Service<Void> service = new Service<>() {
+        Service<Integer> service = new Service<>() {
             @Override
-            protected Task<Void> createTask() {
+            protected Task<Integer> createTask() {
                 return new Task<>() {
                     @Override
-                    protected Void call() {
+                    protected Integer call() {
                         LocalDate last = LocalDate.parse(cacheService.get(CacheService.TRADEZERO_LAST_SYNC, "2021-08-01"));
                         var csv = tradeZeroClient.getTradesCsv(last, LocalDate.now());
-                        System.out.println(csv.size() + " TradeZero Trades downloaded");
-                        if (!csv.isEmpty()) {
-                            cacheService.insert(CacheService.TRADEZERO_LAST_SYNC, LocalDate.now().toString());
-                            int inserted = parseData(Broker.TRADE_ZERO, csv);
-                            showInfo("TradeZero import success", "Inserted " + inserted + " Records");
-                            if (inserted > 0) {
-                                refresh();
-                            }
+                        if (csv.isEmpty()) {
+                            return 0;
                         }
-                        return null;
+                        cacheService.insert(CacheService.TRADEZERO_LAST_SYNC, LocalDate.now().toString());
+                        return parseData(Broker.TRADE_ZERO, csv);
                     }
                 };
             }
         };
 
         service.setOnFailed(event -> syncingDone());
-        service.setOnSucceeded(event -> syncingDone());
+        service.setOnSucceeded(event -> {
+            int inserted = (Integer) event.getSource().getValue();
+            showInfo("TradeZero import success", "Inserted " + inserted + " Records");
+            if (inserted > 0) {
+                refresh();
+            }
+            syncingDone();
+        });
         service.setOnCancelled(event -> syncingDone());
 
         showLoading("Syncing TradeZero");

@@ -153,12 +153,10 @@ public class AsyncIntradayService implements IntradayService {
     private void saveCsv(Stock stock, List<String> csv) {
         LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
-        LocalDate maxDate = null;
         for (int i = csv.size() - 1; i >= 0; --i) {
             String record = csv.get(i);
             if (record.trim().isEmpty()) continue;
-            LocalDate date = LocalDate.parse(record.substring(0, record.indexOf(' ')), DateTimeFormatter.ISO_LOCAL_DATE);
-            if (maxDate == null) maxDate = date;
+            LocalDate date = parseDate(record);
             if (lastDate != null && date.isBefore(lastDate)) continue;
             records.add(record);
         }
@@ -168,11 +166,15 @@ public class AsyncIntradayService implements IntradayService {
                 Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
-                stockService.updateLastDate(stock.getCode(), maxDate);
+                stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)));
             } catch (IOException e) {
                 CommonUtil.handleException(e);
             }
         }
+    }
+
+    private LocalDate parseDate(String record) {
+        return LocalDate.parse(record.substring(0, record.indexOf(' ')), DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
 }

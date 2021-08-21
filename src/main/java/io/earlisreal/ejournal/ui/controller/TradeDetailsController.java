@@ -113,7 +113,7 @@ public class TradeDetailsController {
             list.add(new Pair<>("Holding Period", String.valueOf(summary.getHoldingPeriod())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
             list.add(new Pair<>("Profit", prettify(summary.getProfit())));
-            list.add(new Pair<>("Profit Percentage", prettify(summary.getProfitPercentage()) + "%"));
+            list.add(new Pair<>("Profit %", prettify(summary.getProfitPercentage()) + "%"));
         }
         else {
             double soldShares = summary.getShares() - summary.getRemainingShares();
@@ -221,11 +221,6 @@ public class TradeDetailsController {
 
     private TradeSummary getCurrentSummary() {
         return summaries.get(index);
-    }
-
-    private class TriplePair {
-
-
     }
 
 }

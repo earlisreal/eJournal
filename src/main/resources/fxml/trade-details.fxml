@@ -12,25 +12,25 @@
 
 <AnchorPane fx:id="anchorPane" prefHeight="744.0" prefWidth="694.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
-      <Group layoutX="141.0" layoutY="123.0">
+      <Group layoutX="161.0" layoutY="122.0">
          <children>
-            <ImageView fx:id="plotImageView" fitHeight="453.0" fitWidth="664.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
+            <ImageView fx:id="plotImageView" fitHeight="450.0" fitWidth="624.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
                <viewport>
                   <Rectangle2D />
                </viewport>
             </ImageView>
-            <ProgressIndicator fx:id="loadingProgress" layoutX="123.0" layoutY="134.0" />
-            <Label fx:id="loadingLabel" layoutX="189.0" layoutY="152.0" text="Loading Plot Image" />
+            <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" />
+            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Plot Image" />
          </children>
       </Group>
-      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="120.0" prefWidth="671.0">
+      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="123.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="120.0" text="Date" />
             <TableColumn fx:id="logAction" prefWidth="124.0" text="Action" />
             <TableColumn fx:id="logPrice" prefWidth="85.0" text="Price" />
             <TableColumn fx:id="logShares" prefWidth="87.0" text="Shares" />
             <TableColumn fx:id="logFees" prefWidth="87.0" text="Fees" />
-            <TableColumn fx:id="logNet" prefWidth="165.0" text="Net Amount" />
+            <TableColumn fx:id="logNet" prefWidth="153.0" text="Net Amount" />
          </columns>
       </TableView>
       <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/noheader.css">

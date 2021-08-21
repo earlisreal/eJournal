@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class AsyncIntradayService implements IntradayService {
     private final List<AlphaVantageClient> alphaVantageClients;
     private final StockService stockService;
     private final ExecutorService executorService;
+    private final Set<String> lock;
 
     private int clientIndex;
 
@@ -37,6 +39,7 @@ public class AsyncIntradayService implements IntradayService {
         this.alphaVantageClients = alphaVantageClients;
         this.stockService = stockService;
         this.executorService = Executors.newSingleThreadExecutor();
+        this.lock = new HashSet<>();
     }
 
     @Override
@@ -86,6 +89,8 @@ public class AsyncIntradayService implements IntradayService {
     }
 
     public void download(Stock stock, List<LocalDate> dates, Runnable onDownloadFinish) {
+        if (lock.contains(stock.getCode())) return;
+        lock.add(stock.getCode());
         executorService.execute(() -> {
             System.out.println("Downloading Intraday data for " + stock.getCode());
             int year = 1;
@@ -140,6 +145,7 @@ public class AsyncIntradayService implements IntradayService {
             }
 
             clientIndex = (clientIndex + 1 ) % alphaVantageClients.size();
+            lock.remove(stock.getCode());
             onDownloadFinish.run();
         });
     }

@@ -48,9 +48,13 @@ public class TradeDetailsController {
     public ProgressIndicator loadingProgress;
     public Label loadingLabel;
 
-    public TableView<Pair<String, String>> statisticTable;
-    public TableColumn<Pair<String, String>, String> statisticColumn;
-    public TableColumn<Pair<String, String>, String> valueColumn;
+    public TableView<List<Pair<String, String>>> statisticTable;
+    public TableColumn<List<Pair<String, String>>, String> statisticColumn;
+    public TableColumn<List<Pair<String, String>>, String> valueColumn;
+    public TableColumn<List<Pair<String, String>>, String> statisticColumn1;
+    public TableColumn<List<Pair<String, String>>, String> valueColumn1;
+    public TableColumn<List<Pair<String, String>>, String> statisticColumn2;
+    public TableColumn<List<Pair<String, String>>, String> valueColumn2;
     public Button nextButton;
     public Button previousButton;
 
@@ -134,9 +138,23 @@ public class TradeDetailsController {
             list.add(new Pair<>("Unrealized Profit %", round(unrealizedProfit / cost * 100) + "%"));
         }
 
-        statisticTable.setItems(FXCollections.observableList(list));
-        statisticColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getT()));
-        valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getU()));
+        List<List<Pair<String, String>>> pairs = new ArrayList<>();
+        List<Pair<String, String>> pair = new ArrayList<>();
+        for (int i = 0; i < list.size(); ++i) {
+            if (i % 3 == 0) {
+                pair = new ArrayList<>();
+                pairs.add(pair);
+            }
+            pair.add(list.get(i));
+        }
+
+        statisticTable.setItems(FXCollections.observableList(pairs));
+        statisticColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(0).getT()));
+        valueColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(0).getU()));
+        statisticColumn1.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(1).getT()));
+        valueColumn1.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(1).getU()));
+        statisticColumn2.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(2).getT()));
+        valueColumn2.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().get(2).getU()));
     }
 
     private void initializeLogs(TradeSummary tradeSummary) {
@@ -203,6 +221,11 @@ public class TradeDetailsController {
 
     private TradeSummary getCurrentSummary() {
         return summaries.get(index);
+    }
+
+    private class TriplePair {
+
+
     }
 
 }

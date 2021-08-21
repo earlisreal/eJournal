@@ -1,0 +1,9 @@
+.column-header-background {
+    -fx-max-height: 0;
+    -fx-pref-height: 0;
+    -fx-min-height: 0;
+}
+
+.table-view {
+    -fx-table-cell-border-color: transparent;
+}

@@ -10,20 +10,20 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane fx:id="anchorPane" prefHeight="700.0" prefWidth="700.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
+<AnchorPane fx:id="anchorPane" prefHeight="744.0" prefWidth="694.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
-      <Group layoutX="376.0" layoutY="177.0">
+      <Group layoutX="141.0" layoutY="123.0">
          <children>
-            <ImageView fx:id="plotImageView" fitHeight="309.0" fitWidth="436.0" layoutX="-127.0" layoutY="-109.0" preserveRatio="true">
+            <ImageView fx:id="plotImageView" fitHeight="453.0" fitWidth="664.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
                <viewport>
                   <Rectangle2D />
                </viewport>
             </ImageView>
-            <ProgressIndicator fx:id="loadingProgress" layoutX="6.0" layoutY="19.0" />
-            <Label fx:id="loadingLabel" layoutX="72.0" layoutY="37.0" text="Loading Plot Image" />
+            <ProgressIndicator fx:id="loadingProgress" layoutX="123.0" layoutY="134.0" />
+            <Label fx:id="loadingLabel" layoutX="189.0" layoutY="152.0" text="Loading Plot Image" />
          </children>
       </Group>
-      <TableView fx:id="logTable" layoutX="14.0" layoutY="436.0" prefHeight="250.0" prefWidth="671.0">
+      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="120.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="120.0" text="Date" />
             <TableColumn fx:id="logAction" prefWidth="124.0" text="Action" />
@@ -33,13 +33,17 @@
             <TableColumn fx:id="logNet" prefWidth="165.0" text="Net Amount" />
          </columns>
       </TableView>
-      <TableView fx:id="statisticTable" layoutX="14.0" layoutY="14.0" prefHeight="416.0" prefWidth="225.0">
+      <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/noheader.css">
          <columns>
-            <TableColumn fx:id="statisticColumn" prefWidth="100.0" text="Statistic" />
+            <TableColumn fx:id="statisticColumn" editable="false" prefWidth="100.0" sortable="false" style="-fx-font-weight: bold;" text="Statistic" />
             <TableColumn fx:id="valueColumn" prefWidth="124.0" text="Value" />
+            <TableColumn fx:id="statisticColumn1" prefWidth="100.0" style="-fx-font-weight: bold;" text="Statistic" />
+            <TableColumn fx:id="valueColumn1" prefWidth="124.0" text="Value" />
+            <TableColumn fx:id="statisticColumn2" prefWidth="100.0" style="-fx-font-weight: bold;" text="Statistic" />
+            <TableColumn fx:id="valueColumn2" prefWidth="119.0" text="Value" />
          </columns>
       </TableView>
-      <Button fx:id="nextButton" layoutX="645.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
-      <Button fx:id="previousButton" layoutX="578.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
+      <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
+      <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
    </children>
 </AnchorPane>

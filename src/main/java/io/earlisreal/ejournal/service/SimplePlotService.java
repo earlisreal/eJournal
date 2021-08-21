@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import com.jsoniter.output.JsonStream;
+import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.IntradayPlotArgument;
 import io.earlisreal.ejournal.model.TradeSummary;
@@ -105,6 +106,15 @@ public class SimplePlotService implements PlotService {
             System.out.println("Trying to download unknown stock. Try to comeback later");
             return null;
         }
+        else {
+            Stock stock = stockService.getStock(tradeSummary.getStock());
+            if (stock.getLastDate().isBefore(tradeSummary.getCloseDate().toLocalDate())) {
+                intradayService.download(List.of(tradeSummary));
+                System.out.println("Trying to download incomplete Data. Try to comeback later");
+                return null;
+            }
+        }
+
         argument.setDataPath(dataPath.toString());
 
         Map<String, List<Double>> buys = new HashMap<>();

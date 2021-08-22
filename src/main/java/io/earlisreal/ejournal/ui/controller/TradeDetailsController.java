@@ -106,24 +106,21 @@ public class TradeDetailsController {
         list.add(new Pair<>("Stock", summary.getStock()));
         list.add(new Pair<>("Name", stockService.getName(summary.getStock())));
         list.add(new Pair<>("Type", summary.getTradeType()));
-        list.add(new Pair<>("Open", prettify(summary.getOpenDate())));
-        list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
-        list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
-        list.add(new Pair<>("Position", prettify(summary.getPosition())));
 
+        list.add(new Pair<>("Open", prettify(summary.getOpenDate())));
         if (summary.isClosed()) {
             list.add(new Pair<>("Closed", prettify(summary.getCloseDate())));
             list.add(new Pair<>("Holding Period", String.valueOf(summary.getHoldingPeriod())));
+
+            list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
+            list.add(new Pair<>("Position", prettify(summary.getPosition())));
+            list.add(new Pair<>("Profit %", prettify(summary.getProfitPercentage()) + "%"));
+
+            list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
             list.add(new Pair<>("Average Sell", prettify(summary.getAverageSell())));
             list.add(new Pair<>("Profit", prettify(summary.getProfit())));
-            list.add(new Pair<>("Profit %", prettify(summary.getProfitPercentage()) + "%"));
         }
         else {
-            double soldShares = summary.getShares() - summary.getRemainingShares();
-            double profit = ((summary.getTotalSell() / soldShares) - summary.getAverageBuy()) * soldShares;
-            list.add(new Pair<>("Realized Profit", prettify(profit)));
-            list.add(new Pair<>("Realized Profit %", round(profit / (soldShares * summary.getAverageBuy()) * 100) + "%"));
-
             String hold = "";
             Period period = summary.getOpenDate().toLocalDate().until(LocalDate.now());
             if (period.getYears() > 0) {
@@ -133,12 +130,23 @@ public class TradeDetailsController {
                 hold += period.getMonths() + " Months ";
             }
             hold += period.getDays() + " Days";
-            list.add(new Pair<>("Holding Days", hold));
 
             double cost = summary.getAverageBuy() * summary.getRemainingShares();
             double unrealizedProfit = stockService.getPrice(summary.getStock()) * summary.getRemainingShares() - cost;
+
+            double soldShares = summary.getShares() - summary.getRemainingShares();
+            double profit = ((summary.getTotalSell() / soldShares) - summary.getAverageBuy()) * soldShares;
+
+            list.add(new Pair<>("Holding Days", hold));
             list.add(new Pair<>("Unrealized Profit", prettify(unrealizedProfit)));
+
+            list.add(new Pair<>("Total Shares", prettify(summary.getShares())));
+            list.add(new Pair<>("Position", prettify(summary.getPosition())));
             list.add(new Pair<>("Unrealized Profit %", round(unrealizedProfit / cost * 100) + "%"));
+
+            list.add(new Pair<>("Average Buy", prettify(summary.getAverageBuy())));
+            list.add(new Pair<>("Realized Profit", prettify(profit)));
+            list.add(new Pair<>("Realized Profit %", round(profit / (soldShares * summary.getAverageBuy()) * 100) + "%"));
         }
 
         List<List<Pair<String, String>>> pairs = new ArrayList<>();

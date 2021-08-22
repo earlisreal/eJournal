@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -147,6 +148,7 @@ public class AnalyticsController {
         Month month = date.getMonth();
         var map = service.getSummaries().stream()
                 .filter(summary -> summary.getCloseDate() != null && summary.getCloseDate().getMonth() == month)
+                .sorted(Comparator.comparing(TradeSummary::getCloseDate))
                 .collect(Collectors.groupingBy(tradeSummary -> tradeSummary.getCloseDate().toLocalDate().getDayOfMonth()));
 
         int x = 0;
@@ -187,9 +189,7 @@ public class AnalyticsController {
         dayLabel.setText(String.valueOf(day));
         if (!summaries.isEmpty()) {
             vBox.getStyleClass().add("hover");
-            vBox.setOnMouseClicked(event -> {
-                UIServiceProvider.getTradeDetailsDialogService().show(summaries.get(0), summaries);
-            });
+            vBox.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(summaries.get(0), summaries));
 
             trades.setText(summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
             double sum = summaries.stream().mapToDouble(TradeSummary::getProfit).sum();

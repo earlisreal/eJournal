@@ -50,5 +50,6 @@
       </TableView>
       <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
+      <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
    </children>
 </AnchorPane>

@@ -57,6 +57,7 @@ public class TradeDetailsController {
     public TableColumn<List<Pair<String, String>>, String> valueColumn2;
     public Button nextButton;
     public Button previousButton;
+    public Label ofLabel;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -96,6 +97,8 @@ public class TradeDetailsController {
 
         initializeStatistics(getCurrentSummary());
         initializeLogs(getCurrentSummary());
+
+        ofLabel.setText(index + 1 + " of " + summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
     }
 
     private void initializeStatistics(TradeSummary summary) {

@@ -180,7 +180,6 @@ public class AnalyticsController {
     }
 
     private void setData(VBox vBox, int day, List<TradeSummary> summaries) {
-
         Label dayLabel = (Label) vBox.getChildren().get(0);
         Label amount = (Label) vBox.getChildren().get(1);
         Label trades = (Label) vBox.getChildren().get(2);
@@ -188,6 +187,10 @@ public class AnalyticsController {
         dayLabel.setText(String.valueOf(day));
         if (!summaries.isEmpty()) {
             vBox.getStyleClass().add("hover");
+            vBox.setOnMouseClicked(event -> {
+                UIServiceProvider.getTradeDetailsDialogService().show(summaries.get(0), summaries);
+            });
+
             trades.setText(summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
             double sum = summaries.stream().mapToDouble(TradeSummary::getProfit).sum();
             amount.setText("$" + prettify(sum));

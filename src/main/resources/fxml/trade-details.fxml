@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Rectangle2D?>
 <?import javafx.scene.Group?>
 <?import javafx.scene.control.Button?>
@@ -42,6 +43,10 @@
             <TableColumn fx:id="statisticColumn2" prefWidth="100.0" style="-fx-font-weight: bold;" text="Statistic" />
             <TableColumn fx:id="valueColumn2" prefWidth="119.0" text="Value" />
          </columns>
+         <styleClass>
+            <String fx:value="no-border" />
+            <String fx:value="no-header" />
+         </styleClass>
       </TableView>
       <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />

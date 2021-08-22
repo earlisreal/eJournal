@@ -144,8 +144,6 @@ public class AnalyticsController {
     }
 
     private void initializeDailyChart(LocalDate date) {
-        var children = dailyGridPane.getChildren();
-        System.out.println("Size: " + children.size());
         Month month = date.getMonth();
         var map = service.getSummaries().stream()
                 .filter(summary -> summary.getCloseDate() != null && summary.getCloseDate().getMonth() == month)
@@ -157,8 +155,9 @@ public class AnalyticsController {
         int y = start.getDayOfWeek().getValue();
 
         Node[][] grid = new Node[5][7];
-        for (var node : children) {
+        for (var node : dailyGridPane.getChildren()) {
             if (!(node instanceof VBox)) continue;
+            node.getStyleClass().add("default");
             int row = 0;
             int column = 0;
             if (node.hasProperties()) {
@@ -181,20 +180,22 @@ public class AnalyticsController {
     }
 
     private void setData(VBox vBox, int day, List<TradeSummary> summaries) {
+
         Label dayLabel = (Label) vBox.getChildren().get(0);
         Label amount = (Label) vBox.getChildren().get(1);
         Label trades = (Label) vBox.getChildren().get(2);
 
         dayLabel.setText(String.valueOf(day));
         if (!summaries.isEmpty()) {
+            vBox.getStyleClass().add("hover");
             trades.setText(summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
             double sum = summaries.stream().mapToDouble(TradeSummary::getProfit).sum();
             amount.setText("$" + prettify(sum));
             if (sum > 0) {
-                vBox.setStyle("-fx-background-color: #90EE90;");
+                vBox.getStyleClass().add("gain");
             }
             else {
-                vBox.setStyle("-fx-background-color: #ffcccb;");
+                vBox.getStyleClass().add("loss");
             }
         }
     }

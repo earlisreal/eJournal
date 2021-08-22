@@ -1,4 +1,18 @@
-.table-view:row-selection .table-row-cell:filled:hover {
+.clickable-row .table-view:row-selection .table-row-cell:filled:hover {
     -fx-background-color: #0096c9;
     -fx-cursor: hand;
+}
+
+.daily-grid Line {
+    -fx-stroke: WHITE;
+}
+
+.no-header .column-header-background {
+    -fx-max-height: 0;
+    -fx-pref-height: 0;
+    -fx-min-height: 0;
+}
+
+.no-border .table-view {
+    -fx-table-cell-border-color: transparent;
 }

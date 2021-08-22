@@ -33,7 +33,7 @@
             <TableColumn fx:id="logNet" prefWidth="153.0" text="Net Amount" />
          </columns>
       </TableView>
-      <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/noheader.css">
+      <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
          <columns>
             <TableColumn fx:id="statisticColumn" editable="false" prefWidth="100.0" sortable="false" style="-fx-font-weight: bold;" text="Statistic" />
             <TableColumn fx:id="valueColumn" prefWidth="124.0" text="Value" />

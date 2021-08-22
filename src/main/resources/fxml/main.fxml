@@ -87,7 +87,7 @@
       </AnchorPane>
       <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" GridPane.rowIndex="1">
          <children>
-            <VBox onMouseClicked="#showDashboard" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showDashboard" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/general.css">
                <children>
                   <BorderPane fx:id="dashboardBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -102,7 +102,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox onMouseClicked="#showAnalytics" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showAnalytics" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/general.css">
                <children>
                   <BorderPane fx:id="analyticsBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -117,7 +117,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox onMouseClicked="#showLog" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showLog" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/general.css">
                <children>
                   <BorderPane fx:id="logBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -132,7 +132,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox onMouseClicked="#showBankTransaction" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showBankTransaction" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/general.css">
                <children>
                   <BorderPane fx:id="bankBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>
@@ -147,7 +147,7 @@
                   </BorderPane>
                </children>
             </VBox>
-            <VBox onMouseClicked="#showPlan" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/navigation.css">
+            <VBox onMouseClicked="#showPlan" prefHeight="90.0" prefWidth="101.0" styleClass="hover" stylesheets="@../stylesheet/general.css">
                <children>
                   <BorderPane fx:id="planBorder" prefHeight="90.0" prefWidth="101.0">
                      <center>

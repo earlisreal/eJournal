@@ -18,7 +18,7 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TableView fx:id="summaryTable" layoutX="7.0" layoutY="7.0" prefHeight="635.0" prefWidth="665.0" stylesheets="@../stylesheet/table.css">
+                        <TableView fx:id="summaryTable" layoutX="7.0" layoutY="7.0" prefHeight="635.0" prefWidth="665.0" styleClass="clickable-row" stylesheets="@../stylesheet/table.css">
                           <columns>
                             <TableColumn fx:id="summaryClosed" prefWidth="122.0" text="Closed" />
                             <TableColumn fx:id="summaryStock" prefWidth="81.0" text="Stock" />

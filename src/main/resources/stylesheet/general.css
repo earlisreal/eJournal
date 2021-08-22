@@ -1,0 +1,26 @@
+.hover-highlight:hover {
+    -fx-background-color:  #f4f4f4;
+    -fx-cursor: hand;
+}
+
+.hover:hover {
+    -fx-background-color: WHITE;
+    -fx-cursor: hand;
+}
+
+.default {
+    -fx-background-color:  #f4f4f4;
+}
+
+.gain {
+    -fx-background-color: #90EE90;
+}
+
+.loss {
+    -fx-background-color: #ffcccb;
+}
+
+.highlight {
+    -fx-background-color: WHITE;
+    -fx-cursor: hand;
+}

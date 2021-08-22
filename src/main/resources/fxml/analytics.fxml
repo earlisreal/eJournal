@@ -37,7 +37,7 @@
       </BarChart>
       <HBox layoutX="14.0" layoutY="37.0" prefHeight="99.0" prefWidth="680.0">
          <children>
-            <VBox fx:id="successProfit" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <VBox fx:id="successProfit" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefWidth="170.0" text="DITO">
                      <font>
@@ -62,7 +62,7 @@
                   </Label>
                </children>
             </VBox>
-            <VBox fx:id="failLoss" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <VBox fx:id="failLoss" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefWidth="170.0" text="DITO">
                      <font>
@@ -87,7 +87,7 @@
                   </Label>
                </children>
             </VBox>
-            <VBox fx:id="successPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <VBox fx:id="successPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefWidth="170.0" text="DITO">
                      <font>
@@ -112,7 +112,7 @@
                   </Label>
                </children>
             </VBox>
-            <VBox fx:id="failPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <VBox fx:id="failPercent" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefWidth="170.0" text="DITO">
                      <font>
@@ -181,7 +181,7 @@
               <content>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <GridPane fx:id="dailyGridPane" gridLinesVisible="true" layoutX="14.0" layoutY="42.0" prefHeight="268.0" prefWidth="652.0" styleClass="daily-grid" stylesheets="@../stylesheet/table.css">
+                        <GridPane fx:id="dailyGridPane" layoutX="14.0" layoutY="42.0" prefHeight="268.0" prefWidth="652.0">
                           <columnConstraints>
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -199,257 +199,425 @@
                               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                           </rowConstraints>
                            <children>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="0" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="1" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="2" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="3" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="4" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="4" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="5" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="5" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="6" GridPane.rowIndex="0">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="6" GridPane.rowIndex="0">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="3" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="3" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="4" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="4" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="5" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="5" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="6" GridPane.rowIndex="1">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="6" GridPane.rowIndex="1">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="0" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="3" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="4" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="4" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="5" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="5" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="6" GridPane.rowIndex="2">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="6" GridPane.rowIndex="2">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="0" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="2" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="2" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="3" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="3" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="4" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="4" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="5" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="5" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="6" GridPane.rowIndex="3">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="6" GridPane.rowIndex="3">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets bottom="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="0" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="0" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="1" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="2" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="2" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="3" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="3" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="4" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="4" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="5" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="5" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets right="5.0" />
+                                 </GridPane.margin>
                               </VBox>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-background-color: #f4f4f4;" styleClass="hover" stylesheets="@../stylesheet/navigation.css" GridPane.columnIndex="6" GridPane.rowIndex="4">
+                              <VBox prefHeight="200.0" prefWidth="100.0" stylesheets="@../stylesheet/general.css" GridPane.columnIndex="6" GridPane.rowIndex="4">
                                  <children>
                                     <Label text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                     <Label alignment="CENTER" prefHeight="17.0" prefWidth="93.0" text="" />
                                  </children>
+                                 <GridPane.margin>
+                                    <Insets />
+                                 </GridPane.margin>
                               </VBox>
                            </children>
                         </GridPane>
-                        <Button layoutY="2.0" mnemonicParsing="false" text="January" />
-                        <Button layoutX="58.0" layoutY="2.0" mnemonicParsing="false" text="February" />
-                        <Button layoutX="127.0" layoutY="2.0" mnemonicParsing="false" text="March" />
-                        <Button layoutX="183.0" layoutY="2.0" mnemonicParsing="false" text="April" />
+                        <HBox alignment="CENTER" prefHeight="44.0" prefWidth="680.0">
+                           <children>
+                              <Button mnemonicParsing="false" text="JAN">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="FEB">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="MAR">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="APR">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="MAY">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="JUN">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="JUL">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="AUG">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="SEP">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="OCT">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="NOV">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button mnemonicParsing="false" text="DEC">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </Button>
+                           </children>
+                           <padding>
+                              <Insets bottom="7.0" left="7.0" right="7.0" top="7.0" />
+                           </padding>
+                        </HBox>
                      </children>
                   </AnchorPane>
               </content>

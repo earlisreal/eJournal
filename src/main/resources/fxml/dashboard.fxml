@@ -47,7 +47,7 @@
       </HBox>
       <HBox fx:id="previousTradesBox" layoutX="210.0" layoutY="34.0" prefHeight="80.0" prefWidth="480.0">
          <children>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DDMPR" textAlignment="CENTER">
@@ -59,7 +59,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -71,7 +71,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -83,7 +83,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -95,7 +95,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -107,7 +107,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -119,7 +119,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">
@@ -131,7 +131,7 @@
                   <Line endX="100.0" layoutX="60.0" layoutY="38.5" rotate="90.0" scaleX="0.3" startX="-100.0" strokeWidth="0.2" />
                </children>
             </Pane>
-            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/last-trade.css">
+            <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
                <children>
                   <Label alignment="CENTER" prefHeight="17.0" prefWidth="60.0" text="WIN" textAlignment="CENTER" textFill="#009600" />
                   <Label alignment="CENTER" contentDisplay="CENTER" layoutY="26.0" prefHeight="25.0" prefWidth="60.0" text="DITO" textAlignment="CENTER">

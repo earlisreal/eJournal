@@ -56,6 +56,7 @@ public class Stock {
     }
 
     public LocalDate getLastDate() {
+        if (lastDate == null) return LocalDate.of(2000, 1, 1);
         return lastDate;
     }
 

@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.ui.service;
 
+import com.google.api.client.util.StringUtils;
+import com.google.api.client.util.Strings;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.ui.controller.TradeDetailsController;
 import javafx.fxml.FXMLLoader;
@@ -38,17 +40,17 @@ public class TradeDetailsDialogService {
 
     public TableRow<TradeSummary> getTableRow(List<TradeSummary> summaries) {
         TableRow<TradeSummary> row = new TableRow<>();
-        row.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(row.getItem(), summaries));
+        row.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(row.getItem(), summaries, "All Trades"));
         return row;
     }
 
-    public void show(TradeSummary summary, List<TradeSummary> summaries) {
+    public void show(TradeSummary summary, List<TradeSummary> summaries, String title) {
         if (summary == null) return;
 
         controller.setSummaries(summaries);
         controller.show(summary);
 
-        stage.setTitle("Trade Summary");
+        stage.setTitle("Trade Summary" + (Strings.isNullOrEmpty(title) ? "" : " - " + title));
         stage.setResizable(false);
         stage.getIcons().add(new Image(getClass().getResourceAsStream("/eJournal-logo.png")));
         stage.show();

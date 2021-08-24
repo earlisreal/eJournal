@@ -15,6 +15,10 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -117,7 +121,7 @@ public class AnalyticsController {
         percent.setText(prettify(summary.getProfitPercentage()) + "%");
         value.setText(prettify(summary.getProfit()));
 
-        vBox.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary, summaries));
+        vBox.setOnMouseClicked(unused -> UIServiceProvider.getTradeDetailsDialogService().show(summary, summaries, "Remarkable Trades"));
     }
 
     private void initializeEquityChart() {
@@ -189,7 +193,8 @@ public class AnalyticsController {
         dayLabel.setText(String.valueOf(day));
         if (!summaries.isEmpty()) {
             vBox.getStyleClass().add("hover");
-            vBox.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(summaries.get(0), summaries));
+            String title = summaries.get(0).getCloseDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL));
+            vBox.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(summaries.get(0), summaries, title));
 
             trades.setText(summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
             double sum = summaries.stream().mapToDouble(TradeSummary::getProfit).sum();

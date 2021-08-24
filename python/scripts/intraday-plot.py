@@ -21,7 +21,7 @@ def main():
 
     start = dataframe.index.searchsorted(datetime.fromisoformat(args["start"]))
     end = dataframe.index.searchsorted(datetime.fromisoformat(args["end"]))
-    dataframe = dataframe[start - 10:end + 10]
+    dataframe = dataframe[start - 30:end + 30]
 
     buys_length = args["buysLength"]
     sells_length = args["sellsLength"]

@@ -26,12 +26,13 @@
       </Group>
       <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="123.0" prefWidth="671.0">
          <columns>
-            <TableColumn fx:id="logDate" prefWidth="120.0" text="Date" />
-            <TableColumn fx:id="logAction" prefWidth="124.0" text="Action" />
-            <TableColumn fx:id="logPrice" prefWidth="85.0" text="Price" />
-            <TableColumn fx:id="logShares" prefWidth="87.0" text="Shares" />
-            <TableColumn fx:id="logFees" prefWidth="87.0" text="Fees" />
-            <TableColumn fx:id="logNet" prefWidth="153.0" text="Net Amount" />
+            <TableColumn fx:id="logDate" prefWidth="125.0" text="Date" />
+            <TableColumn fx:id="logAction" prefWidth="72.0" text="Action" />
+            <TableColumn fx:id="logPrice" prefWidth="77.0" text="Price" />
+            <TableColumn fx:id="logShares" prefWidth="89.0" text="Shares" />
+            <TableColumn fx:id="logFees" prefWidth="82.0" text="Fees" />
+            <TableColumn fx:id="logNet" prefWidth="109.0" text="Net Amount" />
+            <TableColumn fx:id="logProfit" prefWidth="102.0" text="Realized Profit" />
          </columns>
       </TableView>
       <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">

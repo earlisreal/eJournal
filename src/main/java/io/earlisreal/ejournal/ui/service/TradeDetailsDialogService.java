@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.ui.service;
 
-import com.google.api.client.util.StringUtils;
 import com.google.api.client.util.Strings;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.ui.controller.TradeDetailsController;
@@ -13,6 +12,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
@@ -52,7 +52,7 @@ public class TradeDetailsDialogService {
 
         stage.setTitle("Trade Summary" + (Strings.isNullOrEmpty(title) ? "" : " - " + title));
         stage.setResizable(false);
-        stage.getIcons().add(new Image(getClass().getResourceAsStream("/eJournal-logo.png")));
+        stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/eJournal-logo.png"))));
         stage.show();
     }
 

@@ -19,6 +19,7 @@ public class TradeLog {
     private Broker broker;
     private String remarks;
     private Double fees;
+    private double profit;
 
     public TradeLog() {}
 
@@ -209,6 +210,14 @@ public class TradeLog {
 
     public void setFees(double fees) {
         this.fees = fees;
+    }
+
+    public double getProfit() {
+        return profit;
+    }
+
+    public void setProfit(double profit) {
+        this.profit = profit;
     }
 
 }

@@ -14,13 +14,6 @@ public class TradeSummaryBuilder {
     private final Map<String, TradeSummary> trades = new HashMap<>();
     private final List<TradeSummary> summaries = new ArrayList<>();
 
-    public TradeSummaryBuilder() {
-
-    }
-
-    public TradeSummaryBuilder(TradeLog initialLog) {
-    }
-
     public TradeSummaryBuilder(List<TradeLog> tradeLogs) {
         tradeLogs.sort(Comparator.comparing(TradeLog::getDate).thenComparing(tradeLog -> !tradeLog.isBuy()));
         for (TradeLog log : tradeLogs) {
@@ -29,9 +22,15 @@ public class TradeSummaryBuilder {
                 var trade = trades.get(stock);
                 if (log.isBuy()) {
                     trade.buy(log);
+                    if (trade.isShort()) {
+                        log.setProfit((trade.getAverageSell() - log.getPrice()) * log.getShares());
+                    }
                 }
                 else {
                     trade.sell(log);
+                    if (!trade.isShort()) {
+                        log.setProfit((log.getPrice() - trade.getAverageBuy()) * log.getShares());
+                    }
                 }
                 if (trade.isClosed()) {
                     trades.remove(stock);

@@ -86,4 +86,21 @@ public interface CommonUtil {
         new Thread(runnable).start();
     }
 
+    static String normalize(long seconds) {
+        long minutes = seconds / 60;
+        seconds %= 60;
+        long hours = minutes / 60;
+        minutes %= 60;
+        long days = hours / 24;
+        hours %= 60;
+        String hold = "";
+        if (days > 0) hold += days + " days";
+        else {
+            if (hours > 0) hold += hours + "h ";
+            if (minutes > 0) hold += minutes + "m ";
+            if (seconds > 0) hold += seconds + "s";
+        }
+        return hold;
+    }
+
 }

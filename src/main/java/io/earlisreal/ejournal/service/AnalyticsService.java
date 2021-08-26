@@ -31,7 +31,7 @@ public interface AnalyticsService {
 
     double getProfitFactor();
 
-    double getAverageHoldingDays();
+    String getAverageHoldingDays();
 
     List<XYChart.Data<String, Double>> getEquityData();
 

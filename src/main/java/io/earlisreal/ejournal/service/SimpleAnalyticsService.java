@@ -11,6 +11,7 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.earlisreal.ejournal.util.CommonUtil.normalize;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 import static java.time.LocalDate.now;
 
@@ -111,8 +112,9 @@ public class SimpleAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public double getAverageHoldingDays() {
-        return tradeLogService.getTradeSummaries().stream().collect(Collectors.averagingDouble(TradeSummary::getTradeLength));
+    public String getAverageHoldingDays() {
+        long seconds = tradeLogService.getTradeSummaries().stream().collect(Collectors.averagingLong(TradeSummary::getTradeLength)).longValue();
+        return normalize(seconds);
     }
 
     @Override

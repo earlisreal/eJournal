@@ -5,11 +5,12 @@ import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static io.earlisreal.ejournal.util.CommonUtil.normalize;
 
 public class TradeSummary {
 
@@ -86,19 +87,12 @@ public class TradeSummary {
         return getProfit() / totalBuy * 100;
     }
 
-    public long getTradeLength() {
-        return getOpenDate().until(getCloseDate(), ChronoUnit.DAYS);
+    public String getHoldingPeriod() {
+        return normalize(getTradeLength());
     }
 
-    public String getHoldingPeriod() {
-        var open = getOpenDate();
-        var close = getCloseDate();
-        if (isDayTrade()) {
-            long seconds = open.until(close, ChronoUnit.SECONDS);
-            return (seconds / 60) + "m " + (seconds % 60) + "s";
-        }
-        Period period = open.toLocalDate().until(close.toLocalDate());
-        return period.getDays() + "d";
+    public long getTradeLength() {
+        return getOpenDate().until(getCloseDate(), ChronoUnit.SECONDS);
     }
 
     public double getShares() {

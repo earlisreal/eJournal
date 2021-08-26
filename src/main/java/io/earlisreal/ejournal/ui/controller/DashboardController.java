@@ -122,7 +122,7 @@ public class DashboardController implements Initializable, StartupListener {
         lastStock.setText(lastTrade.getStock());
         lastClosedDate.setText(lastTrade.getCloseDate().toString());
         lastPosition.setText(prettify(lastTrade.getPosition()));
-        lastHolding.setText(String.valueOf(lastTrade.getTradeLength()));
+        lastHolding.setText(String.valueOf(lastTrade.getHoldingPeriod()));
         lastProfit.setText(prettify(lastTrade.getProfit()));
     }
 

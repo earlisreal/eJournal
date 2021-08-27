@@ -27,3 +27,5 @@ Visualize your trading performance with One Click!
 - Scene Builder version 8 - [download link](https://gluonhq.com/products/scene-builder/)
 - Java 11
 - Gradle 7
+- Python 3
+- mplfinance - `pip install mplfinance`

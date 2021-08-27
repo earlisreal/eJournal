@@ -8,6 +8,7 @@ Visualize your trading performance with One Click!
 # Features
 - One Click get all data from email
 - Auto Plot your trades
+![Dashboard screenshot](./screenshots/plot.PNG)
 - All statistics like any other journal platform
 - Charts and Analytics
 - Import Invoice and Ledgers
@@ -20,3 +21,9 @@ Visualize your trading performance with One Click!
 - 2TradeAsia
 - eToro
 - TradeZero
+
+# Development Getting Started
+## Pre-requisite
+- Scene Builder version 8 - [download link](https://gluonhq.com/products/scene-builder/)
+- Java 11
+- Gradle 7

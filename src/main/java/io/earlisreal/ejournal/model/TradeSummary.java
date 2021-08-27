@@ -46,13 +46,18 @@ public class TradeSummary {
     }
 
     void buy(TradeLog log) {
-        shares += log.getShares();
+        if (!isShort) {
+            shares += log.getShares();
+        }
         remainingShares += log.getShares();
         logs.add(log);
         totalBuy += log.getNetAmount();
     }
 
     void sell(TradeLog log) {
+        if (isShort) {
+            shares += log.getShares();
+        }
         remainingShares -= log.getShares();
         logs.add(log);
         totalSell += log.getNetAmount();

@@ -20,22 +20,6 @@
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.AnalyticsController">
    <children>
-      <BarChart fx:id="topWinners" layoutX="15.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Winner">
-        <xAxis>
-           <NumberAxis side="BOTTOM" />
-        </xAxis>
-        <yAxis>
-           <CategoryAxis side="LEFT" />
-        </yAxis>
-      </BarChart>
-      <BarChart fx:id="topLosers" layoutX="362.0" layoutY="137.0" prefHeight="210.0" prefWidth="330.0" title="Top 5 Loser">
-         <xAxis>
-            <NumberAxis side="BOTTOM" />
-         </xAxis>
-         <yAxis>
-            <CategoryAxis side="LEFT" />
-         </yAxis>
-      </BarChart>
       <HBox layoutX="14.0" layoutY="37.0" prefHeight="99.0" prefWidth="680.0">
          <children>
             <VBox fx:id="successProfit" prefHeight="122.0" prefWidth="170.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
@@ -144,13 +128,13 @@
       <Label alignment="CENTER" layoutX="184.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (Loss)" />
       <Label alignment="CENTER" layoutX="352.0" layoutY="14.0" prefWidth="170.0" text="Most Successfull Trade (%)" />
       <Label alignment="CENTER" layoutX="522.0" layoutY="14.0" prefWidth="170.0" text="Worst Trade (%)" />
-      <TabPane layoutX="12.0" layoutY="340.0" prefHeight="354.0" prefWidth="680.0" tabClosingPolicy="UNAVAILABLE">
+      <TabPane layoutX="12.0" layoutY="190.0" prefHeight="490.0" prefWidth="680.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
           <Tab closable="false" text="Equity">
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <LineChart fx:id="equityChart" layoutY="-2.0" legendVisible="false" prefHeight="327.0" prefWidth="680.0">
+                        <LineChart fx:id="equityChart" layoutY="67.0" legendVisible="false" prefHeight="327.0" prefWidth="680.0">
                            <xAxis>
                               <CategoryAxis label="Date" side="BOTTOM" />
                            </xAxis>
@@ -166,7 +150,7 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <BarChart fx:id="monthlyBarChart" layoutY="2.0" legendVisible="false" prefHeight="322.0" prefWidth="680.0">
+                        <BarChart fx:id="monthlyBarChart" layoutY="70.0" legendVisible="false" prefHeight="322.0" prefWidth="680.0">
                           <xAxis>
                             <CategoryAxis label="Month" side="BOTTOM" />
                           </xAxis>
@@ -182,7 +166,7 @@
               <content>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <GridPane fx:id="dailyGridPane" layoutX="14.0" layoutY="42.0" prefHeight="268.0" prefWidth="652.0">
+                        <GridPane fx:id="dailyGridPane" layoutX="14.0" layoutY="101.0" prefHeight="300.0" prefWidth="652.0">
                           <columnConstraints>
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -554,11 +538,6 @@
                         </GridPane>
                         <HBox fx:id="dailyHBox" alignment="CENTER" prefHeight="44.0" prefWidth="680.0">
                            <children>
-                              <ChoiceBox fx:id="dailyYearChoice" prefHeight="25.0" prefWidth="74.0">
-                                 <HBox.margin>
-                                    <Insets right="7.0" />
-                                 </HBox.margin>
-                              </ChoiceBox>
                               <Button mnemonicParsing="false" onAction="#changeMonth" text="JAN">
                                  <HBox.margin>
                                     <Insets right="7.0" />
@@ -624,11 +603,17 @@
                               <Insets bottom="7.0" left="7.0" right="7.0" top="7.0" />
                            </padding>
                         </HBox>
+                        <Label fx:id="currentMonthLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="275.0" layoutY="57.0" prefHeight="27.0" prefWidth="130.0" text="August">
+                           <font>
+                              <Font name="System Bold" size="18.0" />
+                           </font>
+                        </Label>
                      </children>
                   </AnchorPane>
               </content>
             </Tab>
         </tabs>
       </TabPane>
+      <ChoiceBox fx:id="dailyYearChoice" layoutX="17.0" layoutY="158.0" prefHeight="25.0" prefWidth="74.0" />
    </children>
 </AnchorPane>

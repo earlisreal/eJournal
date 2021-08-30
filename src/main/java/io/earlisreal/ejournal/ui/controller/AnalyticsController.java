@@ -5,7 +5,6 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
@@ -24,12 +23,12 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -40,8 +39,6 @@ import static java.time.DayOfWeek.SUNDAY;
 public class AnalyticsController implements Initializable {
 
     public LineChart<String, Double> equityChart;
-    public BarChart<Double, String> topWinners;
-    public BarChart<Double, String> topLosers;
     public VBox successProfit;
     public VBox failLoss;
     public VBox successPercent;
@@ -50,6 +47,7 @@ public class AnalyticsController implements Initializable {
     public GridPane dailyGridPane;
     public HBox dailyHBox;
     public ChoiceBox<Integer> dailyYearChoice;
+    public Label currentMonthLabel;
 
     private final AnalyticsService service;
 
@@ -69,8 +67,6 @@ public class AnalyticsController implements Initializable {
 
     public void reload() {
         initializeEquityChart();
-        initializeTopLoser();
-        initializeTopWinner();
         initializeRemarkableTrades();
         initializeMonthlyChart();
         initializeDailyChart(LocalDate.now());
@@ -78,7 +74,7 @@ public class AnalyticsController implements Initializable {
 
     public void changeMonth(ActionEvent actionEvent) {
         Button button = (Button) actionEvent.getSource();
-        Month month = Month.of(dailyHBox.getChildren().indexOf(button));
+        Month month = Month.of(dailyHBox.getChildren().indexOf(button) + 1);
         var date = LocalDate.of(dailyYearChoice.getValue(), month, 1);
         initializeDailyChart(date);
     }
@@ -157,18 +153,6 @@ public class AnalyticsController implements Initializable {
         equityChart.setData(FXCollections.observableList(List.of(series)));
     }
 
-    private void initializeTopWinner() {
-        XYChart.Series<Double, String> series = new XYChart.Series<>();
-        series.setData(FXCollections.observableList(service.getTopWinners()));
-        topWinners.setData(FXCollections.observableList(List.of(series)));
-    }
-
-    private void initializeTopLoser() {
-        XYChart.Series<Double, String> series = new XYChart.Series<>();
-        series.setData(FXCollections.observableList(service.getTopLosers()));
-        topLosers.setData(FXCollections.observableList(List.of(series)));
-    }
-
     private void initializeMonthlyChart() {
         XYChart.Series<String, Double> series = new XYChart.Series<>();
         series.setData(FXCollections.observableList(service.getMonthlyProfit()));
@@ -177,6 +161,7 @@ public class AnalyticsController implements Initializable {
 
     private void initializeDailyChart(LocalDate date) {
         Month month = date.getMonth();
+        currentMonthLabel.setText(month.getDisplayName(TextStyle.FULL, Locale.getDefault()));
         var map = service.getSummaries().stream()
                 .filter(summary -> summary.getCloseDate() != null)
                 .filter(summary -> summary.getCloseDate().getYear() == date.getYear())

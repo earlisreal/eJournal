@@ -6,6 +6,7 @@
 <?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
@@ -551,64 +552,69 @@
                               </VBox>
                            </children>
                         </GridPane>
-                        <HBox alignment="CENTER" prefHeight="44.0" prefWidth="680.0">
+                        <HBox fx:id="dailyHBox" alignment="CENTER" prefHeight="44.0" prefWidth="680.0">
                            <children>
-                              <Button mnemonicParsing="false" text="JAN">
+                              <ChoiceBox fx:id="dailyYearChoice" prefHeight="25.0" prefWidth="74.0">
+                                 <HBox.margin>
+                                    <Insets right="7.0" />
+                                 </HBox.margin>
+                              </ChoiceBox>
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="JAN">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="FEB">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="FEB">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="MAR">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="MAR">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="APR">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="APR">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="MAY">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="MAY">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="JUN">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="JUN">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="JUL">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="JUL">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="AUG">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="AUG">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="SEP">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="SEP">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="OCT">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="OCT">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="NOV">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="NOV">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button mnemonicParsing="false" text="DEC">
+                              <Button mnemonicParsing="false" onAction="#changeMonth" text="DEC">
                                  <HBox.margin>
                                     <Insets right="7.0" />
                                  </HBox.margin>

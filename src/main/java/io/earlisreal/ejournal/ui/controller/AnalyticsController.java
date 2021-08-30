@@ -5,29 +5,39 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static java.time.DayOfWeek.SATURDAY;
 import static java.time.DayOfWeek.SUNDAY;
 
-public class AnalyticsController {
+public class AnalyticsController implements Initializable {
 
     public LineChart<String, Double> equityChart;
     public BarChart<Double, String> topWinners;
@@ -38,11 +48,23 @@ public class AnalyticsController {
     public VBox failPercent;
     public BarChart<String, Double> monthlyBarChart;
     public GridPane dailyGridPane;
+    public HBox dailyHBox;
+    public ChoiceBox<Integer> dailyYearChoice;
 
     private final AnalyticsService service;
 
     public AnalyticsController() {
         service = ServiceProvider.getAnalyticsService();
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        var years = service.getSummaries().stream()
+                .map(summary -> summary.getCloseDate().getYear())
+                .distinct()
+                .collect(Collectors.toList());
+        dailyYearChoice.setItems(FXCollections.observableList(years));
+        if (!years.isEmpty()) dailyYearChoice.setValue(years.get(0));
     }
 
     public void reload() {
@@ -52,6 +74,13 @@ public class AnalyticsController {
         initializeRemarkableTrades();
         initializeMonthlyChart();
         initializeDailyChart(LocalDate.now());
+    }
+
+    public void changeMonth(ActionEvent actionEvent) {
+        Button button = (Button) actionEvent.getSource();
+        Month month = Month.of(dailyHBox.getChildren().indexOf(button));
+        var date = LocalDate.of(dailyYearChoice.getValue(), month, 1);
+        initializeDailyChart(date);
     }
 
     private void initializeRemarkableTrades() {
@@ -149,7 +178,9 @@ public class AnalyticsController {
     private void initializeDailyChart(LocalDate date) {
         Month month = date.getMonth();
         var map = service.getSummaries().stream()
-                .filter(summary -> summary.getCloseDate() != null && summary.getCloseDate().getMonth() == month)
+                .filter(summary -> summary.getCloseDate() != null)
+                .filter(summary -> summary.getCloseDate().getYear() == date.getYear())
+                .filter(summary -> summary.getCloseDate().getMonth() == month)
                 .sorted(Comparator.comparing(TradeSummary::getCloseDate))
                 .collect(Collectors.groupingBy(tradeSummary -> tradeSummary.getCloseDate().toLocalDate().getDayOfMonth()));
 
@@ -161,7 +192,7 @@ public class AnalyticsController {
         Node[][] grid = new Node[5][7];
         for (var node : dailyGridPane.getChildren()) {
             if (!(node instanceof VBox)) continue;
-            node.getStyleClass().add("default");
+            clearData((VBox) node);
             int row = 0;
             int column = 0;
             if (node.hasProperties()) {
@@ -172,7 +203,7 @@ public class AnalyticsController {
         }
 
         int day = start.getDayOfMonth();
-        while (day <= month.length(date.isLeapYear())) {
+        while (day <= month.length(date.isLeapYear()) && x < 5) {
             setData((VBox) grid[x][y], day, map.getOrDefault(day, Collections.emptyList()));
             ++y;
             if (y % 7 == 0) {
@@ -181,6 +212,15 @@ public class AnalyticsController {
             }
             ++day;
         }
+    }
+
+    private void clearData(VBox vBox) {
+        for (Node node : vBox.getChildren()) {
+            ((Label) node).setText("");
+        }
+        vBox.getStyleClass().clear();
+        vBox.getStyleClass().add("default");
+        vBox.setOnMouseClicked(null);
     }
 
     private void setData(VBox vBox, int day, List<TradeSummary> summaries) {

@@ -166,7 +166,7 @@ public class AsyncIntradayService implements IntradayService {
                 Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
-                stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)));
+                stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)).plusDays(1));
             } catch (IOException e) {
                 CommonUtil.handleException(e);
             }

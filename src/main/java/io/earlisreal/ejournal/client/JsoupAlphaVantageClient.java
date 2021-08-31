@@ -44,6 +44,8 @@ public class JsoupAlphaVantageClient implements AlphaVantageClient {
 
                 throw new AlphaVantageLimitException("500 calls per day reached");
             }
+
+            retry = 0;
             data = data.substring(data.indexOf(newLine) + newLine.length());
             return Arrays.asList(data.split(newLine));
         } catch (URISyntaxException | IOException | InterruptedException e) {

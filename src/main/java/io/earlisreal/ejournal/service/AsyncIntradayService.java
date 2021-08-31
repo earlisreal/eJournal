@@ -19,16 +19,19 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class AsyncIntradayService implements IntradayService {
 
-    private final List<AlphaVantageClient> alphaVantageClients;
+    private final Queue<AlphaVantageClient> alphaVantageClients;
     private final StockService stockService;
     private final ExecutorService executorService;
     private final Set<String> lock;
@@ -36,9 +39,9 @@ public class AsyncIntradayService implements IntradayService {
     private int clientIndex;
 
     AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockService stockService) {
-        this.alphaVantageClients = alphaVantageClients;
+        this.alphaVantageClients = new ConcurrentLinkedQueue<>(alphaVantageClients);
         this.stockService = stockService;
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = Executors.newFixedThreadPool(alphaVantageClients.size());
         this.lock = new HashSet<>();
     }
 
@@ -114,6 +117,11 @@ public class AsyncIntradayService implements IntradayService {
                 rightDate = rightDate.minusDays(30);
             }
 
+            AlphaVantageClient client = alphaVantageClients.poll();
+            if (client == null) {
+                System.out.println("Imbalance Thread pool size and AlphaVantage pool size. This should never happen.");
+                return;
+            }
             int dateIndex = 0;
             while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
                 LocalDate date = dates.get(dateIndex);
@@ -125,7 +133,7 @@ public class AsyncIntradayService implements IntradayService {
                 if (date.isAfter(leftDate.minusDays(1))) {
                     String slice =  "year" + year + "month" + month;
                     try {
-                        var csv = alphaVantageClients.get(clientIndex).get1minuteHistory(stock.getCode(), slice);
+                        var csv = client.get1minuteHistory(stock.getCode(), slice);
                         saveCsv(stock, csv);
                     }
                     catch (AlphaVantageLimitException e) {
@@ -145,6 +153,7 @@ public class AsyncIntradayService implements IntradayService {
             }
 
             clientIndex = (clientIndex + 1 ) % alphaVantageClients.size();
+            alphaVantageClients.add(client);
             lock.remove(stock.getCode());
             onDownloadFinish.run();
         });
@@ -168,7 +177,7 @@ public class AsyncIntradayService implements IntradayService {
                 System.out.println(records.size() + " records added to " + stock.getCode());
                 stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)).plusDays(1));
             } catch (IOException e) {
-                CommonUtil.handleException(e);
+                handleException(e);
             }
         }
     }

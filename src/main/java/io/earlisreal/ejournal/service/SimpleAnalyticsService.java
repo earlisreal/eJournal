@@ -204,9 +204,9 @@ public class SimpleAnalyticsService implements AnalyticsService {
                 .collect(Collectors.toMap(summary -> summary.getCloseDate().getMonth(), TradeSummary::getProfit, Double::sum));
         for (Month month : Month.values()) {
             String monthStr = month.getDisplayName(TextStyle.SHORT, Locale.getDefault());
-            double percentage = round(map.getOrDefault(month, 0.0) / totalEquity * 100);
-            var data = new XYChart.Data<>(monthStr, percentage);
-            if (percentage > 0) {
+            double value = round(map.getOrDefault(month, 0.0));
+            var data = new XYChart.Data<>(monthStr, value);
+            if (value > 0) {
                 data.nodeProperty().addListener((observable, oldValue, newValue) -> newValue.setStyle("-fx-bar-fill: green"));
             }
             else {

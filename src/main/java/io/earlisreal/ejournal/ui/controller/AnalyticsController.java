@@ -74,7 +74,7 @@ public class AnalyticsController implements Initializable {
 
     public void changeMonth(ActionEvent actionEvent) {
         Button button = (Button) actionEvent.getSource();
-        Month month = Month.of(dailyHBox.getChildren().indexOf(button) + 1);
+        Month month = Month.of(dailyHBox.getChildren().indexOf(button));
         var date = LocalDate.of(dailyYearChoice.getValue(), month, 1);
         initializeDailyChart(date);
     }

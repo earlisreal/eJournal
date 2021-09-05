@@ -166,7 +166,7 @@ public class AnalyticsController implements Initializable {
                 .filter(summary -> summary.getCloseDate() != null)
                 .filter(summary -> summary.getCloseDate().getYear() == date.getYear())
                 .filter(summary -> summary.getCloseDate().getMonth() == month)
-                .sorted(Comparator.comparing(TradeSummary::getCloseDate))
+                .sorted(Comparator.comparing(TradeSummary::getOpenDate))
                 .collect(Collectors.groupingBy(tradeSummary -> tradeSummary.getCloseDate().toLocalDate().getDayOfMonth()));
 
         int x = 0;

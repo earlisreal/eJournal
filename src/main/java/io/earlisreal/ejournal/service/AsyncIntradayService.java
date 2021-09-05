@@ -36,13 +36,12 @@ public class AsyncIntradayService implements IntradayService {
     private final ExecutorService executorService;
     private final Set<String> lock;
 
-    private int clientIndex;
-
     AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockService stockService) {
         this.alphaVantageClients = new ConcurrentLinkedQueue<>(alphaVantageClients);
         this.stockService = stockService;
         this.executorService = Executors.newFixedThreadPool(alphaVantageClients.size());
         this.lock = new HashSet<>();
+        System.out.println(alphaVantageClients.size() + " API keys provided.");
     }
 
     @Override
@@ -152,7 +151,6 @@ public class AsyncIntradayService implements IntradayService {
                 if (year < 1) break;
             }
 
-            clientIndex = (clientIndex + 1 ) % alphaVantageClients.size();
             alphaVantageClients.add(client);
             lock.remove(stock.getCode());
             onDownloadFinish.run();

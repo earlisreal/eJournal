@@ -1,26 +1,28 @@
 package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
-import io.earlisreal.ejournal.service.StartupListener;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Paint;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 
-public class DashboardController implements Initializable, StartupListener {
+public class DashboardController implements Initializable {
 
     public HBox previousTradesBox;
     public Label lastClosedDate;
@@ -31,26 +33,28 @@ public class DashboardController implements Initializable, StartupListener {
     public Label lastStockName;
     public StackPane contentPane;
 
-    private AnalyticsService analyticsService;
     private TradeLogService tradeLogService;
     private StockService stockService;
-
-    public DashboardController() {
-        ServiceProvider.getStartupService().addStockPriceListener(this);
-    }
+    private Parent swingDashboard;
+    private SwingDashboardController swingController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
         stockService = ServiceProvider.getStockService();
-        analyticsService = ServiceProvider.getAnalyticsService();
+
+        try {
+            FXMLLoader swingLoader = new FXMLLoader(getClass().getResource("/fxml/swing-dashboard.fxml"));
+            swingDashboard = swingLoader.load();
+            swingController = swingLoader.getController();
+
+            contentPane.getChildren().add(swingDashboard);
+        } catch (IOException e) {
+            handleException(e);
+        }
 
         initializeLastTrade();
         initializePreviousTrades();
-    }
-
-    @Override
-    public void onFinish() {
     }
 
     public void reload() {

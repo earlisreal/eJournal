@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="580.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.SwingDashboardController">
+   <children>
+      <TableView fx:id="openPositionTable" layoutX="11.0" layoutY="343.0" prefHeight="230.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
+         <columns>
+            <TableColumn fx:id="stockColumn" prefWidth="75.0" text="Stock" />
+            <TableColumn fx:id="averageBuyColumn" prefWidth="88.0" text="Average Buy" />
+            <TableColumn fx:id="lastPriceColumn" text="Last Price" />
+            <TableColumn fx:id="sharesColumn" prefWidth="68.0" text="Shares" />
+            <TableColumn fx:id="totalCostColumn" prefWidth="82.0" text="Total Cost" />
+            <TableColumn fx:id="marketValueColumn" prefWidth="92.0" text="Market Value" />
+            <TableColumn fx:id="profitColumn" prefWidth="109.0" text="Unrealized Profit" />
+            <TableColumn fx:id="percentColumn" prefWidth="82.0" text="Percent" />
+         </columns>
+      </TableView>
+      <PieChart fx:id="portfolioChart" layoutX="13.0" layoutY="7.0" prefHeight="330.0" prefWidth="679.0" />
+      <Label fx:id="noDataLabel" layoutX="340.0" layoutY="164.0" text="N/A" />
+      <Label layoutX="13.0" layoutY="320.0" text="Open Positions">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
+   </children>
+</AnchorPane>

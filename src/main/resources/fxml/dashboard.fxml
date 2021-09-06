@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Line?>
 <?import javafx.scene.text.Font?>
@@ -154,30 +152,12 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <TableView fx:id="openPositionTable" layoutX="12.0" layoutY="450.0" prefHeight="230.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
-        <columns>
-          <TableColumn fx:id="stockColumn" prefWidth="75.0" text="Stock" />
-          <TableColumn fx:id="averageBuyColumn" prefWidth="88.0" text="Average Buy" />
-            <TableColumn fx:id="lastPriceColumn" text="Last Price" />
-            <TableColumn fx:id="sharesColumn" prefWidth="68.0" text="Shares" />
-            <TableColumn fx:id="totalCostColumn" prefWidth="82.0" text="Total Cost" />
-            <TableColumn fx:id="marketValueColumn" prefWidth="92.0" text="Market Value" />
-            <TableColumn fx:id="profitColumn" prefWidth="109.0" text="Unrealized Profit" />
-            <TableColumn fx:id="percentColumn" prefWidth="82.0" text="Percent" />
-        </columns>
-      </TableView>
-      <PieChart fx:id="portfolioChart" layoutX="14.0" layoutY="114.0" prefHeight="330.0" prefWidth="679.0" />
       <Label layoutX="9.0" layoutY="3.0" text="LAST TRADE">
          <font>
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
       <Label fx:id="lastStockName" layoutX="73.0" layoutY="22.0" text="Some Very very Long Stock Name" />
-      <Label fx:id="noDataLabel" layoutX="341.0" layoutY="271.0" text="N/A" />
-      <Label layoutX="14.0" layoutY="427.0" text="Open Positions">
-         <font>
-            <Font name="System Bold" size="12.0" />
-         </font>
-      </Label>
+      <StackPane fx:id="contentPane" layoutY="114.0" prefHeight="580.0" prefWidth="703.0" />
    </children>
 </AnchorPane>

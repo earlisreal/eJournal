@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.AnalyticsService;
+import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
@@ -42,6 +43,10 @@ public class SwingDashboardController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        tradeLogService = ServiceProvider.getTradeLogService();
+        stockService = ServiceProvider.getStockService();
+        analyticsService = ServiceProvider.getAnalyticsService();
+
         reload();
     }
 

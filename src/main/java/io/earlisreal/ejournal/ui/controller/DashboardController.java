@@ -35,8 +35,11 @@ public class DashboardController implements Initializable {
 
     private TradeLogService tradeLogService;
     private StockService stockService;
+
     private Parent swingDashboard;
     private SwingDashboardController swingController;
+    private Parent dayTradeDashboard;
+    private DayTradeDashboardController dayTradeController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -48,16 +51,31 @@ public class DashboardController implements Initializable {
             swingDashboard = swingLoader.load();
             swingController = swingLoader.getController();
 
+            FXMLLoader dayLoader = new FXMLLoader(getClass().getResource("/fxml/daytrade-dashboard.fxml"));
+            dayTradeDashboard = dayLoader.load();
+            dayTradeController = dayLoader.getController();
+
+            contentPane.getChildren().add(dayTradeDashboard);
             contentPane.getChildren().add(swingDashboard);
         } catch (IOException e) {
             handleException(e);
         }
 
-        initializeLastTrade();
-        initializePreviousTrades();
+        reload();
     }
 
     public void reload() {
+        if (tradeLogService.getOpenPositions().isEmpty()) {
+            swingDashboard.setVisible(false);
+            dayTradeDashboard.setVisible(true);
+            dayTradeController.reload();
+        }
+        else {
+            swingDashboard.setVisible(true);
+            dayTradeDashboard.setVisible(false);
+            swingController.reload();
+        }
+
         initializeLastTrade();
         initializePreviousTrades();
     }

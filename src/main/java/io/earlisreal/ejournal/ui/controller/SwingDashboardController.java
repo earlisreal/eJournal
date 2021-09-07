@@ -46,8 +46,6 @@ public class SwingDashboardController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         stockService = ServiceProvider.getStockService();
         analyticsService = ServiceProvider.getAnalyticsService();
-
-        reload();
     }
 
     public void reload() {

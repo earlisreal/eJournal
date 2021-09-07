@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="580.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DayTradeDashboardController">
+   <children>
+      <TableView fx:id="tradesTable" layoutX="11.0" layoutY="311.0" prefHeight="262.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
+         <columns>
+            <TableColumn fx:id="openColumn" prefWidth="94.0" text="Open Datetime" />
+            <TableColumn fx:id="stockColumn" prefWidth="91.0" text="Stock" />
+            <TableColumn fx:id="typeColumn" prefWidth="76.0" text="Type" />
+            <TableColumn fx:id="averageColumn" prefWidth="110.0" text="Average Price" />
+            <TableColumn fx:id="sharesColumn" prefWidth="79.0" text="Shares" />
+            <TableColumn fx:id="totalCostColumn" prefWidth="92.0" text="Total Cost" />
+            <TableColumn fx:id="profitColumn" prefWidth="76.0" text="Profit" />
+            <TableColumn fx:id="percentColumn" prefWidth="60.0" text="Percent" />
+         </columns>
+      </TableView>
+      <Label layoutX="10.0" layoutY="290.0" text="Trades">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
+      <PieChart fx:id="accuracyPie" labelsVisible="false" layoutX="339.0" layoutY="14.0" legendVisible="false" prefHeight="280.0" prefWidth="350.0" title="12 Trades" />
+      <Circle fill="WHITE" layoutX="514.0" layoutY="194.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
+      <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="414.0" layoutY="186.0" prefHeight="17.0" prefWidth="200.0" text="75%" textAlignment="CENTER" />
+      <Label layoutX="11.0" layoutY="14.0" text="Latest Trading Day">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
+      <Label fx:id="dateLabel" layoutX="11.0" layoutY="48.0" text="Monday, 6 September 2021" />
+      <Label fx:id="timeLabel" layoutX="11.0" layoutY="65.0" text="9:06 PM - 10:37 PM" />
+      <Label fx:id="gainLossLabel" layoutX="108.0" layoutY="207.0" text="+$369" textFill="GREEN">
+         <font>
+            <Font name="System Bold" size="24.0" />
+         </font></Label>
+      <Label layoutX="9.0" layoutY="216.0" text="Total:" />
+      <Label fx:id="profitLabel" layoutX="9.0" layoutY="82.0" text="\$400 profit" />
+      <Label fx:id="lossLabel" layoutX="8.0" layoutY="99.0" text="\$31 loss" />
+   </children>
+</AnchorPane>

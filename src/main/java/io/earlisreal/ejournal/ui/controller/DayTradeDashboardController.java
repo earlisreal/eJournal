@@ -5,11 +5,15 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Paint;
 
 import java.net.URL;
@@ -32,7 +36,7 @@ public class DayTradeDashboardController implements Initializable {
     public TableColumn<TradeSummary, String> sharesColumn;
     public TableColumn<TradeSummary, String> totalCostColumn;
     public TableColumn<TradeSummary, String> profitColumn;
-    public TableColumn<TradeSummary, String> percentColumn;
+    public TableColumn<TradeSummary, String> durationColumn;
 
     public PieChart accuracyPie;
     public Label accuracyLabel;
@@ -46,6 +50,8 @@ public class DayTradeDashboardController implements Initializable {
     private AnalyticsService analyticsService;
     private TradeLogService tradeLogService;
     private StockService stockService;
+
+    private List<TradeSummary> latestSummaries;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -64,25 +70,26 @@ public class DayTradeDashboardController implements Initializable {
             return;
         }
 
-        initializeStatistics(summaries);
+        latestSummaries = summaries.stream()
+                .filter(tradeSummary -> tradeSummary.getOpenDate().toLocalDate().equals(summaries.get(0).getOpenDate().toLocalDate()))
+                .sorted(Comparator.comparing(TradeSummary::getOpenDate))
+                .collect(Collectors.toList());
+
+        initializeStatistics();
         initializeChart();
         initializeTrades();
     }
 
-    private void initializeStatistics(List<TradeSummary> summaries) {
-        TradeSummary lastSummary = summaries.get(0);
-        summaries = summaries.stream()
-                .filter(tradeSummary -> tradeSummary.getOpenDate().toLocalDate().equals(lastSummary.getOpenDate().toLocalDate()))
-                .sorted(Comparator.comparing(TradeSummary::getOpenDate))
-                .collect(Collectors.toList());
+    private void initializeStatistics() {
+        TradeSummary lastSummary = latestSummaries.get(latestSummaries.size() - 1);
 
         dateLabel.setText(lastSummary.getOpenDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)));
         var shortFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
-        String startTime = summaries.get(0).getOpenDate().format(shortFormatter);
+        String startTime = latestSummaries.get(0).getOpenDate().format(shortFormatter);
         String endTime = lastSummary.getCloseDate().format(shortFormatter);
         timeLabel.setText(startTime + " - " + endTime);
 
-        var partition = summaries.stream()
+        var partition = latestSummaries.stream()
                 .collect(Collectors.partitioningBy(tradeSummary -> tradeSummary.getProfit() >= 0, Collectors.summingDouble(TradeSummary::getProfit)));
         profitLabel.setText("$" + prettify(partition.get(true)) + " profit");
         lossLabel.setText("$" + prettify(partition.get(false)) + " loss");
@@ -98,7 +105,19 @@ public class DayTradeDashboardController implements Initializable {
     }
 
     private void initializeTrades() {
+        tradesTable.setItems(FXCollections.observableList(latestSummaries));
+        String title = latestSummaries.get(0).getCloseDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL));
+        tradesTable.setRowFactory(param ->
+                UIServiceProvider.getTradeDetailsDialogService().getTableRow(latestSummaries, title));
 
+        openColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getOpenDate().toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))));
+        stockColumn.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("tradeType"));
+        averageColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getAverageBuy())));
+        sharesColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getShares())));
+        totalCostColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getPosition())));
+        profitColumn.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getProfit())));
+        durationColumn.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getHoldingPeriod()));
     }
 
 }

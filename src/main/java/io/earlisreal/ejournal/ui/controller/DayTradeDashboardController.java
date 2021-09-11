@@ -1,9 +1,7 @@
 package io.earlisreal.ejournal.ui.controller;
 
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
-import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
@@ -47,18 +45,15 @@ public class DayTradeDashboardController implements Initializable {
     public Label gainLossLabel;
     public Label profitLabel;
     public Label lossLabel;
+    public Label dayLabel;
 
-    private AnalyticsService analyticsService;
     private TradeLogService tradeLogService;
-    private StockService stockService;
 
     private List<TradeSummary> latestSummaries;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tradeLogService = ServiceProvider.getTradeLogService();
-        stockService = ServiceProvider.getStockService();
-        analyticsService = ServiceProvider.getAnalyticsService();
     }
 
     public void reload() {
@@ -92,8 +87,8 @@ public class DayTradeDashboardController implements Initializable {
 
         var partition = latestSummaries.stream()
                 .collect(Collectors.partitioningBy(tradeSummary -> tradeSummary.getProfit() >= 0, Collectors.summingDouble(TradeSummary::getProfit)));
-        profitLabel.setText("$" + prettify(partition.get(true)) + " profit");
-        lossLabel.setText("$" + prettify(partition.get(false)) + " loss");
+        profitLabel.setText("+$" + prettify(partition.get(true)));
+        lossLabel.setText("-$" + prettify(Math.abs(partition.get(false))));
 
         double total = partition.get(true) + partition.get(false);
         gainLossLabel.setText("$" + prettify(total));

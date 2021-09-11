@@ -90,6 +90,10 @@ public class DayTradeDashboardController implements Initializable {
         profitLabel.setText("+$" + prettify(partition.get(true)));
         lossLabel.setText("-$" + prettify(Math.abs(partition.get(false))));
 
+        long day = tradeLogService.getTradeSummaries().stream()
+                .map(summary -> summary.getOpenDate().toLocalDate()).distinct().count();
+        dayLabel.setText("Day " + day);
+
         double total = partition.get(true) + partition.get(false);
         gainLossLabel.setText("$" + prettify(total));
         if (total > 0) gainLossLabel.setTextFill(Paint.valueOf("GREEN"));

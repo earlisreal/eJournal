@@ -39,8 +39,12 @@ public class TradeDetailsDialogService {
     }
 
     public TableRow<TradeSummary> getTableRow(List<TradeSummary> summaries) {
+        return getTableRow(summaries, "All Trades");
+    }
+
+    public TableRow<TradeSummary> getTableRow(List<TradeSummary> summaries, String title) {
         TableRow<TradeSummary> row = new TableRow<>();
-        row.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(row.getItem(), summaries, "All Trades"));
+        row.setOnMouseClicked(event -> UIServiceProvider.getTradeDetailsDialogService().show(row.getItem(), summaries, title));
         return row;
     }
 

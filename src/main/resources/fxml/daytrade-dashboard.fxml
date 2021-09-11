@@ -27,9 +27,9 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <PieChart fx:id="accuracyPie" labelsVisible="false" layoutX="339.0" layoutY="14.0" legendVisible="false" prefHeight="280.0" prefWidth="350.0" title="12 Trades" />
-      <Circle fill="WHITE" layoutX="514.0" layoutY="194.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
-      <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="414.0" layoutY="186.0" prefHeight="17.0" prefWidth="200.0" text="75%" textAlignment="CENTER" />
+      <PieChart fx:id="accuracyPie" labelsVisible="false" layoutX="177.0" layoutY="14.0" prefHeight="290.0" prefWidth="512.0" title="12 Trades" />
+      <Circle fill="WHITE" layoutX="433.0" layoutY="159.0" radius="30.0" stroke="WHITE" strokeType="INSIDE" />
+      <Label fx:id="accuracyLabel" alignment="CENTER" layoutX="333.0" layoutY="151.0" prefHeight="17.0" prefWidth="200.0" text="75%" textAlignment="CENTER" />
       <Label layoutX="11.0" layoutY="14.0" text="Latest Trading Day">
          <font>
             <Font name="System Bold" size="12.0" />
@@ -37,7 +37,7 @@
       </Label>
       <Label fx:id="dateLabel" layoutX="11.0" layoutY="48.0" text="Monday, 6 September 2021" />
       <Label fx:id="timeLabel" layoutX="11.0" layoutY="65.0" text="9:06 PM - 10:37 PM" />
-      <Label fx:id="gainLossLabel" layoutX="108.0" layoutY="207.0" text="+$369" textFill="GREEN">
+      <Label fx:id="gainLossLabel" layoutX="68.0" layoutY="207.0" text="+$369" textFill="GREEN">
          <font>
             <Font name="System Bold" size="24.0" />
          </font></Label>

@@ -25,6 +25,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
+import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class DayTradeDashboardController implements Initializable {
 
@@ -101,7 +102,16 @@ public class DayTradeDashboardController implements Initializable {
     }
 
     private void initializeChart() {
-
+        var wins = latestSummaries.stream().filter(t -> t.getProfit() >= 0).collect(Collectors.toList());
+        var losses = latestSummaries.stream().filter(t -> t.getProfit() < 0).collect(Collectors.toList());
+        double winAccuracy = round((double) wins.size() / latestSummaries.size() * 100);
+        double lossAccuracy = round((double) losses.size() / latestSummaries.size() * 100);
+        var winData = new PieChart.Data(wins.size() + " Wins", winAccuracy);
+        var lossData = new PieChart.Data(losses.size() + " Losses", lossAccuracy);
+        accuracyPie.setData(FXCollections.observableArrayList(winData, lossData));
+        accuracyLabel.setText(winAccuracy + "%");
+//        winData.getNode().setStyle("-fx-pie-color: GREEN");
+//        lossData.getNode().setStyle("-fx-pie-color: RED");
     }
 
     private void initializeTrades() {

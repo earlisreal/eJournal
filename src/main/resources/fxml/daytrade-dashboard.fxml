@@ -10,16 +10,16 @@
 
 <AnchorPane prefHeight="580.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DayTradeDashboardController">
    <children>
-      <TableView fx:id="tradesTable" layoutX="11.0" layoutY="311.0" prefHeight="262.0" prefWidth="679.0" stylesheets="@../stylesheet/table.css">
+      <TableView fx:id="tradesTable" layoutX="11.0" layoutY="311.0" prefHeight="262.0" prefWidth="679.0" styleClass="clickable-row" stylesheets="@../stylesheet/table.css">
          <columns>
-            <TableColumn fx:id="openColumn" prefWidth="94.0" text="Open Datetime" />
+            <TableColumn fx:id="openColumn" prefWidth="94.0" text="Open Time" />
             <TableColumn fx:id="stockColumn" prefWidth="91.0" text="Stock" />
             <TableColumn fx:id="typeColumn" prefWidth="76.0" text="Type" />
-            <TableColumn fx:id="averageColumn" prefWidth="110.0" text="Average Price" />
-            <TableColumn fx:id="sharesColumn" prefWidth="79.0" text="Shares" />
-            <TableColumn fx:id="totalCostColumn" prefWidth="92.0" text="Total Cost" />
-            <TableColumn fx:id="profitColumn" prefWidth="76.0" text="Profit" />
-            <TableColumn fx:id="percentColumn" prefWidth="60.0" text="Percent" />
+            <TableColumn fx:id="averageColumn" prefWidth="99.0" text="Average Price" />
+            <TableColumn fx:id="sharesColumn" prefWidth="82.0" text="Shares" />
+            <TableColumn fx:id="totalCostColumn" prefWidth="88.0" text="Total Cost" />
+            <TableColumn fx:id="profitColumn" text="Profit" />
+            <TableColumn fx:id="durationColumn" prefWidth="68.0" text="Duration" />
          </columns>
       </TableView>
       <Label layoutX="10.0" layoutY="290.0" text="Trades">

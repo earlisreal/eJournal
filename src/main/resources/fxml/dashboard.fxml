@@ -12,41 +12,6 @@
 
 <AnchorPane prefHeight="694.0" prefWidth="703.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.DashboardController">
    <children>
-      <HBox layoutX="14.0" layoutY="20.0" prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <Pane prefHeight="100.0" prefWidth="60.0">
-               <children>
-                  <Label fx:id="lastStock" alignment="CENTER" contentDisplay="CENTER" layoutY="29.0" prefHeight="25.0" prefWidth="60.0" text="DDMPR">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-               </children>
-            </Pane>
-            <VBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="81.0">
-               <children>
-                  <Label text="Profit" />
-                  <Label text="Position" />
-                  <Label text="Duration" />
-                  <Label fx:id="lastClosedDate" text="01/2/2021" />
-               </children>
-               <padding>
-                  <Insets left="10.0" />
-               </padding>
-            </VBox>
-            <VBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="62.0">
-               <children>
-                  <Label fx:id="lastProfit" text="+37.3%" />
-                  <Label fx:id="lastPosition" text="34,000.00" />
-                  <Label fx:id="lastHolding" text="13" />
-                  <Label fx:id="lastHolding1" />
-               </children>
-               <padding>
-                  <Insets right="5.0" />
-               </padding>
-            </VBox>
-         </children>
-      </HBox>
       <HBox fx:id="previousTradesBox" layoutX="210.0" layoutY="34.0" prefHeight="80.0" prefWidth="480.0">
          <children>
             <Pane prefHeight="100.0" prefWidth="60.0" styleClass="hover-highlight" stylesheets="@../stylesheet/general.css">
@@ -159,5 +124,40 @@
       </Label>
       <Label fx:id="lastStockName" layoutX="73.0" layoutY="22.0" text="Some Very very Long Stock Name" />
       <StackPane fx:id="contentPane" layoutY="114.0" prefHeight="580.0" prefWidth="703.0" />
+      <Label fx:id="lastClosedDate" layoutX="73.0" layoutY="98.0" prefHeight="17.0" prefWidth="80.0" text="01/2/2021" />
+      <HBox layoutX="9.0" layoutY="24.0" prefHeight="100.0" prefWidth="200.0">
+         <children>
+            <Pane prefHeight="100.0" prefWidth="60.0">
+               <children>
+                  <Label fx:id="lastStock" alignment="CENTER" contentDisplay="CENTER" layoutY="29.0" prefHeight="25.0" prefWidth="60.0" text="DDMPR">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+               </children>
+            </Pane>
+            <VBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="81.0">
+               <children>
+                  <Label text="Profit" />
+                  <Label text="Position" />
+                  <Label text="Duration" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+            </VBox>
+            <VBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="62.0">
+               <children>
+                  <Label fx:id="lastProfit" text="+37.3%" />
+                  <Label fx:id="lastPosition" text="34,000.00" />
+                  <Label fx:id="lastHolding" text="13" />
+                  <Label fx:id="lastHolding1" />
+               </children>
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
+            </VBox>
+         </children>
+      </HBox>
    </children>
 </AnchorPane>

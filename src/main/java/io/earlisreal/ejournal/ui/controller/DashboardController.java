@@ -95,7 +95,7 @@ public class DashboardController implements Initializable {
         TradeSummary lastTrade = summaries.get(0);
         lastStockName.setText(stockService.getName(lastTrade.getStock()));
         lastStock.setText(lastTrade.getStock());
-        lastClosedDate.setText(lastTrade.getCloseDate().toString());
+        lastClosedDate.setText(lastTrade.getCloseDate().toLocalDate().toString());
         lastPosition.setText(prettify(lastTrade.getPosition()));
         lastHolding.setText(String.valueOf(lastTrade.getHoldingPeriod()));
         lastProfit.setText(prettify(lastTrade.getProfit()));

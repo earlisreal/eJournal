@@ -109,8 +109,6 @@ public class DayTradeDashboardController implements Initializable {
         var lossData = new PieChart.Data(losses.size() + " Losses", lossAccuracy);
         accuracyPie.setData(FXCollections.observableArrayList(winData, lossData));
         accuracyLabel.setText(winAccuracy + "%");
-//        winData.getNode().setStyle("-fx-pie-color: GREEN");
-//        lossData.getNode().setStyle("-fx-pie-color: RED");
     }
 
     private void initializeTrades() {

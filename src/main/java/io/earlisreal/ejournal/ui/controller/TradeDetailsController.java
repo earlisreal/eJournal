@@ -17,6 +17,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 
 import java.io.IOException;
@@ -75,6 +77,11 @@ public class TradeDetailsController {
         boolean disabled = summaries.size() == 1;
         nextButton.setDisable(disabled);
         previousButton.setDisable(disabled);
+    }
+
+    public void navigate(KeyEvent keyEvent) {
+        if (keyEvent.getCode().equals(KeyCode.LEFT)) previousButton.fire();
+        if (keyEvent.getCode().equals(KeyCode.RIGHT)) nextButton.fire();
     }
 
     public void nextTrade() {

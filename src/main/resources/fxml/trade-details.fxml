@@ -11,8 +11,11 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane fx:id="anchorPane" prefHeight="744.0" prefWidth="694.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
+<AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="744.0" prefWidth="694.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
+      <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
+      <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
+      <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Group layoutX="161.0" layoutY="122.0">
          <children>
             <ImageView fx:id="plotImageView" fitHeight="450.0" fitWidth="624.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
@@ -24,17 +27,6 @@
             <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Plot Image" />
          </children>
       </Group>
-      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="123.0" prefWidth="671.0">
-         <columns>
-            <TableColumn fx:id="logDate" prefWidth="125.0" text="Date" />
-            <TableColumn fx:id="logAction" prefWidth="72.0" text="Action" />
-            <TableColumn fx:id="logPrice" prefWidth="77.0" text="Price" />
-            <TableColumn fx:id="logShares" prefWidth="89.0" text="Shares" />
-            <TableColumn fx:id="logFees" prefWidth="82.0" text="Fees" />
-            <TableColumn fx:id="logNet" prefWidth="109.0" text="Net Amount" />
-            <TableColumn fx:id="logProfit" prefWidth="102.0" text="Realized Profit" />
-         </columns>
-      </TableView>
       <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
          <columns>
             <TableColumn fx:id="statisticColumn" editable="false" prefWidth="100.0" sortable="false" style="-fx-font-weight: bold;" text="Statistic" />
@@ -49,8 +41,16 @@
             <String fx:value="no-header" />
          </styleClass>
       </TableView>
-      <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
-      <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
-      <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
+      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="123.0" prefWidth="671.0">
+         <columns>
+            <TableColumn fx:id="logDate" prefWidth="125.0" text="Date" />
+            <TableColumn fx:id="logAction" prefWidth="72.0" text="Action" />
+            <TableColumn fx:id="logPrice" prefWidth="77.0" text="Price" />
+            <TableColumn fx:id="logShares" prefWidth="89.0" text="Shares" />
+            <TableColumn fx:id="logFees" prefWidth="82.0" text="Fees" />
+            <TableColumn fx:id="logNet" prefWidth="109.0" text="Net Amount" />
+            <TableColumn fx:id="logProfit" prefWidth="102.0" text="Realized Profit" />
+         </columns>
+      </TableView>
    </children>
 </AnchorPane>

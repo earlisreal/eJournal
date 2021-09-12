@@ -108,6 +108,7 @@ public class DayTradeDashboardController implements Initializable {
         var winData = new PieChart.Data(wins.size() + " Wins", winAccuracy);
         var lossData = new PieChart.Data(losses.size() + " Losses", lossAccuracy);
         accuracyPie.setData(FXCollections.observableArrayList(winData, lossData));
+        accuracyPie.setTitle(latestSummaries.size() + " Trades");
         accuracyLabel.setText(winAccuracy + "%");
     }
 

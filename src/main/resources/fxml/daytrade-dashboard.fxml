@@ -36,11 +36,11 @@
          <font>
             <Font name="System Bold" size="24.0" />
          </font></Label>
-      <Label fx:id="profitLabel" alignment="CENTER_RIGHT" layoutX="89.0" layoutY="148.0" prefHeight="17.0" prefWidth="80.0" text="+$400">
+      <Label fx:id="profitLabel" alignment="CENTER_RIGHT" layoutX="89.0" layoutY="148.0" prefHeight="17.0" prefWidth="80.0" text="+$400" textFill="GREEN">
          <font>
             <Font size="16.0" />
          </font></Label>
-      <Label fx:id="lossLabel" layoutX="189.0" layoutY="148.0" prefHeight="17.0" prefWidth="80.0" text="-$31">
+      <Label fx:id="lossLabel" layoutX="189.0" layoutY="148.0" prefHeight="17.0" prefWidth="80.0" text="-$31" textFill="RED">
          <font>
             <Font size="16.0" />
          </font></Label>

@@ -17,6 +17,7 @@ import javafx.scene.paint.Paint;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -49,7 +50,7 @@ public class DayTradeDashboardController implements Initializable {
 
     private TradeLogService tradeLogService;
 
-    private List<TradeSummary> latestSummaries;
+    private final List<TradeSummary> latestSummaries = new ArrayList<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -66,10 +67,11 @@ public class DayTradeDashboardController implements Initializable {
             return;
         }
 
-        latestSummaries = summaries.stream()
+        latestSummaries.clear();
+        latestSummaries.addAll(summaries.stream()
                 .filter(tradeSummary -> tradeSummary.getOpenDate().toLocalDate().equals(summaries.get(0).getOpenDate().toLocalDate()))
                 .sorted(Comparator.comparing(TradeSummary::getOpenDate))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
         initializeStatistics();
         initializeChart();

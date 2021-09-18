@@ -19,9 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -31,21 +29,24 @@ import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class AsyncIntradayService implements IntradayService {
 
-    private final Queue<AlphaVantageClient> alphaVantageClients;
+    private final AlphaVantageClient alphaVantageClient;
     private final StockService stockService;
     private final ExecutorService executorService;
     private final Set<String> lock;
 
-    AsyncIntradayService(List<AlphaVantageClient> alphaVantageClients, StockService stockService) {
-        this.alphaVantageClients = new ConcurrentLinkedQueue<>(alphaVantageClients);
+    private final Map<String, List<TradeSummary>> stockDateMap;
+
+    AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService) {
+        this.alphaVantageClient = alphaVantageClient;
         this.stockService = stockService;
-        this.executorService = Executors.newFixedThreadPool(alphaVantageClients.size());
+        this.executorService = Executors.newFixedThreadPool(5);
         this.lock = new HashSet<>();
-        System.out.println(alphaVantageClients.size() + " API keys provided.");
+        this.stockDateMap = new HashMap<>();
     }
 
     @Override
     public void download(List<TradeSummary> summaries, Consumer<List<TradeSummary>> onDownloadFinish) {
+        stockDateMap.clear();
         List<TradeLog> tradeLogs = new ArrayList<>();
         Map<String, List<TradeSummary>> summaryMap = new HashMap<>();
         for (TradeSummary summary : summaries) {
@@ -53,14 +54,12 @@ public class AsyncIntradayService implements IntradayService {
                 tradeLogs.addAll(summary.getLogs());
             }
 
-            if (summaryMap.containsKey(summary.getStock())) {
-                summaryMap.get(summary.getStock()).add(summary);
-            }
-            else {
-                List<TradeSummary> summaryList = new ArrayList<>();
-                summaryList.add(summary);
-                summaryMap.put(summary.getStock(), summaryList);
-            }
+            if (!summaryMap.containsKey(summary.getStock())) summaryMap.put(summary.getStock(), new ArrayList<>());
+            summaryMap.get(summary.getStock()).add(summary);
+
+            String stockDate = summary.getStock() + summary.getOpenDate().toLocalDate();
+            if (!stockDateMap.containsKey(stockDate)) stockDateMap.put(stockDate, new ArrayList<>());
+            stockDateMap.get(stockDate).add(summary);
         }
 
         Map<Stock, Set<LocalDate>> map = new HashMap<>();
@@ -75,86 +74,77 @@ public class AsyncIntradayService implements IntradayService {
                     System.out.println("Stock " + stock.getCode() + " not found and was inserted");
                 }
             }
-            if (map.containsKey(stock)) {
-                map.get(stock).add(log.getDate().toLocalDate());
-            }
-            else {
-                Set<LocalDate> list = new LinkedHashSet<>();
-                list.add(log.getDate().toLocalDate());
-                map.put(stock, list);
-            }
+
+            if (!map.containsKey(stock)) map.put(stock, new LinkedHashSet<>());
+            map.get(stock).add(log.getDate().toLocalDate());
         }
 
         for (var entry : map.entrySet()) {
-            download(entry.getKey(), new ArrayList<>(entry.getValue()), () -> onDownloadFinish.accept(summaryMap.get(entry.getKey().getCode())));
+            download(entry.getKey(), new ArrayList<>(entry.getValue()), onDownloadFinish);
         }
     }
 
-    public void download(Stock stock, List<LocalDate> dates, Runnable onDownloadFinish) {
+    public void download(Stock stock, List<LocalDate> dates, Consumer<List<TradeSummary>> onDownloadFinish) {
         if (lock.contains(stock.getCode())) return;
         lock.add(stock.getCode());
-        executorService.execute(() -> {
-            System.out.println("Downloading Intraday data for " + stock.getCode());
-            int year = 1;
-            int month = 1;
-            LocalDate now = LocalDate.now();
-            LocalDate maxDate = dates.get(dates.size() - 1);
-            LocalDate leftDate = now.minusDays(30);
-            LocalDate rightDate = now;
-            while (leftDate.isAfter(dates.get(0))) {
-                leftDate = leftDate.minusDays(30);
-                ++month;
-                if (leftDate.getYear() != now.getYear()) {
-                    month = 1;
-                    ++year;
-                }
 
-                if (year > 2) break;
+        System.out.println("Downloading Intraday data for " + stock.getCode());
+        int year = 1;
+        int month = 1;
+        LocalDate now = LocalDate.now();
+        LocalDate maxDate = dates.get(dates.size() - 1);
+        LocalDate leftDate = now.minusDays(30);
+        LocalDate rightDate = now;
+        while (leftDate.isAfter(dates.get(0))) {
+            leftDate = leftDate.minusDays(30);
+            ++month;
+            if (leftDate.getYear() != now.getYear()) {
+                month = 1;
+                ++year;
             }
 
-            while (rightDate.minusDays(30).isAfter(maxDate)) {
-                rightDate = rightDate.minusDays(30);
+            if (year > 2) break;
+        }
+
+        while (rightDate.minusDays(30).isAfter(maxDate)) {
+            rightDate = rightDate.minusDays(30);
+        }
+
+        int dateIndex = 0;
+        while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
+            LocalDate date = dates.get(dateIndex);
+            while (dateIndex < dates.size() - 1 && date.isAfter(leftDate.plusDays(30))) {
+                ++dateIndex;
+                date = dates.get(dateIndex);
             }
 
-            AlphaVantageClient client = alphaVantageClients.poll();
-            if (client == null) {
-                System.out.println("Imbalance Thread pool size and AlphaVantage pool size. This should never happen.");
-                return;
-            }
-            int dateIndex = 0;
-            while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
-                LocalDate date = dates.get(dateIndex);
-                while (dateIndex < dates.size() - 1 && date.isAfter(leftDate.plusDays(30))) {
-                    ++dateIndex;
-                    date = dates.get(dateIndex);
-                }
-
-                if (date.isAfter(leftDate.minusDays(1))) {
-                    String slice =  "year" + year + "month" + month;
+            if (date.isAfter(leftDate.minusDays(1))) {
+                String slice =  "year" + year + "month" + month;
+                String key = stock.getCode() + date;
+                executorService.execute(() -> {
                     try {
-                        var csv = client.get1minuteHistory(stock.getCode(), slice);
+                        var csv = alphaVantageClient.get1minuteHistory(stock.getCode(), slice);
                         saveCsv(stock, csv);
+                        onDownloadFinish.accept(stockDateMap.get(key));
                     }
                     catch (AlphaVantageLimitException e) {
                         CommonUtil.handleException(e);
-                        return;
+                        // TODO: Stop the tasks on executor service and exit this download method
                     }
-                }
-
-                leftDate = leftDate.plusDays(30);
-                --month;
-                if (month < 1) {
-                    month = 12;
-                    --year;
-                }
-
-                if (year < 1) break;
+                });
             }
 
-            alphaVantageClients.add(client);
-            lock.remove(stock.getCode());
-            onDownloadFinish.run();
-        });
+            leftDate = leftDate.plusDays(30);
+            --month;
+            if (month < 1) {
+                month = 12;
+                --year;
+            }
+
+            if (year < 1) break;
+        }
+
+        lock.remove(stock.getCode());
     }
 
     private void saveCsv(Stock stock, List<String> csv) {

@@ -1,12 +1,8 @@
 package io.earlisreal.ejournal.service;
 
-import io.earlisreal.ejournal.client.AlphaVantageClient;
 import io.earlisreal.ejournal.client.JsoupAlphaVantageClient;
 import io.earlisreal.ejournal.dao.DAOProvider;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public final class ServiceProvider {
 
@@ -127,13 +123,9 @@ public final class ServiceProvider {
         if (intradayService == null) {
             synchronized (ServiceProvider.class) {
                 if (intradayService == null) {
-                    String apiKey = System.getenv("AV_API_KEYS");
-                    if (apiKey == null) throw new RuntimeException("AV_API_KEYS not found. Please set Alpha Vantage apiKeys to environment variables (comma separated)");
-                    List<AlphaVantageClient> clients = new ArrayList<>();
-                    for (String key : apiKey.split(",")) {
-                        clients.add(new JsoupAlphaVantageClient(key));
-                    }
-                    intradayService = new AsyncIntradayService(clients, getStockService());
+                    String apiKey = System.getenv("AV_API_KEY");
+                    if (apiKey == null) throw new RuntimeException("AV_API_KEY not found. Please set Alpha Vantage apiKey to environment variables");
+                    intradayService = new AsyncIntradayService(new JsoupAlphaVantageClient(apiKey), getStockService());
                 }
             }
         }

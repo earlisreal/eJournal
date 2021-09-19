@@ -13,7 +13,6 @@ import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 public class JsoupAlphaVantageClient implements AlphaVantageClient {
 
     private final String apiKey;
-    private int retry = 0;
 
     public JsoupAlphaVantageClient(String apiKey) {
         this.apiKey = apiKey;
@@ -34,21 +33,12 @@ public class JsoupAlphaVantageClient implements AlphaVantageClient {
             String data = Jsoup.connect(url).ignoreContentType(true).execute().body();
             String newLine = "\r\n";
             if (data.charAt(0) == '{') {
-                if (retry < 3) {
-                    System.out.println("5 calls per minute reached. Retrying after 10 seconds.");
-                    Thread.sleep(10_000);
-
-                    ++retry;
-                    return get1minuteHistory(symbol, slice);
-                }
-
                 throw new AlphaVantageLimitException("500 calls per day reached");
             }
 
-            retry = 0;
             data = data.substring(data.indexOf(newLine) + newLine.length());
             return Arrays.asList(data.split(newLine));
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+        } catch (URISyntaxException | IOException e) {
             handleException(e);
         }
 

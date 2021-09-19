@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,8 +21,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
@@ -31,15 +33,17 @@ public class AsyncIntradayService implements IntradayService {
 
     private final AlphaVantageClient alphaVantageClient;
     private final StockService stockService;
-    private final ExecutorService executorService;
+    private final ScheduledExecutorService executorService;
     private final Set<String> lock;
-
     private final Map<String, List<TradeSummary>> stockDateMap;
+
+    private int minuteOffset;
+    private int callCount;
 
     AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService) {
         this.alphaVantageClient = alphaVantageClient;
         this.stockService = stockService;
-        this.executorService = Executors.newFixedThreadPool(5);
+        this.executorService = Executors.newScheduledThreadPool(5);
         this.lock = new HashSet<>();
         this.stockDateMap = new HashMap<>();
     }
@@ -110,6 +114,7 @@ public class AsyncIntradayService implements IntradayService {
             rightDate = rightDate.minusDays(30);
         }
 
+        int secondsLeft = 60 - LocalTime.now().getMinute();
         int dateIndex = 0;
         while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
             LocalDate date = dates.get(dateIndex);
@@ -121,17 +126,30 @@ public class AsyncIntradayService implements IntradayService {
             if (date.isAfter(leftDate.minusDays(1))) {
                 String slice =  "year" + year + "month" + month;
                 String key = stock.getCode() + date;
-                executorService.execute(() -> {
+
+                Runnable task = () -> {
                     try {
                         var csv = alphaVantageClient.get1minuteHistory(stock.getCode(), slice);
                         saveCsv(stock, csv);
                         onDownloadFinish.accept(stockDateMap.get(key));
-                    }
-                    catch (AlphaVantageLimitException e) {
+                    } catch (AlphaVantageLimitException e) {
                         CommonUtil.handleException(e);
-                        // TODO: Stop the tasks on executor service and exit this download method
+                        executorService.shutdownNow();
                     }
-                });
+                };
+
+                if (minuteOffset == 0) {
+                    executorService.execute(task);
+                }
+                else {
+                    executorService.schedule(task, minuteOffset * 60L + secondsLeft, TimeUnit.SECONDS);
+                }
+
+                ++callCount;
+                if (callCount == 5) {
+                    callCount = 0;
+                    ++minuteOffset;
+                }
             }
 
             leftDate = leftDate.plusDays(30);

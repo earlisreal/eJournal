@@ -21,7 +21,7 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
 
     private Map<String, String> cookies;
     private LocalTime expiration;
-
+    private boolean isMaintenance;
 
     public JsoupTradeZeroClient(String username, String password) {
         this.username = username;
@@ -47,6 +47,8 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
                     return Collections.emptyList();
                 }
             }
+
+            if (isMaintenance) return Collections.emptyList();
 
             String url = new URIBuilder(baseUrl)
                     .setPathSegments("api", "GetCSVData", "7", start.toString(), end.toString())
@@ -79,6 +81,12 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
         if (response.statusCode() != 200 || !response.hasCookie("Username")) {
             System.out.println("Login Fail");
             return false;
+        }
+
+        var maintenanceBanner = Jsoup.parse(response.body()).getElementById("site-unavailable-banner");
+        if (maintenanceBanner != null) {
+            System.out.println("TradeZero Site under maintenance");
+            isMaintenance = true;
         }
 
         refreshExpiration();

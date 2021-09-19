@@ -48,13 +48,12 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
                 }
             }
 
-            if (isMaintenance) return Collections.emptyList();
-
             String url = new URIBuilder(baseUrl)
                     .setPathSegments("api", "GetCSVData", "7", start.toString(), end.toString())
                     .toString();
             var response = Jsoup.connect(url)
                     .cookies(cookies)
+                    .timeout(60_000)
                     .execute();
 
             if (!response.hasCookie("Username")) {
@@ -81,12 +80,6 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
         if (response.statusCode() != 200 || !response.hasCookie("Username")) {
             System.out.println("Login Fail");
             return false;
-        }
-
-        var maintenanceBanner = Jsoup.parse(response.body()).getElementById("site-unavailable-banner");
-        if (maintenanceBanner != null) {
-            System.out.println("TradeZero Site under maintenance");
-            isMaintenance = true;
         }
 
         refreshExpiration();

@@ -21,7 +21,6 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
 
     private Map<String, String> cookies;
     private LocalTime expiration;
-    private boolean isMaintenance;
 
     public JsoupTradeZeroClient(String username, String password) {
         this.username = username;

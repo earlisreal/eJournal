@@ -98,24 +98,13 @@ public class SimplePlotService implements PlotService {
         Path imagePath = INTRADAY_PLOT_DIRECTORY.resolve(generateImageName(tradeSummary));
         if (imageCache.contains(imagePath)) return imagePath;
 
-        IntradayPlotArgument argument = new IntradayPlotArgument();
-        argument.setOutputPath(imagePath.toString());
-        var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(tradeSummary.getStock() + ".csv");
-        if (!Files.exists(dataPath)) {
+        String symbol = tradeSummary.getStock();
+        var dataPath = STOCKS_DIRECTORY.resolve(tradeSummary.getCountry().name()).resolve(symbol + ".csv");
+        if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(tradeSummary.getCloseDate().toLocalDate())) {
             intradayService.download(List.of(tradeSummary));
-            System.out.println("Trying to download unknown stock. Try to comeback later");
+            System.out.println("Trying to Download missing " + symbol + " Data");
             return null;
         }
-        else {
-            Stock stock = stockService.getStock(tradeSummary.getStock());
-            if (stock.getLastDate().isBefore(tradeSummary.getCloseDate().toLocalDate())) {
-                intradayService.download(List.of(tradeSummary));
-                System.out.println("Trying to download incomplete Data. Try to comeback later");
-                return null;
-            }
-        }
-
-        argument.setDataPath(dataPath.toString());
 
         Map<String, List<Double>> buys = new HashMap<>();
         Map<String, List<Double>> shorts = new HashMap<>();
@@ -149,6 +138,9 @@ public class SimplePlotService implements PlotService {
             }
         }
 
+        IntradayPlotArgument argument = new IntradayPlotArgument();
+        argument.setOutputPath(imagePath.toString());
+        argument.setDataPath(dataPath.toString());
         argument.setBuys(buys);
         argument.setSells(sells);
         argument.setShorts(shorts);

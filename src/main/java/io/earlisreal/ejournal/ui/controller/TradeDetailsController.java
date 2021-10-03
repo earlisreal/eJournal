@@ -61,6 +61,7 @@ public class TradeDetailsController {
     public Button nextButton;
     public Button previousButton;
     public Label ofLabel;
+    public Button refreshButton;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -206,15 +207,14 @@ public class TradeDetailsController {
         };
 
         service.setOnSucceeded(event -> {
-            if (!summaries.get(index).equals(tradeSummary)) {
-                return;
-            }
+            if (!summaries.get(index).equals(tradeSummary)) return;
+
             Path imagePath = (Path) event.getSource().getValue();
             if (imagePath == null) {
-                // TODO : Add text to display fail
-                System.out.println("Failed to plot image");
+                refreshButton.setVisible(true);
                 return;
             }
+
             try {
                 plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
                 plotImageView.setVisible(true);
@@ -237,6 +237,7 @@ public class TradeDetailsController {
         plotImageView.setVisible(false);
         loadingLabel.setVisible(true);
         loadingProgress.setVisible(true);
+        refreshButton.setVisible(false);
     }
 
     private TradeSummary getCurrentSummary() {

@@ -16,7 +16,8 @@
       <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
       <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
       <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
-      <Group layoutX="161.0" layoutY="122.0">
+      <Button fx:id="refreshButton" layoutX="319.0" layoutY="272.0" mnemonicParsing="false" onAction="#show" text="Refresh" />
+      <Group layoutX="171.0" layoutY="132.0">
          <children>
             <ImageView fx:id="plotImageView" fitHeight="450.0" fitWidth="624.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
                <viewport>

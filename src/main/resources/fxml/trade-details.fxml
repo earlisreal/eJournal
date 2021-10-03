@@ -17,7 +17,8 @@
       <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
       <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Button fx:id="refreshButton" layoutX="319.0" layoutY="272.0" mnemonicParsing="false" onAction="#show" text="Refresh" />
-      <Group layoutX="171.0" layoutY="132.0">
+      <Label fx:id="refreshLabel" layoutX="205.0" layoutY="255.0" text="Downloading Data. Please Refresh when after a while." />
+      <Group layoutX="161.0" layoutY="132.0">
          <children>
             <ImageView fx:id="plotImageView" fitHeight="450.0" fitWidth="624.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
                <viewport>

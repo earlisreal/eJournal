@@ -62,6 +62,7 @@ public class TradeDetailsController {
     public Button previousButton;
     public Label ofLabel;
     public Button refreshButton;
+    public Label refreshLabel;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -212,17 +213,19 @@ public class TradeDetailsController {
             Path imagePath = (Path) event.getSource().getValue();
             if (imagePath == null) {
                 refreshButton.setVisible(true);
-                return;
+                refreshLabel.setVisible(true);
+            }
+            else {
+                try {
+                    plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
+                    plotImageView.setVisible(true);
+                } catch (MalformedURLException e) {
+                    handleException(e);
+                }
             }
 
-            try {
-                plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
-                plotImageView.setVisible(true);
-                loadingLabel.setVisible(false);
-                loadingProgress.setVisible(false);
-            } catch (MalformedURLException e) {
-                handleException(e);
-            }
+            loadingLabel.setVisible(false);
+            loadingProgress.setVisible(false);
         });
 
         service.setOnFailed(event -> {
@@ -238,6 +241,7 @@ public class TradeDetailsController {
         loadingLabel.setVisible(true);
         loadingProgress.setVisible(true);
         refreshButton.setVisible(false);
+        refreshLabel.setVisible(false);
     }
 
     private TradeSummary getCurrentSummary() {

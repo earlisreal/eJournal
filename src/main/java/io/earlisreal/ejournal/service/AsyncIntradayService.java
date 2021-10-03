@@ -37,8 +37,8 @@ public class AsyncIntradayService implements IntradayService {
     private final Set<String> lock;
     private final Map<String, List<TradeSummary>> stockDateMap;
 
-    private int minuteOffset;
-    private int callCount;
+    private int minuteOffset = -1;
+    private int callCount = 0;
 
     AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService) {
         this.alphaVantageClient = alphaVantageClient;
@@ -92,7 +92,6 @@ public class AsyncIntradayService implements IntradayService {
         if (lock.contains(stock.getCode())) return;
         lock.add(stock.getCode());
 
-        System.out.println("Downloading Intraday data for " + stock.getCode());
         int year = 1;
         int month = 1;
         LocalDate now = LocalDate.now();
@@ -138,7 +137,7 @@ public class AsyncIntradayService implements IntradayService {
                     }
                 };
 
-                if (minuteOffset == 0) {
+                if (minuteOffset == -1) {
                     executorService.execute(task);
                 }
                 else {

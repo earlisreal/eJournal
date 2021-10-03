@@ -20,6 +20,7 @@ public class JsoupAlphaVantageClient implements AlphaVantageClient {
 
     @Override
     public List<String> get1minuteHistory(String symbol, String slice) {
+        System.out.println("Downloading Intraday data for " + symbol);
         try {
             String url = new URIBuilder(URL)
                     .addParameter("function", "TIME_SERIES_INTRADAY_EXTENDED")

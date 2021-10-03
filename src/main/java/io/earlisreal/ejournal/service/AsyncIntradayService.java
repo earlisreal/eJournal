@@ -52,14 +52,10 @@ public class AsyncIntradayService implements IntradayService {
     public void download(List<TradeSummary> summaries, Consumer<List<TradeSummary>> onDownloadFinish) {
         stockDateMap.clear();
         List<TradeLog> tradeLogs = new ArrayList<>();
-        Map<String, List<TradeSummary>> summaryMap = new HashMap<>();
         for (TradeSummary summary : summaries) {
             if (summary.isDayTrade()) {
                 tradeLogs.addAll(summary.getLogs());
             }
-
-            if (!summaryMap.containsKey(summary.getStock())) summaryMap.put(summary.getStock(), new ArrayList<>());
-            summaryMap.get(summary.getStock()).add(summary);
 
             String stockDate = summary.getStock() + summary.getOpenDate().toLocalDate();
             if (!stockDateMap.containsKey(stockDate)) stockDateMap.put(stockDate, new ArrayList<>());
@@ -82,6 +78,8 @@ public class AsyncIntradayService implements IntradayService {
             if (!map.containsKey(stock)) map.put(stock, new LinkedHashSet<>());
             map.get(stock).add(log.getDate().toLocalDate());
         }
+
+        System.out.println("Preparing to download " + map.size() + " Symbol Intraday Data");
 
         for (var entry : map.entrySet()) {
             download(entry.getKey(), new ArrayList<>(entry.getValue()), onDownloadFinish);

@@ -352,17 +352,16 @@ public class MainController implements Initializable {
     }
 
     private void downloadIntradayHistory(List<TradeSummary> summaries) {
-        intradayService.download(summaries, list -> {
+        intradayService.download(summaries, list -> runAsync(() -> {
+            System.out.println("Plotting " + list.size() + " newly downloaded summary data");
             for (TradeSummary summary : list) {
-                runAsync(() -> {
-                    try {
-                        plotService.plot(summary);
-                    } catch (IOException e) {
-                        handleException(e);
-                    }
-                });
+                try {
+                    plotService.plot(summary);
+                } catch (IOException e) {
+                    handleException(e);
+                }
             }
-        });
+        }));
     }
 
     public void importCsv() {

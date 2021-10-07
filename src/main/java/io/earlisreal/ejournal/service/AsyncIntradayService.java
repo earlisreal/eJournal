@@ -50,6 +50,7 @@ public class AsyncIntradayService implements IntradayService {
 
     @Override
     public void download(List<TradeSummary> summaries, Consumer<List<TradeSummary>> onDownloadFinish) {
+        // TODO: add time filter 11:00am
         stockDateMap.clear();
         List<TradeLog> tradeLogs = new ArrayList<>();
         for (TradeSummary summary : summaries) {
@@ -111,7 +112,7 @@ public class AsyncIntradayService implements IntradayService {
             rightDate = rightDate.minusDays(30);
         }
 
-        int secondsLeft = 60 - LocalTime.now().getMinute();
+        int secondsLeft = 60 - LocalTime.now().getMinute() + 3;
         int dateIndex = 0;
         while (dateIndex < dates.size() && !leftDate.isAfter(rightDate)) {
             LocalDate date = dates.get(dateIndex);
@@ -128,7 +129,9 @@ public class AsyncIntradayService implements IntradayService {
                     try {
                         var csv = alphaVantageClient.get1minuteHistory(stock.getCode(), slice);
                         saveCsv(stock, csv);
-                        onDownloadFinish.accept(stockDateMap.get(key));
+                        if (stockDateMap.containsKey(key)) {
+                            onDownloadFinish.accept(stockDateMap.get(key));
+                        }
                     } catch (AlphaVantageLimitException e) {
                         CommonUtil.handleException(e);
                         executorService.shutdownNow();
@@ -139,7 +142,7 @@ public class AsyncIntradayService implements IntradayService {
                     executorService.execute(task);
                 }
                 else {
-                    executorService.schedule(task, minuteOffset * 60L + secondsLeft, TimeUnit.SECONDS);
+                    executorService.schedule(task, minuteOffset * 60L + secondsLeft + 3, TimeUnit.SECONDS);
                 }
 
                 ++callCount;

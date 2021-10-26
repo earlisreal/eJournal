@@ -9,19 +9,24 @@ import org.jsoup.Jsoup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class USCompanyScraper implements CompanyScraper {
 
     public static final String NYSE_URL = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&exchange=nyse&download=true";
     public static final String NASDAQ_URL = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&exchange=nasdaq&download=true";
+    public static final String AMEX_URL = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&exchange=amex&download=true";
 
     @Override
     public List<Stock> scrapeCompanies() {
-        List<Stock> stocks = new ArrayList<>();
-        stocks.addAll(getStocks(NYSE_URL));
-        stocks.addAll(getStocks(NASDAQ_URL));
-        return stocks;
+        return Stream.of(NYSE_URL, NASDAQ_URL, AMEX_URL)
+                .parallel()
+                .map(this::getStocks)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     private List<Stock> getStocks(String url) {

@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +105,7 @@ public class TradeSummary {
         return shares;
     }
 
-    public void setCloseDate(LocalDateTime date) {
+    void setCloseDate(LocalDateTime date) {
         closeDate = date;
     }
 
@@ -142,6 +143,10 @@ public class TradeSummary {
 
     public Country getCountry() {
         return country;
+    }
+
+    public String getId() {
+        return openDate.format(DateTimeFormatter.ofPattern("uuMMdd")) + hashCode();
     }
 
     @Override

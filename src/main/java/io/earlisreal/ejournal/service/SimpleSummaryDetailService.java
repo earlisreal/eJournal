@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.dao.SummaryDetailDAO;
 import io.earlisreal.ejournal.dto.SummaryDetail;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,10 +46,14 @@ public class SimpleSummaryDetailService implements SummaryDetailService {
     public void saveRemarks(String id, String remarks) {
         if (detailMap.containsKey(id)) {
             SummaryDetail detail = detailMap.get(id);
+            if (Objects.equals(detail.getRemarks(), remarks)) return;
+
             detail.setRemarks(remarks);
             summaryDetailDAO.update(detail);
             return;
         }
+
+        if ("".equals(remarks)) return;
 
         SummaryDetail detail = new SummaryDetail();
         detail.setId(id);

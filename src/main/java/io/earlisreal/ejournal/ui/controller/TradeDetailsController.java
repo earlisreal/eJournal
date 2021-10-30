@@ -5,16 +5,19 @@ import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
+import io.earlisreal.ejournal.service.SummaryDetailService;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -23,20 +26,23 @@ import javafx.scene.layout.AnchorPane;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 
-public class TradeDetailsController {
+public class TradeDetailsController implements Initializable {
 
     private final StockService stockService;
     private final PlotService plotService;
+    private final SummaryDetailService detailService;
 
     public ImageView plotImageView;
     public TableView<TradeLog> logTable;
@@ -63,6 +69,7 @@ public class TradeDetailsController {
     public Label ofLabel;
     public Button refreshButton;
     public Label refreshLabel;
+    public TextArea remarksTextArea;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -70,6 +77,7 @@ public class TradeDetailsController {
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
         plotService = ServiceProvider.getPlotService();
+        detailService = ServiceProvider.getSummaryDetailService();
 
         summaries = new ArrayList<>();
     }
@@ -107,8 +115,18 @@ public class TradeDetailsController {
 
         initializeStatistics(getCurrentSummary());
         initializeLogs(getCurrentSummary());
+        initializeDetails(getCurrentSummary());
 
         ofLabel.setText(index + 1 + " of " + summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
+    }
+
+    private void initializeDetails(TradeSummary summary) {
+        var detail = detailService.getSummaryDetail(summary.getId());
+        String remarks = "";
+        if (detail.isPresent()) {
+            remarks = detail.get().getRemarks();
+        }
+        remarksTextArea.setText(remarks);
     }
 
     private void initializeStatistics(TradeSummary summary) {
@@ -246,6 +264,15 @@ public class TradeDetailsController {
 
     private TradeSummary getCurrentSummary() {
         return summaries.get(index);
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        remarksTextArea.focusedProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (!newValue) {
+                detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
+            }
+        });
     }
 
 }

@@ -2,10 +2,14 @@ package io.earlisreal.ejournal.dao;
 
 
 import io.earlisreal.ejournal.dto.SummaryDetail;
+import io.earlisreal.ejournal.util.CommonUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
@@ -15,6 +19,26 @@ public class DerbySummaryDetailDAO implements SummaryDetailDAO {
 
     DerbySummaryDetailDAO(Connection connection) {
         this.connection = connection;
+    }
+
+    @Override
+    public List<SummaryDetail> getAll() {
+        List<SummaryDetail> details = new ArrayList<>();
+        try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM summary_detail");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                SummaryDetail detail = new SummaryDetail();
+                detail.setId(resultSet.getString(1));
+                detail.setRating(resultSet.getInt(2));
+                detail.setRemarks(resultSet.getString(3));
+                details.add(detail);
+            }
+        } catch (SQLException sqlException) {
+            CommonUtil.handleException(sqlException);
+        }
+
+        return details;
     }
 
     @Override

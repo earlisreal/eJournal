@@ -11,6 +11,7 @@ public class DAOProvider {
     private static StockDAO stockDAO;
     private static PlanDAO planDAO;
     private static CacheDAO cacheDAO;
+    private static SummaryDetailDAO summaryDetailDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -70,6 +71,18 @@ public class DAOProvider {
         }
 
         return cacheDAO;
+    }
+
+    public static SummaryDetailDAO getSummaryDetailDAO() {
+        if (summaryDetailDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (summaryDetailDAO == null) {
+                    summaryDetailDAO = new DerbySummaryDetailDAO(getConnection());
+                }
+            }
+        }
+
+        return summaryDetailDAO;
     }
 
 }

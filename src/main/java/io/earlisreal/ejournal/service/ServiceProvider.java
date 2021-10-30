@@ -15,6 +15,7 @@ public final class ServiceProvider {
     private static PlotService plotService;
     private static PlanService planService;
     private static IntradayService intradayService;
+    private static SummaryDetailService summaryDetailService;
 
     private ServiceProvider() {}
 
@@ -131,6 +132,18 @@ public final class ServiceProvider {
         }
 
         return intradayService;
+    }
+
+    public static SummaryDetailService getSummaryDetailService() {
+        if (summaryDetailService == null) {
+            synchronized (ServiceProvider.class) {
+                if (summaryDetailService == null) {
+                    summaryDetailService = new SimpleSummaryDetailService(DAOProvider.getSummaryDetailDAO());
+                }
+            }
+        }
+
+        return summaryDetailService;
     }
 
 }

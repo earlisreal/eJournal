@@ -4,8 +4,8 @@ import java.util.List;
 
 public enum Table {
 
-    TRADE_SUMMARY ("trade_summary", "CREATE TABLE trade_summary (" +
-            "id VARCHAR(16) CONSTRAINT trade_summary_pk PRIMARY KEY, " +
+    TRADE_SUMMARY ("summary_detail", "CREATE TABLE summary_detail (" +
+            "id VARCHAR(16) CONSTRAINT summary_detail_pk PRIMARY KEY, " +
             "rating SMALLINT DEFAULT 0, " +
             "remarks LONG VARCHAR, " +
             "strategy_id INT)",

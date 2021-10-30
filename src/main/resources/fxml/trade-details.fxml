@@ -8,14 +8,16 @@
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="744.0" prefWidth="694.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
+<AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="768.0" prefWidth="924.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
       <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
-      <Button fx:id="previousButton" layoutX="571.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
-      <Button fx:id="nextButton" layoutX="639.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
+      <Button fx:id="previousButton" layoutX="801.0" layoutY="14.0" mnemonicParsing="false" onAction="#previousTrade" text="Previous" />
+      <Button fx:id="nextButton" layoutX="869.0" layoutY="14.0" mnemonicParsing="false" onAction="#nextTrade" text="Next" />
       <Button fx:id="refreshButton" layoutX="319.0" layoutY="272.0" mnemonicParsing="false" onAction="#show" text="Refresh" />
       <Label fx:id="refreshLabel" layoutX="205.0" layoutY="255.0" text="Downloading Data. Please Refresh when after a while." />
       <Group layoutX="161.0" layoutY="132.0">
@@ -43,7 +45,7 @@
             <String fx:value="no-header" />
          </styleClass>
       </TableView>
-      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="123.0" prefWidth="671.0">
+      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="146.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="125.0" text="Date" />
             <TableColumn fx:id="logAction" prefWidth="72.0" text="Action" />
@@ -54,5 +56,11 @@
             <TableColumn fx:id="logProfit" prefWidth="102.0" text="Realized Profit" />
          </columns>
       </TableView>
+      <TextArea fx:id="remarksTextArea" layoutX="689.0" layoutY="67.0" prefHeight="689.0" prefWidth="221.0" />
+      <Label layoutX="700.0" layoutY="50.0" text="Remarks">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
    </children>
 </AnchorPane>

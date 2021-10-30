@@ -12,12 +12,9 @@ public class TradeLog {
     private boolean isBuy;
     private double price;
     private double shares;
-    private Integer strategyId;
-    private String strategy;
     private boolean isShort;
     private String invoiceNo;
     private Broker broker;
-    private String remarks;
     private Double fees;
     private double profit;
 
@@ -69,8 +66,6 @@ public class TradeLog {
                 ", isBuy=" + isBuy +
                 ", price=" + price +
                 ", shares=" + shares +
-                ", strategyId=" + strategyId +
-                ", strategy='" + strategy + '\'' +
                 ", isShort=" + isShort +
                 ", invoiceNo='" + invoiceNo + '\'' +
                 ", broker='" + broker + '\'' +
@@ -165,22 +160,6 @@ public class TradeLog {
 
     public void setShares(double shares) {
         this.shares = shares;
-    }
-
-    public Integer getStrategyId() {
-        return strategyId;
-    }
-
-    public void setStrategyId(Integer strategyId) {
-        this.strategyId = strategyId;
-    }
-
-    public String getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(String strategy) {
-        this.strategy = strategy;
     }
 
     public boolean isShort() {

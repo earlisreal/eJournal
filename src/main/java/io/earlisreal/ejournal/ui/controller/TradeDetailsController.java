@@ -11,6 +11,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -23,6 +24,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -39,6 +41,8 @@ import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 
 public class TradeDetailsController implements Initializable {
+
+    private static final String SELECTED_RATING = "selected";
 
     private final StockService stockService;
     private final PlotService plotService;
@@ -70,6 +74,7 @@ public class TradeDetailsController implements Initializable {
     public Button refreshButton;
     public Label refreshLabel;
     public TextArea remarksTextArea;
+    public HBox ratingHBox;
 
     private List<TradeSummary> summaries;
     private int index;
@@ -80,6 +85,15 @@ public class TradeDetailsController implements Initializable {
         detailService = ServiceProvider.getSummaryDetailService();
 
         summaries = new ArrayList<>();
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        remarksTextArea.focusedProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (!newValue) {
+                detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
+            }
+        });
     }
 
     public void setSummaries(List<TradeSummary> summaries) {
@@ -266,13 +280,24 @@ public class TradeDetailsController implements Initializable {
         return summaries.get(index);
     }
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        remarksTextArea.focusedProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (!newValue) {
-                detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
+    public void updateRating(ActionEvent actionEvent) {
+        updateRatingLayout((Button) actionEvent.getSource());
+
+    }
+
+    private void updateRatingLayout(Button button) {
+        var children = ratingHBox.getChildren();
+        int rating = children.indexOf(button);
+        for (int i = 0; i < children.size(); ++i) {
+            var styleClass = children.get(i).getStyleClass();
+            boolean isSelected = styleClass.contains(SELECTED_RATING);
+            if (i <= rating) {
+                if (!isSelected) styleClass.add(SELECTED_RATING);
             }
-        });
+            else {
+                if (isSelected) styleClass.remove(SELECTED_RATING);
+            }
+        }
     }
 
 }

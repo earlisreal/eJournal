@@ -137,9 +137,12 @@ public class TradeDetailsController implements Initializable {
     private void initializeDetails(TradeSummary summary) {
         var detail = detailService.getSummaryDetail(summary.getId());
         String remarks = "";
+        int rating = 0;
         if (detail.isPresent()) {
             remarks = detail.get().getRemarks();
+            rating = detail.get().getRating();
         }
+        updateRatingLayout(rating);
         remarksTextArea.setText(remarks);
     }
 
@@ -281,17 +284,18 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void updateRating(ActionEvent actionEvent) {
-        updateRatingLayout((Button) actionEvent.getSource());
+        int rating = ratingHBox.getChildren().indexOf((Button) actionEvent.getSource()) + 1;
+        updateRatingLayout(rating);
 
+        detailService.saveRating(getCurrentSummary().getId(), rating);
     }
 
-    private void updateRatingLayout(Button button) {
+    private void updateRatingLayout(int rating) {
         var children = ratingHBox.getChildren();
-        int rating = children.indexOf(button);
         for (int i = 0; i < children.size(); ++i) {
             var styleClass = children.get(i).getStyleClass();
             boolean isSelected = styleClass.contains(SELECTED_RATING);
-            if (i <= rating) {
+            if (i < rating) {
                 if (!isSelected) styleClass.add(SELECTED_RATING);
             }
             else {

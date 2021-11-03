@@ -1,35 +1,37 @@
 package io.earlisreal.ejournal.database;
 
 import io.earlisreal.ejournal.util.Configs;
+import org.apache.derby.jdbc.EmbeddedDataSource;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.ConcurrentMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DerbyDatabase {
 
+    private static DataSource dataSource;
     private static Connection connection;
+    private static List<Connection> connections;
 
     private DerbyDatabase() {}
 
-    public static Connection getConnection() {
-        if (connection == null) {
-            throw new RuntimeException("Uninitialized Derby Database Connection. " +
-                    "Please invoke DerbyDatabase.initialize() first.");
-        }
-        return connection;
-    }
-
-    public static Connection initialize() throws SQLException {
-        createConnection();
+    public static void initialize() throws SQLException {
+        connections = new ArrayList<>();
+        initializeDataSource();
         createTables();
-        return connection;
     }
 
-    private static void createConnection() throws SQLException {
-        connection = DriverManager.getConnection("jdbc:derby:" + Configs.DATA_DIR + "/eJournalDB;create=true", "eJournal", "eJournal");
+    private static void initializeDataSource() {
+        EmbeddedDataSource embeddedDataSource = new EmbeddedDataSource();
+        embeddedDataSource.setDatabaseName(Configs.DATA_DIR + "/eJournalDB");
+        embeddedDataSource.setUser("eJournal");
+        embeddedDataSource.setPassword("eJournal");
+        embeddedDataSource.setCreateDatabase("create");
+        dataSource = embeddedDataSource;
+        connection = getConnection();
     }
 
     private static void createTables() throws SQLException {
@@ -57,6 +59,35 @@ public class DerbyDatabase {
                 throw sqlException;
             }
             return false;
+        }
+    }
+
+    public static Connection getConnection() {
+        if (dataSource == null) {
+            throw new RuntimeException("Uninitialized Derby Database Connection. " +
+                    "Please invoke DerbyDatabase.initialize() first.");
+        }
+
+        try {
+            Connection newConnection = dataSource.getConnection();
+            connections.add(newConnection);
+            return newConnection;
+        } catch (SQLException sqlException) {
+            System.out.println(sqlException.getMessage());
+            return connection;
+        }
+    }
+
+    public static void close() {
+        for (Connection connection : connections) {
+            System.out.println(connection.toString());
+            try {
+                connection.commit();
+                connection.close();
+            }
+            catch (SQLException ex) {
+                System.out.println(ex.getMessage());
+            }
         }
     }
 

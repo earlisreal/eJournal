@@ -10,8 +10,8 @@ import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
 import io.earlisreal.ejournal.scraper.StockScraper;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.ui.SplashScreenLauncher;
 import io.earlisreal.ejournal.ui.UILauncher;
-import io.earlisreal.ejournal.ui.controller.SplashScreenController;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
@@ -25,7 +25,7 @@ public class EJournal {
 
     public static void main(String[] args) {
         System.out.println("Welcome to eJournal!");
-        Runtime.getRuntime().addShutdownHook(new Thread(DerbyDatabase::close));
+        Runtime.getRuntime().addShutdownHook(new Thread(EJournal::onShutdown));
         try {
             EJournal eJournal = new EJournal();
             eJournal.run(args);
@@ -33,13 +33,11 @@ public class EJournal {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-
-        System.out.println("bye!");
     }
 
     public void run(String[] args) throws GeneralSecurityException, IOException {
         if (args.length < 1) {
-            LauncherImpl.launchApplication(UILauncher.class, SplashScreenController.class, args);
+            LauncherImpl.launchApplication(UILauncher.class, SplashScreenLauncher.class, args);
             return;
         }
 
@@ -89,6 +87,11 @@ public class EJournal {
             ServiceProvider.getStockService().updateStocks(stocks);
             System.out.println(stocks);
         }
+    }
+
+    public static void onShutdown() {
+        DerbyDatabase.close();
+        System.out.println("bye!");
     }
 
 }

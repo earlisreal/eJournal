@@ -9,17 +9,21 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
-public interface CommonUtil {
+public final class CommonUtil {
 
-    DateTimeFormatter COMMON_FORMATTER = DateTimeFormatter.ofPattern("MM-dd-uuuu HH:mm:ss");
+    private static final DateTimeFormatter COMMON_FORMATTER = DateTimeFormatter.ofPattern("MM-dd-uuuu HH:mm:ss");
 
-    static void handleException(Throwable e) {
+    private CommonUtil() {}
+
+    public static void handleException(Throwable e) {
         System.out.println(e.getMessage());
         e.printStackTrace();
     }
 
-    static Broker identifyBroker(String invoice) {
+    public static Broker identifyBroker(String invoice) {
         for (Broker broker : Broker.values()) {
             if (broker.getUniqueIdentifier() != null && invoice.contains(broker.getUniqueIdentifier())) {
                 return broker;
@@ -29,7 +33,7 @@ public interface CommonUtil {
         throw new RuntimeException("Invoice of this format is not supported");
     }
 
-    static Broker identifyBrokerLenient(String invoice) {
+    public static Broker identifyBrokerLenient(String invoice) {
         for (Broker broker : Broker.values()) {
             if (broker.getUniqueIdentifier() != null
                     && invoice.toUpperCase().contains(broker.getUniqueIdentifier().toUpperCase())) {
@@ -40,17 +44,17 @@ public interface CommonUtil {
         throw new RuntimeException("Invoice of this format is not supported");
     }
 
-    static int parseInt(String text) throws ParseException {
+    public static int parseInt(String text) throws ParseException {
         if (text.isBlank()) return 0;
         return NumberFormat.getNumberInstance().parse(text).intValue();
     }
 
-    static double parseDouble(String text) throws ParseException {
+    public static double parseDouble(String text) throws ParseException {
         if (text == null || text.isBlank()) return 0;
         return NumberFormat.getNumberInstance().parse(text).doubleValue();
     }
 
-    static String trimStockName(String name) {
+    public static String trimStockName(String name) {
         var extensions = List.of(" PHILIPPINES, INC", " PHILIPPINES, INC.", ", INC", ", INC.",
                 " INCORPORATED", " CORP", " CORP.", " CORPORATION");
         name = name.toUpperCase();
@@ -62,31 +66,31 @@ public interface CommonUtil {
         return name.toUpperCase();
     }
 
-    static String prettify(LocalDateTime localDateTime) {
+    public static String prettify(LocalDateTime localDateTime) {
         return COMMON_FORMATTER.format(localDateTime);
     }
 
-    static String prettify(double num) {
+    public static String prettify(double num) {
         return NumberFormat.getNumberInstance().format(round(num));
     }
 
-    static double round(double num) {
+    public static double round(double num) {
         return Math.round(num * 100) / 100.0;
     }
 
-    static Date toSqlDate(LocalDate localDate) {
+    public static Date toSqlDate(LocalDate localDate) {
         return new Date(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
-    static Timestamp toTimestamp(LocalDateTime localDateTime) {
+    public static Timestamp toTimestamp(LocalDateTime localDateTime) {
         return new Timestamp(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 
-    static void runAsync(Runnable runnable) {
+    public static void runAsync(Runnable runnable) {
         new Thread(runnable).start();
     }
 
-    static String normalize(long seconds) {
+    public static String normalize(long seconds) {
         long minutes = seconds / 60;
         seconds %= 60;
         long hours = minutes / 60;
@@ -101,6 +105,14 @@ public interface CommonUtil {
             if (seconds > 0) hold += seconds + "s";
         }
         return hold;
+    }
+
+    private static final class ExecutorServiceHolder {
+        private static final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(5);
+    }
+
+    public static ScheduledExecutorService getExecutorService() {
+        return ExecutorServiceHolder.executorService;
     }
 
 }

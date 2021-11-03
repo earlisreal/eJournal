@@ -21,7 +21,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -40,10 +39,10 @@ public class AsyncIntradayService implements IntradayService {
     private int minuteOffset = -1;
     private int callCount = 0;
 
-    AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService) {
+    AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService, ScheduledExecutorService executorService) {
         this.alphaVantageClient = alphaVantageClient;
         this.stockService = stockService;
-        this.executorService = Executors.newScheduledThreadPool(5);
+        this.executorService = executorService;
         this.lock = new HashSet<>();
         this.stockDateMap = new HashMap<>();
     }

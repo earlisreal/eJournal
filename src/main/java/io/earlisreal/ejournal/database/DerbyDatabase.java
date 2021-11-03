@@ -80,7 +80,6 @@ public class DerbyDatabase {
 
     public static void close() {
         for (Connection connection : connections) {
-            System.out.println(connection.toString());
             try {
                 connection.commit();
                 connection.close();

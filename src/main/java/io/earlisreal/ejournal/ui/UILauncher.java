@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
 import io.earlisreal.ejournal.service.ServiceProvider;
+import io.earlisreal.ejournal.util.CommonUtil;
 import javafx.application.Application;
 import javafx.application.Preloader;
 import javafx.fxml.FXMLLoader;
@@ -32,6 +33,12 @@ public class UILauncher extends Application {
     public void init() throws Exception {
         DerbyDatabase.initialize();
         ServiceProvider.getStartupService().run();
+    }
+
+    @Override
+    public void stop() {
+        System.out.println("Shutting Down");
+        CommonUtil.getExecutorService().shutdown();
     }
 
 }

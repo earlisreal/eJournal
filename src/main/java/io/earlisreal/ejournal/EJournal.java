@@ -90,7 +90,6 @@ public class EJournal {
     }
 
     public static void onShutdown() {
-        CommonUtil.getExecutorService().shutdownNow();
         DerbyDatabase.close();
         System.out.println("bye!");
     }

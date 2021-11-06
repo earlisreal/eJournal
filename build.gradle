@@ -1,16 +1,7 @@
-buildscript {
-    repositories {
-        gradlePluginPortal()
-    }
-    dependencies {
-        classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
-    }
-}
-
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.9'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'com.github.johnrengelman.shadow' version '7.1.0'
     id 'edu.sc.seis.launch4j' version '2.5.1'
 }
 
@@ -35,12 +26,20 @@ dependencies {
     implementation 'org.apache.poi:poi-ooxml:5.0.0'
 }
 
+mainClassName = 'io.earlisreal.ejournal.EJournal'
+
 javafx {
     version = '15.0.1'
     modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
-mainClassName = 'io.earlisreal.ejournal.EJournal'
+shadowJar {
+    minimize {
+        exclude dependency('org.openjfx:.*:.*')
+        exclude dependency('com.fasterxml.woodstox:.*:.*')
+        exclude dependency('org.apache.derby:.*:.*')
+    }
+}
 
 task compilePython(type: Exec) {
     commandLine 'pip', 'install', '-r', 'requirements.txt'

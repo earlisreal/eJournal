@@ -11,6 +11,7 @@ plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.9'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'edu.sc.seis.launch4j' version '2.5.1'
 }
 
 group 'io.earlisreal'
@@ -42,13 +43,16 @@ javafx {
 mainClassName = 'io.earlisreal.ejournal.EJournal'
 
 task compilePython(type: Exec) {
-    workingDir 'python'
     commandLine 'pip', 'install', '-r', 'requirements.txt'
-    commandLine 'python', '-O', '-m', 'PyInstaller', '--onefile', 'scripts/intraday-plot.py'
+    commandLine 'python', '-O', '-m', 'PyInstaller', '--onefile', '--distpath', 'lib', 'python/scripts/intraday-plot.py'
 }
 
-task deployPlot(type: Copy, dependsOn: compilePython) {
-    from 'python/dist/intraday-plot.exe'
-    into 'src/main/resources/'
+launch4j {
+    icon = "${projectDir}/src/main/resources/eJournal-icon.ico"
+    jarTask = tasks.shadowJar
+    copyConfigurable = ["${projectDir}/lib/intraday-plot.exe"]
+    splashWaitForWindows = false
 }
+
+createExe.dependsOn compilePython
 

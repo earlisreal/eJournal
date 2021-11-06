@@ -159,7 +159,7 @@ public class SimplePlotService implements PlotService {
             args.append(c);
         }
 
-        run("python", "python/scripts/intraday-plot.py", args.toString());
+        run("lib/intraday-plot.exe", args.toString());
         cacheImage(imagePath);
         return imagePath;
     }

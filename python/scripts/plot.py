@@ -25,7 +25,7 @@ if __name__ == "__main__":
     start = dataframe.index.searchsorted(datetime.fromisoformat(buys_input[0]))
     if sells_input is not None:
         end = dataframe.index.searchsorted(datetime.fromisoformat(sells_input[-1]))
-        if sys.argv[3] is "1":
+        if sys.argv[3] == "1":
             dataframe = dataframe[start - 5:end + 5]
         else:
             dataframe = dataframe[start - 5:]

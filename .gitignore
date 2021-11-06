@@ -8,6 +8,10 @@ out/
 # Experiment Files
 src/main/java/io/earlisreal/ejournal/Test.java
 
+# Python Files
+__pycache__/
+*.spec
+
 # eJournal Files
 .eJournal/
 eJournalDB/
@@ -15,6 +19,7 @@ tokens/
 
 # Compiled class file
 *.class
+*.exe
 
 # Log file
 *.log

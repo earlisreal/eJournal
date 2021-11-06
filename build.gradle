@@ -35,8 +35,20 @@ dependencies {
 }
 
 javafx {
-    version = "15.0.1"
+    version = '15.0.1'
     modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
 mainClassName = 'io.earlisreal.ejournal.EJournal'
+
+task compilePython(type: Exec) {
+    workingDir 'python'
+    commandLine 'pip', 'install', '-r', 'requirements.txt'
+    commandLine 'python', '-O', '-m', 'PyInstaller', '--onefile', 'scripts/intraday-plot.py'
+}
+
+task deployPlot(type: Copy, dependsOn: compilePython) {
+    from 'python/dist/intraday-plot.exe'
+    into 'src/main/resources/'
+}
+

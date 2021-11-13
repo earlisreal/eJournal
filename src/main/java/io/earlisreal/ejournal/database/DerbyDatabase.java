@@ -79,6 +79,10 @@ public class DerbyDatabase {
     }
 
     public static void close() {
+        if (connections == null) {
+            return;
+        }
+
         for (Connection connection : connections) {
             try {
                 connection.commit();

@@ -30,7 +30,7 @@ mainClassName = 'io.earlisreal.ejournal.EJournal'
 
 javafx {
     version = '15.0.1'
-    modules = [ 'javafx.controls', 'javafx.fxml' ]
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.web' ]
 }
 
 shadowJar {
@@ -51,6 +51,11 @@ launch4j {
     jarTask = tasks.shadowJar
     copyConfigurable = ["${projectDir}/lib/intraday-plot.exe"]
     splashWaitForWindows = false
+}
+
+task release {
+    // Copy first to a directory
+    // Create eJournal-version.zip
 }
 
 createExe.dependsOn compilePython

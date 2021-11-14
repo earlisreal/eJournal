@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>lightweight-charts</title>
+    <script src="https://github.com/earlisreal/lightweight-charts/releases/download/v3.7.1/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<script>
+    const chart = LightweightCharts.createChart(document.body, {
+        width: 663,
+        height: 434,
+        crosshair: {mode: LightweightCharts.CrosshairMode.Normal},
+        layout: {
+            backgroundColor: '#ffffff',
+            textColor: 'rgba(33, 56, 77, 1)',
+        },
+        grid: {
+            vertLines: {
+                color: 'rgba(197, 203, 206, 0.7)',
+            },
+            horzLines: {
+                color: 'rgba(197, 203, 206, 0.7)',
+            },
+        },
+        timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+        },
+    });
+
+    const series = chart.addCandlestickSeries({
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+
+    const volumeSeries = chart.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+            type: 'volume',
+        },
+        priceLineVisible: false,
+        lastValueVisible: false,
+        priceScaleId: '',
+        scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+        },
+    });
+</script>
+</body>
+</html>

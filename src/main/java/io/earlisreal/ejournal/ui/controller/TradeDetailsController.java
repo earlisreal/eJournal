@@ -1,16 +1,17 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import com.jsoniter.output.JsonStream;
 import io.earlisreal.ejournal.dto.TradeLog;
+import io.earlisreal.ejournal.model.CandleStickSeriesData;
+import io.earlisreal.ejournal.model.MarkerData;
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.service.PlotService;
+import io.earlisreal.ejournal.model.VolumeData;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.SummaryDetailService;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -19,36 +20,40 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class TradeDetailsController implements Initializable {
 
+    public static final DateTimeFormatter AV_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
     private static final String SELECTED_RATING = "selected";
 
     private final StockService stockService;
-    private final PlotService plotService;
     private final SummaryDetailService detailService;
 
-    public ImageView plotImageView;
     public TableView<TradeLog> logTable;
     public TableColumn<TradeLog, String> logDate;
     public TableColumn<TradeLog, String> logAction;
@@ -75,13 +80,14 @@ public class TradeDetailsController implements Initializable {
     public Label refreshLabel;
     public TextArea remarksTextArea;
     public HBox ratingHBox;
+    public WebView webView;
 
+    private WebEngine webEngine;
     private List<TradeSummary> summaries;
     private int index;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
-        plotService = ServiceProvider.getPlotService();
         detailService = ServiceProvider.getSummaryDetailService();
 
         summaries = new ArrayList<>();
@@ -89,6 +95,13 @@ public class TradeDetailsController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        webEngine = webView.getEngine();
+        Path chartPath = Paths.get("chart/chart.html").toAbsolutePath();
+        if (!Files.exists(chartPath)) {
+            throw new RuntimeException(chartPath + " Not Found");
+        }
+
+        webEngine.load(chartPath.toUri().toString());
         remarksTextArea.focusedProperty().addListener((observableValue, oldValue, newValue) -> {
             if (!newValue) {
                 detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
@@ -125,7 +138,7 @@ public class TradeDetailsController implements Initializable {
 
     public void show() {
         showLoading();
-        updateImage(getCurrentSummary());
+        updateChartData(getCurrentSummary());
 
         initializeStatistics(getCurrentSummary());
         initializeLogs(getCurrentSummary());
@@ -224,57 +237,9 @@ public class TradeDetailsController implements Initializable {
         logProfit.setCellValueFactory(p -> new SimpleStringProperty(prettify(p.getValue().getProfit())));
     }
 
-    public void updateImage(TradeSummary tradeSummary) {
-        Service<Path> service = new Service<>() {
-            @Override
-            protected Task<Path> createTask() {
-                return new Task<>() {
-                    @Override
-                    protected Path call() {
-                        try {
-                            return plotService.plot(tradeSummary);
-                        } catch (IOException e) {
-                            handleException(e);
-                        }
-                        return null;
-                    }
-                };
-            }
-        };
-
-        service.setOnSucceeded(event -> {
-            if (!summaries.get(index).equals(tradeSummary)) return;
-
-            Path imagePath = (Path) event.getSource().getValue();
-            if (imagePath == null) {
-                refreshButton.setVisible(true);
-                refreshLabel.setVisible(true);
-            }
-            else {
-                try {
-                    plotImageView.setImage(new Image(imagePath.toUri().toURL().toString()));
-                    plotImageView.setVisible(true);
-                } catch (MalformedURLException e) {
-                    handleException(e);
-                }
-            }
-
-            loadingLabel.setVisible(false);
-            loadingProgress.setVisible(false);
-        });
-
-        service.setOnFailed(event -> {
-            var exception = event.getSource().getException();
-            handleException(exception);
-        });
-
-        service.start();
-    }
-
     public void showLoading() {
-        plotImageView.setVisible(false);
-        loadingLabel.setVisible(true);
-        loadingProgress.setVisible(true);
+//        loadingLabel.setVisible(true);
+//        loadingProgress.setVisible(true);
         refreshButton.setVisible(false);
         refreshLabel.setVisible(false);
     }
@@ -302,6 +267,76 @@ public class TradeDetailsController implements Initializable {
                 if (isSelected) styleClass.remove(SELECTED_RATING);
             }
         }
+    }
+
+    private void updateChartData(TradeSummary summary) {
+        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(summary.getStock() + ".csv");
+        List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
+        List<VolumeData> volumeDataList = new ArrayList<>();
+        try (var lines = Files.lines(dataPath)) {
+            lines.map(line -> line.split(","))
+                    .forEach(tokens -> {
+                        LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
+                        if (!summary.getCloseDate().toLocalDate().equals(localDateTime.toLocalDate())) {
+                            return;
+                        }
+                        CandleStickSeriesData data = toSeriesData(tokens, localDateTime.toEpochSecond(ZoneOffset.UTC));
+                        VolumeData volumeData = toVolumeData(tokens, data.getClose() >= data.getOpen(), localDateTime.toEpochSecond(ZoneOffset.UTC));
+                        seriesDataList.add(data);
+                        volumeDataList.add(volumeData);
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        List<MarkerData> markerDataList = new ArrayList<>();
+        for (TradeLog log : summary.getLogs()) {
+            MarkerData data = new MarkerData();
+            data.setTime(log.getDate().toEpochSecond(ZoneOffset.UTC));
+            String color = MarkerData.BUY_COLOR;
+            if (!log.isBuy()) {
+                color = log.isShort() ? MarkerData.SHORT_COLOR : MarkerData.SELL_COLOR;
+            }
+            data.setPosition(log.getPrice());
+            data.setColor(color);
+            data.setShape("diamond");
+            markerDataList.add(data);
+        }
+
+        long first = summary.getLogs().get(0).getDate().truncatedTo(ChronoUnit.MINUTES).toEpochSecond(ZoneOffset.UTC);
+        int position = 0;
+        for (int i = 0; i < seriesDataList.size(); ++i) {
+            if (seriesDataList.get(i).getTime() == first) {
+                position = i - seriesDataList.size();
+                break;
+            }
+        }
+
+        String seriesJson = JsonStream.serialize(seriesDataList);
+        String volumeJson = JsonStream.serialize(volumeDataList);
+        String markerJson = JsonStream.serialize(markerDataList);
+        webEngine.executeScript(String.format("series.setData(%s)", seriesJson));
+        webEngine.executeScript(String.format("volumeSeries.setData(%s)", volumeJson));
+        webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
+        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", position + 40));
+    }
+
+    private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
+        CandleStickSeriesData data = new CandleStickSeriesData();
+        data.setTime(epochSecond);
+        data.setOpen(Double.parseDouble(tokens[1]));
+        data.setHigh(Double.parseDouble(tokens[2]));
+        data.setLow(Double.parseDouble(tokens[3]));
+        data.setClose(Double.parseDouble(tokens[4]));
+        return data;
+    }
+
+    private VolumeData toVolumeData(String[] tokens, boolean isGreen, long epochSecond) {
+        VolumeData data = new VolumeData();
+        data.setTime(epochSecond);
+        data.setValue(Double.parseDouble(tokens[5]));
+        data.setColor(isGreen ? VolumeData.GREEN : VolumeData.RED);
+        return data;
     }
 
 }

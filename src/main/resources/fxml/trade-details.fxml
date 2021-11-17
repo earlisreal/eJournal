@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import java.lang.String?>
-<?import javafx.geometry.Rectangle2D?>
 <?import javafx.scene.Group?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -9,10 +8,10 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.web.WebView?>
 
 <AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="768.0" prefWidth="924.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
@@ -21,13 +20,9 @@
       <Label fx:id="refreshLabel" layoutX="205.0" layoutY="255.0" text="Downloading Data. Please Refresh when after a while." />
       <Group layoutX="161.0" layoutY="132.0">
          <children>
-            <ImageView fx:id="plotImageView" fitHeight="450.0" fitWidth="624.0" layoutX="-125.0" layoutY="-74.0" preserveRatio="true">
-               <viewport>
-                  <Rectangle2D />
-               </viewport>
-            </ImageView>
-            <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" />
-            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Plot Image" />
+            <WebView fx:id="webView" layoutX="-149.0" layoutY="-90.0" prefHeight="450.0" prefWidth="671.0" />
+            <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" visible="false" />
+            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Plot Image" visible="false" />
          </children>
       </Group>
       <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">

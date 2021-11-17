@@ -53,8 +53,8 @@ public class SimpleStartupService implements StartupService {
     @Override
     public void run() {
         createDirectories();
-        loadPlotCache();
-        manageStockList();
+        // TODO : Add handling if Broker is PH or US
+//        manageStockList();
         manageUsStockList();
 
         tradeLogService.applyFilter(cacheService.getStartFilter(), cacheService.getEndFilter());

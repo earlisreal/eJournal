@@ -16,13 +16,11 @@
 <AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="768.0" prefWidth="924.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
       <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
-      <Button fx:id="refreshButton" layoutX="319.0" layoutY="272.0" mnemonicParsing="false" onAction="#show" text="Refresh" />
-      <Label fx:id="refreshLabel" layoutX="205.0" layoutY="255.0" text="Downloading Data. Please Refresh when after a while." />
       <Group layoutX="161.0" layoutY="132.0">
          <children>
             <WebView fx:id="webView" layoutX="-149.0" layoutY="-90.0" prefHeight="450.0" prefWidth="671.0" />
             <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" visible="false" />
-            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Plot Image" visible="false" />
+            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Stock Data" visible="false" />
          </children>
       </Group>
       <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">

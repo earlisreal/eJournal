@@ -76,8 +76,6 @@ public class TradeDetailsController implements Initializable {
     public Button nextButton;
     public Button previousButton;
     public Label ofLabel;
-    public Button refreshButton;
-    public Label refreshLabel;
     public TextArea remarksTextArea;
     public HBox ratingHBox;
     public WebView webView;
@@ -137,7 +135,6 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void show() {
-        showLoading();
         updateChartData(getCurrentSummary());
 
         initializeStatistics(getCurrentSummary());
@@ -238,10 +235,15 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void showLoading() {
-//        loadingLabel.setVisible(true);
-//        loadingProgress.setVisible(true);
-        refreshButton.setVisible(false);
-        refreshLabel.setVisible(false);
+        loadingLabel.setVisible(true);
+        loadingProgress.setVisible(true);
+        webView.setVisible(false);
+    }
+
+    public void hideLoading() {
+        webView.setVisible(true);
+        loadingLabel.setVisible(false);
+        loadingProgress.setVisible(false);
     }
 
     private TradeSummary getCurrentSummary() {
@@ -270,7 +272,13 @@ public class TradeDetailsController implements Initializable {
     }
 
     private void updateChartData(TradeSummary summary) {
-        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(summary.getStock() + ".csv");
+        String symbol = summary.getStock();
+        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
+        if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+            showLoading();
+            return;
+        }
+
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
         List<VolumeData> volumeDataList = new ArrayList<>();
         try (var lines = Files.lines(dataPath)) {
@@ -319,6 +327,9 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("volumeSeries.setData(%s)", volumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", position + 40));
+
+        hideLoading();
+        System.out.println("Chart updated");
     }
 
     private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
@@ -337,6 +348,16 @@ public class TradeDetailsController implements Initializable {
         data.setValue(Double.parseDouble(tokens[5]));
         data.setColor(isGreen ? VolumeData.GREEN : VolumeData.RED);
         return data;
+    }
+
+    public void notifyNewSummaries(List<TradeSummary> summaries) {
+        for (TradeSummary summary : summaries) {
+            if (summary.equals(getCurrentSummary())) {
+                System.out.println("Updating current summary");
+                updateChartData(summary);
+                return;
+            }
+        }
     }
 
 }

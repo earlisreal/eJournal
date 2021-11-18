@@ -308,6 +308,7 @@ public class TradeDetailsController implements Initializable {
             data.setPosition(log.getPrice());
             data.setColor(color);
             data.setShape("diamond");
+            data.setBorderWidth(0.4);
             markerDataList.add(data);
         }
 

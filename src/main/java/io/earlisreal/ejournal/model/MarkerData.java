@@ -10,7 +10,7 @@ public class MarkerData {
     private double position;
     private String color;
     private String shape;
-    private int borderWidth;
+    private double borderWidth;
 
     public long getTime() {
         return time;
@@ -44,11 +44,11 @@ public class MarkerData {
         this.shape = shape;
     }
 
-    public int getBorderWidth() {
+    public double getBorderWidth() {
         return borderWidth;
     }
 
-    public void setBorderWidth(int borderWidth) {
+    public void setBorderWidth(double borderWidth) {
         this.borderWidth = borderWidth;
     }
 

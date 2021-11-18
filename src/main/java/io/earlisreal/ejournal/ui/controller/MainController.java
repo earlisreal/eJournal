@@ -16,9 +16,9 @@ import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.IntradayService;
-import io.earlisreal.ejournal.service.PlotService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.PDFParser;
@@ -73,7 +73,6 @@ import java.util.ResourceBundle;
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
-import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
 import static java.time.LocalDate.now;
 
 public class MainController implements Initializable {
@@ -106,7 +105,6 @@ public class MainController implements Initializable {
     private final AnalyticsService analyticsService;
     private final CacheService cacheService;
     private final IntradayService intradayService;
-    private final PlotService plotService;
 
     private Parent log;
     private Parent analytics;
@@ -136,7 +134,6 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
         intradayService = ServiceProvider.getIntradayService();
-        plotService = ServiceProvider.getPlotService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
@@ -352,16 +349,7 @@ public class MainController implements Initializable {
     }
 
     private void downloadIntradayHistory(List<TradeSummary> summaries) {
-        intradayService.download(summaries, list -> runAsync(() -> {
-            System.out.println("Plotting " + list.size() + " newly downloaded summary data");
-            for (TradeSummary summary : list) {
-                try {
-                    plotService.plot(summary);
-                } catch (IOException e) {
-                    handleException(e);
-                }
-            }
-        }));
+        intradayService.download(summaries, list -> UIServiceProvider.getTradeDetailsDialogService().showIfActive(list));
     }
 
     public void importCsv() {

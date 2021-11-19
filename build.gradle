@@ -41,15 +41,10 @@ shadowJar {
     }
 }
 
-task compilePython(type: Exec) {
-    commandLine 'pip', 'install', '-r', 'requirements.txt'
-    commandLine 'python', '-O', '-m', 'PyInstaller', '--onefile', '--distpath', 'lib', 'python/scripts/intraday-plot.py'
-}
-
 launch4j {
     icon = "${projectDir}/src/main/resources/eJournal-icon.ico"
     jarTask = tasks.shadowJar
-    copyConfigurable = ["${projectDir}/lib/intraday-plot.exe"]
+    copyConfigurable = ["${projectDir}/chart/chart.html"]
     splashWaitForWindows = false
 }
 
@@ -57,6 +52,3 @@ task release {
     // Copy first to a directory
     // Create eJournal-version.zip
 }
-
-createExe.dependsOn compilePython
-

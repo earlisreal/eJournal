@@ -28,14 +28,13 @@ public class SimpleStartupService implements StartupService {
     private final TradeLogService tradeLogService;
     private final CacheService cacheService;
     private final CompanyScraper usCompanyScraper;
-    private final PlotService plotService;
 
     private final List<StartupListener> listenerList;
 
     SimpleStartupService(StockScraper stockListScraper, CompanyScraper companyScraper,
                          ExchangeRateScraper exchangeRateScraper, StockService stockService,
                          TradeLogService tradeLogService, AnalyticsService analyticsService, CacheService cacheService,
-                         CompanyScraper usCompanyScraper, PlotService plotService) {
+                         CompanyScraper usCompanyScraper) {
 
         this.stockListScraper = stockListScraper;
         this.companyScraper = companyScraper;
@@ -45,7 +44,6 @@ public class SimpleStartupService implements StartupService {
         this.analyticsService = analyticsService;
         this.cacheService = cacheService;
         this.usCompanyScraper = usCompanyScraper;
-        this.plotService = plotService;
 
         listenerList = new ArrayList<>();
     }
@@ -61,10 +59,6 @@ public class SimpleStartupService implements StartupService {
 
         tradeLogService.initialize();
         analyticsService.initialize();
-    }
-
-    private void loadPlotCache() {
-        runAsync(plotService::reloadCache);
     }
 
     private void manageUsStockList() {

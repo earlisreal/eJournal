@@ -13,7 +13,6 @@ public final class ServiceProvider {
     private static StockService stockService;
     private static AnalyticsService analyticsService;
     private static StartupService startupService;
-    private static PlotService plotService;
     private static PlanService planService;
     private static IntradayService intradayService;
     private static SummaryDetailService summaryDetailService;
@@ -28,25 +27,12 @@ public final class ServiceProvider {
                     startupService = new SimpleStartupService(ScraperProvider.getStockListScraper(),
                             ScraperProvider.getCompanyScraper(), ScraperProvider.getExchangeRateScraper(),
                             getStockService(), getTradeLogService(), getAnalyticsService(), getCacheService(),
-                            ScraperProvider.getUsCompanyScraper(), ServiceProvider.getPlotService());
+                            ScraperProvider.getUsCompanyScraper());
                 }
             }
         }
 
         return startupService;
-    }
-
-    public static PlotService getPlotService() {
-        if (plotService == null) {
-            synchronized (ServiceProvider.class) {
-                if (plotService == null) {
-                    plotService = new SimplePlotService(getStockService(), ScraperProvider.getStockPriceScraper(),
-                            getIntradayService());
-                }
-            }
-        }
-
-        return plotService;
     }
 
     public static AnalyticsService getAnalyticsService() {

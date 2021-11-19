@@ -275,6 +275,7 @@ public class TradeDetailsController implements Initializable {
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+            System.out.println("Data not yet available");
             showLoading();
             return;
         }
@@ -308,7 +309,8 @@ public class TradeDetailsController implements Initializable {
             data.setPosition(log.getPrice());
             data.setColor(color);
             data.setShape("diamond");
-            data.setBorderWidth(0.4);
+            data.setBorderWidth(0.32);
+            data.setSize(1.65);
             markerDataList.add(data);
         }
 

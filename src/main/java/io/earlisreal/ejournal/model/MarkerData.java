@@ -11,6 +11,7 @@ public class MarkerData {
     private String color;
     private String shape;
     private double borderWidth;
+    private double size;
 
     public long getTime() {
         return time;
@@ -50,6 +51,14 @@ public class MarkerData {
 
     public void setBorderWidth(double borderWidth) {
         this.borderWidth = borderWidth;
+    }
+
+    public double getSize() {
+        return size;
+    }
+
+    public void setSize(double size) {
+        this.size = size;
     }
 
 }

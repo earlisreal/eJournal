@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>lightweight-charts</title>
     <script src="https://github.com/earlisreal/lightweight-charts/releases/download/v3.7.1/lightweight-charts.standalone.production.js"></script>
+    <script src="ejournal.js"></script>
 </head>
 <body>
 <script>
@@ -26,25 +27,6 @@
         timeScale: {
             timeVisible: true,
             secondsVisible: false,
-        },
-    });
-
-    const series = chart.addCandlestickSeries({
-        priceLineVisible: false,
-        lastValueVisible: false
-    });
-
-    const volumeSeries = chart.addHistogramSeries({
-        color: '#26a69a',
-        priceFormat: {
-            type: 'volume',
-        },
-        priceLineVisible: false,
-        lastValueVisible: false,
-        priceScaleId: '',
-        scaleMargins: {
-            top: 0.8,
-            bottom: 0,
         },
     });
 </script>

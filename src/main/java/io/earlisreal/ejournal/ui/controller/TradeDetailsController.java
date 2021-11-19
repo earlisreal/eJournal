@@ -1,6 +1,8 @@
 package io.earlisreal.ejournal.ui.controller;
 
 import com.jsoniter.output.JsonStream;
+import de.jensd.fx.glyphs.GlyphsDude;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.CandleStickSeriesData;
 import io.earlisreal.ejournal.model.MarkerData;
@@ -24,6 +26,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.text.Text;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 
@@ -42,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
@@ -79,10 +83,17 @@ public class TradeDetailsController implements Initializable {
     public TextArea remarksTextArea;
     public HBox ratingHBox;
     public WebView webView;
+    public Button resetButton;
 
     private WebEngine webEngine;
     private List<TradeSummary> summaries;
     private int index;
+    private String seriesJson;
+    private String fiveMinuteSeriesJson;
+    private String volumeJson;
+    private String fiveMinuteVolumeJson;
+    private String markerJson;
+    private int scrollPosition;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
@@ -105,6 +116,9 @@ public class TradeDetailsController implements Initializable {
                 detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
             }
         });
+        Text undo = GlyphsDude.createIcon(FontAwesomeIcon.UNDO, "20px");
+        resetButton.setText("");
+        resetButton.setGraphic(undo);
     }
 
     public void setSummaries(List<TradeSummary> summaries) {
@@ -281,23 +295,99 @@ public class TradeDetailsController implements Initializable {
         }
 
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
+        List<CandleStickSeriesData> fiveMinuteSeries = new ArrayList<>();
         List<VolumeData> volumeDataList = new ArrayList<>();
-        try (var lines = Files.lines(dataPath)) {
-            lines.map(line -> line.split(","))
-                    .forEach(tokens -> {
-                        LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
-                        if (!summary.getCloseDate().toLocalDate().equals(localDateTime.toLocalDate())) {
-                            return;
-                        }
-                        CandleStickSeriesData data = toSeriesData(tokens, localDateTime.toEpochSecond(ZoneOffset.UTC));
-                        VolumeData volumeData = toVolumeData(tokens, data.getClose() >= data.getOpen(), localDateTime.toEpochSecond(ZoneOffset.UTC));
-                        seriesDataList.add(data);
-                        volumeDataList.add(volumeData);
-                    });
+        List<VolumeData> fiveMinuteVolumes = new ArrayList<>();
+        CandleStickSeriesData fiveMinuteData = new CandleStickSeriesData();
+        VolumeData fiveMinuteVolumeData = new VolumeData();
+        try {
+            for (var line : Files.readAllLines(dataPath)) {
+                String[] tokens = line.split(",");
+                LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
+                if (!summary.getCloseDate().toLocalDate().equals(localDateTime.toLocalDate())) {
+                    continue;
+                }
+
+                long epochSecond = localDateTime.toEpochSecond(ZoneOffset.UTC);
+                CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
+
+                if (localDateTime.getMinute() % 5 == 0) {
+                    fiveMinuteVolumeData.setTime(epochSecond);
+                    fiveMinuteVolumeData.setColor(getVolumeColor(fiveMinuteData));
+                    fiveMinuteVolumes.add(fiveMinuteVolumeData);
+                    fiveMinuteVolumeData = new VolumeData();
+
+                    fiveMinuteData.setTime(epochSecond);
+                    fiveMinuteSeries.add(fiveMinuteData);
+                    fiveMinuteData = new CandleStickSeriesData();
+                }
+
+                if ((localDateTime.getMinute() + 1) % 5 == 0) {
+                    if (data.getClose() == 0) {
+                        fiveMinuteData.setClose(fiveMinuteData.getOpen());
+                    }
+                    fiveMinuteData.setClose(data.getClose());
+                }
+
+                if (fiveMinuteData.getOpen() == 0) {
+                    fiveMinuteData.setOpen(data.getOpen());
+                    fiveMinuteData.setLow(data.getLow());
+                }
+
+                fiveMinuteData.setHigh(Math.max(fiveMinuteData.getHigh(), data.getHigh()));
+                fiveMinuteData.setLow(Math.min(fiveMinuteData.getLow(), data.getLow()));
+
+                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+                fiveMinuteVolumeData.setValue(fiveMinuteVolumeData.getValue() + volumeData.getValue());
+
+                seriesDataList.add(data);
+                volumeDataList.add(volumeData);
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            handleException(e);
         }
 
+        List<MarkerData> markerDataList = generateMarkers(summary);
+        scrollPosition = calculateScrollPosition(summary, seriesDataList);
+
+        seriesJson = JsonStream.serialize(seriesDataList);
+        fiveMinuteSeriesJson = JsonStream.serialize(fiveMinuteSeries);
+        volumeJson = JsonStream.serialize(volumeDataList);
+        fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
+        markerJson = JsonStream.serialize(markerDataList);
+
+        set5MinuteChart();
+        resetChart();
+
+        hideLoading();
+    }
+
+    private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
+        CandleStickSeriesData data = new CandleStickSeriesData();
+        data.setTime(epochSecond);
+        data.setOpen(Double.parseDouble(tokens[1]));
+        data.setHigh(Double.parseDouble(tokens[2]));
+        data.setLow(Double.parseDouble(tokens[3]));
+        data.setClose(Double.parseDouble(tokens[4]));
+        return data;
+    }
+
+    private VolumeData toVolumeData(String[] tokens, CandleStickSeriesData seriesData, long epochSecond) {
+        VolumeData data = new VolumeData();
+        data.setTime(epochSecond);
+        data.setValue(Double.parseDouble(tokens[5]));
+        data.setColor(getVolumeColor(seriesData));
+        return data;
+    }
+
+    private String getVolumeColor(CandleStickSeriesData data) {
+        if (data.getClose() >= data.getOpen()) {
+            return VolumeData.GREEN;
+        }
+        return VolumeData.RED;
+    }
+
+    private List<MarkerData> generateMarkers(TradeSummary summary) {
         List<MarkerData> markerDataList = new ArrayList<>();
         for (TradeLog log : summary.getLogs()) {
             MarkerData data = new MarkerData();
@@ -313,7 +403,10 @@ public class TradeDetailsController implements Initializable {
             data.setSize(1.65);
             markerDataList.add(data);
         }
+        return markerDataList;
+    }
 
+    private int calculateScrollPosition(TradeSummary summary, List<CandleStickSeriesData> seriesDataList) {
         long first = summary.getLogs().get(0).getDate().truncatedTo(ChronoUnit.MINUTES).toEpochSecond(ZoneOffset.UTC);
         int position = 0;
         for (int i = 0; i < seriesDataList.size(); ++i) {
@@ -322,35 +415,21 @@ public class TradeDetailsController implements Initializable {
                 break;
             }
         }
+        return position + 40;
+    }
 
-        String seriesJson = JsonStream.serialize(seriesDataList);
-        String volumeJson = JsonStream.serialize(volumeDataList);
-        String markerJson = JsonStream.serialize(markerDataList);
-        webEngine.executeScript(String.format("series.setData(%s)", seriesJson));
-        webEngine.executeScript(String.format("volumeSeries.setData(%s)", volumeJson));
+    public void set1MinuteChart() {
+        webEngine.executeScript(String.format("setData(%s, %s)", seriesJson, volumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
-        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", position + 40));
-
-        hideLoading();
-        System.out.println("Chart updated");
     }
 
-    private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
-        CandleStickSeriesData data = new CandleStickSeriesData();
-        data.setTime(epochSecond);
-        data.setOpen(Double.parseDouble(tokens[1]));
-        data.setHigh(Double.parseDouble(tokens[2]));
-        data.setLow(Double.parseDouble(tokens[3]));
-        data.setClose(Double.parseDouble(tokens[4]));
-        return data;
+    public void set5MinuteChart() {
+        webEngine.executeScript(String.format("setData(%s, %s)", fiveMinuteSeriesJson, fiveMinuteVolumeJson));
+        webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
     }
 
-    private VolumeData toVolumeData(String[] tokens, boolean isGreen, long epochSecond) {
-        VolumeData data = new VolumeData();
-        data.setTime(epochSecond);
-        data.setValue(Double.parseDouble(tokens[5]));
-        data.setColor(isGreen ? VolumeData.GREEN : VolumeData.RED);
-        return data;
+    public void resetChart() {
+        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
     }
 
     public void notifyNewSummaries(List<TradeSummary> summaries) {

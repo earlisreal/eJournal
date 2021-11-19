@@ -21,9 +21,10 @@
             <WebView fx:id="webView" layoutX="-149.0" layoutY="-90.0" prefHeight="450.0" prefWidth="671.0" />
             <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" visible="false" />
             <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Stock Data" visible="false" />
+            <Button fx:id="resetButton" layoutX="477.0" layoutY="321.0" mnemonicParsing="false" text="Reset" />
          </children>
       </Group>
-      <TableView fx:id="statisticTable" layoutX="12.0" layoutY="504.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
+      <TableView fx:id="statisticTable" layoutX="11.0" layoutY="525.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
          <columns>
             <TableColumn fx:id="statisticColumn" editable="false" prefWidth="100.0" sortable="false" style="-fx-font-weight: bold;" text="Statistic" />
             <TableColumn fx:id="valueColumn" prefWidth="124.0" text="Value" />
@@ -37,7 +38,7 @@
             <String fx:value="no-header" />
          </styleClass>
       </TableView>
-      <TableView fx:id="logTable" layoutX="11.0" layoutY="610.0" prefHeight="146.0" prefWidth="671.0">
+      <TableView fx:id="logTable" layoutX="11.0" layoutY="632.0" prefHeight="124.0" prefWidth="671.0">
          <columns>
             <TableColumn fx:id="logDate" prefWidth="125.0" text="Date" />
             <TableColumn fx:id="logAction" prefWidth="72.0" text="Action" />
@@ -70,5 +71,7 @@
             <Button mnemonicParsing="false" onAction="#updateRating" prefHeight="60.0" prefWidth="44.0" />
          </children>
       </HBox>
+      <Button fx:id="oneMinuteButton" layoutX="14.0" layoutY="490.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1M" />
+      <Button fx:id="fiveMinuteButton" layoutX="56.0" layoutY="490.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5M" />
    </children>
 </AnchorPane>

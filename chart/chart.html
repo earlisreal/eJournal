@@ -5,12 +5,34 @@
     <title>lightweight-charts</title>
     <script src="https://github.com/earlisreal/lightweight-charts/releases/download/v3.7.1/lightweight-charts.standalone.production.js"></script>
     <script src="ejournal.js"></script>
+    <link rel="stylesheet" href="chart.css">
 </head>
 <body>
+<div class="legend">
+    <div>
+        <span style="font-size: 16px; margin: 4px 0; color: #20262E" id="title">Earl is Real - 5</span>
+        <span>- O</span>
+        <span id="open"></span>
+        <span>H</span>
+        <span id="high"></span>
+        <span>L</span>
+        <span id="low"></span>
+        <span>C</span>
+        <span id="close"></span>
+    </div>
+    <div>Volume <span id="volume">123</span></div>
+</div>
 <script>
+    const titleLegend = document.getElementById('title');
+    const volumeLegend = document.getElementById('volume');
+    const openLegend = document.getElementById('open');
+    const highLegend = document.getElementById('high');
+    const lowLegend = document.getElementById('low');
+    const closeLegend = document.getElementById('close');
+
     const chart = LightweightCharts.createChart(document.body, {
         width: 663,
-        height: 434,
+        height: 460,
         crosshair: {mode: LightweightCharts.CrosshairMode.Normal},
         layout: {
             backgroundColor: '#ffffff',
@@ -18,10 +40,10 @@
         },
         grid: {
             vertLines: {
-                color: 'rgba(197, 203, 206, 0.7)',
+                color: 'rgba(197, 203, 206, 0.2)',
             },
             horzLines: {
-                color: 'rgba(197, 203, 206, 0.7)',
+                color: 'rgba(197, 203, 206, 0.2)',
             },
         },
         timeScale: {

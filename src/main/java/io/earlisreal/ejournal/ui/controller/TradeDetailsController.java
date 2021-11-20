@@ -11,6 +11,7 @@ import io.earlisreal.ejournal.model.VolumeData;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.SummaryDetailService;
+import io.earlisreal.ejournal.util.Interval;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -84,6 +85,8 @@ public class TradeDetailsController implements Initializable {
     public HBox ratingHBox;
     public WebView webView;
     public Button resetButton;
+    public Button oneMinuteButton;
+    public Button fiveMinuteButton;
 
     private WebEngine webEngine;
     private List<TradeSummary> summaries;
@@ -94,6 +97,8 @@ public class TradeDetailsController implements Initializable {
     private String fiveMinuteVolumeJson;
     private String markerJson;
     private int scrollPosition;
+    private int fiveMinuteScrollPosition;
+    private Interval interval;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
@@ -349,6 +354,7 @@ public class TradeDetailsController implements Initializable {
 
         List<MarkerData> markerDataList = generateMarkers(summary);
         scrollPosition = calculateScrollPosition(summary, seriesDataList);
+        fiveMinuteScrollPosition = calculateScrollPosition(summary, fiveMinuteSeries);
 
         seriesJson = JsonStream.serialize(seriesDataList);
         fiveMinuteSeriesJson = JsonStream.serialize(fiveMinuteSeries);
@@ -356,7 +362,7 @@ public class TradeDetailsController implements Initializable {
         fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
         markerJson = JsonStream.serialize(markerDataList);
 
-        set5MinuteChart();
+        set1MinuteChart();
         resetChart();
 
         hideLoading();
@@ -410,7 +416,7 @@ public class TradeDetailsController implements Initializable {
         long first = summary.getLogs().get(0).getDate().truncatedTo(ChronoUnit.MINUTES).toEpochSecond(ZoneOffset.UTC);
         int position = 0;
         for (int i = 0; i < seriesDataList.size(); ++i) {
-            if (seriesDataList.get(i).getTime() == first) {
+            if (seriesDataList.get(i).getTime() >= first) {
                 position = i - seriesDataList.size();
                 break;
             }
@@ -421,15 +427,28 @@ public class TradeDetailsController implements Initializable {
     public void set1MinuteChart() {
         webEngine.executeScript(String.format("setData(%s, %s)", seriesJson, volumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
+        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
+        interval = Interval.ONE_MINUTE;
+        fiveMinuteButton.setDisable(false);
+        oneMinuteButton.setDisable(true);
     }
 
     public void set5MinuteChart() {
         webEngine.executeScript(String.format("setData(%s, %s)", fiveMinuteSeriesJson, fiveMinuteVolumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
+        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
+        interval = Interval.FIVE_MINUTE;
+        fiveMinuteButton.setDisable(true);
+        oneMinuteButton.setDisable(false);
     }
 
     public void resetChart() {
-        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
+        if (interval == Interval.ONE_MINUTE) {
+            set1MinuteChart();
+        }
+        if (interval == Interval.FIVE_MINUTE) {
+            set5MinuteChart();
+        }
     }
 
     public void notifyNewSummaries(List<TradeSummary> summaries) {

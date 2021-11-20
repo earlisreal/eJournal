@@ -21,7 +21,6 @@
             <WebView fx:id="webView" layoutX="-149.0" layoutY="-90.0" prefHeight="450.0" prefWidth="671.0" />
             <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" visible="false" />
             <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Stock Data" visible="false" />
-            <Button fx:id="resetButton" layoutX="477.0" layoutY="321.0" mnemonicParsing="false" text="Reset" />
          </children>
       </Group>
       <TableView fx:id="statisticTable" layoutX="11.0" layoutY="525.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
@@ -73,5 +72,10 @@
       </HBox>
       <Button fx:id="oneMinuteButton" layoutX="14.0" layoutY="490.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1M" />
       <Button fx:id="fiveMinuteButton" layoutX="56.0" layoutY="490.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5M" />
+      <Button fx:id="resetButton" layoutX="643.0" layoutY="487.0" mnemonicParsing="false" onAction="#resetChart" text="O">
+         <font>
+            <Font size="15.0" />
+         </font>
+      </Button>
    </children>
 </AnchorPane>

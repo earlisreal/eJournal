@@ -16,11 +16,11 @@
 <AnchorPane fx:id="anchorPane" onKeyReleased="#navigate" prefHeight="768.0" prefWidth="924.0" style="-fx-background-color: WHITE;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.earlisreal.ejournal.ui.controller.TradeDetailsController">
    <children>
       <Label fx:id="ofLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="302.0" layoutY="18.0" prefHeight="17.0" prefWidth="90.0" text="1 of 5 Trades" />
-      <Group layoutX="161.0" layoutY="132.0">
+      <Group layoutX="161.0" layoutY="113.0">
          <children>
-            <WebView fx:id="webView" layoutX="-149.0" layoutY="-90.0" prefHeight="450.0" prefWidth="671.0" />
-            <ProgressIndicator fx:id="loadingProgress" layoutX="103.0" layoutY="125.0" visible="false" />
-            <Label fx:id="loadingLabel" layoutX="169.0" layoutY="143.0" text="Loading Stock Data" visible="false" />
+            <WebView fx:id="webView" layoutX="-149.0" layoutY="-65.0" prefHeight="480.0" prefWidth="671.0" />
+            <ProgressIndicator fx:id="loadingProgress" layoutX="102.0" layoutY="144.0" visible="false" />
+            <Label fx:id="loadingLabel" layoutX="168.0" layoutY="162.0" text="Loading Stock Data" visible="false" />
          </children>
       </Group>
       <TableView fx:id="statisticTable" layoutX="11.0" layoutY="525.0" prefHeight="100.0" prefWidth="671.0" stylesheets="@../stylesheet/table.css">
@@ -70,9 +70,9 @@
             <Button mnemonicParsing="false" onAction="#updateRating" prefHeight="60.0" prefWidth="44.0" />
          </children>
       </HBox>
-      <Button fx:id="oneMinuteButton" layoutX="14.0" layoutY="490.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1M" />
-      <Button fx:id="fiveMinuteButton" layoutX="56.0" layoutY="490.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5M" />
-      <Button fx:id="resetButton" layoutX="643.0" layoutY="487.0" mnemonicParsing="false" onAction="#resetChart" text="O">
+      <Button fx:id="oneMinuteButton" layoutX="11.0" layoutY="14.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1M" />
+      <Button fx:id="fiveMinuteButton" layoutX="53.0" layoutY="14.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5M" />
+      <Button fx:id="resetButton" layoutX="640.0" layoutY="11.0" mnemonicParsing="false" onAction="#resetChart" text="O">
          <font>
             <Font size="15.0" />
          </font>

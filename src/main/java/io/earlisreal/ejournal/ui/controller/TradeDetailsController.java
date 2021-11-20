@@ -105,6 +105,7 @@ public class TradeDetailsController implements Initializable {
         detailService = ServiceProvider.getSummaryDetailService();
 
         summaries = new ArrayList<>();
+        interval = Interval.ONE_MINUTE;
     }
 
     @Override
@@ -327,18 +328,12 @@ public class TradeDetailsController implements Initializable {
                     fiveMinuteData = new CandleStickSeriesData();
                 }
 
-                if ((localDateTime.getMinute() + 1) % 5 == 0) {
-                    if (data.getClose() == 0) {
-                        fiveMinuteData.setClose(fiveMinuteData.getOpen());
-                    }
-                    fiveMinuteData.setClose(data.getClose());
-                }
-
                 if (fiveMinuteData.getOpen() == 0) {
                     fiveMinuteData.setOpen(data.getOpen());
                     fiveMinuteData.setLow(data.getLow());
                 }
 
+                fiveMinuteData.setClose(data.getClose());
                 fiveMinuteData.setHigh(Math.max(fiveMinuteData.getHigh(), data.getHigh()));
                 fiveMinuteData.setLow(Math.min(fiveMinuteData.getLow(), data.getLow()));
 
@@ -362,9 +357,7 @@ public class TradeDetailsController implements Initializable {
         fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
         markerJson = JsonStream.serialize(markerDataList);
 
-        set1MinuteChart();
         resetChart();
-
         hideLoading();
     }
 
@@ -428,6 +421,7 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("setData(%s, %s)", seriesJson, volumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
+        webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));
         interval = Interval.ONE_MINUTE;
         fiveMinuteButton.setDisable(false);
         oneMinuteButton.setDisable(true);
@@ -437,6 +431,7 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("setData(%s, %s)", fiveMinuteSeriesJson, fiveMinuteVolumeJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
+        webEngine.executeScript(String.format("updateTitle('%s', '5 Minute')", getCurrentSummary().getStock()));
         interval = Interval.FIVE_MINUTE;
         fiveMinuteButton.setDisable(true);
         oneMinuteButton.setDisable(false);

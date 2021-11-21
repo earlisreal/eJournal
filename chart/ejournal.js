@@ -6,7 +6,7 @@ function updateTitle(stock, interval) {
 }
 
 function updateLegend(price, volume) {
-    const className = price.open >= price.close ? 'greenLegend' : 'redLegend';
+    const className = price.open <= price.close ? 'greenLegend' : 'redLegend';
     volumeLegend.innerText = volume;
     openLegend.innerText = price.open.toFixed(2);
     high.innerText = price.high.toFixed(2);

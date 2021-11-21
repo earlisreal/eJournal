@@ -2,9 +2,9 @@ package io.earlisreal.ejournal.model;
 
 public class MarkerData {
 
-    public static final String BUY_COLOR = "#a5d6a7";
-    public static final String SELL_COLOR = "#f48fb1";
-    public static final String SHORT_COLOR = "#2196f3";
+    public static final String BUY_COLOR = "rgba(165, 214, 167, 0.8)";
+    public static final String SELL_COLOR = "rgba(244, 143, 177, 0.8)";
+    public static final String SHORT_COLOR = "rgba(33, 150, 243, 0.8)";
 
     private long time;
     private double position;

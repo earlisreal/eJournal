@@ -61,7 +61,6 @@ public class TradeDetailsDialogService {
     }
 
     public void showIfActive(List<TradeSummary> summaries) {
-        System.out.println("Notifying Details window");
         controller.notifyNewSummaries(summaries);
     }
 

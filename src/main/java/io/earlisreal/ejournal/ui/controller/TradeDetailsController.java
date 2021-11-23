@@ -13,6 +13,7 @@ import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.SummaryDetailService;
 import io.earlisreal.ejournal.util.Interval;
 import io.earlisreal.ejournal.util.Pair;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -454,8 +455,7 @@ public class TradeDetailsController implements Initializable {
     public void notifyNewSummaries(List<TradeSummary> summaries) {
         for (TradeSummary summary : summaries) {
             if (summary.equals(getCurrentSummary())) {
-                System.out.println("Updating current summary");
-                updateChartData(summary);
+                Platform.runLater(() -> updateChartData(summary));
                 return;
             }
         }

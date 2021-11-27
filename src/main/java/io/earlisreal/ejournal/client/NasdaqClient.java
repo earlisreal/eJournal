@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface NasdaqClient {
 
-    String BASE_URL = "https://api.nasdaq.com/api/quote";
+    String BASE_URL = "https://api.nasdaq.com";
 
     List<String> getDailyHistory(String stock, LocalDate fromDate, LocalDate toDate);
 

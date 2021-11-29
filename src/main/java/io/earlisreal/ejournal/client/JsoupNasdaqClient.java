@@ -8,6 +8,7 @@ import org.jsoup.Jsoup;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.List;
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
 public class JsoupNasdaqClient implements NasdaqClient {
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/uuuu");
 
     @Override
     public List<String> getDailyHistory(String stock, LocalDate fromDate, LocalDate toDate) {
@@ -32,7 +35,7 @@ public class JsoupNasdaqClient implements NasdaqClient {
             List<String> csv = new ArrayList<>(data.toInt("totalRecords"));
             Any records = data.get("tradesTable").get("rows");
             for (Any record : records) {
-                String date = record.toString("date");
+                String date = LocalDate.parse(record.toString("date"), formatter).toString();
                 String open = parsePrice(record.toString("open"));
                 String high = parsePrice(record.toString("high"));
                 String low = parsePrice(record.toString("low"));

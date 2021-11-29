@@ -15,6 +15,7 @@ import io.earlisreal.ejournal.parser.ledger.LedgerParserFactory;
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.CacheService;
+import io.earlisreal.ejournal.service.DataService;
 import io.earlisreal.ejournal.service.IntradayService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
@@ -105,6 +106,7 @@ public class MainController implements Initializable {
     private final AnalyticsService analyticsService;
     private final CacheService cacheService;
     private final IntradayService intradayService;
+    private final DataService dataService;
 
     private Parent log;
     private Parent analytics;
@@ -134,6 +136,7 @@ public class MainController implements Initializable {
         tradeLogService = ServiceProvider.getTradeLogService();
         analyticsService = ServiceProvider.getAnalyticsService();
         intradayService = ServiceProvider.getIntradayService();
+        dataService = ServiceProvider.getDataService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
@@ -184,6 +187,7 @@ public class MainController implements Initializable {
         selectPane(dashboardBorder);
 
         initializeStatistics();
+        dataService.addListener(summary -> UIServiceProvider.getTradeDetailsDialogService().notifyNewDailyData(summary));
     }
 
     private void initializeBrokerMenu() {
@@ -348,8 +352,9 @@ public class MainController implements Initializable {
         }
     }
 
-    private void downloadIntradayHistory(List<TradeSummary> summaries) {
+    private void downloadHistoryData(List<TradeSummary> summaries) {
         intradayService.download(summaries, list -> UIServiceProvider.getTradeDetailsDialogService().showIfActive(list));
+        dataService.downloadDailyData(summaries);
     }
 
     public void importCsv() {
@@ -707,7 +712,7 @@ public class MainController implements Initializable {
         res += logs.size();
 
         TradeSummaryBuilder tradeSummaryBuilder = new TradeSummaryBuilder(logs);
-        downloadIntradayHistory(tradeSummaryBuilder.getSummaries());
+        downloadHistoryData(tradeSummaryBuilder.getSummaries());
 
         res += bankTransactionService.insert(parser.getBankTransactions());
 

@@ -46,6 +46,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.TimeUnit;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
@@ -88,18 +89,23 @@ public class TradeDetailsController implements Initializable {
     public Button resetButton;
     public Button oneMinuteButton;
     public Button fiveMinuteButton;
+    public Button dailyButton;
 
     private WebEngine webEngine;
     private List<TradeSummary> summaries;
     private int index;
     private String seriesJson;
     private String fiveMinuteSeriesJson;
+    private String dailySeriesJson;
     private String volumeJson;
     private String fiveMinuteVolumeJson;
+    private String dailyVolumeJson;
     private String markerJson;
     private String fiveMinuteMarkerJson;
+    private String dailyMarkerJson;
     private int scrollPosition;
     private int fiveMinuteScrollPosition;
+    private int dailyScrollPosition;
     private Interval interval;
 
     public TradeDetailsController() {
@@ -294,6 +300,16 @@ public class TradeDetailsController implements Initializable {
     }
 
     private void updateChartData(TradeSummary summary) {
+        if (summary.isDayTrade()) {
+            updateIntradayData(summary);
+        }
+        updateDailyData(summary);
+
+        resetChart();
+        hideLoading();
+    }
+
+    private void updateIntradayData(TradeSummary summary) {
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
@@ -361,9 +377,40 @@ public class TradeDetailsController implements Initializable {
         fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
         markerJson = JsonStream.serialize(markerDataList);
         fiveMinuteMarkerJson = JsonStream.serialize(fiveMinuteMarkers);
+    }
 
-        resetChart();
-        hideLoading();
+    private void updateDailyData(TradeSummary summary) {
+        String symbol = summary.getStock();
+        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(symbol + ".csv");
+        if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+            showLoading();
+            return;
+        }
+
+        List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
+        List<VolumeData> volumeDataList = new ArrayList<>();
+        try {
+            for (var line : Files.readAllLines(dataPath)) {
+                String[] tokens = line.split(",");
+                LocalDate localDate = LocalDate.parse(tokens[0]);
+
+                long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+                CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
+                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+
+                seriesDataList.add(data);
+                volumeDataList.add(volumeData);
+            }
+        } catch (IOException e) {
+            handleException(e);
+        }
+
+        List<MarkerData> markerDataList = generateMarkers(summary, TimeUnit.DAYS.toMinutes(1));
+        dailyScrollPosition = calculateScrollPosition(summary, seriesDataList);
+
+        dailySeriesJson = JsonStream.serialize(seriesDataList);
+        dailyVolumeJson = JsonStream.serialize(volumeDataList);
+        dailyMarkerJson = JsonStream.serialize(markerDataList);
     }
 
     private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
@@ -428,6 +475,7 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));
         interval = Interval.ONE_MINUTE;
+        dailyButton.setDisable(false);
         fiveMinuteButton.setDisable(false);
         oneMinuteButton.setDisable(true);
     }
@@ -438,8 +486,20 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '5 Minute')", getCurrentSummary().getStock()));
         interval = Interval.FIVE_MINUTE;
+        dailyButton.setDisable(false);
         fiveMinuteButton.setDisable(true);
         oneMinuteButton.setDisable(false);
+    }
+
+    public void setDailyChart() {
+        webEngine.executeScript(String.format("setData(%s, %s)", dailySeriesJson, dailyVolumeJson));
+        webEngine.executeScript(String.format("series.setMarkers(%s)", dailyMarkerJson));
+        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", dailyScrollPosition));
+        webEngine.executeScript(String.format("updateTitle('%s', 'Daily')", getCurrentSummary().getStock()));
+        interval = Interval.DAILY;
+        dailyButton.setDisable(true);
+        oneMinuteButton.setDisable(false);
+        fiveMinuteButton.setDisable(false);
     }
 
     public void resetChart() {
@@ -450,6 +510,9 @@ public class TradeDetailsController implements Initializable {
         if (interval == Interval.FIVE_MINUTE) {
             set5MinuteChart();
         }
+        if (interval == Interval.DAILY) {
+            setDailyChart();
+        }
     }
 
     public void notifyNewSummaries(List<TradeSummary> summaries) {
@@ -459,6 +522,10 @@ public class TradeDetailsController implements Initializable {
                 return;
             }
         }
+    }
+
+    public void notifyNewDailyData(TradeSummary summary) {
+        notifyNewSummaries(List.of(summary));
     }
 
 }

@@ -70,8 +70,11 @@
             <Button mnemonicParsing="false" onAction="#updateRating" prefHeight="60.0" prefWidth="44.0" />
          </children>
       </HBox>
-      <Button fx:id="oneMinuteButton" layoutX="11.0" layoutY="14.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1M" />
-      <Button fx:id="fiveMinuteButton" layoutX="53.0" layoutY="14.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5M" />
+      <Button fx:id="oneMinuteButton" layoutX="11.0" layoutY="14.0" mnemonicParsing="false" onAction="#set1MinuteChart" text="1m" />
+      <Button fx:id="fiveMinuteButton" layoutX="53.0" layoutY="14.0" mnemonicParsing="false" onAction="#set5MinuteChart" text="5m" />
+      <Button layoutX="96.0" layoutY="14.0" mnemonicParsing="false" text="15m" />
+      <Button fx:id="dailyButton" layoutX="143.0" layoutY="14.0" mnemonicParsing="false" onAction="#setDailyChart" text="D" />
+      <Button layoutX="176.0" layoutY="14.0" mnemonicParsing="false" text="W" />
       <Button fx:id="resetButton" layoutX="640.0" layoutY="11.0" mnemonicParsing="false" onAction="#resetChart" text="O">
          <font>
             <Font size="15.0" />

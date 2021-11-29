@@ -64,4 +64,8 @@ public class TradeDetailsDialogService {
         controller.notifyNewSummaries(summaries);
     }
 
+    public void notifyNewDailyData(TradeSummary summary) {
+        controller.notifyNewDailyData(summary);
+    }
+
 }

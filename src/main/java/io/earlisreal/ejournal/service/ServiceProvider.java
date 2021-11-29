@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.client.JsoupAlphaVantageClient;
+import io.earlisreal.ejournal.client.JsoupNasdaqClient;
 import io.earlisreal.ejournal.dao.DAOProvider;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
 import io.earlisreal.ejournal.util.CommonUtil;
@@ -16,6 +17,7 @@ public final class ServiceProvider {
     private static PlanService planService;
     private static IntradayService intradayService;
     private static SummaryDetailService summaryDetailService;
+    private static DataService dataService;
 
     private ServiceProvider() {}
 
@@ -131,6 +133,18 @@ public final class ServiceProvider {
         }
 
         return summaryDetailService;
+    }
+
+    public static DataService getDataService() {
+        if (dataService == null) {
+            synchronized (ServiceProvider.class) {
+                if (dataService == null) {
+                    dataService = new SimpleDataService(new JsoupNasdaqClient());
+                }
+            }
+        }
+
+        return dataService;
     }
 
 }

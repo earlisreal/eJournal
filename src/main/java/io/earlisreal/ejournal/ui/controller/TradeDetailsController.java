@@ -305,6 +305,9 @@ public class TradeDetailsController implements Initializable {
         if (summary.isDayTrade()) {
             updateIntradayData(summary);
         }
+        else {
+            interval = Interval.DAILY;
+        }
         updateDailyData(summary);
 
         resetChart();
@@ -332,7 +335,7 @@ public class TradeDetailsController implements Initializable {
                 String[] tokens = line.split(",");
                 LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
                 localDateTime = localDateTime.minusMinutes(1);
-                if (!summary.getCloseDate().toLocalDate().equals(localDateTime.toLocalDate())) {
+                if (summary.getCloseDate().toLocalDate().minusDays(6).isAfter(localDateTime.toLocalDate())) {
                     continue;
                 }
 

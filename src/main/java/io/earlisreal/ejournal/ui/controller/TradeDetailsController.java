@@ -107,6 +107,8 @@ public class TradeDetailsController implements Initializable {
     private int fiveMinuteScrollPosition;
     private int dailyScrollPosition;
     private Interval interval;
+    private boolean isIntradayNotAvailable;
+    private boolean isDailyNotAvailable;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
@@ -310,9 +312,11 @@ public class TradeDetailsController implements Initializable {
     }
 
     private void updateIntradayData(TradeSummary summary) {
+        isIntradayNotAvailable = false;
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+            isIntradayNotAvailable = true;
             showLoading();
             return;
         }
@@ -382,7 +386,9 @@ public class TradeDetailsController implements Initializable {
     private void updateDailyData(TradeSummary summary) {
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(symbol + ".csv");
+        isDailyNotAvailable = false;
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+            isDailyNotAvailable = true;
             showLoading();
             return;
         }
@@ -475,9 +481,7 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));
         interval = Interval.ONE_MINUTE;
-        dailyButton.setDisable(false);
-        fiveMinuteButton.setDisable(false);
-        oneMinuteButton.setDisable(true);
+        updateButtons();
     }
 
     public void set5MinuteChart() {
@@ -486,9 +490,7 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '5 Minute')", getCurrentSummary().getStock()));
         interval = Interval.FIVE_MINUTE;
-        dailyButton.setDisable(false);
-        fiveMinuteButton.setDisable(true);
-        oneMinuteButton.setDisable(false);
+        updateButtons();
     }
 
     public void setDailyChart() {
@@ -497,9 +499,24 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", dailyScrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', 'Daily')", getCurrentSummary().getStock()));
         interval = Interval.DAILY;
-        dailyButton.setDisable(true);
-        oneMinuteButton.setDisable(false);
-        fiveMinuteButton.setDisable(false);
+        updateButtons();
+    }
+
+    private void updateButtons() {
+        dailyButton.setDisable(isDailyNotAvailable);
+        oneMinuteButton.setDisable(isIntradayNotAvailable);
+        fiveMinuteButton.setDisable(isIntradayNotAvailable);
+        if (interval == Interval.DAILY) {
+            dailyButton.setDisable(true);
+        }
+        else {
+            if (interval == Interval.ONE_MINUTE) {
+                oneMinuteButton.setDisable(true);
+            }
+            else {
+                fiveMinuteButton.setDisable(true);
+            }
+        }
     }
 
     public void resetChart() {
@@ -525,6 +542,7 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void notifyNewDailyData(TradeSummary summary) {
+        dailyButton.setDisable(false);
         notifyNewSummaries(List.of(summary));
     }
 

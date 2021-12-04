@@ -74,6 +74,7 @@ import java.util.ResourceBundle;
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
 import static java.time.LocalDate.now;
 
 public class MainController implements Initializable {
@@ -353,8 +354,8 @@ public class MainController implements Initializable {
     }
 
     private void downloadHistoryData(List<TradeSummary> summaries) {
+        runAsync(() -> dataService.downloadDailyData(summaries));
         intradayService.download(summaries, list -> UIServiceProvider.getTradeDetailsDialogService().showIfActive(list));
-        dataService.downloadDailyData(summaries);
     }
 
     public void importCsv() {

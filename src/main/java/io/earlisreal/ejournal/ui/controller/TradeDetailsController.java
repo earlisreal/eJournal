@@ -280,9 +280,6 @@ public class TradeDetailsController implements Initializable {
     }
 
     private TradeSummary getCurrentSummary() {
-        if (summaries.isEmpty()) {
-            return null;
-        }
         return summaries.get(index);
     }
 
@@ -457,7 +454,10 @@ public class TradeDetailsController implements Initializable {
     private VolumeData toVolumeData(String[] tokens, CandleStickSeriesData seriesData, long epochSecond) {
         VolumeData data = new VolumeData();
         data.setTime(epochSecond);
-        data.setValue(Double.parseDouble(tokens[5]));
+        data.setValue(0);
+        if (!"N/A".equals(tokens[5])) {
+            data.setValue(Double.parseDouble(tokens[5]));
+        }
         data.setColor(getVolumeColor(seriesData));
         return data;
     }
@@ -558,6 +558,10 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void notifyNewSummaries(List<TradeSummary> summaries) {
+        if (summaries.isEmpty()) {
+            return;
+        }
+
         for (TradeSummary summary : summaries) {
             if (summary.equals(getCurrentSummary())) {
                 Platform.runLater(() -> updateChartData(summary));

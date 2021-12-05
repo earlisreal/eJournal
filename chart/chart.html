@@ -21,6 +21,7 @@
         <span id="close"></span>
     </div>
     <div>Volume <span id="volume">123</span></div>
+    <div>VWAP <span id="vwap" style="color: #009688">6.9</span></div>
 </div>
 <script>
     const titleLegend = document.getElementById('title');
@@ -29,6 +30,7 @@
     const highLegend = document.getElementById('high');
     const lowLegend = document.getElementById('low');
     const closeLegend = document.getElementById('close');
+    const vwapLegend = document.getElementById('vwap');
 
     const chart = LightweightCharts.createChart(document.body, {
         width: 663,

@@ -1,17 +1,19 @@
 let series = null;
 let volumeSeries = null;
+let vwapSeries = null;
 
 function updateTitle(stock, interval) {
     titleLegend.innerText = stock + ' - ' + interval;
 }
 
-function updateLegend(price, volume) {
+function updateLegend(price, volume, vwap) {
     const className = price.open <= price.close ? 'greenLegend' : 'redLegend';
     volumeLegend.innerText = volume;
     openLegend.innerText = price.open.toFixed(2);
     high.innerText = price.high.toFixed(2);
     lowLegend.innerText = price.low.toFixed(2);
     closeLegend.innerText = price.close.toFixed(2);
+    vwapLegend.innerText = vwap;
 
     openLegend.className = className;
     highLegend.className = className;
@@ -20,7 +22,7 @@ function updateLegend(price, volume) {
     volumeLegend.className = className;
 }
 
-function setData(data, volumeData) {
+function setData(data, volumeData, vwapData) {
     if (series) {
         chart.removeSeries(series);
         chart.removeSeries(volumeSeries);
@@ -49,13 +51,24 @@ function setData(data, volumeData) {
     });
     volumeSeries.setData(volumeData);
 
-    updateLegend(data[data.length - 1], volumeData[volumeData.length - 1].value);
+    vwapSeries = chart.addLineSeries({
+        color: '#009688',
+        lastValueVisible: false,
+        lineWidth: 1,
+        crosshairMarkerVisible: false
+    });
+    vwapSeries.setData(vwapData);
+    vwapLegend.hidden = vwapData === undefined;
+
+    const lastIndex = volumeData.length - 1;
+    updateLegend(data[lastIndex], volumeData[lastIndex].value, vwapData[lastIndex].value);
 
     chart.subscribeCrosshairMove((param) => {
         const price = param.seriesPrices.get(series);
         const volume = param.seriesPrices.get(volumeSeries);
+        const vwap = param.seriesPrices.get(vwapSeries);
         if (price) {
-            updateLegend(price, volume);
+            updateLegend(price, volume, vwap);
         }
     });
 }

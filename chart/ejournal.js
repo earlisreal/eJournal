@@ -30,6 +30,11 @@ function setData(data, volumeData, vwapData) {
         volumeSeries = null;
     }
 
+    if (vwapSeries) {
+        chart.removeSeries(vwapSeries);
+        vwapSeries = null;
+    }
+
     series = chart.addCandlestickSeries({
         priceLineVisible: false,
         lastValueVisible: false
@@ -51,17 +56,24 @@ function setData(data, volumeData, vwapData) {
     });
     volumeSeries.setData(volumeData);
 
-    vwapSeries = chart.addLineSeries({
-        color: '#009688',
-        lastValueVisible: false,
-        lineWidth: 1,
-        crosshairMarkerVisible: false
-    });
-    vwapSeries.setData(vwapData);
-    vwapLegend.hidden = vwapData === undefined;
-
     const lastIndex = volumeData.length - 1;
-    updateLegend(data[lastIndex], volumeData[lastIndex].value, vwapData[lastIndex].value);
+    let lastVwap = undefined;
+    if (vwapData) {
+        vwapSeries = chart.addLineSeries({
+            color: '#009688',
+            lastValueVisible: false,
+            lineWidth: 1,
+            crosshairMarkerVisible: false
+        });
+        vwapSeries.setData(vwapData);
+        vwapDiv.style.display = 'block';
+        lastVwap = vwapData[lastIndex].value;
+    }
+    else {
+        vwapDiv.style.display = 'none';
+    }
+
+    updateLegend(data[lastIndex], volumeData[lastIndex].value, lastVwap);
 
     chart.subscribeCrosshairMove((param) => {
         const price = param.seriesPrices.get(series);

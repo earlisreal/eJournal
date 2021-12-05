@@ -280,6 +280,9 @@ public class TradeDetailsController implements Initializable {
     }
 
     private TradeSummary getCurrentSummary() {
+        if (summaries.isEmpty()) {
+            return null;
+        }
         return summaries.get(index);
     }
 

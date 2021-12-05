@@ -5,6 +5,7 @@ import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.CandleStickSeriesData;
+import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.MarkerData;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.model.VolumeData;
@@ -32,6 +33,7 @@ import javafx.scene.text.Text;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 
+import javax.sound.sampled.Line;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -109,6 +111,7 @@ public class TradeDetailsController implements Initializable {
     private Interval interval;
     private boolean isIntradayNotAvailable;
     private boolean isDailyNotAvailable;
+    private String vwapJson;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
@@ -330,17 +333,33 @@ public class TradeDetailsController implements Initializable {
         List<VolumeData> fiveMinuteVolumes = new ArrayList<>();
         CandleStickSeriesData fiveMinuteData = null;
         VolumeData fiveMinuteVolumeData = null;
+        List<LineData> vwapList = new ArrayList<>();
+        double runningVolume = 0;
+        double runningTpv = 0;
+        LocalDate lastDate = null;
         try {
             for (var line : Files.readAllLines(dataPath)) {
                 String[] tokens = line.split(",");
                 LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
                 localDateTime = localDateTime.minusMinutes(1);
-                if (summary.getCloseDate().toLocalDate().minusDays(6).isAfter(localDateTime.toLocalDate())) {
+                LocalDate localDate = localDateTime.toLocalDate();
+                if (summary.getCloseDate().toLocalDate().minusDays(6).isAfter(localDate)) {
                     continue;
+                }
+
+                if (!localDate.equals(lastDate)) {
+                    lastDate = localDate;
+                    runningTpv = 0;
+                    runningVolume = 0;
                 }
 
                 long epochSecond = localDateTime.toEpochSecond(ZoneOffset.UTC);
                 CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
+                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+                double tpv = (data.getHigh() + data.getLow() + data.getClose()) / 3 * volumeData.getValue();
+                runningTpv += tpv;
+                runningVolume += volumeData.getValue();
+                vwapList.add(new LineData(epochSecond, runningTpv / runningVolume));
 
                 if (fiveMinuteData == null) {
                     fiveMinuteData = new CandleStickSeriesData();
@@ -355,7 +374,6 @@ public class TradeDetailsController implements Initializable {
                 fiveMinuteData.setHigh(Math.max(fiveMinuteData.getHigh(), data.getHigh()));
                 fiveMinuteData.setLow(Math.min(fiveMinuteData.getLow(), data.getLow()));
 
-                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
                 fiveMinuteVolumeData.setValue(fiveMinuteVolumeData.getValue() + volumeData.getValue());
 
                 seriesDataList.add(data);
@@ -384,6 +402,7 @@ public class TradeDetailsController implements Initializable {
         fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
         markerJson = JsonStream.serialize(markerDataList);
         fiveMinuteMarkerJson = JsonStream.serialize(fiveMinuteMarkers);
+        vwapJson = JsonStream.serialize(vwapList);
     }
 
     private void updateDailyData(TradeSummary summary) {
@@ -479,7 +498,7 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void set1MinuteChart() {
-        webEngine.executeScript(String.format("setData(%s, %s)", seriesJson, volumeJson));
+        webEngine.executeScript(String.format("setData(%s, %s, %s)", seriesJson, volumeJson, vwapJson));
         webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));

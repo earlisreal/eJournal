@@ -43,6 +43,8 @@ public class JsoupNasdaqClient implements NasdaqClient {
                 String volume = record.toString("volume").replace(",", "");
                 csv.add(date + "," + open + "," + high + "," + low + "," + close + "," + volume);
             }
+
+            Collections.reverse(csv);
             return csv;
         } catch (URISyntaxException | IOException e) {
             handleException(e);

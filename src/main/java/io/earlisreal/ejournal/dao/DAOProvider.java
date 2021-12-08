@@ -12,6 +12,7 @@ public class DAOProvider {
     private static PlanDAO planDAO;
     private static CacheDAO cacheDAO;
     private static SummaryDetailDAO summaryDetailDAO;
+    private static AlphaSummaryDAO alphaSummaryDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -83,6 +84,18 @@ public class DAOProvider {
         }
 
         return summaryDetailDAO;
+    }
+
+    public static AlphaSummaryDAO getAlphaSummaryDAO() {
+        if (alphaSummaryDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (alphaSummaryDAO == null) {
+                    alphaSummaryDAO = new SQLAlphaSummaryDAO(getConnection());
+                }
+            }
+        }
+
+        return alphaSummaryDAO;
     }
 
 }

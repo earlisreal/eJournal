@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.dao;
 
 import com.jsoniter.JsonIterator;
 import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.TypeLiteral;
 import io.earlisreal.ejournal.dto.AlphaSummary;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.CommonUtil;
@@ -11,7 +12,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
@@ -33,8 +33,8 @@ public class SQLAlphaSummaryDAO implements AlphaSummaryDAO {
             while (resultSet.next()) {
                 AlphaSummary alphaSummary = new AlphaSummary();
                 alphaSummary.setId(resultSet.getString(1));
-                var summaryArray = JsonIterator.deserialize(resultSet.getString(2), TradeSummary[].class);
-                alphaSummary.setSummaries(Arrays.asList(summaryArray));
+                var content = JsonIterator.deserialize(resultSet.getString(2), new TypeLiteral<List<TradeSummary>>(){});
+                alphaSummary.setSummaries(content);
                 summaries.add(alphaSummary);
             }
         } catch (SQLException sqlException) {

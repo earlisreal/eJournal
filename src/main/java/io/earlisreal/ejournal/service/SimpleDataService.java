@@ -49,11 +49,18 @@ public class SimpleDataService implements DataService {
     private LocalDate getLastDate(Path path) {
         try {
             String content = Files.readString(path);
-            content = content.substring(content.lastIndexOf("\n"));
-            return LocalDate.parse(content.substring(0, content.indexOf(' ')));
-        } catch (IOException e) {
-            return LocalDate.of(2010, 1, 1);
-        }
+            int count = 0;
+            for (int i = content.length() - 1; i >= 0; --i) {
+                if (content.charAt(i) == '\r') {
+                    ++count;
+                }
+                if (count == 2) {
+                    content = content.substring(i + 2);
+                    return LocalDate.parse(content.substring(0, content.indexOf(',')));
+                }
+            }
+        } catch (IOException ignored) {}
+        return LocalDate.of(2010, 1, 1);
     }
 
     private void appendToFile(Path path, List<String> data) {

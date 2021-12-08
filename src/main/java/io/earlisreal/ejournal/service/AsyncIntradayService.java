@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.client.AlphaVantageClient;
+import io.earlisreal.ejournal.dao.AlphaSummaryDAO;
 import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.exception.AlphaVantageLimitException;
@@ -33,16 +34,19 @@ public class AsyncIntradayService implements IntradayService {
     private final AlphaVantageClient alphaVantageClient;
     private final StockService stockService;
     private final ScheduledExecutorService executorService;
+    private final AlphaSummaryDAO alphaSummaryDAO;
+
     private final Set<String> lock;
     private final Map<String, List<TradeSummary>> stockDateMap;
 
     private int minuteOffset = -1;
     private int callCount = 0;
 
-    AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService, ScheduledExecutorService executorService) {
+    AsyncIntradayService(AlphaVantageClient alphaVantageClient, StockService stockService, ScheduledExecutorService executorService, AlphaSummaryDAO alphaSummaryDAO) {
         this.alphaVantageClient = alphaVantageClient;
         this.stockService = stockService;
         this.executorService = executorService;
+        this.alphaSummaryDAO = alphaSummaryDAO;
         this.lock = new HashSet<>();
         this.stockDateMap = new HashMap<>();
     }
@@ -127,9 +131,12 @@ public class AsyncIntradayService implements IntradayService {
                 Runnable task = () -> {
                     try {
                         var csv = alphaVantageClient.get1minuteHistory(stock.getCode(), slice);
-                        saveCsv(stock, csv);
+                        boolean success = saveCsv(stock, csv);
                         if (stockDateMap.containsKey(key)) {
                             onDownloadFinish.accept(stockDateMap.get(key));
+                            if (!success) {
+                                alphaSummaryDAO.insert(stockDateMap.get(key));
+                            }
                         }
                     } catch (AlphaVantageLimitException e) {
                         CommonUtil.handleException(e);
@@ -164,7 +171,7 @@ public class AsyncIntradayService implements IntradayService {
         lock.remove(stock.getCode());
     }
 
-    private void saveCsv(Stock stock, List<String> csv) {
+    private boolean saveCsv(Stock stock, List<String> csv) {
         LocalDate lastDate = stock.getLastDate();
         List<String> records = new ArrayList<>();
         for (int i = csv.size() - 1; i >= 0; --i) {
@@ -182,10 +189,12 @@ public class AsyncIntradayService implements IntradayService {
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
                 stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)));
+                return true;
             } catch (IOException e) {
                 handleException(e);
             }
         }
+        return false;
     }
 
     private LocalDate parseDate(String record) {

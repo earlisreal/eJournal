@@ -115,7 +115,8 @@ public final class ServiceProvider {
                 if (intradayService == null) {
                     String apiKey = System.getenv("AV_API_KEY");
                     if (apiKey == null) throw new RuntimeException("AV_API_KEY not found. Please set Alpha Vantage apiKey to environment variables");
-                    intradayService = new AsyncIntradayService(new JsoupAlphaVantageClient(apiKey), getStockService(), CommonUtil.getExecutorService());
+                    intradayService = new AsyncIntradayService(new JsoupAlphaVantageClient(apiKey), getStockService(),
+                            CommonUtil.getExecutorService(), DAOProvider.getAlphaSummaryDAO());
                 }
             }
         }

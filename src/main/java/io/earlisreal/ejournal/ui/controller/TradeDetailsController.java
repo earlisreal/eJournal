@@ -33,7 +33,6 @@ import javafx.scene.text.Text;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 
-import javax.sound.sampled.Line;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -305,26 +304,29 @@ public class TradeDetailsController implements Initializable {
     }
 
     private void updateChartData(TradeSummary summary) {
+        boolean dataAvailable = false;
         if (summary.isDayTrade()) {
-            updateIntradayData(summary);
+            dataAvailable = updateIntradayData(summary);
         }
         else {
             interval = Interval.DAILY;
         }
-        updateDailyData(summary);
+        dataAvailable |= updateDailyData(summary);
 
-        resetChart();
-        hideLoading();
+        if (dataAvailable) {
+            resetChart();
+            hideLoading();
+        }
     }
 
-    private void updateIntradayData(TradeSummary summary) {
+    private boolean updateIntradayData(TradeSummary summary) {
         isIntradayNotAvailable = false;
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
             isIntradayNotAvailable = true;
             showLoading();
-            return;
+            return false;
         }
 
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
@@ -403,16 +405,18 @@ public class TradeDetailsController implements Initializable {
         markerJson = JsonStream.serialize(markerDataList);
         fiveMinuteMarkerJson = JsonStream.serialize(fiveMinuteMarkers);
         vwapJson = JsonStream.serialize(vwapList);
+
+        return true;
     }
 
-    private void updateDailyData(TradeSummary summary) {
+    private boolean updateDailyData(TradeSummary summary) {
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(symbol + ".csv");
         isDailyNotAvailable = false;
         if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
             isDailyNotAvailable = true;
             showLoading();
-            return;
+            return false;
         }
 
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
@@ -439,6 +443,8 @@ public class TradeDetailsController implements Initializable {
         dailySeriesJson = JsonStream.serialize(seriesDataList);
         dailyVolumeJson = JsonStream.serialize(volumeDataList);
         dailyMarkerJson = JsonStream.serialize(markerDataList);
+
+        return true;
     }
 
     private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {

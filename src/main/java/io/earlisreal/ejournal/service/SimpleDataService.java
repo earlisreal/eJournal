@@ -41,6 +41,9 @@ public class SimpleDataService implements DataService {
 
             if (summary.getCountry() == Country.US) {
                 var data = client.getDailyHistory(summary.getStock(), fromDate, toDate);
+                if (data.isEmpty()) {
+                    return;
+                }
                 appendToFile(path, data);
                 notifyListeners(summary);
             }

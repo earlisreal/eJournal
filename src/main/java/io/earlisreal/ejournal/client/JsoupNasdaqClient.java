@@ -32,7 +32,11 @@ public class JsoupNasdaqClient implements NasdaqClient {
                     .toString();
             String json = Jsoup.connect(url).ignoreContentType(true).get().text();
             Any data = JsonIterator.deserialize(json).get("data");
-            List<String> csv = new ArrayList<>(data.toInt("totalRecords"));
+            int totalRecords = data.toInt("totalRecords");
+            if (totalRecords < 1) {
+                return Collections.emptyList();
+            }
+            List<String> csv = new ArrayList<>(totalRecords);
             Any records = data.get("tradesTable").get("rows");
             for (Any record : records) {
                 String date = LocalDate.parse(record.toString("date"), formatter).toString();

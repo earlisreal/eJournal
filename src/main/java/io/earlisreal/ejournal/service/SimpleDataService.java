@@ -33,13 +33,14 @@ public class SimpleDataService implements DataService {
         Set<TradeSummary> set = new HashSet<>(summaries);
         for (TradeSummary summary : set) {
             Path path = getDataPath(summary);
-            LocalDate fromDate = getLastDate(path);
-            if (fromDate.isEqual(LocalDate.now())) {
+            LocalDate fromDate = getLastDate(path).plusDays(1);
+            LocalDate toDate = LocalDate.now().plusDays(1);
+            if (fromDate.isEqual(toDate)) {
                 continue;
             }
 
             if (summary.getCountry() == Country.US) {
-                var data = client.getDailyHistory(summary.getStock(), fromDate, LocalDate.now().plusDays(1));
+                var data = client.getDailyHistory(summary.getStock(), fromDate, toDate);
                 appendToFile(path, data);
                 notifyListeners(summary);
             }

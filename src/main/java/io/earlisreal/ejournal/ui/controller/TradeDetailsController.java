@@ -17,6 +17,7 @@ import io.earlisreal.ejournal.util.Pair;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -36,8 +37,6 @@ import javafx.scene.web.WebView;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -111,6 +110,7 @@ public class TradeDetailsController implements Initializable {
     private boolean isIntradayNotAvailable;
     private boolean isDailyNotAvailable;
     private String vwapJson;
+    private boolean chartReady;
 
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
@@ -122,13 +122,25 @@ public class TradeDetailsController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        disableButtons();
+        showLoading();
         webEngine = webView.getEngine();
-        Path chartPath = Paths.get("chart/chart.html").toAbsolutePath();
-        if (!Files.exists(chartPath)) {
-            throw new RuntimeException(chartPath + " Not Found");
+        var html = getClass().getResource("/chart.html");
+        try {
+            assert html != null;
+            webEngine.loadContent(new String(html.openStream().readAllBytes()));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        webEngine.load(chartPath.toUri().toString());
+        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == Worker.State.SUCCEEDED) {
+                chartReady = true;
+                if (!summaries.isEmpty()) {
+                    updateChartData(getCurrentSummary());
+                }
+            }
+        });
         remarksTextArea.focusedProperty().addListener((observableValue, oldValue, newValue) -> {
             if (!newValue) {
                 detailService.saveRemarks(getCurrentSummary().getId(), remarksTextArea.getText());
@@ -304,6 +316,17 @@ public class TradeDetailsController implements Initializable {
     }
 
     private void updateChartData(TradeSummary summary) {
+        if (!chartReady) {
+            return;
+        }
+        boolean dataAvailable = generateData(summary);
+        if (chartReady && dataAvailable) {
+            resetChart();
+            hideLoading();
+        }
+    }
+
+    private boolean generateData(TradeSummary summary) {
         boolean dataAvailable = false;
         if (summary.isDayTrade()) {
             dataAvailable = updateIntradayData(summary);
@@ -311,12 +334,7 @@ public class TradeDetailsController implements Initializable {
         else {
             interval = Interval.DAILY;
         }
-        dataAvailable |= updateDailyData(summary);
-
-        if (dataAvailable) {
-            resetChart();
-            hideLoading();
-        }
+        return updateDailyData(summary) || dataAvailable;
     }
 
     private boolean updateIntradayData(TradeSummary summary) {
@@ -512,7 +530,6 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));
         interval = Interval.ONE_MINUTE;
-        updateButtons();
     }
 
     public void set5MinuteChart() {
@@ -521,7 +538,6 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', '5 Minute')", getCurrentSummary().getStock()));
         interval = Interval.FIVE_MINUTE;
-        updateButtons();
     }
 
     public void setDailyChart() {
@@ -530,24 +546,18 @@ public class TradeDetailsController implements Initializable {
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", dailyScrollPosition));
         webEngine.executeScript(String.format("updateTitle('%s', 'Daily')", getCurrentSummary().getStock()));
         interval = Interval.DAILY;
-        updateButtons();
     }
 
     private void updateButtons() {
         dailyButton.setDisable(isDailyNotAvailable);
         oneMinuteButton.setDisable(isIntradayNotAvailable);
         fiveMinuteButton.setDisable(isIntradayNotAvailable);
-        if (interval == Interval.DAILY) {
-            dailyButton.setDisable(true);
-        }
-        else {
-            if (interval == Interval.ONE_MINUTE) {
-                oneMinuteButton.setDisable(true);
-            }
-            else {
-                fiveMinuteButton.setDisable(true);
-            }
-        }
+    }
+
+    private void disableButtons() {
+        dailyButton.setDisable(true);
+        oneMinuteButton.setDisable(true);
+        fiveMinuteButton.setDisable(true);
     }
 
     public void resetChart() {
@@ -561,10 +571,11 @@ public class TradeDetailsController implements Initializable {
         if (interval == Interval.DAILY) {
             setDailyChart();
         }
+        updateButtons();
     }
 
     public void notifyNewSummaries(List<TradeSummary> summaries) {
-        if (summaries.isEmpty()) {
+        if (this.summaries.isEmpty()) {
             return;
         }
 

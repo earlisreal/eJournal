@@ -1,5 +1,8 @@
 package io.earlisreal.ejournal.util;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
@@ -8,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -113,6 +117,37 @@ public final class CommonUtil {
 
     public static ScheduledExecutorService getExecutorService() {
         return ExecutorServiceHolder.executorService;
+    }
+
+    public static LocalDate getLastDailyDate(String symbol, Country country) {
+        Path path = Configs.STOCKS_DIRECTORY.resolve(country.name()).resolve("daily").resolve(symbol + ".csv");
+        return getLastDate(path, ",");
+    }
+
+    public static LocalDate getLastIntraDate(String symbol, Country country) {
+        Path path = Configs.STOCKS_DIRECTORY.resolve(country.name()).resolve(symbol + ".csv");
+        return getLastDate(path, " ");
+    }
+
+    private static LocalDate getLastDate(Path path, String pivot) {
+        try {
+            String content = Files.readString(path);
+            int count = 0;
+            for (int i = content.length() - 1; i >= 0; --i) {
+                if (content.charAt(i) == '\r') {
+                    ++count;
+                }
+                if (count == 2) {
+                    content = content.substring(i + 2);
+                    try {
+                        return LocalDate.parse(content.substring(0, content.indexOf(pivot)));
+                    } catch (StringIndexOutOfBoundsException | DateTimeParseException e) {
+                        System.out.println(path);
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        return LocalDate.of(2010, 1, 1);
     }
 
 }

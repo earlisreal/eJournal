@@ -9,9 +9,12 @@ import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.MarkerData;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.model.VolumeData;
+import io.earlisreal.ejournal.service.DataService;
+import io.earlisreal.ejournal.service.IntradayService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.SummaryDetailService;
+import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.Interval;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.application.Platform;
@@ -51,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
+import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
 import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class TradeDetailsController implements Initializable {
@@ -60,6 +64,8 @@ public class TradeDetailsController implements Initializable {
 
     private final StockService stockService;
     private final SummaryDetailService detailService;
+    private final IntradayService intradayService;
+    private final DataService dataService;
 
     public TableView<TradeLog> logTable;
     public TableColumn<TradeLog, String> logDate;
@@ -115,9 +121,11 @@ public class TradeDetailsController implements Initializable {
     public TradeDetailsController() {
         stockService = ServiceProvider.getStockService();
         detailService = ServiceProvider.getSummaryDetailService();
+        intradayService = ServiceProvider.getIntradayService();
+        dataService = ServiceProvider.getDataService();
 
         summaries = new ArrayList<>();
-        interval = Interval.ONE_MINUTE;
+        interval = Interval.DAILY;
     }
 
     @Override
@@ -327,22 +335,22 @@ public class TradeDetailsController implements Initializable {
     }
 
     private boolean generateData(TradeSummary summary) {
-        boolean dataAvailable = false;
+        boolean isDailyAvailable = updateDailyData(summary);
         if (summary.isDayTrade()) {
-            dataAvailable = updateIntradayData(summary);
+            interval = Interval.ONE_MINUTE;
+            return updateIntradayData(summary);
         }
-        else {
-            interval = Interval.DAILY;
-        }
-        return updateDailyData(summary) || dataAvailable;
+        interval = Interval.DAILY;
+        return isDailyAvailable;
     }
 
     private boolean updateIntradayData(TradeSummary summary) {
         isIntradayNotAvailable = false;
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
-        if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+        if (CommonUtil.getLastIntraDate(symbol, summary.getCountry()).isBefore(summary.getCloseDate().toLocalDate())) {
             isIntradayNotAvailable = true;
+            intradayService.download(List.of(summary), this::notifyNewSummaries);
             showLoading();
             return false;
         }
@@ -431,7 +439,8 @@ public class TradeDetailsController implements Initializable {
         String symbol = summary.getStock();
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(symbol + ".csv");
         isDailyNotAvailable = false;
-        if (!Files.exists(dataPath) || stockService.getLastPriceDate(symbol).isBefore(summary.getCloseDate().toLocalDate())) {
+        if (CommonUtil.getLastDailyDate(symbol, summary.getCountry()).isBefore(summary.getCloseDate().toLocalDate())) {
+            runAsync(() -> dataService.downloadDailyData(List.of(summary)));
             isDailyNotAvailable = true;
             showLoading();
             return false;
@@ -442,6 +451,7 @@ public class TradeDetailsController implements Initializable {
         try {
             for (var line : Files.readAllLines(dataPath)) {
                 String[] tokens = line.split(",");
+                // TODO: What todo when file is tampered or data is broken here?
                 LocalDate localDate = LocalDate.parse(tokens[0]);
 
                 long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);

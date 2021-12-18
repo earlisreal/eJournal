@@ -60,7 +60,7 @@ public class DerbyStockDAO implements StockDAO {
                 stock.setCompanyId(resultSet.getString(3));
                 stock.setSecurityId(resultSet.getString(4));
                 stock.setPrice(resultSet.getDouble(5));
-                stock.setCountry(Country.valueOf(resultSet.getString(7)));
+                stock.setCountry(Country.valueOf(resultSet.getString(6)));
                 stockMap.put(stock.getCode(), stock);
             }
         } catch (SQLException sqlException) {

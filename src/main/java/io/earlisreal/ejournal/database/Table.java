@@ -20,7 +20,6 @@ public enum Table {
             "company_id VARCHAR(4), " +
             "security_id VARCHAR(4), " +
             "price DOUBLE, " +
-            "last_date DATE, " +
             "country VARCHAR(2), " +
             "CONSTRAINT stock_pk PRIMARY KEY (code, country))",
             null),

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Consumer;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
@@ -22,9 +23,11 @@ public class SimpleDataService implements DataService {
 
     private final NasdaqClient client;
     private final List<Consumer<TradeSummary>> listeners;
+    private final Set<String> lock;
 
     public SimpleDataService(NasdaqClient client) {
         this.client = client;
+        lock = new ConcurrentSkipListSet<>();
         listeners = new ArrayList<>();
     }
 
@@ -32,6 +35,10 @@ public class SimpleDataService implements DataService {
     public void downloadDailyData(List<TradeSummary> summaries) {
         Set<TradeSummary> set = new HashSet<>(summaries);
         for (TradeSummary summary : set) {
+            if (lock.contains(summary.getStock())) {
+                continue;
+            }
+            lock.add(summary.getStock());
             Path path = getDataPath(summary);
             LocalDate fromDate = getLastDate(path).plusDays(1);
             LocalDate toDate = LocalDate.now().plusDays(1);
@@ -45,8 +52,10 @@ public class SimpleDataService implements DataService {
                     return;
                 }
                 appendToFile(path, data);
+                System.out.println(data.size() + " Daily Records added to " + summary.getStock());
                 notifyListeners(summary);
             }
+            lock.remove(summary.getStock());
         }
     }
 

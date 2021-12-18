@@ -21,7 +21,7 @@ public class JsoupNasdaqClient implements NasdaqClient {
 
     @Override
     public List<String> getDailyHistory(String stock, LocalDate fromDate, LocalDate toDate) {
-        System.out.println("Downloading " + stock);
+        System.out.println("Downloading Daily Data: " + stock);
         try {
             String url = new URIBuilder(BASE_URL)
                     .setPathSegments("api", "quote", stock, "historical")
@@ -34,6 +34,7 @@ public class JsoupNasdaqClient implements NasdaqClient {
             Any data = JsonIterator.deserialize(json).get("data");
             int totalRecords = data.toInt("totalRecords");
             if (totalRecords < 1) {
+                System.out.println("Daily Data not available for " + stock);
                 return Collections.emptyList();
             }
             List<String> csv = new ArrayList<>(totalRecords);

@@ -18,11 +18,7 @@ public interface StockService {
 
     String getCompanyId(String stock);
 
-    LocalDate getLastPriceDate(String stock);
-
     Double getPrice(String stock);
-
-    void updateLastDate(String stock, LocalDate localDate);
 
     int getStockCount();
 

@@ -4,6 +4,8 @@ import com.jsoniter.JsonIterator;
 import com.jsoniter.any.Any;
 import com.jsoniter.output.JsonStream;
 import io.earlisreal.ejournal.service.StockService;
+import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.jsoup.Jsoup;
@@ -39,7 +41,7 @@ public class PSEStockPriceScraper implements StockPriceScraper {
             body.put("security_id", security);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-uuuu");
-            body.put("startDate", service.getLastPriceDate(stock).format(formatter));
+            body.put("startDate", CommonUtil.getLastDailyDate(stock, Country.PH).format(formatter));
             body.put("endDate", formatter.format(LocalDate.now()));
 
             String json = Jsoup.connect(URL_SOURCE)
@@ -60,8 +62,6 @@ public class PSEStockPriceScraper implements StockPriceScraper {
                         + record.get("VALUE");
                 csv.add(row);
             }
-
-            service.updateLastDate(stock, LocalDate.now());
         } catch (IOException e) {
             e.printStackTrace();
         }

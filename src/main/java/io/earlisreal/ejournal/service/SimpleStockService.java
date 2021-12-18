@@ -56,23 +56,9 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
-    public LocalDate getLastPriceDate(String stockCode) {
-        Stock stock = stockMap.get(stockCode);
-        if (stock == null) return LocalDate.of(2000, 1, 1);
-        return stock.getLastDate();
-    }
-
-    @Override
     public Double getPrice(String stock) {
         if (stockMap.containsKey(stock)) return stockMap.get(stock).getPrice();
         return 0.0;
-    }
-
-    @Override
-    public void updateLastDate(String stock, LocalDate localDate) {
-        if (stockDAO.updateLastDate(stock, localDate)) {
-            stockMap.get(stock).setLastDate(localDate);
-        }
     }
 
     @Override

@@ -6,6 +6,7 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.exception.AlphaVantageLimitException;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -165,7 +166,7 @@ public class AsyncIntradayService implements IntradayService {
     }
 
     private void saveCsv(Stock stock, List<String> csv) {
-        LocalDate lastDate = stock.getLastDate();
+        LocalDate lastDate = CommonUtil.getLastIntraDate(stock.getCode(), Country.US);
         List<String> records = new ArrayList<>();
         for (int i = csv.size() - 1; i >= 0; --i) {
             String record = csv.get(i);
@@ -181,7 +182,6 @@ public class AsyncIntradayService implements IntradayService {
                 Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                 System.out.println(records.size() + " records added to " + stock.getCode());
-                stockService.updateLastDate(stock.getCode(), parseDate(csv.get(0)));
             } catch (IOException e) {
                 handleException(e);
             }

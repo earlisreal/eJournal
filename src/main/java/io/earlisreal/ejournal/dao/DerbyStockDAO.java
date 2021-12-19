@@ -71,20 +71,6 @@ public class DerbyStockDAO implements StockDAO {
     }
 
     @Override
-    public boolean updateLastDate(String stock, LocalDate localDate) {
-        String sql = "UPDATE stock SET last_date = ? WHERE code = ?";
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setDate(1, CommonUtil.toSqlDate(localDate));
-            preparedStatement.setString(2, stock);
-            preparedStatement.execute();
-            return preparedStatement.getUpdateCount() > 0;
-        } catch (SQLException sqlException) {
-            CommonUtil.handleException(sqlException);
-        }
-        return false;
-    }
-
-    @Override
     public boolean insertStock(Stock stock) {
         String sql = "INSERT INTO stock (code, name, price, country) VALUES (?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {

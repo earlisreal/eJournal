@@ -6,7 +6,9 @@ import org.jsoup.Jsoup;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 
@@ -31,7 +33,7 @@ public class JsoupAlphaVantageClient implements AlphaVantageClient {
                     .addParameter("adjusted", "false")
                     .toString();
 
-            String data = Jsoup.connect(url).ignoreContentType(true).execute().body();
+            String data = Jsoup.connect(url).timeout(60_000).ignoreContentType(true).execute().body();
             String newLine = "\r\n";
             if (data.charAt(0) == '{') {
                 throw new AlphaVantageLimitException("500 calls per day reached");

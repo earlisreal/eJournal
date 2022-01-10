@@ -34,6 +34,7 @@ public class USCompanyScraper implements CompanyScraper {
         try {
             String json = Jsoup.connect(url)
                     .ignoreContentType(true)
+                    .timeout(60_000)
                     .get()
                     .text();
             var records = JsonIterator.deserialize(json).get("data").get("rows");

@@ -30,7 +30,7 @@ public class JsoupNasdaqClient implements NasdaqClient {
                     .setParameter("fromdate", fromDate.toString())
                     .setParameter("todate", toDate.toString())
                     .toString();
-            String json = Jsoup.connect(url).ignoreContentType(true).get().text();
+            String json = Jsoup.connect(url).ignoreContentType(true).timeout(60_000).get().text();
             Any data = JsonIterator.deserialize(json).get("data");
             int totalRecords = data.toInt("totalRecords");
             if (totalRecords < 1) {

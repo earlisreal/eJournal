@@ -177,14 +177,17 @@ public class AsyncIntradayService implements IntradayService {
             }
         }
 
-        if (!records.isEmpty()) {
-            try {
-                Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
-                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-                System.out.println(records.size() + " records added to " + stock.getCode());
-            } catch (IOException e) {
-                handleException(e);
-            }
+        if (records.isEmpty()) {
+            System.out.println("No new records for " + stock.getCode());
+            return;
+        }
+
+        try {
+            Files.write(STOCKS_DIRECTORY.resolve(stock.getCountry().name()).resolve(stock.getCode() + ".csv"), records,
+                    StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            System.out.println(records.size() + " records added to " + stock.getCode());
+        } catch (IOException e) {
+            handleException(e);
         }
     }
 

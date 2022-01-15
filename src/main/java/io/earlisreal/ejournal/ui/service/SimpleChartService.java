@@ -38,12 +38,15 @@ public class SimpleChartService implements ChartService {
     private List<String> lines;
     private List<String> dailyLines;
 
-    public SimpleChartService(WebEngine webEngine) {
+    SimpleChartService(WebEngine webEngine) {
         this.webEngine = webEngine;
     }
 
     @Override
     public void setSummary(TradeSummary summary) {
+        if (this.summary == summary) {
+            return;
+        }
         this.summary = summary;
         dataMap = new HashMap<>();
 
@@ -90,7 +93,7 @@ public class SimpleChartService implements ChartService {
             lines = Files.readAllLines(dataPath);
             String last = lines.get(lines.size() - 1);
             LocalDate lastDate = LocalDate.parse(last.substring(0, last.indexOf(' ')));
-            intradayAvailable = lastDate.isBefore(summary.getCloseDate().toLocalDate());
+            intradayAvailable = !lastDate.isBefore(summary.getCloseDate().toLocalDate());
             // TODO : Download intraday data if not available?
         } catch (IOException | DateTimeParseException | StringIndexOutOfBoundsException e) {
             System.out.println("Error while processing intraday data of " + summary.getStock() + ": " + e.getMessage());
@@ -107,6 +110,7 @@ public class SimpleChartService implements ChartService {
         LocalDate previousDate = null;
         CandleStickSeriesData actualData = null;
         VolumeData actualVolumeData = null;
+        LineData vwapData = null;
         for (var line : lines) {
             String[] tokens = line.split(",");
             LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
@@ -130,22 +134,31 @@ public class SimpleChartService implements ChartService {
             if (actualData == null) {
                 actualData = new CandleStickSeriesData();
                 actualVolumeData = new VolumeData();
-                actualData.setTime(epochSecond);
+                actualVolumeData.setTime(epochSecond);
                 actualData.setTime(epochSecond);
                 actualData.setOpen(data.getOpen());
                 actualData.setLow(data.getLow());
+                vwapData = new LineData();
+                vwapData.setTime(epochSecond);
             }
+
+            actualData.setClose(data.getClose());
+            actualData.setHigh(Math.max(actualData.getHigh(), data.getHigh()));
+            actualData.setLow(Math.min(actualData.getLow(), data.getLow()));
+            actualVolumeData.setValue(actualVolumeData.getValue() + volumeData.getValue());
 
             if ((localDateTime.getMinute() + 1) % interval.getValue() == 0) {
                 double tpv = (actualData.getHigh() + actualData.getLow() + actualData.getClose()) / 3 * actualVolumeData.getValue();
                 runningTpv += tpv;
-                vwapList.add(new LineData(epochSecond, runningTpv / runningVolume));
+                vwapData.setValue(runningTpv / runningVolume);
+                vwapList.add(vwapData);
 
                 actualVolumeData.setColor(getVolumeColor(actualData));
                 volumeDataList.add(actualVolumeData);
                 seriesDataList.add(actualData);
                 actualData = null;
                 actualVolumeData = null;
+                vwapData = null;
             }
         }
 

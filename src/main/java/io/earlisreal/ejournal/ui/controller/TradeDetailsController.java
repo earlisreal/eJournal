@@ -1,20 +1,16 @@
 package io.earlisreal.ejournal.ui.controller;
 
-import com.jsoniter.output.JsonStream;
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.dto.TradeLog;
-import io.earlisreal.ejournal.model.CandleStickSeriesData;
-import io.earlisreal.ejournal.model.LineData;
-import io.earlisreal.ejournal.model.MarkerData;
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.model.VolumeData;
 import io.earlisreal.ejournal.service.DataService;
 import io.earlisreal.ejournal.service.IntradayService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.StockService;
 import io.earlisreal.ejournal.service.SummaryDetailService;
-import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.ui.service.ChartService;
+import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import io.earlisreal.ejournal.util.Interval;
 import io.earlisreal.ejournal.util.Pair;
 import javafx.application.Platform;
@@ -39,23 +35,16 @@ import javafx.scene.web.WebView;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Period;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.TimeUnit;
 
-import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
-import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
 public class TradeDetailsController implements Initializable {
 
@@ -66,6 +55,7 @@ public class TradeDetailsController implements Initializable {
     private final SummaryDetailService detailService;
     private final IntradayService intradayService;
     private final DataService dataService;
+    private ChartService chartService;
 
     public TableView<TradeLog> logTable;
     public TableColumn<TradeLog, String> logDate;
@@ -100,22 +90,7 @@ public class TradeDetailsController implements Initializable {
     private WebEngine webEngine;
     private List<TradeSummary> summaries;
     private int index;
-    private String seriesJson;
-    private String fiveMinuteSeriesJson;
-    private String dailySeriesJson;
-    private String volumeJson;
-    private String fiveMinuteVolumeJson;
-    private String dailyVolumeJson;
-    private String markerJson;
-    private String fiveMinuteMarkerJson;
-    private String dailyMarkerJson;
-    private int scrollPosition;
-    private int fiveMinuteScrollPosition;
-    private int dailyScrollPosition;
     private Interval interval;
-    private boolean isIntradayNotAvailable;
-    private boolean isDailyNotAvailable;
-    private String vwapJson;
     private boolean chartReady;
 
     public TradeDetailsController() {
@@ -133,6 +108,8 @@ public class TradeDetailsController implements Initializable {
         disableButtons();
         showLoading();
         webEngine = webView.getEngine();
+        chartService = UIServiceProvider.getChartService(webEngine);
+
         var html = getClass().getResource("/chart.html");
         try {
             assert html != null;
@@ -187,11 +164,11 @@ public class TradeDetailsController implements Initializable {
     }
 
     public void show() {
-        updateChartData(getCurrentSummary());
-
-        initializeStatistics(getCurrentSummary());
-        initializeLogs(getCurrentSummary());
-        initializeDetails(getCurrentSummary());
+        var summary = getCurrentSummary();
+        updateChartData(summary);
+        initializeStatistics(summary);
+        initializeLogs(summary);
+        initializeDetails(summary);
 
         ofLabel.setText(index + 1 + " of " + summaries.size() + " Trade" + (summaries.size() > 1 ? "s" : ""));
     }
@@ -327,241 +304,44 @@ public class TradeDetailsController implements Initializable {
         if (!chartReady) {
             return;
         }
-        boolean dataAvailable = generateData(summary);
-        if (chartReady && dataAvailable) {
-            resetChart();
-            hideLoading();
-        }
-    }
 
-    private boolean generateData(TradeSummary summary) {
-        boolean isDailyAvailable = updateDailyData(summary);
+        chartService.setSummary(summary);
         if (summary.isDayTrade()) {
             interval = Interval.ONE_MINUTE;
-            return updateIntradayData(summary);
-        }
-        interval = Interval.DAILY;
-        return isDailyAvailable;
-    }
-
-    private boolean updateIntradayData(TradeSummary summary) {
-        isIntradayNotAvailable = false;
-        String symbol = summary.getStock();
-        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve(symbol + ".csv");
-        if (CommonUtil.getLastIntraDate(symbol, summary.getCountry()).isBefore(summary.getCloseDate().toLocalDate())) {
-            isIntradayNotAvailable = true;
-            intradayService.download(List.of(summary), this::notifyNewSummaries);
-            showLoading();
-            return false;
-        }
-
-        List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
-        List<CandleStickSeriesData> fiveMinuteSeries = new ArrayList<>();
-        List<VolumeData> volumeDataList = new ArrayList<>();
-        List<VolumeData> fiveMinuteVolumes = new ArrayList<>();
-        CandleStickSeriesData fiveMinuteData = null;
-        VolumeData fiveMinuteVolumeData = null;
-        List<LineData> vwapList = new ArrayList<>();
-        double runningVolume = 0;
-        double runningTpv = 0;
-        LocalDate lastDate = null;
-        try {
-            for (var line : Files.readAllLines(dataPath)) {
-                String[] tokens = line.split(",");
-                LocalDateTime localDateTime = LocalDateTime.parse(tokens[0], AV_FORMATTER);
-                localDateTime = localDateTime.minusMinutes(1);
-                LocalDate localDate = localDateTime.toLocalDate();
-                if (summary.getCloseDate().toLocalDate().minusDays(6).isAfter(localDate)) {
-                    continue;
-                }
-
-                if (!localDate.equals(lastDate)) {
-                    lastDate = localDate;
-                    runningTpv = 0;
-                    runningVolume = 0;
-                }
-
-                long epochSecond = localDateTime.toEpochSecond(ZoneOffset.UTC);
-                CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
-                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
-                double tpv = (data.getHigh() + data.getLow() + data.getClose()) / 3 * volumeData.getValue();
-                runningTpv += tpv;
-                runningVolume += volumeData.getValue();
-                vwapList.add(new LineData(epochSecond, runningTpv / runningVolume));
-
-                if (fiveMinuteData == null) {
-                    fiveMinuteData = new CandleStickSeriesData();
-                    fiveMinuteVolumeData = new VolumeData();
-                    fiveMinuteVolumeData.setTime(epochSecond);
-                    fiveMinuteData.setTime(epochSecond);
-                    fiveMinuteData.setOpen(data.getOpen());
-                    fiveMinuteData.setLow(data.getLow());
-                }
-
-                fiveMinuteData.setClose(data.getClose());
-                fiveMinuteData.setHigh(Math.max(fiveMinuteData.getHigh(), data.getHigh()));
-                fiveMinuteData.setLow(Math.min(fiveMinuteData.getLow(), data.getLow()));
-
-                fiveMinuteVolumeData.setValue(fiveMinuteVolumeData.getValue() + volumeData.getValue());
-
-                seriesDataList.add(data);
-                volumeDataList.add(volumeData);
-
-                if ((localDateTime.getMinute() + 1) % 5 == 0) {
-                    fiveMinuteVolumeData.setColor(getVolumeColor(fiveMinuteData));
-                    fiveMinuteVolumes.add(fiveMinuteVolumeData);
-                    fiveMinuteSeries.add(fiveMinuteData);
-                    fiveMinuteData = null;
-                    fiveMinuteVolumeData = null;
-                }
-            }
-        } catch (IOException e) {
-            handleException(e);
-        }
-
-        List<MarkerData> markerDataList = generateMarkers(summary, 1);
-        List<MarkerData> fiveMinuteMarkers = generateMarkers(summary, 5);
-        scrollPosition = calculateScrollPosition(summary, seriesDataList);
-        fiveMinuteScrollPosition = calculateScrollPosition(summary, fiveMinuteSeries);
-
-        seriesJson = JsonStream.serialize(seriesDataList);
-        fiveMinuteSeriesJson = JsonStream.serialize(fiveMinuteSeries);
-        volumeJson = JsonStream.serialize(volumeDataList);
-        fiveMinuteVolumeJson = JsonStream.serialize(fiveMinuteVolumes);
-        markerJson = JsonStream.serialize(markerDataList);
-        fiveMinuteMarkerJson = JsonStream.serialize(fiveMinuteMarkers);
-        vwapJson = JsonStream.serialize(vwapList);
-
-        return true;
-    }
-
-    private boolean updateDailyData(TradeSummary summary) {
-        String symbol = summary.getStock();
-        var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(symbol + ".csv");
-        isDailyNotAvailable = false;
-        if (CommonUtil.getLastDailyDate(symbol, summary.getCountry()).isBefore(summary.getCloseDate().toLocalDate())) {
-            runAsync(() -> dataService.downloadDailyData(List.of(summary)));
-            isDailyNotAvailable = true;
-            showLoading();
-            return false;
-        }
-
-        List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
-        List<VolumeData> volumeDataList = new ArrayList<>();
-        try {
-            for (var line : Files.readAllLines(dataPath)) {
-                String[] tokens = line.split(",");
-                // TODO: What todo when file is tampered or data is broken here?
-                LocalDate localDate = LocalDate.parse(tokens[0]);
-
-                long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-                CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
-                VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
-
-                seriesDataList.add(data);
-                volumeDataList.add(volumeData);
-            }
-        } catch (IOException e) {
-            handleException(e);
-        }
-
-        List<MarkerData> markerDataList = generateMarkers(summary, TimeUnit.DAYS.toMinutes(1));
-        dailyScrollPosition = calculateScrollPosition(summary, seriesDataList);
-
-        dailySeriesJson = JsonStream.serialize(seriesDataList);
-        dailyVolumeJson = JsonStream.serialize(volumeDataList);
-        dailyMarkerJson = JsonStream.serialize(markerDataList);
-
-        return true;
-    }
-
-    private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
-        CandleStickSeriesData data = new CandleStickSeriesData();
-        data.setTime(epochSecond);
-        data.setOpen(Double.parseDouble(tokens[1]));
-        data.setHigh(Double.parseDouble(tokens[2]));
-        data.setLow(Double.parseDouble(tokens[3]));
-        data.setClose(Double.parseDouble(tokens[4]));
-        return data;
-    }
-
-    private VolumeData toVolumeData(String[] tokens, CandleStickSeriesData seriesData, long epochSecond) {
-        VolumeData data = new VolumeData();
-        data.setTime(epochSecond);
-        data.setValue(0);
-        if (!"N/A".equals(tokens[5])) {
-            data.setValue(Double.parseDouble(tokens[5]));
-        }
-        data.setColor(getVolumeColor(seriesData));
-        return data;
-    }
-
-    private String getVolumeColor(CandleStickSeriesData data) {
-        if (data.getClose() >= data.getOpen()) {
-            return VolumeData.GREEN;
-        }
-        return VolumeData.RED;
-    }
-
-    private List<MarkerData> generateMarkers(TradeSummary summary, long minusMinutes) {
-        List<MarkerData> markerDataList = new ArrayList<>();
-        for (TradeLog log : summary.getLogs()) {
-            MarkerData data = new MarkerData();
-            data.setTime(log.getDate().minusMinutes(minusMinutes).toEpochSecond(ZoneOffset.UTC));
-            String color = MarkerData.BUY_COLOR;
-            if (!log.isBuy()) {
-                color = log.isShort() ? MarkerData.SHORT_COLOR : MarkerData.SELL_COLOR;
-            }
-            data.setPosition(log.getPrice());
-            data.setColor(color);
-            data.setShape("diamond");
-            data.setBorderWidth(0.32);
-            data.setSize(1.65);
-            markerDataList.add(data);
-        }
-        return markerDataList;
-    }
-
-    private int calculateScrollPosition(TradeSummary summary, List<CandleStickSeriesData> seriesDataList) {
-        long first = summary.getLogs().get(0).getDate().truncatedTo(ChronoUnit.MINUTES).toEpochSecond(ZoneOffset.UTC);
-        int position = 0;
-        for (int i = 0; i < seriesDataList.size(); ++i) {
-            if (seriesDataList.get(i).getTime() >= first) {
-                position = i - seriesDataList.size();
-                break;
+            if (!chartService.isIntradayAvailable()) {
+                intradayService.download(List.of(summary), this::notifyNewSummaries);
             }
         }
-        return position + 40;
+        else {
+            interval = Interval.DAILY;
+            if (!chartService.isDailyAvailable()) {
+                runAsync(() -> dataService.downloadDailyData(List.of(summary)));
+            }
+        }
+        chartService.setInterval(interval);
+        updateButtons();
+        hideLoading();
     }
 
     public void set1MinuteChart() {
-        webEngine.executeScript(String.format("setData(%s, %s, %s)", seriesJson, volumeJson, vwapJson));
-        webEngine.executeScript(String.format("series.setMarkers(%s)", markerJson));
-        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", scrollPosition));
-        webEngine.executeScript(String.format("updateTitle('%s', '1 Minute')", getCurrentSummary().getStock()));
         interval = Interval.ONE_MINUTE;
+        chartService.setInterval(interval);
     }
 
     public void set5MinuteChart() {
-        webEngine.executeScript(String.format("setData(%s, %s)", fiveMinuteSeriesJson, fiveMinuteVolumeJson));
-        webEngine.executeScript(String.format("series.setMarkers(%s)", fiveMinuteMarkerJson));
-        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", fiveMinuteScrollPosition));
-        webEngine.executeScript(String.format("updateTitle('%s', '5 Minute')", getCurrentSummary().getStock()));
         interval = Interval.FIVE_MINUTE;
+        chartService.setInterval(interval);
     }
 
     public void setDailyChart() {
-        webEngine.executeScript(String.format("setData(%s, %s)", dailySeriesJson, dailyVolumeJson));
-        webEngine.executeScript(String.format("series.setMarkers(%s)", dailyMarkerJson));
-        webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", dailyScrollPosition));
-        webEngine.executeScript(String.format("updateTitle('%s', 'Daily')", getCurrentSummary().getStock()));
         interval = Interval.DAILY;
+        chartService.setInterval(interval);
     }
 
     private void updateButtons() {
-        dailyButton.setDisable(isDailyNotAvailable);
-        oneMinuteButton.setDisable(isIntradayNotAvailable);
-        fiveMinuteButton.setDisable(isIntradayNotAvailable);
+        dailyButton.setDisable(!chartService.isDailyAvailable());
+        oneMinuteButton.setDisable(!chartService.isIntradayAvailable());
+        fiveMinuteButton.setDisable(!chartService.isIntradayAvailable());
     }
 
     private void disableButtons() {

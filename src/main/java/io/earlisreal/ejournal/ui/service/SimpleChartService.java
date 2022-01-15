@@ -49,6 +49,11 @@ public class SimpleChartService implements ChartService {
         }
         this.summary = summary;
         dataMap = new HashMap<>();
+
+        if (summary.isDayTrade()) {
+            intraday();
+        }
+        daily();
     }
 
     @Override
@@ -66,15 +71,9 @@ public class SimpleChartService implements ChartService {
 
     private void generateData(Interval interval) {
         if (interval.isIntraDay()) {
-            if (lines == null) {
-                intraday();
-            }
             generateIntradayData(interval);
         }
         else {
-            if (dailyLines == null) {
-                daily();
-            }
             generateDailyData(interval);
         }
     }

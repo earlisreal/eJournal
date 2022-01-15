@@ -12,6 +12,7 @@ import javafx.scene.web.WebEngine;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static io.earlisreal.ejournal.util.Configs.STOCKS_DIRECTORY;
 
@@ -66,7 +68,11 @@ public class SimpleChartService implements ChartService {
         webEngine.executeScript(String.format("setData(%s, %s, %s)", chartData.getCandleStick(), chartData.getVolume(), chartData.getVwap()));
         webEngine.executeScript(String.format("series.setMarkers(%s)", chartData.getMarker()));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", chartData.getScrollPosition()));
-        webEngine.executeScript(String.format("updateTitle('%s', '" + interval.getValue() + " Minute')", summary.getStock()));
+        String titlePrefix = " Day";
+        if (interval.isIntraDay()) {
+            titlePrefix = " Minute";
+        }
+        webEngine.executeScript(String.format("updateTitle('%s', '" + interval.getValue() + titlePrefix + "')", summary.getStock()));
     }
 
     private void generateData(Interval interval) {
@@ -74,7 +80,7 @@ public class SimpleChartService implements ChartService {
             generateIntradayData(interval);
         }
         else {
-            generateDailyData(interval);
+            generateDailyData();
         }
     }
 
@@ -162,7 +168,7 @@ public class SimpleChartService implements ChartService {
             }
         }
 
-        List<MarkerData> markerDataList = generateMarkers(summary, interval.getValue());
+        List<MarkerData> markerDataList = generateMarkers(summary, interval);
         int scrollPosition = calculateScrollPosition(summary, seriesDataList);
         dataMap.put(interval, new ChartData(seriesDataList, volumeDataList, markerDataList, vwapList, scrollPosition));
     }
@@ -180,25 +186,55 @@ public class SimpleChartService implements ChartService {
         }
     }
 
-    private void generateDailyData(Interval interval) {
+    private void generateDailyData() {
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
         List<VolumeData> volumeDataList = new ArrayList<>();
+        List<CandleStickSeriesData> weeklySeriesDataList = new ArrayList<>();
+        List<VolumeData> weeklyVolumeDataList = new ArrayList<>();
+        CandleStickSeriesData weeklyData = null;
+        VolumeData weeklyVolumeData = null;
         for (var line : dailyLines) {
             String[] tokens = line.split(",");
             // TODO: What todo when file is tampered or data is broken here?
             LocalDate localDate = LocalDate.parse(tokens[0]);
 
+            if (localDate.getDayOfWeek() == DayOfWeek.MONDAY && weeklyData != null) {
+                weeklyVolumeData.setColor(getVolumeColor(weeklyData));
+                weeklySeriesDataList.add(weeklyData);
+                weeklyVolumeDataList.add(weeklyVolumeData);
+                weeklyData = null;
+            }
+
             long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
             CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
             VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+
+            if (weeklyData == null) {
+                weeklyData = new CandleStickSeriesData();
+                weeklyData.setTime(epochSecond);
+                weeklyData.setOpen(data.getOpen());
+                weeklyData.setLow(data.getLow());
+                weeklyVolumeData = new VolumeData();
+                weeklyVolumeData.setTime(epochSecond);
+            }
+
+            weeklyData.setClose(data.getClose());
+            weeklyData.setHigh(Math.max(weeklyData.getHigh(), data.getHigh()));
+            weeklyData.setLow(Math.min(weeklyData.getLow(), data.getLow()));
+            weeklyVolumeData.setValue(weeklyVolumeData.getValue() + volumeData.getValue());
 
             seriesDataList.add(data);
             volumeDataList.add(volumeData);
         }
 
-        List<MarkerData> markerDataList = generateMarkers(summary, interval.getValue());
-        int scrollPosition = calculateScrollPosition(summary, seriesDataList);
-        dataMap.put(interval, new ChartData(seriesDataList, volumeDataList, markerDataList, scrollPosition));
+        if (weeklyData != null) {
+            weeklyVolumeData.setColor(getVolumeColor(weeklyData));
+            weeklySeriesDataList.add(weeklyData);
+            weeklyVolumeDataList.add(weeklyVolumeData);
+        }
+
+        storeChartData(summary, Interval.DAILY, seriesDataList, volumeDataList);
+        storeChartData(summary, Interval.WEEKLY, weeklySeriesDataList, weeklyVolumeDataList);
     }
 
     private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {
@@ -229,10 +265,23 @@ public class SimpleChartService implements ChartService {
         return VolumeData.RED;
     }
 
-    private List<MarkerData> generateMarkers(TradeSummary summary, long minusMinutes) {
+    private void storeChartData(TradeSummary summary, Interval interval, List<CandleStickSeriesData> seriesDataList, List<VolumeData> volumeDataList) {
+        List<MarkerData> markerDataList = generateMarkers(summary, interval);
+        int scrollPosition = calculateScrollPosition(summary, seriesDataList);
+        dataMap.put(interval, new ChartData(seriesDataList, volumeDataList, markerDataList, scrollPosition));
+    }
+
+    private List<MarkerData> generateMarkers(TradeSummary summary, Interval interval) {
         List<MarkerData> markerDataList = new ArrayList<>();
+        long minusMinutes = interval.getValue();
+        if (!interval.isIntraDay()) {
+            minusMinutes = TimeUnit.DAYS.toMinutes(interval.getValue());
+        }
         for (TradeLog log : summary.getLogs()) {
             MarkerData data = new MarkerData();
+            // When marker is on HALT, it will be placed on the next bar because the minus minutes will not be enough
+            // It should be the size of the gap
+            // Let it be a feature for now, to say that there is a gap
             data.setTime(log.getDate().minusMinutes(minusMinutes).toEpochSecond(ZoneOffset.UTC));
             String color = MarkerData.BUY_COLOR;
             if (!log.isBuy()) {

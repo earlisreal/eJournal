@@ -101,7 +101,7 @@ public class TradeDetailsController implements Initializable {
         dataService = ServiceProvider.getDataService();
 
         summaries = new ArrayList<>();
-        interval = Interval.DAILY;
+        interval = Interval.ONE_MINUTE;
     }
 
     @Override

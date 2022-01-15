@@ -19,6 +19,7 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -307,13 +308,14 @@ public class TradeDetailsController implements Initializable {
 
         chartService.setSummary(summary);
         if (summary.isDayTrade()) {
-            interval = Interval.ONE_MINUTE;
             if (!chartService.isIntradayAvailable()) {
                 intradayService.download(List.of(summary), this::notifyNewSummaries);
             }
         }
         else {
-            interval = Interval.DAILY;
+            if (interval.isIntraDay()) {
+                interval = Interval.DAILY;
+            }
             if (!chartService.isDailyAvailable()) {
                 runAsync(() -> dataService.downloadDailyData(List.of(summary)));
             }
@@ -323,18 +325,9 @@ public class TradeDetailsController implements Initializable {
         hideLoading();
     }
 
-    public void set1MinuteChart() {
-        interval = Interval.ONE_MINUTE;
-        chartService.setInterval(interval);
-    }
-
-    public void set5MinuteChart() {
-        interval = Interval.FIVE_MINUTE;
-        chartService.setInterval(interval);
-    }
-
-    public void setDailyChart() {
-        interval = Interval.DAILY;
+    public void setInterval(ActionEvent actionEvent) {
+        Node node = (Node) actionEvent.getSource();
+        interval = Interval.valueOf((String) node.getUserData());
         chartService.setInterval(interval);
     }
 
@@ -352,15 +345,7 @@ public class TradeDetailsController implements Initializable {
 
     public void resetChart() {
         webEngine.executeScript("chart.timeScale().resetTimeScale()");
-        if (interval == Interval.ONE_MINUTE) {
-            set1MinuteChart();
-        }
-        if (interval == Interval.FIVE_MINUTE) {
-            set5MinuteChart();
-        }
-        if (interval == Interval.DAILY) {
-            setDailyChart();
-        }
+        chartService.setInterval(interval);
         updateButtons();
     }
 

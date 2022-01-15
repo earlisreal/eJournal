@@ -49,25 +49,12 @@ public class SimpleChartService implements ChartService {
         }
         this.summary = summary;
         dataMap = new HashMap<>();
-
-        if (summary.isDayTrade()) {
-            intraday();
-            generateIntradayData(Interval.ONE_MINUTE);
-        }
-        else {
-            daily();
-        }
     }
 
     @Override
     public void setInterval(Interval interval) {
         if (!dataMap.containsKey(interval)) {
-            if (interval.isIntraDay()) {
-                generateIntradayData(interval);
-            }
-            else {
-                generateDailyData(interval);
-            }
+            generateData(interval);
         }
 
         ChartData chartData = dataMap.get(interval);
@@ -75,6 +62,21 @@ public class SimpleChartService implements ChartService {
         webEngine.executeScript(String.format("series.setMarkers(%s)", chartData.getMarker()));
         webEngine.executeScript(String.format("chart.timeScale().scrollToPosition(%d, false)", chartData.getScrollPosition()));
         webEngine.executeScript(String.format("updateTitle('%s', '" + interval.getValue() + " Minute')", summary.getStock()));
+    }
+
+    private void generateData(Interval interval) {
+        if (interval.isIntraDay()) {
+            if (lines == null) {
+                intraday();
+            }
+            generateIntradayData(interval);
+        }
+        else {
+            if (dailyLines == null) {
+                daily();
+            }
+            generateDailyData(interval);
+        }
     }
 
     @Override
@@ -94,7 +96,6 @@ public class SimpleChartService implements ChartService {
             String last = lines.get(lines.size() - 1);
             LocalDate lastDate = LocalDate.parse(last.substring(0, last.indexOf(' ')));
             intradayAvailable = !lastDate.isBefore(summary.getCloseDate().toLocalDate());
-            // TODO : Download intraday data if not available?
         } catch (IOException | DateTimeParseException | StringIndexOutOfBoundsException e) {
             System.out.println("Error while processing intraday data of " + summary.getStock() + ": " + e.getMessage());
             intradayAvailable = false;
@@ -173,8 +174,7 @@ public class SimpleChartService implements ChartService {
             dailyLines = Files.readAllLines(dataPath);
             String last = dailyLines.get(dailyLines.size() - 1);
             LocalDate lastDate = LocalDate.parse(last.substring(0, last.indexOf(',')));
-            dailyAvailable = lastDate.isBefore(summary.getCloseDate().toLocalDate());
-            // TODO : Download daily data if not available?
+            dailyAvailable = !lastDate.isBefore(summary.getCloseDate().toLocalDate());
         } catch (IOException | DateTimeParseException | StringIndexOutOfBoundsException e) {
             System.out.println("Error while processing intraday data of " + summary.getStock() + ": " + e.getMessage());
             dailyAvailable = false;
@@ -182,7 +182,24 @@ public class SimpleChartService implements ChartService {
     }
 
     private void generateDailyData(Interval interval) {
-        // TODO
+        List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
+        List<VolumeData> volumeDataList = new ArrayList<>();
+        for (var line : dailyLines) {
+            String[] tokens = line.split(",");
+            // TODO: What todo when file is tampered or data is broken here?
+            LocalDate localDate = LocalDate.parse(tokens[0]);
+
+            long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+            CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
+            VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+
+            seriesDataList.add(data);
+            volumeDataList.add(volumeData);
+        }
+
+        List<MarkerData> markerDataList = generateMarkers(summary, interval.getValue());
+        int scrollPosition = calculateScrollPosition(summary, seriesDataList);
+        dataMap.put(interval, new ChartData(seriesDataList, volumeDataList, markerDataList, scrollPosition));
     }
 
     private CandleStickSeriesData toSeriesData(String[] tokens, long epochSecond) {

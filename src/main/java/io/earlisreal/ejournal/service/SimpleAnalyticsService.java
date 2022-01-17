@@ -1,12 +1,14 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.Period;
+import java.time.ZoneOffset;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,12 +120,13 @@ public class SimpleAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public List<XYChart.Data<String, Double>> getEquityData() {
-        List<XYChart.Data<String, Double>> data = new ArrayList<>();
+    public List<LineData> getEquityData() {
+        List<LineData> data = new ArrayList<>();
         double runningSum = 0;
         for (var entry : dateMap.entrySet()) {
             runningSum += entry.getValue();
-            data.add(new XYChart.Data<>(entry.getKey().toString(), runningSum));
+            long epochSecond = entry.getKey().atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+            data.add(new LineData(epochSecond, runningSum));
         }
         return data;
     }

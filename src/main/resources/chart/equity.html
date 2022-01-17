@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>lightweight-charts</title>
+    <script src="https://github.com/earlisreal/lightweight-charts/releases/download/v3.7.1/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<script>
+    const chart = LightweightCharts.createChart(document.body, { width: 660, height: 470 });
+    let lineSeries = null;
+    function setData(data) {
+        if (lineSeries) {
+            chart.removeSeries(lineSeries);
+            lineSeries = null;
+        }
+        let color = '#26a69a';
+        console.log(data.length);
+        if (data.length > 1) {
+            if (data[0].value > data[data.length - 1].value) {
+                color = '#ff6962';
+            }
+        }
+        lineSeries = chart.addLineSeries({
+            color: color
+        });
+        lineSeries.setData(data);
+    }
+</script>
+</body>
+</html>

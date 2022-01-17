@@ -1,15 +1,16 @@
 package io.earlisreal.ejournal.ui.controller;
 
+import com.jsoniter.output.JsonStream;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.service.AnalyticsService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
-import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -17,7 +18,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.Month;
@@ -38,7 +42,6 @@ import static java.time.DayOfWeek.SUNDAY;
 
 public class AnalyticsController implements Initializable {
 
-    public LineChart<String, Double> equityChart;
     public VBox successProfit;
     public VBox failLoss;
     public VBox successPercent;
@@ -48,6 +51,7 @@ public class AnalyticsController implements Initializable {
     public HBox dailyHBox;
     public ChoiceBox<Integer> dailyYearChoice;
     public Label currentMonthLabel;
+    public WebView webView;
 
     private final AnalyticsService service;
 
@@ -148,9 +152,21 @@ public class AnalyticsController implements Initializable {
     }
 
     private void initializeEquityChart() {
-        XYChart.Series<String, Double> series = new XYChart.Series<>();
-        series.setData(FXCollections.observableList(service.getEquityData()));
-        equityChart.setData(FXCollections.observableList(List.of(series)));
+        WebEngine webEngine = webView.getEngine();
+        var html = getClass().getResource("/chart/equity.html");
+        try {
+            assert html != null;
+            webEngine.loadContent(new String(html.openStream().readAllBytes()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == Worker.State.SUCCEEDED) {
+                String data = JsonStream.serialize(service.getEquityData());
+                webEngine.executeScript(String.format("setData(%s)", data));
+            }
+        });
     }
 
     private void initializeMonthlyChart() {

@@ -44,7 +44,6 @@ shadowJar {
 launch4j {
     icon = "${projectDir}/src/main/resources/eJournal-icon.ico"
     jarTask = tasks.shadowJar
-    copyConfigurable = ["${projectDir}/chart/chart.html"]
     splashWaitForWindows = false
 }
 

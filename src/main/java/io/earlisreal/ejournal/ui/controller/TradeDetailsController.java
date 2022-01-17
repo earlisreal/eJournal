@@ -111,7 +111,7 @@ public class TradeDetailsController implements Initializable {
         webEngine = webView.getEngine();
         chartService = UIServiceProvider.getChartService(webEngine);
 
-        var html = getClass().getResource("/chart.html");
+        var html = getClass().getResource("/chart/trade-summary.html");
         try {
             assert html != null;
             webEngine.loadContent(new String(html.openStream().readAllBytes()));

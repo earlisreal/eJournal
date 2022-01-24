@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>lightweight-charts</title>
+    <script src="https://github.com/earlisreal/lightweight-charts/releases/download/v3.7.1/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<script>
+    const chart = LightweightCharts.createChart(document.body, {
+        width: 660,
+        height: 490,
+        grid: {
+            vertLines: {
+                visible: false
+            },
+            horzLines: {
+                visible: false
+            }
+        },
+        handleScroll: false,
+        handleScale: false
+    });
+
+    let histogramSeries = null;
+    function setData(data, year) {
+        if (histogramSeries) {
+            chart.removeSeries(histogramSeries);
+            histogramSeries = null;
+        }
+
+        histogramSeries = chart.addHistogramSeries({
+            lastValueVisible: false,
+            priceLineVisible: false
+        });
+        histogramSeries.setData(data);
+        chart.timeScale().fitContent();
+    }
+</script>
+</body>
+</html>

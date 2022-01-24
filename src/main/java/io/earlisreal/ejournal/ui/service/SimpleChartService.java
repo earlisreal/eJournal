@@ -6,7 +6,7 @@ import io.earlisreal.ejournal.model.ChartData;
 import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.MarkerData;
 import io.earlisreal.ejournal.model.TradeSummary;
-import io.earlisreal.ejournal.model.VolumeData;
+import io.earlisreal.ejournal.model.HistogramData;
 import io.earlisreal.ejournal.util.Interval;
 import javafx.scene.web.WebEngine;
 
@@ -110,12 +110,12 @@ public class SimpleChartService implements ChartService {
     private void generateIntradayData(Interval interval) {
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
         List<LineData> vwapList = new ArrayList<>();
-        List<VolumeData> volumeDataList = new ArrayList<>();
+        List<HistogramData> volumeDataList = new ArrayList<>();
         double runningVolume = 0;
         double runningTpv = 0;
         LocalDate previousDate = null;
         CandleStickSeriesData actualData = null;
-        VolumeData actualVolumeData = null;
+        HistogramData actualVolumeData = null;
         LineData vwapData = null;
         for (var line : lines) {
             String[] tokens = line.split(",");
@@ -134,12 +134,12 @@ public class SimpleChartService implements ChartService {
 
             long epochSecond = localDateTime.toEpochSecond(ZoneOffset.UTC);
             CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
-            VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+            HistogramData volumeData = toVolumeData(tokens, data, epochSecond);
             runningVolume += volumeData.getValue();
 
             if (actualData == null) {
                 actualData = new CandleStickSeriesData();
-                actualVolumeData = new VolumeData();
+                actualVolumeData = new HistogramData();
                 actualVolumeData.setTime(epochSecond);
                 actualData.setTime(epochSecond);
                 actualData.setOpen(data.getOpen());
@@ -188,11 +188,11 @@ public class SimpleChartService implements ChartService {
 
     private void generateDailyData() {
         List<CandleStickSeriesData> seriesDataList = new ArrayList<>();
-        List<VolumeData> volumeDataList = new ArrayList<>();
+        List<HistogramData> volumeDataList = new ArrayList<>();
         List<CandleStickSeriesData> weeklySeriesDataList = new ArrayList<>();
-        List<VolumeData> weeklyVolumeDataList = new ArrayList<>();
+        List<HistogramData> weeklyVolumeDataList = new ArrayList<>();
         CandleStickSeriesData weeklyData = null;
-        VolumeData weeklyVolumeData = null;
+        HistogramData weeklyVolumeData = null;
         for (var line : dailyLines) {
             String[] tokens = line.split(",");
             // TODO: What todo when file is tampered or data is broken here?
@@ -207,14 +207,14 @@ public class SimpleChartService implements ChartService {
 
             long epochSecond = localDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
             CandleStickSeriesData data = toSeriesData(tokens, epochSecond);
-            VolumeData volumeData = toVolumeData(tokens, data, epochSecond);
+            HistogramData volumeData = toVolumeData(tokens, data, epochSecond);
 
             if (weeklyData == null) {
                 weeklyData = new CandleStickSeriesData();
                 weeklyData.setTime(epochSecond);
                 weeklyData.setOpen(data.getOpen());
                 weeklyData.setLow(data.getLow());
-                weeklyVolumeData = new VolumeData();
+                weeklyVolumeData = new HistogramData();
                 weeklyVolumeData.setTime(epochSecond);
             }
 
@@ -247,8 +247,8 @@ public class SimpleChartService implements ChartService {
         return data;
     }
 
-    private VolumeData toVolumeData(String[] tokens, CandleStickSeriesData seriesData, long epochSecond) {
-        VolumeData data = new VolumeData();
+    private HistogramData toVolumeData(String[] tokens, CandleStickSeriesData seriesData, long epochSecond) {
+        HistogramData data = new HistogramData();
         data.setTime(epochSecond);
         data.setValue(0);
         if (!"N/A".equals(tokens[5])) {
@@ -260,12 +260,12 @@ public class SimpleChartService implements ChartService {
 
     private String getVolumeColor(CandleStickSeriesData data) {
         if (data.getClose() >= data.getOpen()) {
-            return VolumeData.GREEN;
+            return HistogramData.GREEN;
         }
-        return VolumeData.RED;
+        return HistogramData.RED;
     }
 
-    private void storeChartData(TradeSummary summary, Interval interval, List<CandleStickSeriesData> seriesDataList, List<VolumeData> volumeDataList) {
+    private void storeChartData(TradeSummary summary, Interval interval, List<CandleStickSeriesData> seriesDataList, List<HistogramData> volumeDataList) {
         List<MarkerData> markerDataList = generateMarkers(summary, interval);
         int scrollPosition = calculateScrollPosition(summary, seriesDataList);
         dataMap.put(interval, new ChartData(seriesDataList, volumeDataList, markerDataList, scrollPosition));

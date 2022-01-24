@@ -1,6 +1,6 @@
 package io.earlisreal.ejournal.model;
 
-public class VolumeData {
+public class HistogramData {
 
     public static final String GREEN = "rgba(0, 150, 136, 0.5)";
     public static final String RED = "rgba(255,82,82, 0.5)";

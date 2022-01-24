@@ -12,7 +12,7 @@ public class ChartData {
     private final String vwap;
     private final int scrollPosition;
 
-    public ChartData(List<CandleStickSeriesData> candleStickList, List<VolumeData> volumeList, List<MarkerData> markerList, int scrollPosition) {
+    public ChartData(List<CandleStickSeriesData> candleStickList, List<HistogramData> volumeList, List<MarkerData> markerList, int scrollPosition) {
         candleStick = JsonStream.serialize(candleStickList);
         volume = JsonStream.serialize(volumeList);
         marker = JsonStream.serialize(markerList);
@@ -20,7 +20,7 @@ public class ChartData {
         this.scrollPosition = scrollPosition;
     }
 
-    public ChartData(List<CandleStickSeriesData> candleStickList, List<VolumeData> volumeList, List<MarkerData> markerList, List<LineData> vwapList, int scrollPosition) {
+    public ChartData(List<CandleStickSeriesData> candleStickList, List<HistogramData> volumeList, List<MarkerData> markerList, List<LineData> vwapList, int scrollPosition) {
         candleStick = JsonStream.serialize(candleStickList);
         volume = JsonStream.serialize(volumeList);
         marker = JsonStream.serialize(markerList);

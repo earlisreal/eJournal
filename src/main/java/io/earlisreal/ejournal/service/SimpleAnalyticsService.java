@@ -3,13 +3,13 @@ package io.earlisreal.ejournal.service;
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.TradeSummary;
+import io.earlisreal.ejournal.model.HistogramData;
 import javafx.scene.chart.XYChart;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.Period;
 import java.time.ZoneOffset;
-import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -200,20 +200,22 @@ public class SimpleAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public List<XYChart.Data<String, Double>> getMonthlyProfit() {
-        List<XYChart.Data<String, Double>> chartData = new ArrayList<>();
+    public List<HistogramData> getMonthlyProfit() {
+        List<HistogramData> chartData = new ArrayList<>();
         var map = tradeLogService.getTradeSummaries().stream()
                 .filter(summary -> summary.getCloseDate().getYear() == LocalDate.now().getYear())
                 .collect(Collectors.toMap(summary -> summary.getCloseDate().getMonth(), TradeSummary::getProfit, Double::sum));
+        int year = LocalDate.now().getYear();
         for (Month month : Month.values()) {
-            String monthStr = month.getDisplayName(TextStyle.SHORT, Locale.getDefault());
             double value = round(map.getOrDefault(month, 0.0));
-            var data = new XYChart.Data<>(monthStr, value);
-            if (value > 0) {
-                data.nodeProperty().addListener((observable, oldValue, newValue) -> newValue.setStyle("-fx-bar-fill: green"));
+            HistogramData data = new HistogramData();
+            data.setTime(LocalDate.of(year, month.getValue(), 1).atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+            data.setValue(value);
+            if (value >= 0) {
+                data.setColor("GREEN");
             }
             else {
-                data.nodeProperty().addListener((observable, oldValue, newValue) -> newValue.setStyle("-fx-bar-fill: red"));
+                data.setColor("RED");
             }
             chartData.add(data);
         }

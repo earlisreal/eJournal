@@ -10,8 +10,6 @@ import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
@@ -46,12 +44,12 @@ public class AnalyticsController implements Initializable {
     public VBox failLoss;
     public VBox successPercent;
     public VBox failPercent;
-    public BarChart<String, Double> monthlyBarChart;
     public GridPane dailyGridPane;
     public HBox dailyHBox;
     public ChoiceBox<Integer> dailyYearChoice;
     public Label currentMonthLabel;
-    public WebView webView;
+    public WebView equityWebView;
+    public WebView monthlyWebView;
 
     private final AnalyticsService service;
 
@@ -71,8 +69,8 @@ public class AnalyticsController implements Initializable {
 
     public void reload() {
         initializeEquityChart();
-        initializeRemarkableTrades();
         initializeMonthlyChart();
+        initializeRemarkableTrades();
         initializeDailyChart(LocalDate.now());
     }
 
@@ -152,27 +150,37 @@ public class AnalyticsController implements Initializable {
     }
 
     private void initializeEquityChart() {
-        WebEngine webEngine = webView.getEngine();
-        var html = getClass().getResource("/chart/equity.html");
+        var data = service.getEquityData();
+        WebEngine webEngine = equityWebView.getEngine();
+        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == Worker.State.SUCCEEDED) {
+                String json = JsonStream.serialize(data);
+                webEngine.executeScript(String.format("setData(%s)", json));
+            }
+        });
+        initializeChart(webEngine, "/chart/equity.html");
+    }
+
+    private void initializeMonthlyChart() {
+        var data = service.getMonthlyProfit();
+        WebEngine webEngine = monthlyWebView.getEngine();
+        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (oldValue == Worker.State.SUCCEEDED) {
+                String json = JsonStream.serialize(data);
+                webEngine.executeScript(String.format("setData(%s)", json));
+            }
+        });
+        initializeChart(webEngine, "/chart/monthly.html");
+    }
+
+    private void initializeChart(WebEngine webEngine, String htmlLayout) {
+        var html = getClass().getResource(htmlLayout);
         try {
             assert html != null;
             webEngine.loadContent(new String(html.openStream().readAllBytes()));
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == Worker.State.SUCCEEDED) {
-                String data = JsonStream.serialize(service.getEquityData());
-                webEngine.executeScript(String.format("setData(%s)", data));
-            }
-        });
-    }
-
-    private void initializeMonthlyChart() {
-        XYChart.Series<String, Double> series = new XYChart.Series<>();
-        series.setData(FXCollections.observableList(service.getMonthlyProfit()));
-        monthlyBarChart.setData(FXCollections.observableList(List.of(series)));
     }
 
     private void initializeDailyChart(LocalDate date) {

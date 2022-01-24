@@ -1,10 +1,10 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.model.HistogramData;
 import io.earlisreal.ejournal.model.LineData;
 import io.earlisreal.ejournal.model.TradeSummary;
 import javafx.scene.chart.XYChart;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface AnalyticsService {
@@ -51,6 +51,6 @@ public interface AnalyticsService {
 
     double getAveragePosition();
 
-    List<XYChart.Data<String, Double>> getMonthlyProfit();
+    List<HistogramData> getMonthlyProfit();
 
 }

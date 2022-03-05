@@ -18,6 +18,7 @@ public final class ServiceProvider {
     private static IntradayService intradayService;
     private static SummaryDetailService summaryDetailService;
     private static DataService dataService;
+    private static PortfolioService portfolioService;
 
     private ServiceProvider() {}
 
@@ -145,6 +146,18 @@ public final class ServiceProvider {
         }
 
         return dataService;
+    }
+
+    public static PortfolioService getPortfolioService() {
+        if (portfolioService == null) {
+            synchronized (ServiceProvider.class) {
+                if (portfolioService == null) {
+                    portfolioService = new SimplePortfolioService(DAOProvider.getPortfolioDAO());
+                }
+            }
+        }
+
+        return portfolioService;
     }
 
 }

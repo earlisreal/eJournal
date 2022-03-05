@@ -4,6 +4,10 @@ import java.util.List;
 
 public enum Table {
 
+    PORTFOLIO ("portfolio", "CREATE TABLE portfolio (" +
+            "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT portfolio_pk PRIMARY KEY, " +
+            "name VARCHAR(69))",
+            null),
     TRADE_SUMMARY ("summary_detail", "CREATE TABLE summary_detail (" +
             "id VARCHAR(17) CONSTRAINT summary_detail_pk PRIMARY KEY, " +
             "rating SMALLINT DEFAULT 0, " +
@@ -29,7 +33,8 @@ public enum Table {
             "dividend BOOLEAN, " +
             "amount DOUBLE, " +
             "ref VARCHAR(15), " +
-            "broker SMALLINT)",
+            "broker SMALLINT, " +
+            "portfolio INT CONSTRAINT log_portfolio_id_fk REFERENCES portfolio ON DELETE CASCADE)",
             List.of("CREATE UNIQUE INDEX bank_transaction_ref_uindex ON bank_transaction (ref)")),
     LOG ("log", "CREATE TABLE log (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT log_pk PRIMARY KEY, " +
@@ -41,7 +46,8 @@ public enum Table {
             "fees DOUBLE, " +
             "short BOOLEAN DEFAULT FALSE, " +
             "invoice VARCHAR(16), " +
-            "broker SMALLINT)",
+            "broker SMALLINT, " +
+            "portfolio INT CONSTRAINT log_portfolio_id_fk REFERENCES portfolio ON DELETE CASCADE)",
             List.of("CREATE UNIQUE INDEX log_invoice_uindex ON log (invoice)")),
     PLAN ("plan", "CREATE TABLE plan (" +
             "id INT GENERATED ALWAYS AS IDENTITY CONSTRAINT plan_pk PRIMARY KEY, " +

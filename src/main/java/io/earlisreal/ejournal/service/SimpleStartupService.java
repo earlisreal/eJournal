@@ -72,9 +72,6 @@ public class SimpleStartupService implements StartupService {
     @Override
     public void manageStockList() {
         // TODO Try to replace this with java fx service
-        var usdToPhp = CompletableFuture.supplyAsync(exchangeRateScraper::getUsdToPhp);
-        usdToPhp.thenAcceptAsync(cacheService::saveUsdToPhp);
-
         var scrapeList = CompletableFuture.supplyAsync(() -> {
             var stocks = stockListScraper.scrape();
             boolean hasNew = stockService.getStockCount() != stocks.size();

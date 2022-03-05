@@ -12,6 +12,7 @@ public class DAOProvider {
     private static PlanDAO planDAO;
     private static CacheDAO cacheDAO;
     private static SummaryDetailDAO summaryDetailDAO;
+    private static PortfolioDAO portfolioDAO;
 
     public static TradeLogDAO getTradeLogDAO() {
         if (tradeLogDAO == null) {
@@ -83,6 +84,18 @@ public class DAOProvider {
         }
 
         return summaryDetailDAO;
+    }
+
+    public static PortfolioDAO getPortfolioDAO() {
+        if (portfolioDAO == null) {
+            synchronized (DAOProvider.class) {
+                if (portfolioDAO == null) {
+                    portfolioDAO = new DerbyPortfolioDAO(getConnection());
+                }
+            }
+        }
+
+        return portfolioDAO;
     }
 
 }

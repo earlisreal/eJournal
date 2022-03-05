@@ -17,6 +17,7 @@ public class TradeLog {
     private Broker broker;
     private Double fees;
     private double profit;
+    private int portfolio;
 
     public TradeLog() {}
 

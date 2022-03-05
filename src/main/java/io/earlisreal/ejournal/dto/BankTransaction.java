@@ -12,6 +12,7 @@ public class BankTransaction {
     private double amount;
     private Broker broker;
     private String referenceNo;
+    private int portfolio;
 
     public BankTransaction() {}
 

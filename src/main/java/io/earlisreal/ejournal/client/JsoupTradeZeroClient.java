@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.client;
 
+import com.jsoniter.JsonIterator;
+import com.jsoniter.any.Any;
 import org.apache.http.client.utils.URIBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -10,7 +12,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class JsoupTradeZeroClient implements TradeZeroClient {
 
@@ -19,7 +20,7 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
     private final String loginUrl;
     private final String baseUrl;
 
-    private Map<String, String> cookies;
+    private String jwt;
     private LocalTime expiration;
 
     public JsoupTradeZeroClient(String username, String password) {
@@ -27,11 +28,11 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
         this.password = password;
 
         if (username.endsWith("DEMO")) {
-            loginUrl = DEMO_HOME_URL;
+            loginUrl = DEMO_LOGIN_URL;
             baseUrl = DEMO_BASE_URL;
         }
         else {
-            loginUrl = HOME_URL;
+            loginUrl = LOGIN_URL;
             baseUrl = BASE_URL;
         }
 
@@ -41,22 +42,22 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
     @Override
     public List<String> getTradesCsv(LocalDate start, LocalDate end) {
         try {
-            if (LocalTime.now().isAfter(expiration) || cookies == null) {
+            if (LocalTime.now().isAfter(expiration) || jwt == null) {
                 if (!login()) {
                     return Collections.emptyList();
                 }
             }
 
             String url = new URIBuilder(baseUrl)
-                    .setPathSegments("api", "GetCSVData", "7", start.toString(), end.toString())
+                    .setPathSegments("api", "Account", "GetCSVData", "7", start.toString(), end.toString())
+                    .addParameter("jwt", jwt)
                     .toString();
             var response = Jsoup.connect(url)
-                    .cookies(cookies)
                     .timeout(60_000)
                     .execute();
 
-            if (!response.hasCookie("Username")) {
-                cookies = null;
+            if (response.statusCode() != 200) {
+                jwt = null;
                 return Collections.emptyList();
             }
 
@@ -75,14 +76,18 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
                 .data("username", username)
                 .data("password", password)
                 .method(Connection.Method.POST)
+                .ignoreContentType(true)
                 .execute();
-        if (response.statusCode() != 200 || !response.hasCookie("Username")) {
+        if (response.statusCode() != 200) {
             System.out.println("Login Fail");
             return false;
         }
 
+        String json = response.body();
+        Any data = JsonIterator.deserialize(json).get("Data");
+        jwt = data.toString("jwt");
+
         refreshExpiration();
-        cookies = response.cookies();
         return true;
     }
 

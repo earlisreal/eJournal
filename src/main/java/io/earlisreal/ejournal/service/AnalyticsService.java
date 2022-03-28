@@ -51,6 +51,6 @@ public interface AnalyticsService {
 
     double getAveragePosition();
 
-    List<HistogramData> getMonthlyProfit();
+    List<XYChart.Data<String, Double>> getMonthlyProfit();
 
 }

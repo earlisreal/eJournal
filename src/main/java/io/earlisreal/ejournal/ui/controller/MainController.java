@@ -5,6 +5,7 @@ import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import io.earlisreal.ejournal.client.JsoupTradeZeroClient;
 import io.earlisreal.ejournal.client.TradeZeroClient;
 import io.earlisreal.ejournal.dto.BankTransaction;
+import io.earlisreal.ejournal.dto.Portfolio;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
 import io.earlisreal.ejournal.model.TradeSummary;
@@ -17,6 +18,7 @@ import io.earlisreal.ejournal.service.BankTransactionService;
 import io.earlisreal.ejournal.service.CacheService;
 import io.earlisreal.ejournal.service.DataService;
 import io.earlisreal.ejournal.service.IntradayService;
+import io.earlisreal.ejournal.service.PortfolioService;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.service.TradeLogService;
 import io.earlisreal.ejournal.ui.service.UIServiceProvider;
@@ -51,6 +53,7 @@ import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -100,7 +103,9 @@ public class MainController implements Initializable {
     public BorderPane bankBorder;
     public BorderPane planBorder;
     public Label riskRewardLabel;
+    public Menu portfolioMenu;
     public Menu brokerMenu;
+    public MenuItem addPortfolioItem;
 
     private final BankTransactionService bankTransactionService;
     private final TradeLogService tradeLogService;
@@ -108,6 +113,7 @@ public class MainController implements Initializable {
     private final CacheService cacheService;
     private final IntradayService intradayService;
     private final DataService dataService;
+    private final PortfolioService portfolioService;
 
     private Parent log;
     private Parent analytics;
@@ -138,6 +144,7 @@ public class MainController implements Initializable {
         analyticsService = ServiceProvider.getAnalyticsService();
         intradayService = ServiceProvider.getIntradayService();
         dataService = ServiceProvider.getDataService();
+        portfolioService = ServiceProvider.getPortfolioService();
 
         txtFilter = new FileChooser.ExtensionFilter("Plain text", "*.txt");
         pdfFilter = new FileChooser.ExtensionFilter("PDF", "*.pdf");
@@ -150,6 +157,7 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         initializeIcons();
 
+        initializePortfolioMenu();
         initializeBrokerMenu();
 
         statusLabel.setVisible(false);
@@ -189,6 +197,17 @@ public class MainController implements Initializable {
 
         initializeStatistics();
         dataService.addListener(summary -> UIServiceProvider.getTradeDetailsDialogService().notifyNewDailyData(summary));
+    }
+
+    private void initializePortfolioMenu() {
+        ToggleGroup portFolioGroup = new ToggleGroup();
+        var items = brokerMenu.getItems();
+        for (Portfolio portfolio : portfolioService.getAll()) {
+            RadioMenuItem item = new RadioMenuItem(portfolio.getName());
+            item.setToggleGroup(portFolioGroup);
+            item.setUserData(portfolio);
+            items.add(item);
+        }
     }
 
     private void initializeBrokerMenu() {
@@ -724,6 +743,19 @@ public class MainController implements Initializable {
         statusProgressIndicator.setVisible(true);
         statusLabel.setVisible(true);
         statusLabel.setText(text);
+    }
+
+    public void addNewPortfolio(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Add new Portfolio");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Portfolio Name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(name -> {
+            Portfolio portfolio = new Portfolio(name);
+            portfolioService.savePortfolio(portfolio);
+        });
     }
 
 }

@@ -171,6 +171,10 @@
               <MenuItem mnemonicParsing="false" onAction="#clearData" text="Reset Data" />
             </items>
           </Menu>
+            <Menu fx:id="portfolioMenu" mnemonicParsing="false" text="Portfolio">
+               <items>
+                  <MenuItem fx:id="addPortfolioItem" mnemonicParsing="false" onAction="#addNewPortfolio" text="+ Add New" />
+               </items></Menu>
             <Menu fx:id="brokerMenu" mnemonicParsing="false" text="Broker" />
           <Menu mnemonicParsing="false" text="Import">
             <items>

@@ -10,6 +10,10 @@ public class Portfolio {
         this.name = name;
     }
 
+    public Portfolio(String name) {
+        this.name = name;
+    }
+
     public Integer getId() {
         return id;
     }

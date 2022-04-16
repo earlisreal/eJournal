@@ -307,6 +307,9 @@ public class TradeDetailsController implements Initializable {
         }
 
         chartService.setSummary(summary);
+        if (!chartService.isDailyAvailable()) {
+            runAsync(() -> dataService.downloadDailyData(List.of(summary)));
+        }
         if (summary.isDayTrade()) {
             if (!chartService.isIntradayAvailable()) {
                 intradayService.download(List.of(summary), this::notifyNewSummaries);
@@ -315,9 +318,6 @@ public class TradeDetailsController implements Initializable {
         else {
             if (interval.isIntraDay()) {
                 interval = Interval.DAILY;
-            }
-            if (!chartService.isDailyAvailable()) {
-                runAsync(() -> dataService.downloadDailyData(List.of(summary)));
             }
         }
         chartService.setInterval(interval);

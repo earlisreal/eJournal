@@ -2,8 +2,9 @@ package io.earlisreal.ejournal.ui.controller;
 
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
-import io.earlisreal.ejournal.client.JsoupTradeZeroClient;
+import io.earlisreal.ejournal.client.DemoTradeZeroClient;
 import io.earlisreal.ejournal.client.TradeZeroClient;
+import io.earlisreal.ejournal.client.TradeZeroClientFactory;
 import io.earlisreal.ejournal.dto.BankTransaction;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.input.EmailFetcher;
@@ -603,7 +604,7 @@ public class MainController implements Initializable {
                 username = pair.get().getT();
                 password = pair.get().getU();
 
-                tradeZeroClient = new JsoupTradeZeroClient(username, password);
+                tradeZeroClient = TradeZeroClientFactory.getClient(username, password);
                 try {
                     if (tradeZeroClient.login()) {
                         cacheService.insert(CacheService.TRADEZERO_USERNAME, username);
@@ -625,7 +626,7 @@ public class MainController implements Initializable {
 
     private void downloadTradeZeroData(String username, String password) {
         if (tradeZeroClient == null) {
-            tradeZeroClient = new JsoupTradeZeroClient(username, password);
+            tradeZeroClient = TradeZeroClientFactory.getClient(username, password);
         }
         downloadTradeZeroData();
     }

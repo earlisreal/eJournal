@@ -1,7 +1,5 @@
 package io.earlisreal.ejournal.client;
 
-import com.jsoniter.JsonIterator;
-import com.jsoniter.any.Any;
 import org.apache.http.client.utils.URIBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -12,52 +10,42 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-public class JsoupTradeZeroClient implements TradeZeroClient {
+public class DemoTradeZeroClient implements TradeZeroClient {
 
+    public static final String DEMO_LOGIN_URL = "https://demo.tradezero.co/Home";
+    public static final String DEMO_BASE_URL = "https://demo.tradezero.co";
     private final String username;
     private final String password;
-    private final String loginUrl;
-    private final String baseUrl;
 
-    private String jwt;
     private LocalTime expiration;
+    private Map<String, String> cookies;
 
-    public JsoupTradeZeroClient(String username, String password) {
+    public DemoTradeZeroClient(String username, String password) {
         this.username = username;
         this.password = password;
-
-        if (username.endsWith("DEMO")) {
-            loginUrl = DEMO_LOGIN_URL;
-            baseUrl = DEMO_BASE_URL;
-        }
-        else {
-            loginUrl = LOGIN_URL;
-            baseUrl = BASE_URL;
-        }
-
         expiration = LocalTime.now();
     }
 
     @Override
     public List<String> getTradesCsv(LocalDate start, LocalDate end) {
         try {
-            if (LocalTime.now().isAfter(expiration) || jwt == null) {
+            if (LocalTime.now().isAfter(expiration) || cookies == null) {
                 if (!login()) {
                     return Collections.emptyList();
                 }
             }
-
-            String url = new URIBuilder(baseUrl)
-                    .setPathSegments("api", "Account", "GetCSVData", "7", start.toString(), end.toString())
-                    .addParameter("jwt", jwt)
+            String url = new URIBuilder(DEMO_BASE_URL)
+                    .setPathSegments("api", "GetCSVData", "7", start.toString(), end.toString())
                     .toString();
             var response = Jsoup.connect(url)
+                    .cookies(cookies)
                     .timeout(60_000)
                     .execute();
 
             if (response.statusCode() != 200) {
-                jwt = null;
+                cookies = null;
                 return Collections.emptyList();
             }
 
@@ -72,7 +60,7 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
 
     @Override
     public boolean login() throws IOException {
-        var response = Jsoup.connect(loginUrl)
+        var response = Jsoup.connect(DEMO_LOGIN_URL)
                 .data("username", username)
                 .data("password", password)
                 .method(Connection.Method.POST)
@@ -83,9 +71,7 @@ public class JsoupTradeZeroClient implements TradeZeroClient {
             return false;
         }
 
-        String json = response.body();
-        Any data = JsonIterator.deserialize(json).get("Data");
-        jwt = data.toString("jwt");
+        cookies = response.cookies();
 
         refreshExpiration();
         return true;

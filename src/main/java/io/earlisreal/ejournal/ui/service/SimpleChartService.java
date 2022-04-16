@@ -177,6 +177,10 @@ public class SimpleChartService implements ChartService {
         var dataPath = STOCKS_DIRECTORY.resolve(summary.getCountry().name()).resolve("daily").resolve(summary.getStock() + ".csv");
         try {
             dailyLines = Files.readAllLines(dataPath);
+            if (dailyLines.isEmpty()) {
+                dailyAvailable = false;
+                return;
+            }
             String last = dailyLines.get(dailyLines.size() - 1);
             LocalDate lastDate = LocalDate.parse(last.substring(0, last.indexOf(',')));
             dailyAvailable = !lastDate.isBefore(summary.getCloseDate().toLocalDate());

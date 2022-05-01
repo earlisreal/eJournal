@@ -201,10 +201,10 @@ public class SimpleAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public List<XYChart.Data<String, Double>> getMonthlyProfit() {
+    public List<XYChart.Data<String, Double>> getMonthlyProfit(int year) {
         List<XYChart.Data<String, Double>> chartData = new ArrayList<>();
         var map = tradeLogService.getTradeSummaries().stream()
-                .filter(summary -> summary.getCloseDate().getYear() == LocalDate.now().getYear())
+                .filter(summary -> summary.getCloseDate().getYear() == year)
                 .collect(Collectors.toMap(summary -> summary.getCloseDate().getMonth(), TradeSummary::getProfit, Double::sum));
         for (Month month : Month.values()) {
             String monthStr = month.getDisplayName(TextStyle.SHORT, Locale.getDefault());

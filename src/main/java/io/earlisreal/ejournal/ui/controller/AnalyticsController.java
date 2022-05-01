@@ -53,6 +53,7 @@ public class AnalyticsController implements Initializable {
     public Label currentMonthLabel;
     public WebView equityWebView;
     public BarChart<String, Double> monthlyBarChart;
+    public ChoiceBox<Integer> monthlyChoiceBox;
 
     private final AnalyticsService service;
 
@@ -67,12 +68,17 @@ public class AnalyticsController implements Initializable {
                 .distinct()
                 .collect(Collectors.toList());
         dailyYearChoice.setItems(FXCollections.observableList(years));
-        if (!years.isEmpty()) dailyYearChoice.setValue(years.get(0));
+        monthlyChoiceBox.setItems(FXCollections.observableList(years));
+        if (!years.isEmpty()) {
+            dailyYearChoice.setValue(years.get(0));
+            monthlyChoiceBox.setValue(years.get(0));
+            monthlyChoiceBox.setOnAction(event -> initializeMonthlyChart(monthlyChoiceBox.getValue()));
+        }
     }
 
     public void reload() {
         initializeEquityChart();
-        initializeMonthlyChart();
+        initializeMonthlyChart(LocalDate.now().getYear());
         initializeRemarkableTrades();
         initializeDailyChart(LocalDate.now());
     }
@@ -162,17 +168,17 @@ public class AnalyticsController implements Initializable {
             }
         });
         var html = getClass().getResource("/chart/equity.html");
-        try {
-            assert html != null;
-            webEngine.loadContent(new String(html.openStream().readAllBytes()));
+        assert html != null;
+        try (var htmlStream = html.openStream()) {
+            webEngine.loadContent(new String(htmlStream.readAllBytes()));
         } catch (IOException e) {
             handleException(e);
         }
     }
 
-    private void initializeMonthlyChart() {
+    private void initializeMonthlyChart(int year) {
         XYChart.Series<String, Double> series = new XYChart.Series<>();
-        series.setData(FXCollections.observableList(service.getMonthlyProfit()));
+        series.setData(FXCollections.observableList(service.getMonthlyProfit(year)));
         monthlyBarChart.setData(FXCollections.observableList(List.of(series)));
     }
 

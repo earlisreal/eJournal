@@ -76,7 +76,7 @@ public class SimpleChartService implements ChartService {
     }
 
     private void generateData(Interval interval) {
-        if (interval.isIntraDay()) {
+        if (interval.isIntraDay() && isIntradayAvailable()) {
             generateIntradayData(interval);
         }
         else {

@@ -55,7 +55,8 @@ public class TradeLog {
     public String toCsv() {
         String action = isBuy ? "BUY" : "SELL";
         String broker = this.broker.name();
-        return date + "," + stock + "," + action + "," + price + "," + shares + "," + "long," + broker + "," + invoiceNo;
+        String type = isShort() ? "SHORT" : "LONG";
+        return date + "," + stock + "," + action + "," + price + "," + shares + "," + type + "," + broker + "," + invoiceNo;
     }
 
     @Override

@@ -2,43 +2,24 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.FileDatabase;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-
 import static io.earlisreal.ejournal.database.DerbyDatabase.getConnection;
 
 public class DAOProvider {
 
     private DAOProvider() {}
 
-    private static TradeLogDAO tradeLogDAO;
     private static BankTransactionDAO bankTransactionDAO;
     private static StockDAO stockDAO;
     private static PlanDAO planDAO;
-    private static CacheDAO cacheDAO;
     private static SummaryDetailDAO summaryDetailDAO;
     private static PortfolioDAO portfolioDAO;
 
-    public static TradeLogDAO getTradeLogDAO() {
-        if (tradeLogDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (tradeLogDAO == null) {
-                    try {
-                        Path path = Paths.get(FileDatabase.getPath());
-                        var reader = Files.newBufferedReader(path);
-                        var writer = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
-                        tradeLogDAO = new CsvTradeLogDAO(reader, writer);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
+    private static final class TradeLogDAOHolder {
+        private static final TradeLogDAO tradeLogDAO = new CsvTradeLogDAO(FileDatabase.getInstance());
+    }
 
-        return tradeLogDAO;
+    public static TradeLogDAO getTradeLogDAO() {
+        return TradeLogDAOHolder.tradeLogDAO;
     }
 
     public static BankTransactionDAO getBankTransactionDAO() {
@@ -77,16 +58,12 @@ public class DAOProvider {
         return planDAO;
     }
 
-    public static CacheDAO getCacheDAO() {
-        if (cacheDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (cacheDAO == null) {
-                    cacheDAO = new DerbyCacheDAO(getConnection());
-                }
-            }
-        }
+    private static final class CacheDAOHolder {
+        private static final CacheDAO cacheDAO = new CsvCacheDAO(FileDatabase.getInstance());
+    }
 
-        return cacheDAO;
+    public static CacheDAO getCacheDAO() {
+        return CacheDAOHolder.cacheDAO;
     }
 
     public static SummaryDetailDAO getSummaryDetailDAO() {

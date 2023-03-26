@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.dao;
 
+import io.earlisreal.ejournal.database.FileDatabase;
 import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.util.ParseUtil;
 
@@ -11,17 +12,15 @@ import java.util.List;
 
 public class CsvTradeLogDAO implements TradeLogDAO {
 
-    private final BufferedReader reader;
-    private final BufferedWriter writer;
+    private final FileDatabase fileDatabase;
 
-    public CsvTradeLogDAO(BufferedReader reader, BufferedWriter writer) {
-        this.reader = reader;
-        this.writer = writer;
-
+    public CsvTradeLogDAO(FileDatabase fileDatabase) {
+        this.fileDatabase = fileDatabase;
     }
 
     @Override
     public List<TradeLog> queryAll() {
+        final BufferedReader reader = fileDatabase.getReader();
         List<TradeLog> logs = new ArrayList<>();
         while (true) {
             String line = null;
@@ -45,6 +44,7 @@ public class CsvTradeLogDAO implements TradeLogDAO {
 
     @Override
     public boolean insertLog(TradeLog tradeLog) {
+        final BufferedWriter writer = fileDatabase.getWriter();
         try {
             writer.write(tradeLog.toCsv());
             writer.newLine();

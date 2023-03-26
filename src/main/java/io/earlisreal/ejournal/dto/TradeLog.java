@@ -21,7 +21,7 @@ public class TradeLog {
 
     public TradeLog() {}
 
-    public TradeLog(LocalDateTime date, String stock, boolean isBuy, double price, int shares, String invoiceNo, Broker broker) {
+    public TradeLog(LocalDateTime date, String stock, boolean isBuy, double price, double shares, String invoiceNo, Broker broker) {
         this(date, stock, isBuy, price, shares);
         this.invoiceNo = invoiceNo;
         this.broker = broker;

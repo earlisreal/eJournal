@@ -25,20 +25,6 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     DerbyTradeLogDAO() {}
 
     @Override
-    public List<TradeLog> queryInBetween(LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT * FROM log WHERE datetime BETWEEN ? AND ?";
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setDate(1, toSqlDate(startDate));
-            preparedStatement.setDate(2, toSqlDate(endDate));
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return mapToTradeLogs(resultSet);
-        } catch (SQLException ignore) {
-        }
-
-        return new ArrayList<>();
-    }
-
-    @Override
     public List<TradeLog> queryAll() {
         String sql = "SELECT * FROM log";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
@@ -73,16 +59,6 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
     }
 
     @Override
-    public int upsert(List<TradeLog> tradeLogs) {
-        int res = 0;
-        for (TradeLog log : tradeLogs) {
-            res += upsert(log) ? 1 : 0;
-        }
-
-        return res;
-    }
-
-    @Override
     public boolean delete(int id) {
         String sql = "DELETE FROM log WHERE id = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -94,14 +70,6 @@ public class DerbyTradeLogDAO implements TradeLogDAO {
         }
 
         return false;
-    }
-
-    @Override
-    public boolean upsert(TradeLog tradeLog) {
-        if (update(tradeLog)) {
-            return true;
-        }
-        return insertLog(tradeLog);
     }
 
     @Override

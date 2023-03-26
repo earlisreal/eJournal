@@ -5,11 +5,13 @@ import io.earlisreal.ejournal.dto.TradeLog;
 import io.earlisreal.ejournal.model.TradeSummary;
 import io.earlisreal.ejournal.model.TradeSummaryBuilder;
 import io.earlisreal.ejournal.util.ParseUtil;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 public class SimpleTradeLogService implements TradeLogService {
 
@@ -59,17 +61,6 @@ public class SimpleTradeLogService implements TradeLogService {
     }
 
     @Override
-    public int upsert(List<TradeLog> tradeLogs) {
-        if (tradeLogs.isEmpty()) {
-            return 0;
-        }
-
-        int upserted = tradeLogDAO.upsert(tradeLogs);
-        System.out.println(upserted + " Records Upserted");
-        return upserted;
-    }
-
-    @Override
     public List<TradeLog> getLogs() {
         return logs;
     }
@@ -86,11 +77,6 @@ public class SimpleTradeLogService implements TradeLogService {
 
     @Override
     public void initialize() {
-        logs.clear();
-        logs.addAll(tradeLogDAO.queryAll());
-        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDateFilter.atTime(LocalTime.MAX)));
-        logs.sort(Comparator.comparing(TradeLog::getDate).reversed());
-
         calculateSummaries(logs);
     }
 
@@ -101,6 +87,8 @@ public class SimpleTradeLogService implements TradeLogService {
 
         this.startDateFilter = Objects.requireNonNullElseGet(startDate, () -> LocalDate.ofEpochDay(0));
         this.endDateFilter = Objects.requireNonNullElseGet(endDate, LocalDate::now);
+
+        logs.removeIf(tradeLog -> tradeLog.getDate().isAfter(endDateFilter.atTime(LocalTime.MAX)));
     }
 
     @Override

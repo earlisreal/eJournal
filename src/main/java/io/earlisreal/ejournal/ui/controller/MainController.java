@@ -312,7 +312,7 @@ public class MainController implements Initializable {
             if (filename.endsWith(".xlsx") && filename.contains("eToroAccountStatement")) {
                 LedgerParser parser = LedgerParserFactory.getLedgerParser(Broker.ETORO);
                 parser.parse(file.getAbsolutePath());
-                res += tradeLogService.upsert(parser.getTradeLogs());
+                res += tradeLogService.insert(parser.getTradeLogs()).size();
                 res += bankTransactionService.insert(parser.getBankTransactions());
 
                 continue;

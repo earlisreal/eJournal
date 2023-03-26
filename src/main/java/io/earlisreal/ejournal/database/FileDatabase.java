@@ -1,12 +1,9 @@
 package io.earlisreal.ejournal.database;
 
-import io.earlisreal.ejournal.dao.CsvTradeLogDAO;
-import io.earlisreal.ejournal.dao.TradeLogDAO;
 import io.earlisreal.ejournal.util.Configs;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +28,8 @@ public final class FileDatabase {
         createFile(getCachePath());
     }
 
-    public BufferedWriter getWriter() {
-        Path path = getLogPath();
+    public BufferedWriter getWriter(String src) {
+        Path path = Paths.get(src);
         try {
             return Files.newBufferedWriter(path, StandardOpenOption.APPEND);
         } catch (IOException e) {
@@ -40,8 +37,8 @@ public final class FileDatabase {
         }
     }
 
-    public BufferedReader getReader() {
-        Path path = getLogPath();
+    public BufferedReader getReader(String src) {
+        Path path = Paths.get(src);
         try {
             return Files.newBufferedReader(path);
         } catch (IOException e) {

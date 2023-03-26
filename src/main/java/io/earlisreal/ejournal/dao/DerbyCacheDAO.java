@@ -36,6 +36,13 @@ public class DerbyCacheDAO implements CacheDAO {
     }
 
     @Override
+    public boolean save(String key, String value) {
+        if (!insert(key, value)) {
+            return update(key, value);
+        }
+        return true;
+    }
+
     public boolean insert(String key, String value) {
         String sql = "INSERT INTO cache (\"key\", value) VALUES (?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -65,7 +72,6 @@ public class DerbyCacheDAO implements CacheDAO {
         return false;
     }
 
-    @Override
     public boolean update(String key, String value) {
         String sql = "UPDATE cache SET value = ? WHERE \"key\" = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {

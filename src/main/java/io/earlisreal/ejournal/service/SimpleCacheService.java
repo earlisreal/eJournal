@@ -32,47 +32,41 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public void updateEmailLastSync(String email, Instant lastSync) {
-        cacheDAO.update(Key.EMAIL + stripEmail(email), lastSync.toString());
+        cacheDAO.save(Key.EMAIL + stripEmail(email), lastSync.toString());
     }
 
     @Override
     public void insertEmailLastSync(String email, Instant lastSync) {
-        cacheDAO.insert(Key.EMAIL + stripEmail(email), lastSync.toString());
+        cacheDAO.save(Key.EMAIL + stripEmail(email), lastSync.toString());
     }
 
     @Override
     public void updateStartFilter(LocalDate start) {
         String value = start == null ? null : start.toString();
-        if (!cacheDAO.update(Key.START_FILTER.toString(), value)) {
-            cacheDAO.insert(Key.START_FILTER.toString(), value);
-        }
+        cacheDAO.save(Key.START_FILTER.toString(), value);
     }
 
     @Override
     public void updateEndFilter(LocalDate end) {
         String value = end == null ? null : end.toString();
-        if (!cacheDAO.update(Key.END_FILTER.toString(), value)) {
-            cacheDAO.insert(Key.END_FILTER.toString(), value);
-        }
+        cacheDAO.save(Key.END_FILTER.toString(), value);
     }
 
     @Override
     public LocalDate getStartFilter() {
         Optional<String> start = cacheDAO.get(Key.START_FILTER.toString());
-        if (start.isEmpty()) return null;
-        return LocalDate.parse(start.get());
+        return start.map(LocalDate::parse).orElse(null);
     }
 
     @Override
     public LocalDate getEndFilter() {
         Optional<String> end = cacheDAO.get(Key.END_FILTER.toString());
-        if (end.isEmpty()) return null;
-        return LocalDate.parse(end.get());
+        return end.map(LocalDate::parse).orElse(null);
     }
 
     @Override
     public void saveUsdToPhp(double value) {
-        cacheDAO.insert(Key.USD_TO_PHP.toString(), String.valueOf(value));
+        cacheDAO.save(Key.USD_TO_PHP.toString(), String.valueOf(value));
     }
 
     @Override
@@ -82,7 +76,7 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public void insert(String key, String value) {
-        cacheDAO.insert(key, value);
+        cacheDAO.save(key, value);
     }
 
     @Override
@@ -97,9 +91,7 @@ public class SimpleCacheService implements CacheService {
 
     @Override
     public void save(String key, String value) {
-        if (!cacheDAO.update(key, value)) {
-            cacheDAO.insert(key, value);
-        }
+        cacheDAO.save(key, value);
     }
 
     private String stripEmail(String email) {

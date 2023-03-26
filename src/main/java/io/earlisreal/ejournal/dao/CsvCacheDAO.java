@@ -17,23 +17,38 @@ public class CsvCacheDAO implements CacheDAO {
     @Override
     public Optional<String> get(String key) {
         try {
-            try (var stream = Files.lines(FileDatabase.getCachePath())) {
-                return stream.map(line -> line.split(","))
-                        .filter(columns -> key.equals(columns[0]))
-                        .map(columns -> columns[1])
-                        .findFirst();
+            var lines = Files.readAllLines(FileDatabase.getCachePath());
+            for (String line : lines) {
+                if (line.startsWith(key + ",")) {
+                    return Optional.of(line.substring(line.indexOf(',') + 1));
+                }
             }
+            return Optional.empty();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean insert(String key, String value) {
-        var writer = fileDatabase.getWriter();
+    public boolean save(String key, String value) {
         try {
-            writer.write(key + "," + value);
-            writer.newLine();
+            var lines = Files.readAllLines(FileDatabase.getCachePath());
+            String cacheValue = key + "," + value;
+            for (int i = 0; i < lines.size(); ++i) {
+                if (lines.get(i).startsWith(key + ",")) {
+                    if (value == null) {
+                        lines.remove(i);
+                    } else {
+                        lines.set(i, cacheValue);
+                    }
+                    Files.write(FileDatabase.getCachePath(), lines);
+                    return true;
+                }
+            }
+            if (value != null) {
+                lines.add(cacheValue);
+                Files.write(FileDatabase.getCachePath(), lines);
+            }
             return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -42,11 +57,6 @@ public class CsvCacheDAO implements CacheDAO {
 
     @Override
     public boolean clear(int secretParam) {
-        return false;
-    }
-
-    @Override
-    public boolean update(String s, String toString) {
         return false;
     }
 

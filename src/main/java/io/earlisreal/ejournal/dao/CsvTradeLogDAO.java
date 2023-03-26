@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.util.ParseUtil;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class CsvTradeLogDAO implements TradeLogDAO {
 
     @Override
     public List<TradeLog> queryAll() {
-        final BufferedReader reader = fileDatabase.getReader();
+        final BufferedReader reader = fileDatabase.getReader(FileDatabase.LOG_PATH);
         List<TradeLog> logs = new ArrayList<>();
         while (true) {
             String line = null;
@@ -44,7 +45,7 @@ public class CsvTradeLogDAO implements TradeLogDAO {
 
     @Override
     public boolean insertLog(TradeLog tradeLog) {
-        final BufferedWriter writer = fileDatabase.getWriter();
+        final BufferedWriter writer = fileDatabase.getWriter(FileDatabase.LOG_PATH);
         try {
             writer.write(tradeLog.toCsv());
             writer.newLine();

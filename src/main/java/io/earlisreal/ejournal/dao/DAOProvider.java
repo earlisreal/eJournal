@@ -1,5 +1,13 @@
 package io.earlisreal.ejournal.dao;
 
+import io.earlisreal.ejournal.database.FileDatabase;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
 import static io.earlisreal.ejournal.database.DerbyDatabase.getConnection;
 
 public class DAOProvider {
@@ -18,7 +26,14 @@ public class DAOProvider {
         if (tradeLogDAO == null) {
             synchronized (DAOProvider.class) {
                 if (tradeLogDAO == null) {
-                    tradeLogDAO = new DerbyTradeLogDAO();
+                    try {
+                        Path path = Paths.get(FileDatabase.getPath());
+                        var reader = Files.newBufferedReader(path);
+                        var writer = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
+                        tradeLogDAO = new CsvTradeLogDAO(reader, writer);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

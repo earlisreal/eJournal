@@ -14,6 +14,7 @@ public final class FileDatabase {
 
     public static final String LOG_PATH = Configs.DATA_DIR + "/trade-logs.csv";
     public static final String CACHE_PATH = Configs.DATA_DIR + "/cache.csv";
+    public static final String SUMMARY_PATH = Configs.DATA_DIR + "/summary.csv";
 
     private static final class FileDatabaseHolder {
         private static final FileDatabase FILE_DATABASE = new FileDatabase();
@@ -26,6 +27,7 @@ public final class FileDatabase {
     private FileDatabase() {
         createFile(getLogPath());
         createFile(getCachePath());
+        createFile(getSummaryPath());
     }
 
     public BufferedWriter getWriter(String src) {
@@ -62,6 +64,10 @@ public final class FileDatabase {
 
     public static Path getCachePath() {
         return Paths.get(CACHE_PATH);
+    }
+
+    public static Path getSummaryPath() {
+        return Paths.get(SUMMARY_PATH);
     }
 
 }

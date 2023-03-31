@@ -4,14 +4,13 @@ import io.earlisreal.ejournal.database.FileDatabase;
 
 import static io.earlisreal.ejournal.database.DerbyDatabase.getConnection;
 
-public class DAOProvider {
+public final class DAOProvider {
 
     private DAOProvider() {}
 
     private static BankTransactionDAO bankTransactionDAO;
     private static StockDAO stockDAO;
     private static PlanDAO planDAO;
-    private static SummaryDetailDAO summaryDetailDAO;
     private static PortfolioDAO portfolioDAO;
 
     private static final class TradeLogDAOHolder {
@@ -66,16 +65,12 @@ public class DAOProvider {
         return CacheDAOHolder.cacheDAO;
     }
 
-    public static SummaryDetailDAO getSummaryDetailDAO() {
-        if (summaryDetailDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (summaryDetailDAO == null) {
-                    summaryDetailDAO = new DerbySummaryDetailDAO(getConnection());
-                }
-            }
-        }
+    private static final class SummaryDetailDAOHolder {
+        private static final SummaryDetailDAO summaryDetailDAO = new CsvSummaryDetailDAO();
+    }
 
-        return summaryDetailDAO;
+    public static SummaryDetailDAO getSummaryDetailDAO() {
+        return SummaryDetailDAOHolder.summaryDetailDAO;
     }
 
     public static PortfolioDAO getPortfolioDAO() {

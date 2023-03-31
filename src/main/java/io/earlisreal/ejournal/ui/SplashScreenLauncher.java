@@ -9,10 +9,15 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.InputStream;
+import java.time.Instant;
+
+import static io.earlisreal.ejournal.util.Configs.DEBUG_MODE;
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 public class SplashScreenLauncher extends Preloader {
 
     private Stage primaryStage;
+    private final Instant start = Instant.now();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -32,10 +37,11 @@ public class SplashScreenLauncher extends Preloader {
 
     @Override
     public void handleApplicationNotification(PreloaderNotification info) {
-        if (info instanceof ProgressNotification) {
-            ProgressNotification progressNotification = (ProgressNotification) info;
+        if (info instanceof ProgressNotification progressNotification) {
             if (progressNotification.getProgress() == 1.0) {
                 primaryStage.hide();
+                if (DEBUG_MODE)
+                    System.out.println("Splash Screen Time: " + MILLIS.between(start, Instant.now()));
             }
         }
     }

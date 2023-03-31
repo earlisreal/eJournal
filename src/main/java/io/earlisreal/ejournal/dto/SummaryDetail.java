@@ -23,11 +23,16 @@ public class SummaryDetail {
     }
 
     public String getRemarks() {
+        if (remarks == null) return "";
         return remarks;
     }
 
     public void setRemarks(String remarks) {
         this.remarks = remarks;
+    }
+
+    public String toCsv() {
+        return id + "," + rating + "," + getRemarks();
     }
 
 }

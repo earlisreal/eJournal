@@ -86,4 +86,9 @@ public class Stock {
         return Objects.hash(code, country);
     }
 
+    public String toCsv() {
+        return code + "," + name + "," + (companyId == null ? "" : companyId) + ","
+                + (securityId == null ? "" : securityId) + "," + price + "," + country;
+    }
+
 }

@@ -18,6 +18,7 @@ public final class FileDatabase {
     public static final String CACHE_PATH = Configs.DATA_DIR + "/cache.csv";
     public static final String SUMMARY_PATH = Configs.DATA_DIR + "/summary.csv";
     public static final String STOCK_PATH = Configs.DATA_DIR + "/%s-stock.csv";
+    public static final String BANK_TRANSACTION_PATH = Configs.DATA_DIR + "/bank-transaction.csv";
 
     private static final class FileDatabaseHolder {
         private static final FileDatabase FILE_DATABASE = new FileDatabase();
@@ -31,6 +32,7 @@ public final class FileDatabase {
         createFile(getLogPath());
         createFile(getCachePath());
         createFile(getSummaryPath());
+        createFile(getBankTransactionPath());
         for (Country country : Country.values()) {
             createFile(getStockPath(country));
         }
@@ -78,6 +80,10 @@ public final class FileDatabase {
 
     public static Path getStockPath(Country country) {
         return Paths.get(String.format(STOCK_PATH, country.name()));
+    }
+
+    public static Path getBankTransactionPath() {
+        return Paths.get(BANK_TRANSACTION_PATH);
     }
 
 }

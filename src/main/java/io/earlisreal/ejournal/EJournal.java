@@ -14,6 +14,7 @@ import io.earlisreal.ejournal.ui.SplashScreenLauncher;
 import io.earlisreal.ejournal.ui.UILauncher;
 import io.earlisreal.ejournal.util.Broker;
 import io.earlisreal.ejournal.util.CommonUtil;
+import io.earlisreal.ejournal.util.Country;
 import io.earlisreal.ejournal.util.PDFParser;
 
 import java.io.IOException;
@@ -84,7 +85,7 @@ public class EJournal {
             StockScraper stockListScraper = ScraperProvider.getStockListScraper();
             stockListScraper.scrape();
             var stocks = stockListScraper.scrape();
-            ServiceProvider.getStockService().updateStocks(stocks);
+            ServiceProvider.getStockService().updateStocks(stocks, Country.US);
             System.out.println(stocks);
         }
     }

@@ -22,7 +22,7 @@ public class DerbyStockDAO implements StockDAO {
     }
 
     @Override
-    public void updateStocks(List<Stock> stocks) {
+    public void saveStocks(List<Stock> stocks, Country country) {
         for (Stock stock : stocks) {
             if (isExisting(stock.getCode())) {
                 updateStockPrice(stock);

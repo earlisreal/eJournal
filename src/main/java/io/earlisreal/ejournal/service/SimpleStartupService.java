@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.service;
 
+import io.earlisreal.ejournal.database.FileDatabase;
 import io.earlisreal.ejournal.scraper.CompanyScraper;
 import io.earlisreal.ejournal.scraper.ExchangeRateScraper;
 import io.earlisreal.ejournal.scraper.ScraperProvider;
@@ -64,7 +65,7 @@ public class SimpleStartupService implements StartupService {
     private void manageUsStockList() {
         runAsync(() -> {
             var list = usCompanyScraper.scrapeCompanies();
-            stockService.updateStocks(list);
+            stockService.updateStocks(list, Country.US);
             System.out.println("Managing US Stock List Done");
         });
     }
@@ -75,7 +76,7 @@ public class SimpleStartupService implements StartupService {
         var scrapeList = CompletableFuture.supplyAsync(() -> {
             var stocks = stockListScraper.scrape();
             boolean hasNew = stockService.getStockCount() != stocks.size();
-            stockService.updateStocks(stocks);
+            stockService.updateStocks(stocks, Country.PH);
             System.out.println("Downloading PH companies done");
 
             return hasNew;

@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.service;
 
 import io.earlisreal.ejournal.dto.Stock;
+import io.earlisreal.ejournal.util.Country;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -22,7 +23,7 @@ public interface StockService {
 
     int getStockCount();
 
-    void updateStocks(List<Stock> stocks);
+    void updateStocks(List<Stock> stocks, Country country);
 
     void updateStockId(List<Stock> scrapeCompanies);
 

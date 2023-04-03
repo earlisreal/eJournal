@@ -9,7 +9,6 @@ public final class DAOProvider {
     private DAOProvider() {}
 
     private static BankTransactionDAO bankTransactionDAO;
-    private static StockDAO stockDAO;
     private static PlanDAO planDAO;
     private static PortfolioDAO portfolioDAO;
 
@@ -33,16 +32,12 @@ public final class DAOProvider {
         return bankTransactionDAO;
     }
 
-    public static StockDAO getStockDAO() {
-        if (stockDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (stockDAO == null) {
-                    stockDAO = new DerbyStockDAO(getConnection());
-                }
-            }
-        }
+    private static final class StockDAOHolder {
+        private static final StockDAO stockDAO = new CsvStockDAO();
+    }
 
-        return stockDAO;
+    public static StockDAO getStockDAO() {
+        return StockDAOHolder.stockDAO;
     }
 
     public static PlanDAO getPlanDAO() {

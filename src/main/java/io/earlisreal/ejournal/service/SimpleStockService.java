@@ -5,7 +5,6 @@ import io.earlisreal.ejournal.dto.Stock;
 import io.earlisreal.ejournal.util.CommonUtil;
 import io.earlisreal.ejournal.util.Country;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -67,8 +66,8 @@ public class SimpleStockService implements StockService {
     }
 
     @Override
-    public void updateStocks(List<Stock> stocks) {
-        stockDAO.updateStocks(stocks);
+    public void updateStocks(List<Stock> stocks, Country country) {
+        stockDAO.saveStocks(stocks, country);
         stockMap = stockDAO.getStockMap();
         updateStockCodeMap();
     }
@@ -93,7 +92,7 @@ public class SimpleStockService implements StockService {
 
     @Override
     public boolean insertStock(Stock stock) {
-        if (stockDAO.insertStock(stock)) {
+        if (!stockMap.containsKey(stock.getCode())) {
             stockMap.put(stock.getCode(), stock);
             return true;
         }

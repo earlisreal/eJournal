@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui;
 
 import io.earlisreal.ejournal.database.DerbyDatabase;
+import io.earlisreal.ejournal.database.FileDatabase;
 import io.earlisreal.ejournal.service.ServiceProvider;
 import io.earlisreal.ejournal.util.CommonUtil;
 import javafx.application.Application;
@@ -31,6 +32,7 @@ public class UILauncher extends Application {
 
     @Override
     public void init() throws Exception {
+        FileDatabase.initialize();
         DerbyDatabase.initialize();
         ServiceProvider.getStartupService().run();
     }

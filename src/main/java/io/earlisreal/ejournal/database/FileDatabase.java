@@ -1,10 +1,12 @@
 package io.earlisreal.ejournal.database;
 
 import io.earlisreal.ejournal.util.Configs;
+import io.earlisreal.ejournal.util.Country;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +17,7 @@ public final class FileDatabase {
     public static final String LOG_PATH = Configs.DATA_DIR + "/trade-logs.csv";
     public static final String CACHE_PATH = Configs.DATA_DIR + "/cache.csv";
     public static final String SUMMARY_PATH = Configs.DATA_DIR + "/summary.csv";
+    public static final String STOCK_PATH = Configs.DATA_DIR + "/%s-stock.csv";
 
     private static final class FileDatabaseHolder {
         private static final FileDatabase FILE_DATABASE = new FileDatabase();
@@ -24,10 +27,13 @@ public final class FileDatabase {
         return FileDatabaseHolder.FILE_DATABASE;
     }
 
-    private FileDatabase() {
+    public static void initialize() {
         createFile(getLogPath());
         createFile(getCachePath());
         createFile(getSummaryPath());
+        for (Country country : Country.values()) {
+            createFile(getStockPath(country));
+        }
     }
 
     public BufferedWriter getWriter(String src) {
@@ -48,7 +54,7 @@ public final class FileDatabase {
         }
     }
 
-    private void createFile(Path path) {
+    private static void createFile(Path path) {
         if (!Files.exists(path)) {
             try {
                 Files.createFile(path);
@@ -68,6 +74,10 @@ public final class FileDatabase {
 
     public static Path getSummaryPath() {
         return Paths.get(SUMMARY_PATH);
+    }
+
+    public static Path getStockPath(Country country) {
+        return Paths.get(String.format(STOCK_PATH, country.name()));
     }
 
 }

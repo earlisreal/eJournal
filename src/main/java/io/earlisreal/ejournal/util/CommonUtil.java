@@ -7,6 +7,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -15,6 +16,9 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
+import static io.earlisreal.ejournal.util.Configs.DEBUG_MODE;
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 public final class CommonUtil {
 
@@ -148,6 +152,12 @@ public final class CommonUtil {
             }
         } catch (IOException ignored) {}
         return LocalDate.of(2010, 1, 1);
+    }
+
+    public static void printExecutionTime(Instant start, String message) {
+        if (DEBUG_MODE) {
+            System.out.println(message + MILLIS.between(start, Instant.now()));
+        }
     }
 
 }

@@ -2,7 +2,6 @@ package io.earlisreal.ejournal.ui.controller;
 
 import de.jensd.fx.glyphs.GlyphsDude;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
-import io.earlisreal.ejournal.client.DemoTradeZeroClient;
 import io.earlisreal.ejournal.client.TradeZeroClient;
 import io.earlisreal.ejournal.client.TradeZeroClientFactory;
 import io.earlisreal.ejournal.dto.BankTransaction;
@@ -65,6 +64,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +76,9 @@ import static io.earlisreal.ejournal.util.CommonUtil.handleException;
 import static io.earlisreal.ejournal.util.CommonUtil.prettify;
 import static io.earlisreal.ejournal.util.CommonUtil.round;
 import static io.earlisreal.ejournal.util.CommonUtil.runAsync;
+import static io.earlisreal.ejournal.util.Configs.DEBUG_MODE;
 import static java.time.LocalDate.now;
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 public class MainController implements Initializable {
 
@@ -149,6 +151,7 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        var start = Instant.now();
         initializeIcons();
 
         initializeBrokerMenu();
@@ -190,6 +193,8 @@ public class MainController implements Initializable {
 
         initializeStatistics();
         dataService.addListener(summary -> UIServiceProvider.getTradeDetailsDialogService().notifyNewDailyData(summary));
+        if (DEBUG_MODE)
+            System.out.println("Initializing Main: " + MILLIS.between(start, Instant.now()));
     }
 
     private void initializeBrokerMenu() {
@@ -571,9 +576,10 @@ public class MainController implements Initializable {
     }
 
     public void showAbout() {
-        String content = "Developed by: Earl Savadera\n" +
-                "Email: earl.stock.trader@gmail.com\n" +
-                "GitHub Page: https://github.com/earlisreal/eJournal";
+        String content = """
+                Developed by: Earl Savadera
+                Email: earl.stock.trader@gmail.com
+                GitHub Page: https://github.com/earlisreal/eJournal""";
         showInfo("About", content);
     }
 

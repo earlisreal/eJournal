@@ -25,7 +25,7 @@ public class BankTransaction {
     }
 
     public String toCsv() {
-        return date + ",," + getAction() + "," + amount + ",,," + broker.name() + "," + referenceNo;
+        return date + "," + getAction() + "," + amount + "," + broker.name() + "," + referenceNo;
     }
 
     @Override

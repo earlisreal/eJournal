@@ -66,11 +66,11 @@ public interface ParseUtil {
 
             try {
                 LocalDate date = LocalDate.parse(columns[0]);
-                boolean isDividend = "Dividend".equalsIgnoreCase(columns[2]);
-                double amount = Double.parseDouble(columns[3]);
-                Broker broker = Broker.valueOf(columns[6]);
+                boolean isDividend = "Dividend".equalsIgnoreCase(columns[1]);
+                double amount = Double.parseDouble(columns[2]);
+                Broker broker = Broker.valueOf(columns[3]);
 
-                BankTransaction bankTransaction = new BankTransaction(date, isDividend, amount, broker, columns[7]);
+                BankTransaction bankTransaction = new BankTransaction(date, isDividend, amount, broker, columns[4]);
                 bankTransactions.add(bankTransaction);
             } catch (NumberFormatException numberFormatException) {
                 System.out.println("Invalid format at row: " + i);

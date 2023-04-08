@@ -2,14 +2,10 @@ package io.earlisreal.ejournal.dao;
 
 import io.earlisreal.ejournal.database.FileDatabase;
 
-import static io.earlisreal.ejournal.database.DerbyDatabase.getConnection;
-
 public final class DAOProvider {
 
     private DAOProvider() {}
 
-    private static BankTransactionDAO bankTransactionDAO;
-    private static PlanDAO planDAO;
     private static PortfolioDAO portfolioDAO;
 
     private static final class TradeLogDAOHolder {
@@ -20,16 +16,12 @@ public final class DAOProvider {
         return TradeLogDAOHolder.tradeLogDAO;
     }
 
-    public static BankTransactionDAO getBankTransactionDAO() {
-        if (bankTransactionDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (bankTransactionDAO == null) {
-                    bankTransactionDAO = new DerbyBankTransactionDAO();
-                }
-            }
-        }
+    private static final class BankTransactionDAOHolder {
+        private static final BankTransactionDAO bankTransactionDAO = new CsvBankTransactionDAO();
+    }
 
-        return bankTransactionDAO;
+    public static BankTransactionDAO getBankTransactionDAO() {
+        return BankTransactionDAOHolder.bankTransactionDAO;
     }
 
     private static final class StockDAOHolder {
@@ -40,16 +32,12 @@ public final class DAOProvider {
         return StockDAOHolder.stockDAO;
     }
 
-    public static PlanDAO getPlanDAO() {
-        if (planDAO == null) {
-            synchronized (DAOProvider.class) {
-                if (planDAO == null) {
-                    planDAO = new DerbyPlanDAO();
-                }
-            }
-        }
+    private static final class PlanDAOHolder {
+        private static final PlanDAO planDAO = new CsvPlanDAO();
+    }
 
-        return planDAO;
+    public static PlanDAO getPlanDAO() {
+        return PlanDAOHolder.planDAO;
     }
 
     private static final class CacheDAOHolder {
@@ -72,7 +60,7 @@ public final class DAOProvider {
         if (portfolioDAO == null) {
             synchronized (DAOProvider.class) {
                 if (portfolioDAO == null) {
-                    portfolioDAO = new DerbyPortfolioDAO(getConnection());
+                    return null;
                 }
             }
         }

@@ -18,6 +18,7 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "io.earlisreal.ejournal.MainKt"
+        jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -25,4 +26,8 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.withType<JavaExec>().configureEach {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

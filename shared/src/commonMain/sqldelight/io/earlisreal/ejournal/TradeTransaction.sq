@@ -1,0 +1,29 @@
+CREATE TABLE TradeTransaction (
+    id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    portfolioId INTEGER NOT NULL,
+    symbol      TEXT    NOT NULL,
+    datetime    TEXT AS kotlinx.datetime.LocalDateTime NOT NULL,
+    action      TEXT AS io.earlisreal.ejournal.domain.model.Action NOT NULL,
+    price       REAL    NOT NULL,
+    shares      REAL    NOT NULL,
+    fees        REAL    NOT NULL,
+    FOREIGN KEY (portfolioId) REFERENCES Portfolio(id)
+);
+
+insertTransaction:
+INSERT INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectByPortfolio:
+SELECT * FROM TradeTransaction WHERE portfolioId = ? ORDER BY datetime ASC;
+
+selectByPortfolioAndDateRange:
+SELECT * FROM TradeTransaction
+WHERE portfolioId = ? AND datetime >= ? AND datetime <= ?
+ORDER BY datetime ASC;
+
+deleteById:
+DELETE FROM TradeTransaction WHERE id = ?;
+
+lastInsertRowId:
+SELECT last_insert_rowid();

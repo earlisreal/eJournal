@@ -12,6 +12,7 @@ fun main() = application {
         App(
             portfolioRepository = deps.portfolioRepository,
             transactionRepository = deps.transactionRepository,
+            settingsRepository = deps.settingsRepository,
             parsers = deps.parsers
         )
     }

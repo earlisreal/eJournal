@@ -5,8 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,8 +22,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.ui.components.AppPrimaryButton
+import io.earlisreal.ejournal.ui.components.AppSecondaryButton
+import io.earlisreal.ejournal.ui.components.DataTable
+import io.earlisreal.ejournal.ui.components.ErrorBanner
+import io.earlisreal.ejournal.ui.components.ScreenScaffold
+import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.ImportStatus
 import io.earlisreal.ejournal.ui.viewmodel.ImportViewModel
 import java.awt.FileDialog
@@ -46,104 +50,85 @@ fun ImportScreen(
 
     var isDragHovered by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text("Import Transactions", style = MaterialTheme.typography.headlineMedium)
-
-        // Selectors row
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.portfolios.isNotEmpty()) {
-                var portfolioExpanded by remember { mutableStateOf(false) }
-                Box {
-                    OutlinedButton(onClick = { portfolioExpanded = true }) {
-                        Text(state.selectedPortfolio?.name ?: "Select Portfolio")
+    ScreenScaffold(title = "Import Transactions") {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg), modifier = Modifier.fillMaxSize()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                if (state.portfolios.isNotEmpty()) {
+                    var portfolioExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        AppSecondaryButton(
+                            text = state.selectedPortfolio?.name ?: "Select Portfolio",
+                            onClick = { portfolioExpanded = true },
+                        )
+                        DropdownMenu(expanded = portfolioExpanded, onDismissRequest = { portfolioExpanded = false }) {
+                            state.portfolios.forEach { portfolio ->
+                                DropdownMenuItem(
+                                    text = { Text(portfolio.name) },
+                                    onClick = { vm.selectPortfolio(portfolio); portfolioExpanded = false },
+                                )
+                            }
+                        }
                     }
-                    DropdownMenu(
-                        expanded = portfolioExpanded,
-                        onDismissRequest = { portfolioExpanded = false }
-                    ) {
-                        state.portfolios.forEach { portfolio ->
+                } else {
+                    ErrorBanner("No portfolios found. Create one in Portfolio Management first.")
+                }
+
+                var parserExpanded by remember { mutableStateOf(false) }
+                Box {
+                    AppSecondaryButton(
+                        text = state.selectedParser?.brokerName ?: "Select Parser",
+                        onClick = { parserExpanded = true },
+                    )
+                    DropdownMenu(expanded = parserExpanded, onDismissRequest = { parserExpanded = false }) {
+                        parsers.forEach { parser ->
                             DropdownMenuItem(
-                                text = { Text(portfolio.name) },
-                                onClick = {
-                                    vm.selectPortfolio(portfolio)
-                                    portfolioExpanded = false
-                                }
+                                text = { Text(parser.brokerName) },
+                                onClick = { vm.selectParser(parser); parserExpanded = false },
                             )
                         }
                     }
                 }
-            } else {
+            }
+
+            DropZone(
+                isDragHovered = isDragHovered,
+                onDragHoverChange = { isDragHovered = it },
+                onFilesDropped = { files -> vm.parseFiles(files) },
+            )
+
+            when (val status = state.status) {
+                is ImportStatus.Error -> ErrorBanner(status.message)
+                else -> {}
+            }
+
+            if (state.parsedTransactions.isNotEmpty()) {
                 Text(
-                    "No portfolios found. Create one in Portfolio Management first.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+                    "${state.parsedTransactions.size} transactions parsed",
+                    color = AppTheme.colors.textMuted,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
                 )
-            }
-
-            var parserExpanded by remember { mutableStateOf(false) }
-            Box {
-                OutlinedButton(onClick = { parserExpanded = true }) {
-                    Text(state.selectedParser?.brokerName ?: "Select Parser")
-                }
-                DropdownMenu(
-                    expanded = parserExpanded,
-                    onDismissRequest = { parserExpanded = false }
-                ) {
-                    parsers.forEach { parser ->
-                        DropdownMenuItem(
-                            text = { Text(parser.brokerName) },
-                            onClick = {
-                                vm.selectParser(parser)
-                                parserExpanded = false
-                            }
+                DataTable(
+                    columns = listOf("Symbol", "Date", "Action", "Price", "Shares", "Fees"),
+                    rows = state.parsedTransactions,
+                    cells = { tx ->
+                        listOf(
+                            tx.symbol,
+                            tx.datetime.toString(),
+                            tx.action.name,
+                            "%.2f".format(tx.price),
+                            "%.0f".format(tx.shares),
+                            "%.2f".format(tx.fees),
                         )
-                    }
-                }
-            }
-        }
-
-        // Drop zone with drag & drop support
-        DropZone(
-            isDragHovered = isDragHovered,
-            onDragHoverChange = { isDragHovered = it },
-            onFilesDropped = { files -> vm.parseFiles(files) }
-        )
-
-        // Status message
-        when (val status = state.status) {
-            is ImportStatus.Error -> Text(
-                status.message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            else -> {}
-        }
-
-        // Preview table
-        if (state.parsedTransactions.isNotEmpty()) {
-            Text(
-                "${state.parsedTransactions.size} transactions parsed",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            TransactionPreviewTable(
-                transactions = state.parsedTransactions,
-                modifier = Modifier.weight(1f)
-            )
-
-            Button(
-                onClick = { vm.import(onImportSuccess) },
-                enabled = state.status !is ImportStatus.Importing,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                if (state.status is ImportStatus.Importing) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text("Import ${state.parsedTransactions.size} rows")
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                AppPrimaryButton(
+                    text = "Import ${state.parsedTransactions.size} rows",
+                    onClick = { vm.import(onImportSuccess) },
+                    enabled = state.status !is ImportStatus.Importing,
+                    modifier = Modifier.align(Alignment.End),
+                )
             }
         }
     }
@@ -236,88 +221,6 @@ private fun DropZone(
                 }
             }) {
                 Text("Browse files…")
-            }
-        }
-    }
-}
-
-@Composable
-private fun TransactionPreviewTable(
-    transactions: List<Transaction>,
-    modifier: Modifier = Modifier,
-) {
-    val columns = listOf("Symbol", "Date", "Action", "Price", "Shares", "Fees")
-
-    Column(
-        modifier = modifier.border(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-            RoundedCornerShape(8.dp)
-        )
-    ) {
-        // Header row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            columns.forEach { col ->
-                Text(
-                    col,
-                    modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        HorizontalDivider()
-
-        LazyColumn {
-            items(transactions) { tx ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        tx.symbol,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        tx.datetime.toString(),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        tx.action.name,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "%.2f".format(tx.price),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "%.0f".format(tx.shares),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "%.2f".format(tx.fees),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
             }
         }
     }

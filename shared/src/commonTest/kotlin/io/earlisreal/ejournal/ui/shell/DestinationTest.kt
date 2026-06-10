@@ -15,9 +15,9 @@ class DestinationTest {
     }
 
     @Test
-    fun onlyImportAndTradeLogsAreEnabledThisPhase() {
+    fun dashboardTradeLogsAndImportAreEnabled() {
         assertEquals(
-            setOf(Destination.IMPORT, Destination.TRADE_LOGS),
+            setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.IMPORT),
             Destination.entries.filter { it.enabled }.toSet()
         )
     }

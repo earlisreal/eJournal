@@ -5,6 +5,8 @@ import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.ui.screen.AnalysisScreen
+import io.earlisreal.ejournal.ui.screen.CalendarScreen
 import io.earlisreal.ejournal.ui.screen.DashboardScreen
 import io.earlisreal.ejournal.ui.screen.ImportScreen
 import io.earlisreal.ejournal.ui.screen.TradeLogsScreen
@@ -21,7 +23,7 @@ fun App(
     AppShell(
         portfolioRepository = portfolioRepository,
         settingsRepository = settingsRepository,
-    ) { destination, filter ->
+    ) { destination, filter, nav ->
         when (destination) {
             Destination.DASHBOARD -> DashboardScreen(
                 transactionRepository = transactionRepository,
@@ -37,10 +39,12 @@ fun App(
                 parsers = parsers,
                 onImportSuccess = { },
             )
-            else -> io.earlisreal.ejournal.ui.components.EmptyState(
-                title = "${destination.label} — coming soon",
-                subtitle = "This screen arrives in a later phase.",
+            Destination.CALENDAR -> CalendarScreen(
+                transactionRepository = transactionRepository,
+                filter = filter,
+                onAnalyze = nav.onAnalyze,
             )
+            Destination.ANALYSIS -> AnalysisScreen(position = nav.selectedAnalysis)
         }
     }
 }

@@ -15,9 +15,9 @@ class DestinationTest {
     }
 
     @Test
-    fun dashboardTradeLogsAndImportAreEnabled() {
+    fun dashboardTradeLogsImportAndCalendarAreEnabled() {
         assertEquals(
-            setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.IMPORT),
+            setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.IMPORT, Destination.CALENDAR),
             Destination.entries.filter { it.enabled }.toSet()
         )
     }

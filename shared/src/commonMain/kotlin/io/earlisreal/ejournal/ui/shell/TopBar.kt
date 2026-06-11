@@ -38,6 +38,7 @@ fun TopBar(
     onSegmentChange: (Segment) -> Unit,
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
+    showDateFilter: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val surfaceColor = AppTheme.colors.surface
@@ -55,8 +56,10 @@ fun TopBar(
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         PortfolioSwitcher(portfolios = portfolios, selected = selectedPortfolio, onSelect = onSelectPortfolio)
-        DateRangeFilter(preset = preset, customRange = customRange, onChange = onDateChange)
-        Spacer(Modifier.width(Spacing.lg))
+        if (showDateFilter) {
+            DateRangeFilter(preset = preset, customRange = customRange, onChange = onDateChange)
+            Spacer(Modifier.width(Spacing.lg))
+        }
         SegmentToggle(segment = segment, onSegmentChange = onSegmentChange)
         Spacer(Modifier.weight(1f))
         ThemeToggle(mode = themeMode, onModeChange = onThemeChange)

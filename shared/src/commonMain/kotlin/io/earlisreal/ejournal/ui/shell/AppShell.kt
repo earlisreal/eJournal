@@ -20,6 +20,7 @@ import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.analytics.resolveRange
+import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
@@ -27,17 +28,24 @@ import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
+/** Navigation hand-off for screens: the position selected for analysis + the action to analyze one. */
+data class ShellNav(
+    val selectedAnalysis: ClosedPosition?,
+    val onAnalyze: (ClosedPosition) -> Unit,
+)
+
 @Composable
 fun AppShell(
     portfolioRepository: PortfolioRepository,
     settingsRepository: SettingsRepository,
-    content: @Composable (Destination, FilterState) -> Unit,
+    content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
     val savedFilter = remember { settingsRepository.getFilterPrefs() }
 
     var current by remember { mutableStateOf(Destination.DEFAULT) }
     var userExpanded by remember { mutableStateOf(true) }
     var themeMode by remember { mutableStateOf(settingsRepository.getThemeMode()) }
+    var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
 
     var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
     var customRange by remember {
@@ -95,8 +103,16 @@ fun AppShell(
                         onSegmentChange = { segment = it; persist() },
                         themeMode = themeMode,
                         onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
+                        showDateFilter = current != Destination.CALENDAR,
                     )
-                    content(current, filterState)
+                    content(
+                        current,
+                        filterState,
+                        ShellNav(
+                            selectedAnalysis = selectedAnalysis,
+                            onAnalyze = { selectedAnalysis = it; current = Destination.ANALYSIS },
+                        ),
+                    )
                 }
             }
         }

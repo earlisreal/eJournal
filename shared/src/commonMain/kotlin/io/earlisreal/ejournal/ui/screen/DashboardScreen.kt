@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.analytics.DashboardMetrics
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
@@ -24,7 +25,6 @@ import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.DashboardViewModel
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
     transactionRepository: TransactionRepository,
@@ -44,28 +44,32 @@ fun DashboardScreen(
                 subtitle = "Import transactions to get started.",
             )
             state.loading -> LoadingIndicator()
-            else -> {
-                val m = state.metrics
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-                    SectionLabel("Profit & Loss")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        Tile("Net P&L", money(m.netPnl), emphasized = true)
-                        Tile("Gross profit", money(m.grossProfit))
-                        Tile("Gross loss", money(m.grossLoss))
-                        Tile("Largest win", moneyOrDash(m.largestWin))
-                        Tile("Largest loss", moneyOrDash(m.largestLoss))
-                        Tile("Avg win", moneyOrDash(m.avgWin))
-                        Tile("Avg loss", moneyOrDash(m.avgLoss))
-                    }
-                    SectionLabel("Performance")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        Tile("Win rate", percentOrDash(m.winRate))
-                        Tile("Profit factor", ratioOrDash(m.profitFactor))
-                        Tile("Expectancy", moneyOrDash(m.expectancy))
-                        Tile("Trades", m.tradeCount.toString())
-                    }
-                }
-            }
+            else -> DashboardContent(state.metrics)
+        }
+    }
+}
+
+/** Stateless tile layout — fed a computed [DashboardMetrics]. Previewable in isolation. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun DashboardContent(metrics: DashboardMetrics, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        SectionLabel("Profit & Loss")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Tile("Net P&L", money(metrics.netPnl), emphasized = true)
+            Tile("Gross profit", money(metrics.grossProfit))
+            Tile("Gross loss", money(metrics.grossLoss))
+            Tile("Largest win", moneyOrDash(metrics.largestWin))
+            Tile("Largest loss", moneyOrDash(metrics.largestLoss))
+            Tile("Avg win", moneyOrDash(metrics.avgWin))
+            Tile("Avg loss", moneyOrDash(metrics.avgLoss))
+        }
+        SectionLabel("Performance")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Tile("Win rate", percentOrDash(metrics.winRate))
+            Tile("Profit factor", ratioOrDash(metrics.profitFactor))
+            Tile("Expectancy", moneyOrDash(metrics.expectancy))
+            Tile("Trades", metrics.tradeCount.toString())
         }
     }
 }

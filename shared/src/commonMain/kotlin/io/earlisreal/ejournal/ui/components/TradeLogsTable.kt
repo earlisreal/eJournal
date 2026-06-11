@@ -50,6 +50,7 @@ fun TradeLogsTable(
     sortColumn: SortColumn,
     sortDirection: SortDirection,
     onSort: (SortColumn) -> Unit,
+    symbol: String,
     modifier: Modifier = Modifier,
 ) {
     androidx.compose.foundation.layout.Column(
@@ -75,7 +76,7 @@ fun TradeLogsTable(
         HorizontalDivider(color = AppTheme.colors.border)
         LazyColumn {
             itemsIndexed(positions) { index, p ->
-                PositionRow(p)
+                PositionRow(p, symbol)
                 if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
             }
         }
@@ -83,7 +84,7 @@ fun TradeLogsTable(
 }
 
 @Composable
-private fun PositionRow(p: ClosedPosition) {
+private fun PositionRow(p: ClosedPosition, symbol: String) {
     val type = classifyTradeType(p)
     val pnlColor = if (p.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
     val cost = p.averageEntryPrice * p.shares
@@ -101,7 +102,7 @@ private fun PositionRow(p: ClosedPosition) {
         NumCell("%.2f".format(p.averageEntryPrice), COLUMNS[6].weight)
         NumCell("%.2f".format(p.averageExitPrice), COLUMNS[7].weight)
         NumCell("%.2f".format(p.fees), COLUMNS[8].weight)
-        NumCell(formatSignedMoney(p.profitLoss), COLUMNS[9].weight, color = pnlColor)
+        NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor)
         NumCell("%+.1f%%".format(pct), COLUMNS[10].weight, color = pnlColor)
     }
 }
@@ -141,8 +142,8 @@ private fun TypeBadge(type: TradeType) {
     )
 }
 
-private fun formatSignedMoney(v: Double): String =
-    (if (v < 0) "−$" else "+$") + "%,.2f".format(kotlin.math.abs(v))
+private fun formatSignedMoney(v: Double, symbol: String): String =
+    (if (v < 0) "−" else "+") + symbol + "%,.2f".format(kotlin.math.abs(v))
 
 private fun formatDateTime(dt: kotlinx.datetime.LocalDateTime): String {
     val mm = dt.monthNumber.toString().padStart(2, '0')

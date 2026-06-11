@@ -43,6 +43,7 @@ fun TradeLogsScreen(
                 sortColumn = state.sortColumn,
                 sortDirection = state.sortDirection,
                 onSort = vm::sortBy,
+                symbol = filter.portfolio?.market?.symbol ?: "$",
                 modifier = Modifier.fillMaxSize(),
             )
         }

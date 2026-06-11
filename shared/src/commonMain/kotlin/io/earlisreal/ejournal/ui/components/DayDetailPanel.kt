@@ -27,6 +27,7 @@ fun DayDetailPanel(
     date: LocalDate?,
     positions: List<ClosedPosition>,
     onAnalyze: (ClosedPosition) -> Unit,
+    symbol: String,
     modifier: Modifier = Modifier,
 ) {
     AppCard(modifier = modifier) {
@@ -69,7 +70,7 @@ fun DayDetailPanel(
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }
-                        Text(signedMoney(p.profitLoss), color = pnlColor, style = NumberTextStyle)
+                        Text(signedMoney(p.profitLoss, symbol), color = pnlColor, style = NumberTextStyle)
                     }
                     if (index < positions.lastIndex) {
                         HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))

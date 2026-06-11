@@ -20,14 +20,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.DataTable
+import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.ErrorBanner
+import io.earlisreal.ejournal.ui.components.Pill
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
+import io.earlisreal.ejournal.ui.shell.FilterState
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.ImportStatus
@@ -40,38 +42,28 @@ import java.net.URI
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ImportScreen(
-    portfolioRepository: PortfolioRepository,
     transactionRepository: TransactionRepository,
     parsers: List<TransactionParser>,
+    filter: FilterState,
     onImportSuccess: () -> Unit,
 ) {
-    val vm = viewModel { ImportViewModel(transactionRepository, portfolioRepository, parsers) }
+    val vm = viewModel { ImportViewModel(transactionRepository, parsers) }
     val state by vm.state.collectAsState()
 
     var isDragHovered by remember { mutableStateOf(false) }
+    val portfolio = filter.portfolio
 
     ScreenScaffold(title = "Import Transactions") {
+        if (portfolio == null) {
+            EmptyState(
+                title = "No portfolio selected",
+                subtitle = "Create or pick a portfolio from the switcher in the top bar, then import into it.",
+            )
+            return@ScreenScaffold
+        }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg), modifier = Modifier.fillMaxSize()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                if (state.portfolios.isNotEmpty()) {
-                    var portfolioExpanded by remember { mutableStateOf(false) }
-                    Box {
-                        AppSecondaryButton(
-                            text = state.selectedPortfolio?.name ?: "Select Portfolio",
-                            onClick = { portfolioExpanded = true },
-                        )
-                        DropdownMenu(expanded = portfolioExpanded, onDismissRequest = { portfolioExpanded = false }) {
-                            state.portfolios.forEach { portfolio ->
-                                DropdownMenuItem(
-                                    text = { Text(portfolio.name) },
-                                    onClick = { vm.selectPortfolio(portfolio); portfolioExpanded = false },
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    ErrorBanner("No portfolios found. Create one in Portfolio Management first.")
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+                Pill(text = "Into: ${portfolio.name} · ${portfolio.market.label}")
 
                 var parserExpanded by remember { mutableStateOf(false) }
                 Box {
@@ -93,7 +85,7 @@ fun ImportScreen(
             DropZone(
                 isDragHovered = isDragHovered,
                 onDragHoverChange = { isDragHovered = it },
-                onFilesDropped = { files -> vm.parseFiles(files) },
+                onFilesDropped = { files -> vm.parseFiles(files, portfolio.id) },
             )
 
             when (val status = state.status) {

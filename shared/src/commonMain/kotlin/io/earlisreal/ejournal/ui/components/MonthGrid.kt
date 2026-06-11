@@ -39,6 +39,7 @@ fun MonthGrid(
     today: LocalDate,
     selectedDate: LocalDate?,
     onSelectDay: (LocalDate) -> Unit,
+    symbol: String,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -63,6 +64,7 @@ fun MonthGrid(
                         isToday = date == today,
                         isSelected = date != null && date == selectedDate,
                         onClick = { if (date != null) onSelectDay(date) },
+                        symbol = symbol,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -78,6 +80,7 @@ private fun DayCell(
     isToday: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
+    symbol: String,
     modifier: Modifier = Modifier,
 ) {
     if (date == null) {
@@ -114,7 +117,7 @@ private fun DayCell(
         if (summary != null) {
             Spacer(Modifier.weight(1f))
             Text(
-                signedMoney(summary.netPnl),
+                signedMoney(summary.netPnl, symbol),
                 color = pnlColor,
                 style = NumberTextStyle,
                 fontSize = 11.sp,

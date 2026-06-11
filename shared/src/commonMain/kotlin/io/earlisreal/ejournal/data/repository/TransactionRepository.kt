@@ -12,4 +12,6 @@ interface TransactionRepository {
     ): List<Transaction>
     suspend fun insert(transaction: Transaction): Long
     suspend fun delete(id: Long)
+    suspend fun countByPortfolio(portfolioId: Long): Long
+    suspend fun deleteByPortfolio(portfolioId: Long)
 }

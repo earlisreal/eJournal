@@ -26,7 +26,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
  * Phase 7 market data) arrives in Phase 8 — this navigation + hand-off stays.
  */
 @Composable
-fun AnalysisScreen(position: ClosedPosition?) {
+fun AnalysisScreen(position: ClosedPosition?, symbol: String = "$") {
     ScreenScaffold(title = "Trade Analysis") {
         if (position == null) {
             EmptyState(
@@ -49,7 +49,7 @@ fun AnalysisScreen(position: ClosedPosition?) {
                     DetailRow("Avg entry", "%.2f".format(position.averageEntryPrice))
                     DetailRow("Avg exit", "%.2f".format(position.averageExitPrice))
                     DetailRow("Fees", "%.2f".format(position.fees))
-                    DetailRow("P&L", signedMoney(position.profitLoss))
+                    DetailRow("P&L", signedMoney(position.profitLoss, symbol))
                 }
                 Text(
                     "Price chart arrives in Phase 8 (needs market data).",

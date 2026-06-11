@@ -13,6 +13,9 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+
+    // Silences the SLF4J "no binding" startup notice from the SQLite JDBC driver (logs are discarded).
+    runtimeOnly(libs.slf4j.nop)
 }
 
 compose.desktop {

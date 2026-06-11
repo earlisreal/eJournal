@@ -121,6 +121,7 @@ fun TradeLogsTablePreview() = PreviewBox {
         sortColumn = SortColumn.EXIT,
         sortDirection = SortDirection.DESC,
         onSort = {},
+        symbol = "$",
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -137,6 +138,7 @@ fun MonthGridPreview() = PreviewBox {
             today = sampleToday,
             selectedDate = LocalDate(2024, 6, 5),
             onSelectDay = {},
+            symbol = "$",
         )
     }
 }
@@ -148,6 +150,7 @@ fun DayDetailPanelPreview() = PreviewBox {
         date = LocalDate(2024, 6, 5),
         positions = samplePositionsByDay[LocalDate(2024, 6, 5)] ?: emptyList(),
         onAnalyze = {},
+        symbol = "$",
         modifier = Modifier.width(300.dp),
     )
 }
@@ -157,13 +160,13 @@ fun DayDetailPanelPreview() = PreviewBox {
 @Preview
 @Composable
 fun DashboardContentPreview() = PreviewBox {
-    DashboardContent(metrics = sampleMetrics)
+    DashboardContent(metrics = sampleMetrics, symbol = "$")
 }
 
 @Preview
 @Composable
 fun DashboardContentDarkPreview() = PreviewBox(dark = true) {
-    DashboardContent(metrics = sampleMetrics)
+    DashboardContent(metrics = sampleMetrics, symbol = "$")
 }
 
 @Preview

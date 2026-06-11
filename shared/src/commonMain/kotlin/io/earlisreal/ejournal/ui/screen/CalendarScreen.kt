@@ -56,6 +56,7 @@ fun CalendarScreen(
         if (filter.portfolio == null) {
             EmptyState(title = "No portfolio selected", subtitle = "Import transactions to get started.")
         } else {
+            val symbol = filter.portfolio.market.symbol
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -71,12 +72,13 @@ fun CalendarScreen(
                     AppTextButton(text = "▶", onClick = { vm.nextMonth() })
                     Spacer(Modifier.weight(1f))
                     Text(
-                        signedMoney(state.monthTotal),
+                        signedMoney(state.monthTotal, symbol),
                         color = if (state.monthTotal >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
                         style = NumberTextStyle,
                     )
                 }
                 BoxWithConstraints(Modifier.weight(1f)) {
+                    val dayPositions = state.selectedDate?.let { state.positionsByDay[it] } ?: emptyList()
                     if (maxWidth >= 760.dp) {
                         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                             MonthGrid(
@@ -85,12 +87,14 @@ fun CalendarScreen(
                                 today = today,
                                 selectedDate = state.selectedDate,
                                 onSelectDay = vm::selectDay,
+                                symbol = symbol,
                                 modifier = Modifier.weight(1f),
                             )
                             DayDetailPanel(
                                 date = state.selectedDate,
-                                positions = state.selectedDate?.let { state.positionsByDay[it] } ?: emptyList(),
+                                positions = dayPositions,
                                 onAnalyze = onAnalyze,
+                                symbol = symbol,
                                 modifier = Modifier.width(300.dp).fillMaxHeight(),
                             )
                         }
@@ -102,12 +106,14 @@ fun CalendarScreen(
                                 today = today,
                                 selectedDate = state.selectedDate,
                                 onSelectDay = vm::selectDay,
+                                symbol = symbol,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             DayDetailPanel(
                                 date = state.selectedDate,
-                                positions = state.selectedDate?.let { state.positionsByDay[it] } ?: emptyList(),
+                                positions = dayPositions,
                                 onAnalyze = onAnalyze,
+                                symbol = symbol,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }

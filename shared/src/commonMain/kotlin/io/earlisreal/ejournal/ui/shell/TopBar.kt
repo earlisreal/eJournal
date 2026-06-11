@@ -39,6 +39,7 @@ fun TopBar(
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
     showDateFilter: Boolean,
+    onManagePortfolios: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val surfaceColor = AppTheme.colors.surface
@@ -55,7 +56,12 @@ fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        PortfolioSwitcher(portfolios = portfolios, selected = selectedPortfolio, onSelect = onSelectPortfolio)
+        PortfolioSwitcher(
+            portfolios = portfolios,
+            selected = selectedPortfolio,
+            onSelect = onSelectPortfolio,
+            onManage = onManagePortfolios,
+        )
         if (showDateFilter) {
             DateRangeFilter(preset = preset, customRange = customRange, onChange = onDateChange)
             Spacer(Modifier.width(Spacing.lg))

@@ -44,7 +44,7 @@ fun DashboardScreen(
                 subtitle = "Import transactions to get started.",
             )
             state.loading -> LoadingIndicator()
-            else -> DashboardContent(state.metrics)
+            else -> DashboardContent(state.metrics, filter.portfolio?.market?.symbol ?: "$")
         }
     }
 }
@@ -52,23 +52,23 @@ fun DashboardScreen(
 /** Stateless tile layout — fed a computed [DashboardMetrics]. Previewable in isolation. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun DashboardContent(metrics: DashboardMetrics, modifier: Modifier = Modifier) {
+internal fun DashboardContent(metrics: DashboardMetrics, symbol: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         SectionLabel("Profit & Loss")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            Tile("Net P&L", money(metrics.netPnl), emphasized = true)
-            Tile("Gross profit", money(metrics.grossProfit))
-            Tile("Gross loss", money(metrics.grossLoss))
-            Tile("Largest win", moneyOrDash(metrics.largestWin))
-            Tile("Largest loss", moneyOrDash(metrics.largestLoss))
-            Tile("Avg win", moneyOrDash(metrics.avgWin))
-            Tile("Avg loss", moneyOrDash(metrics.avgLoss))
+            Tile("Net P&L", money(metrics.netPnl, symbol), emphasized = true)
+            Tile("Gross profit", money(metrics.grossProfit, symbol))
+            Tile("Gross loss", money(metrics.grossLoss, symbol))
+            Tile("Largest win", moneyOrDash(metrics.largestWin, symbol))
+            Tile("Largest loss", moneyOrDash(metrics.largestLoss, symbol))
+            Tile("Avg win", moneyOrDash(metrics.avgWin, symbol))
+            Tile("Avg loss", moneyOrDash(metrics.avgLoss, symbol))
         }
         SectionLabel("Performance")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Tile("Win rate", percentOrDash(metrics.winRate))
             Tile("Profit factor", ratioOrDash(metrics.profitFactor))
-            Tile("Expectancy", moneyOrDash(metrics.expectancy))
+            Tile("Expectancy", moneyOrDash(metrics.expectancy, symbol))
             Tile("Trades", metrics.tradeCount.toString())
         }
     }
@@ -84,8 +84,8 @@ private fun Tile(label: String, value: String, emphasized: Boolean = false) {
     StatCard(label = label, value = value, emphasized = emphasized, modifier = Modifier.width(150.dp))
 }
 
-private fun money(v: Double): String = (if (v < 0) "−$" else "$") + "%,.2f".format(kotlin.math.abs(v))
-private fun moneyOrDash(v: Double?): String = if (v == null) "—" else money(v)
+private fun money(v: Double, symbol: String): String = (if (v < 0) "−" else "") + symbol + "%,.2f".format(kotlin.math.abs(v))
+private fun moneyOrDash(v: Double?, symbol: String): String = if (v == null) "—" else money(v, symbol)
 private fun percentOrDash(v: Double?): String = if (v == null) "—" else "%.1f%%".format(v * 100)
 private fun ratioOrDash(v: Double?): String = when {
     v == null -> "—"

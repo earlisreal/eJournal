@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.data.database
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import io.earlisreal.ejournal.Portfolio
 import io.earlisreal.ejournal.TradeTransaction
 import java.io.File
 
@@ -18,7 +19,8 @@ object JvmDatabaseFactory {
             TradeTransactionAdapter = TradeTransaction.Adapter(
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter   = ActionAdapter
-            )
+            ),
+            PortfolioAdapter = Portfolio.Adapter(marketAdapter = MarketAdapter)
         )
     }
 }

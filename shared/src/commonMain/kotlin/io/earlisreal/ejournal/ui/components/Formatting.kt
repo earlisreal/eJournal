@@ -12,5 +12,6 @@ fun monthName(month: Int): String = MONTHS[month - 1]
 
 fun longDate(date: LocalDate): String = "${monthName(date.monthNumber)} ${date.dayOfMonth}, ${date.year}"
 
-/** Whole-dollar signed money, e.g. "+$1,240" / "−$310". */
-fun signedMoney(value: Double): String = (if (value < 0) "−$" else "+$") + "%,.0f".format(abs(value))
+/** Whole-unit signed money with a market symbol, e.g. "+$1,240" / "−₱310". */
+fun signedMoney(value: Double, symbol: String = "$"): String =
+    (if (value < 0) "−" else "+") + symbol + "%,.0f".format(abs(value))

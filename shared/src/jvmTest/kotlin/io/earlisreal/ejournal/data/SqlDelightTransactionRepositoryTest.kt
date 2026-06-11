@@ -4,7 +4,9 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
+import io.earlisreal.ejournal.data.database.MarketAdapter
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
@@ -26,13 +28,14 @@ class SqlDelightTransactionRepositoryTest {
             TradeTransactionAdapter = io.earlisreal.ejournal.TradeTransaction.Adapter(
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
-            )
+            ),
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter)
         )
         portfolioRepo = SqlDelightPortfolioRepository(db)
         txRepo = SqlDelightTransactionRepository(db)
     }
 
-    private suspend fun seedPortfolio(): Long = portfolioRepo.insert("Moomoo Day Trading", "USD")
+    private suspend fun seedPortfolio(): Long = portfolioRepo.insert("Moomoo Day Trading", Market.US_STOCKS)
 
     private fun tx(
         portfolioId: Long,
@@ -67,7 +70,7 @@ class SqlDelightTransactionRepositoryTest {
     @Test
     fun getByPortfolioReturnsOnlyMatchingPortfolio() = runTest {
         val p1 = seedPortfolio()
-        val p2 = portfolioRepo.insert("Moomoo", "USD")
+        val p2 = portfolioRepo.insert("Moomoo", Market.US_STOCKS)
         txRepo.insert(tx(p1, symbol = "BDO"))
         txRepo.insert(tx(p2, symbol = "TSLA"))
         assertEquals(1, txRepo.getByPortfolio(p1).size)
@@ -93,5 +96,25 @@ class SqlDelightTransactionRepositoryTest {
         val id = txRepo.insert(tx(pId))
         txRepo.delete(id)
         assertEquals(0, txRepo.getByPortfolio(pId).size)
+    }
+
+    @Test
+    fun countByPortfolioCountsOnlyThatPortfolio() = runTest {
+        val p1 = seedPortfolio()
+        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS)
+        txRepo.insert(tx(p1)); txRepo.insert(tx(p1)); txRepo.insert(tx(p2))
+        assertEquals(2L, txRepo.countByPortfolio(p1))
+        assertEquals(1L, txRepo.countByPortfolio(p2))
+    }
+
+    @Test
+    fun deleteByPortfolioRemovesOnlyThatPortfoliosTransactions() = runTest {
+        val p1 = seedPortfolio()
+        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS)
+        txRepo.insert(tx(p1, symbol = "BDO"))
+        txRepo.insert(tx(p2, symbol = "TSLA"))
+        txRepo.deleteByPortfolio(p1)
+        assertEquals(0, txRepo.getByPortfolio(p1).size)
+        assertEquals(1, txRepo.getByPortfolio(p2).size)
     }
 }

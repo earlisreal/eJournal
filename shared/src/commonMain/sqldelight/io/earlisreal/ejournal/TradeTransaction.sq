@@ -25,5 +25,11 @@ ORDER BY datetime ASC;
 deleteById:
 DELETE FROM TradeTransaction WHERE id = ?;
 
+deleteByPortfolio:
+DELETE FROM TradeTransaction WHERE portfolioId = ?;
+
+countByPortfolio:
+SELECT COUNT(*) FROM TradeTransaction WHERE portfolioId = ?;
+
 lastInsertRowId:
 SELECT last_insert_rowid();

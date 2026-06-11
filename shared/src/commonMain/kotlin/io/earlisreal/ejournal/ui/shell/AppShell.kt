@@ -11,20 +11,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
+import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.analytics.resolveRange
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
+import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
 import kotlin.time.Clock
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
@@ -37,15 +41,18 @@ data class ShellNav(
 @Composable
 fun AppShell(
     portfolioRepository: PortfolioRepository,
+    transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
     content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
     val savedFilter = remember { settingsRepository.getFilterPrefs() }
+    val scope = rememberCoroutineScope()
 
     var current by remember { mutableStateOf(Destination.DEFAULT) }
     var userExpanded by remember { mutableStateOf(true) }
     var themeMode by remember { mutableStateOf(settingsRepository.getThemeMode()) }
     var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
+    var showPortfolioManager by remember { mutableStateOf(false) }
 
     var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
     var customRange by remember {
@@ -71,6 +78,15 @@ fun AppShell(
                 segment = segment,
             )
         )
+    }
+
+    fun reloadPortfolios() {
+        scope.launch {
+            val list = portfolioRepository.getAll()
+            portfolios = list
+            selectedPortfolio = list.firstOrNull { it.id == selectedPortfolio?.id } ?: list.firstOrNull()
+            persist()
+        }
     }
 
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -104,6 +120,7 @@ fun AppShell(
                         themeMode = themeMode,
                         onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
                         showDateFilter = current != Destination.CALENDAR,
+                        onManagePortfolios = { showPortfolioManager = true },
                     )
                     content(
                         current,
@@ -115,6 +132,15 @@ fun AppShell(
                     )
                 }
             }
+        }
+
+        if (showPortfolioManager) {
+            PortfolioManagerDialog(
+                portfolioRepository = portfolioRepository,
+                transactionRepository = transactionRepository,
+                onChanged = { reloadPortfolios() },
+                onDismiss = { showPortfolioManager = false },
+            )
         }
     }
 }

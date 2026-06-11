@@ -22,6 +22,7 @@ fun App(
 ) {
     AppShell(
         portfolioRepository = portfolioRepository,
+        transactionRepository = transactionRepository,
         settingsRepository = settingsRepository,
     ) { destination, filter, nav ->
         when (destination) {
@@ -34,9 +35,9 @@ fun App(
                 filter = filter,
             )
             Destination.IMPORT -> ImportScreen(
-                portfolioRepository = portfolioRepository,
                 transactionRepository = transactionRepository,
                 parsers = parsers,
+                filter = filter,
                 onImportSuccess = { },
             )
             Destination.CALENDAR -> CalendarScreen(
@@ -44,7 +45,10 @@ fun App(
                 filter = filter,
                 onAnalyze = nav.onAnalyze,
             )
-            Destination.ANALYSIS -> AnalysisScreen(position = nav.selectedAnalysis)
+            Destination.ANALYSIS -> AnalysisScreen(
+                position = nav.selectedAnalysis,
+                symbol = filter.portfolio?.market?.symbol ?: "$",
+            )
         }
     }
 }

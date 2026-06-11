@@ -37,6 +37,13 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
         db.tradeTransactionQueries.deleteById(id)
     }
 
+    override suspend fun countByPortfolio(portfolioId: Long): Long =
+        db.tradeTransactionQueries.countByPortfolio(portfolioId).executeAsOne()
+
+    override suspend fun deleteByPortfolio(portfolioId: Long) {
+        db.tradeTransactionQueries.deleteByPortfolio(portfolioId)
+    }
+
     private fun io.earlisreal.ejournal.TradeTransaction.toDomain() = Transaction(
         id          = id,
         portfolioId = portfolioId,

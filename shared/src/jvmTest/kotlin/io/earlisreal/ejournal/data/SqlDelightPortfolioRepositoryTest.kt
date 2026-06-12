@@ -27,7 +27,11 @@ class SqlDelightPortfolioRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter)
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
+                timestampAdapter = DateTimeAdapter,
+                timeframeAdapter = io.earlisreal.ejournal.data.database.TimeframeAdapter,
+            ),
         )
         repo = SqlDelightPortfolioRepository(db)
     }

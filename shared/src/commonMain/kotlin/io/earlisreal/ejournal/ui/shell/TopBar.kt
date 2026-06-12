@@ -21,10 +21,8 @@ import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.components.DateRangeFilter
 import io.earlisreal.ejournal.ui.components.PortfolioSwitcher
 import io.earlisreal.ejournal.ui.components.SegmentToggle
-import io.earlisreal.ejournal.ui.components.ThemeToggle
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.Spacing
-import io.earlisreal.ejournal.ui.theme.ThemeMode
 
 @Composable
 fun TopBar(
@@ -36,8 +34,6 @@ fun TopBar(
     onDateChange: (DateRangePreset, DateRange?) -> Unit,
     segment: Segment,
     onSegmentChange: (Segment) -> Unit,
-    themeMode: ThemeMode,
-    onThemeChange: (ThemeMode) -> Unit,
     showDateFilter: Boolean,
     onManagePortfolios: () -> Unit,
     modifier: Modifier = Modifier,
@@ -67,7 +63,5 @@ fun TopBar(
             Spacer(Modifier.width(Spacing.lg))
         }
         SegmentToggle(segment = segment, onSegmentChange = onSegmentChange)
-        Spacer(Modifier.weight(1f))
-        ThemeToggle(mode = themeMode, onModeChange = onThemeChange)
     }
 }

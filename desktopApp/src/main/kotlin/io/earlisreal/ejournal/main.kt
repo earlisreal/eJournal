@@ -18,7 +18,10 @@ fun main() = application {
             portfolioRepository = deps.portfolioRepository,
             transactionRepository = deps.transactionRepository,
             settingsRepository = deps.settingsRepository,
-            parsers = deps.parsers
+            credentialsRepository = deps.credentialsRepository,
+            parsers = deps.parsers,
+            alpacaProvider = deps.alpacaProvider,
+            marketDataService = deps.marketDataService,
         )
     }
 }

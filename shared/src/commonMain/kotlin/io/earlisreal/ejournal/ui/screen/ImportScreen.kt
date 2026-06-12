@@ -21,12 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.DataTable
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.ErrorBanner
+import io.earlisreal.ejournal.ui.components.MarketDataSyncStatus
 import io.earlisreal.ejournal.ui.components.Pill
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.shell.FilterState
@@ -46,9 +48,11 @@ fun ImportScreen(
     parsers: List<TransactionParser>,
     filter: FilterState,
     onImportSuccess: () -> Unit,
+    marketDataService: MarketDataService,
 ) {
     val vm = viewModel { ImportViewModel(transactionRepository, parsers) }
     val state by vm.state.collectAsState()
+    val syncStatus by marketDataService.status.collectAsState()
 
     var isDragHovered by remember { mutableStateOf(false) }
     val portfolio = filter.portfolio
@@ -92,6 +96,8 @@ fun ImportScreen(
                 is ImportStatus.Error -> ErrorBanner(status.message)
                 else -> {}
             }
+
+            MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })
 
             if (state.parsedTransactions.isNotEmpty()) {
                 Text(

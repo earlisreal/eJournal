@@ -9,17 +9,22 @@ class DestinationTest {
     @Test
     fun destinationsAreInSidebarOrder() {
         assertEquals(
-            listOf("Dashboard", "Trade Logs", "Import", "Calendar", "Analysis"),
+            listOf("Dashboard", "Trade Logs", "Import", "Calendar", "Analysis", "Settings"),
             Destination.entries.map { it.label }
         )
     }
 
     @Test
-    fun dashboardTradeLogsImportAndCalendarAreEnabled() {
+    fun dashboardTradeLogsImportCalendarAndSettingsAreEnabled() {
         assertEquals(
-            setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.IMPORT, Destination.CALENDAR),
+            setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.IMPORT, Destination.CALENDAR, Destination.SETTINGS),
             Destination.entries.filter { it.enabled }.toSet()
         )
+    }
+
+    @Test
+    fun onlySettingsIsPinnedToTheSidebarBottom() {
+        assertEquals(listOf(Destination.SETTINGS), Destination.entries.filter { it.pinnedBottom })
     }
 
     @Test

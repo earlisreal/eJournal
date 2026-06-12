@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +71,11 @@ fun Sidebar(
                 modifier = Modifier.clickable { onToggle() }.padding(Spacing.xs),
             )
         }
-        Destination.entries.forEach { dest ->
+        Destination.entries.filterNot { it.pinnedBottom }.forEach { dest ->
+            NavItem(dest = dest, expanded = expanded, active = dest == current, onClick = { onSelect(dest) })
+        }
+        Spacer(Modifier.weight(1f))
+        Destination.entries.filter { it.pinnedBottom }.forEach { dest ->
             NavItem(dest = dest, expanded = expanded, active = dest == current, onClick = { onSelect(dest) })
         }
     }
@@ -129,4 +134,5 @@ private val Destination.icon: ImageVector
         Destination.IMPORT -> Icons.Outlined.FileUpload
         Destination.CALENDAR -> Icons.Outlined.CalendarMonth
         Destination.ANALYSIS -> Icons.Outlined.Analytics
+        Destination.SETTINGS -> Icons.Outlined.Settings
     }

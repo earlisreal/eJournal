@@ -26,16 +26,19 @@ import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.ThemeMode
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
 import kotlin.time.Clock
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
-/** Navigation hand-off for screens: the position selected for analysis + the action to analyze one. */
+/** Shell hand-off for screens: analysis navigation + theme state owned by the shell. */
 data class ShellNav(
     val selectedAnalysis: ClosedPosition?,
     val onAnalyze: (ClosedPosition) -> Unit,
+    val themeMode: ThemeMode,
+    val onThemeChange: (ThemeMode) -> Unit,
 )
 
 @Composable
@@ -117,8 +120,6 @@ fun AppShell(
                         onDateChange = { p, r -> preset = p; customRange = r; persist() },
                         segment = segment,
                         onSegmentChange = { segment = it; persist() },
-                        themeMode = themeMode,
-                        onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
                         showDateFilter = current != Destination.CALENDAR,
                         onManagePortfolios = { showPortfolioManager = true },
                     )
@@ -128,6 +129,8 @@ fun AppShell(
                         ShellNav(
                             selectedAnalysis = selectedAnalysis,
                             onAnalyze = { selectedAnalysis = it; current = Destination.ANALYSIS },
+                            themeMode = themeMode,
+                            onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
                         ),
                     )
                 }

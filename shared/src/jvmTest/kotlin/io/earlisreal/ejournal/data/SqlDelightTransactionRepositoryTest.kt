@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.data.database.ActionAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
+import io.earlisreal.ejournal.data.database.TimeframeAdapter
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
@@ -29,7 +30,11 @@ class SqlDelightTransactionRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter)
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
+                timestampAdapter = DateTimeAdapter,
+                timeframeAdapter = TimeframeAdapter,
+            ),
         )
         portfolioRepo = SqlDelightPortfolioRepository(db)
         txRepo = SqlDelightTransactionRepository(db)

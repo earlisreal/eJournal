@@ -23,6 +23,15 @@ Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
 
 - Desktop tests: `./gradlew :shared:jvmTest`
 
+### Market data setup
+
+Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades. Two sources:
+
+- **Yahoo Finance (default, no setup).** Full daily history, plus 1-minute bars for roughly the last 30 days. Works out of the box.
+- **Alpaca (optional, free).** Unlocks 1-minute history older than 30 days. Create a free account at [alpaca.markets](https://alpaca.markets) (the paper/data API keys need no funding), then paste the Key ID and Secret Key into **Settings → Market Data** in the app.
+
+Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Market data syncs automatically after each import and on app startup; use **Settings → Sync market data** to backfill manually after adding keys.
+
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…

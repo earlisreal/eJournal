@@ -30,6 +30,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.sqldelight.driver.sqlite)
             implementation(libs.ktor.client.cio)
+            implementation(compose.desktop.currentOs)
         }
         jvmTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)

@@ -30,7 +30,6 @@ import io.earlisreal.ejournal.ui.components.Pill
 import io.earlisreal.ejournal.ui.components.SegmentToggle
 import io.earlisreal.ejournal.ui.components.StatCard
 import io.earlisreal.ejournal.ui.components.TradeLogsTable
-import io.earlisreal.ejournal.ui.screen.AnalysisScreen
 import io.earlisreal.ejournal.ui.screen.DashboardContent
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.Spacing
@@ -149,7 +148,7 @@ fun DayDetailPanelPreview() = PreviewBox {
     DayDetailPanel(
         date = LocalDate(2024, 6, 5),
         positions = samplePositionsByDay[LocalDate(2024, 6, 5)] ?: emptyList(),
-        onAnalyze = {},
+        onAnalyze = { _, _ -> },
         symbol = "$",
         modifier = Modifier.width(300.dp),
     )
@@ -172,5 +171,8 @@ fun DashboardContentDarkPreview() = PreviewBox(dark = true) {
 @Preview
 @Composable
 fun AnalysisScreenPreview() = PreviewBox {
-    AnalysisScreen(position = samplePositions.first())
+    EmptyState(
+        title = "No trade selected",
+        subtitle = "Open the Calendar or Trade Logs and click a trade to analyze it.",
+    )
 }

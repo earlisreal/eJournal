@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trade Analysis</title>
+<script src="lightweight-charts.standalone.production.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  #chart { width: 100%; height: 100%; }
+  #legend {
+    position: absolute; top: 8px; left: 10px; z-index: 10;
+    font-size: 12px; pointer-events: none;
+    padding: 6px 8px; border-radius: 4px;
+  }
+  #legend .green { color: #26a69a; }
+  #legend .red   { color: #ef5350; }
+  #legend .vwap-line { color: #26a69a; }
+</style>
+</head>
+<body>
+<div id="chart"></div>
+<div id="legend">
+  <div>
+    <span id="title" style="font-size:13px;font-weight:600">—</span>
+    &nbsp;&nbsp;O <span id="leg-open">—</span>
+    &nbsp;H <span id="leg-high">—</span>
+    &nbsp;L <span id="leg-low">—</span>
+    &nbsp;C <span id="leg-close">—</span>
+  </div>
+  <div>Vol <span id="leg-vol">—</span></div>
+  <div id="vwap-row" style="display:none">VWAP <span id="leg-vwap" class="vwap-line">—</span></div>
+</div>
+<script>
+  var DARK = {
+    bg: '#131722', text: '#d1d4dc',
+    grid: 'rgba(197,203,206,0.07)', border: '#2a2e39',
+    legendBg: 'rgba(19,23,34,0.75)', legendColor: '#d1d4dc',
+  };
+  var LIGHT = {
+    bg: '#ffffff', text: '#191919',
+    grid: 'rgba(0,0,0,0.08)', border: '#d6d6d6',
+    legendBg: 'rgba(255,255,255,0.80)', legendColor: '#333333',
+  };
+
+  var theme = DARK;
+
+  var chart = LightweightCharts.createChart(document.getElementById('chart'), {
+    width: document.body.clientWidth,
+    height: document.body.clientHeight,
+    layout: { background: { type: 'solid', color: theme.bg }, textColor: theme.text },
+    grid: { vertLines: { color: theme.grid }, horzLines: { color: theme.grid } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    timeScale: { timeVisible: true, secondsVisible: false },
+    rightPriceScale: { borderColor: theme.border },
+  });
+
+  new ResizeObserver(function() {
+    chart.resize(document.body.clientWidth, document.body.clientHeight);
+  }).observe(document.body);
+
+  function setTheme(dark) {
+    theme = dark ? DARK : LIGHT;
+    document.body.style.background = theme.bg;
+    var legend = document.getElementById('legend');
+    legend.style.background = theme.legendBg;
+    legend.style.color = theme.legendColor;
+    chart.applyOptions({
+      layout: { background: { type: 'solid', color: theme.bg }, textColor: theme.text },
+      grid: { vertLines: { color: theme.grid }, horzLines: { color: theme.grid } },
+      rightPriceScale: { borderColor: theme.border },
+    });
+  }
+
+  var candleSeries = null, volumeSeries = null, vwapSeries = null, markersPlugin = null;
+
+  function setData(candles, volume, vwap) {
+    if (candleSeries) { chart.removeSeries(candleSeries); candleSeries = null; }
+    if (volumeSeries) { chart.removeSeries(volumeSeries); volumeSeries = null; }
+    if (vwapSeries)   { chart.removeSeries(vwapSeries);   vwapSeries = null; }
+    if (markersPlugin){ markersPlugin.detach(); markersPlugin = null; }
+
+    candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+      upColor: '#26a69a', downColor: '#ef5350',
+      borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+      wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+      priceLineVisible: false, lastValueVisible: false,
+    });
+    candleSeries.setData(candles);
+
+    volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
+      priceFormat: { type: 'volume' },
+      priceLineVisible: false, lastValueVisible: false,
+      priceScaleId: 'vol',
+    });
+    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+    volumeSeries.setData(volume);
+
+    if (vwap) {
+      vwapSeries = chart.addSeries(LightweightCharts.LineSeries, {
+        color: '#26a69a', lineWidth: 1,
+        priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+      });
+      vwapSeries.setData(vwap);
+      document.getElementById('vwap-row').style.display = 'block';
+    } else {
+      document.getElementById('vwap-row').style.display = 'none';
+    }
+
+    chart.subscribeCrosshairMove(function(param) {
+      if (!param.seriesData) return;
+      var c = param.seriesData.get(candleSeries);
+      var v = param.seriesData.get(volumeSeries);
+      var w = vwapSeries ? param.seriesData.get(vwapSeries) : null;
+      if (c) {
+        var cls = c.close >= c.open ? 'green' : 'red';
+        ['leg-open','leg-high','leg-low','leg-close'].forEach(function(id) {
+          document.getElementById(id).className = cls;
+        });
+        document.getElementById('leg-open').textContent  = c.open.toFixed(2);
+        document.getElementById('leg-high').textContent  = c.high.toFixed(2);
+        document.getElementById('leg-low').textContent   = c.low.toFixed(2);
+        document.getElementById('leg-close').textContent = c.close.toFixed(2);
+      }
+      if (v) document.getElementById('leg-vol').textContent = Math.round(v.value).toLocaleString();
+      if (w) document.getElementById('leg-vwap').textContent = w.value.toFixed(2);
+    });
+  }
+
+  function setMarkers(markers) {
+    if (!candleSeries) return;
+    if (markersPlugin) { markersPlugin.detach(); markersPlugin = null; }
+    if (markers && markers.length > 0) {
+      markersPlugin = LightweightCharts.createSeriesMarkers(candleSeries, markers);
+    }
+  }
+
+  function scrollTo(position) {
+    chart.timeScale().scrollToPosition(position, false);
+  }
+
+  function updateTitle(symbol, timeframe) {
+    document.getElementById('title').textContent = symbol + ' · ' + timeframe;
+  }
+</script>
+</body>
+</html>

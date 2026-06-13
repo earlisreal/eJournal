@@ -51,6 +51,7 @@ fun TradeLogsTable(
     sortDirection: SortDirection,
     onSort: (SortColumn) -> Unit,
     symbol: String,
+    onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     androidx.compose.foundation.layout.Column(
@@ -76,7 +77,7 @@ fun TradeLogsTable(
         HorizontalDivider(color = AppTheme.colors.border)
         LazyColumn {
             itemsIndexed(positions) { index, p ->
-                PositionRow(p, symbol)
+                PositionRow(p, symbol, onClick = { onAnalyze(p, positions) })
                 if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
             }
         }
@@ -84,14 +85,14 @@ fun TradeLogsTable(
 }
 
 @Composable
-private fun PositionRow(p: ClosedPosition, symbol: String) {
+private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) {
     val type = classifyTradeType(p)
     val pnlColor = if (p.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
     val cost = p.averageEntryPrice * p.shares
     val pct = if (cost == 0.0) 0.0 else p.profitLoss / cost * 100.0
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = Spacing.md, vertical = Spacing.sm),
     ) {
         Cell(p.symbol, COLUMNS[0].weight, bold = true)
         Box(COLUMNS[1].weight) { TypeBadge(type) }

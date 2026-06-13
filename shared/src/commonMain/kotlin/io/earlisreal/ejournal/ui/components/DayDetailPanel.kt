@@ -26,7 +26,7 @@ import kotlinx.datetime.LocalDate
 fun DayDetailPanel(
     date: LocalDate?,
     positions: List<ClosedPosition>,
-    onAnalyze: (ClosedPosition) -> Unit,
+    onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     symbol: String,
     modifier: Modifier = Modifier,
 ) {
@@ -57,7 +57,7 @@ fun DayDetailPanel(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onAnalyze(p) }
+                            .clickable { onAnalyze(p, positions) }
                             .padding(vertical = Spacing.sm),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,

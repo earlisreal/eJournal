@@ -12,7 +12,8 @@ object FifoMatcher {
         val price: Double,
         var remainingShares: Double,
         val totalShares: Double,
-        val totalFee: Double
+        val totalFee: Double,
+        val originalTx: Transaction,
     )
 
     fun computeClosedPositions(transactions: List<Transaction>): List<ClosedPosition> {
@@ -25,7 +26,7 @@ object FifoMatcher {
             for (tx in symbolTxs.sortedBy { it.datetime }) {
                 when (tx.action) {
                     Action.BUY -> buyQueue.addLast(
-                        BuyLot(tx.datetime, tx.price, tx.shares, tx.shares, tx.fees)
+                        BuyLot(tx.datetime, tx.price, tx.shares, tx.shares, tx.fees, tx)
                     )
                     Action.SELL -> {
                         var remaining = tx.shares
@@ -47,7 +48,8 @@ object FifoMatcher {
                                     averageExitPrice = tx.price,
                                     shares = matched,
                                     fees = totalFees,
-                                    profitLoss = (tx.price - lot.price) * matched - totalFees
+                                    profitLoss = (tx.price - lot.price) * matched - totalFees,
+                                    transactions = listOf(lot.originalTx, tx),
                                 )
                             )
 

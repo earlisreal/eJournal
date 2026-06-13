@@ -10,5 +10,6 @@ data class ClosedPosition(
     val averageExitPrice: Double,
     val shares: Double,
     val fees: Double,
-    val profitLoss: Double
+    val profitLoss: Double,
+    val transactions: List<Transaction> = emptyList(),
 )

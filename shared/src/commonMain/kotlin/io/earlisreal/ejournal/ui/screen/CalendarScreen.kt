@@ -42,7 +42,7 @@ import kotlinx.datetime.todayIn
 fun CalendarScreen(
     transactionRepository: TransactionRepository,
     filter: FilterState,
-    onAnalyze: (ClosedPosition) -> Unit,
+    onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val vm = viewModel { CalendarViewModel(transactionRepository, today.year, today.monthNumber) }

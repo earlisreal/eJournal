@@ -36,7 +36,9 @@ import kotlinx.datetime.todayIn
 /** Shell hand-off for screens: analysis navigation + theme state owned by the shell. */
 data class ShellNav(
     val selectedAnalysis: ClosedPosition?,
-    val onAnalyze: (ClosedPosition) -> Unit,
+    val analysisPositions: List<ClosedPosition>,
+    val analysisIndex: Int,
+    val onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     val themeMode: ThemeMode,
     val onThemeChange: (ThemeMode) -> Unit,
 )
@@ -55,6 +57,8 @@ fun AppShell(
     var userExpanded by remember { mutableStateOf(true) }
     var themeMode by remember { mutableStateOf(settingsRepository.getThemeMode()) }
     var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
+    var analysisPositions by remember { mutableStateOf<List<ClosedPosition>>(emptyList()) }
+    var analysisIndex by remember { mutableStateOf(0) }
     var showPortfolioManager by remember { mutableStateOf(false) }
 
     var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
@@ -127,9 +131,16 @@ fun AppShell(
                         current,
                         filterState,
                         ShellNav(
-                            selectedAnalysis = selectedAnalysis,
-                            onAnalyze = { selectedAnalysis = it; current = Destination.ANALYSIS },
-                            themeMode = themeMode,
+                            selectedAnalysis  = selectedAnalysis,
+                            analysisPositions = analysisPositions,
+                            analysisIndex     = analysisIndex,
+                            onAnalyze = { position, list ->
+                                selectedAnalysis  = position
+                                analysisPositions = list
+                                analysisIndex     = list.indexOf(position).coerceAtLeast(0)
+                                current = Destination.ANALYSIS
+                            },
+                            themeMode    = themeMode,
                             onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
                         ),
                     )

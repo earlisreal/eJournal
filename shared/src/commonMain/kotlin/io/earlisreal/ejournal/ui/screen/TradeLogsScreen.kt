@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
@@ -19,6 +20,7 @@ import io.earlisreal.ejournal.ui.viewmodel.TradeLogsViewModel
 fun TradeLogsScreen(
     transactionRepository: TransactionRepository,
     filter: FilterState,
+    onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
 ) {
     val vm = viewModel { TradeLogsViewModel(transactionRepository) }
     val state by vm.state.collectAsState()
@@ -44,6 +46,7 @@ fun TradeLogsScreen(
                 sortDirection = state.sortDirection,
                 onSort = vm::sortBy,
                 symbol = filter.portfolio?.market?.symbol ?: "$",
+                onAnalyze = onAnalyze,
                 modifier = Modifier.fillMaxSize(),
             )
         }

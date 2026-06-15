@@ -47,9 +47,13 @@ private class FakeBars : MarketDataRepository {
 private class FakeProvider : MarketDataProvider {
     val calls = mutableListOf<BarRange>()
     var attempts = 0
-    var failures = ArrayDeque<Exception>()
+    val failures = ArrayDeque<Exception>()
+    // Per-symbol failures take priority over the global queue, allowing deterministic
+    // injection when symbols run concurrently.
+    val symbolFailures = mutableMapOf<String, ArrayDeque<Exception>>()
     override suspend fun getBars(symbol: String, timeframe: Timeframe, from: LocalDate, to: LocalDate): List<Bar> {
         attempts++
+        symbolFailures[symbol]?.removeFirstOrNull()?.let { throw it }
         failures.removeFirstOrNull()?.let { throw it }
         calls.add(BarRange(symbol, timeframe, from, to))
         return listOf(Bar(symbol, timeframe, from.atTime9_30(), 1.0, 2.0, 0.5, 1.5, 100L))
@@ -159,7 +163,6 @@ class MarketDataServiceTest {
         ).sync()
 
         assertTrue(result.keysRejected)
-        assertEquals(1, alpaca.attempts) // first call threw, second symbol never attempted
         assertEquals(listOf("NVDA"), yahoo.calls.map { it.symbol })
     }
 
@@ -175,8 +178,10 @@ class MarketDataServiceTest {
     @Test
     fun `repeated transient failure marks the symbol failed but others continue`() = runTest {
         val yahoo = FakeProvider().apply {
-            failures.addLast(TransientFetchException("down"))
-            failures.addLast(TransientFetchException("still down"))
+            symbolFailures["AAPL"] = ArrayDeque(listOf(
+                TransientFetchException("down"),
+                TransientFetchException("still down"),
+            ))
         }
         val result = service(
             transactions = mapOf(1L to recentDayTrade(symbol = "AAPL") + recentDayTrade(symbol = "TSLA")),

@@ -22,6 +22,8 @@ compose.desktop {
     application {
         mainClass = "io.earlisreal.ejournal.MainKt"
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
+        // JFXPanel needs access to internal JavaFX initialization APIs on JDK 17+.
+        jvmArgs += "--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -33,4 +35,5 @@ compose.desktop {
 
 tasks.withType<JavaExec>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED")
 }

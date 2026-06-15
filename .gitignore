@@ -19,3 +19,5 @@ captures
 node_modules/
 .claude
 .superpowers
+*.log
+*.csv

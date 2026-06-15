@@ -31,6 +31,22 @@ kotlin {
             implementation(libs.sqldelight.driver.sqlite)
             implementation(libs.ktor.client.cio)
             implementation(compose.desktop.currentOs)
+
+            // JavaFX WebView for chart rendering (replaces JCEF — far more reliable on macOS).
+            // Full module list required: Maven won't resolve platform-classified transitive jars.
+            val javafxOs = when {
+                System.getProperty("os.name").lowercase().startsWith("mac") ->
+                    if ("aarch64" in System.getProperty("os.arch")) "mac-aarch64" else "mac"
+                System.getProperty("os.name").lowercase().startsWith("win") -> "win"
+                else -> "linux"
+            }
+            val javafxVer = "21"
+            implementation("org.openjfx:javafx-base:$javafxVer:$javafxOs")
+            implementation("org.openjfx:javafx-graphics:$javafxVer:$javafxOs")
+            implementation("org.openjfx:javafx-controls:$javafxVer:$javafxOs")
+            implementation("org.openjfx:javafx-media:$javafxVer:$javafxOs")
+            implementation("org.openjfx:javafx-web:$javafxVer:$javafxOs")
+            implementation("org.openjfx:javafx-swing:$javafxVer:$javafxOs")
         }
         jvmTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)

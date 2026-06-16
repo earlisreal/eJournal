@@ -48,11 +48,13 @@ private class FakeProvider : MarketDataProvider {
     val calls = mutableListOf<BarRange>()
     var attempts = 0
     val failures = ArrayDeque<Exception>()
-    // Per-symbol failures take priority over the global queue, allowing deterministic
-    // injection when symbols run concurrently.
+    // Per-symbol failures take priority over the global queue.
     val symbolFailures = mutableMapOf<String, ArrayDeque<Exception>>()
+    // Per-symbol+timeframe failures take priority over symbolFailures.
+    val symbolTimeframeFailures = mutableMapOf<Pair<String, Timeframe>, ArrayDeque<Exception>>()
     override suspend fun getBars(symbol: String, timeframe: Timeframe, from: LocalDate, to: LocalDate): List<Bar> {
         attempts++
+        symbolTimeframeFailures[symbol to timeframe]?.removeFirstOrNull()?.let { throw it }
         symbolFailures[symbol]?.removeFirstOrNull()?.let { throw it }
         failures.removeFirstOrNull()?.let { throw it }
         calls.add(BarRange(symbol, timeframe, from, to))
@@ -106,13 +108,16 @@ class MarketDataServiceTest {
     )
 
     @Test
-    fun `fetches and stores one-minute bars for a recent day trade via yahoo`() = runTest {
+    fun `fetches and stores one-minute bars for a day trade via alpaca`() = runTest {
         val bars = FakeBars()
         val yahoo = FakeProvider()
-        val result = service(bars = bars, yahoo = yahoo).sync()
+        val alpaca = FakeProvider()
+        val result = service(bars = bars, yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaCredentials("id", "secret"))).sync()
 
-        assertEquals(listOf(BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"))), yahoo.calls)
-        assertEquals(1, bars.stored.size)
+        assertTrue(alpaca.calls.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-09"), LocalDate.parse("2026-06-11")) })
+        assertTrue(yahoo.calls.any { it.symbol == "AAPL" && it.timeframe == Timeframe.DAILY })
+        assertTrue(yahoo.calls.none { it.timeframe == Timeframe.ONE_MINUTE })
+        assertEquals(2, bars.stored.size)
         assertEquals(SyncResult(fetchedSymbols = 1, failedSymbols = emptyList(), keysRejected = false, needsKeys = false), result)
     }
 
@@ -120,7 +125,9 @@ class MarketDataServiceTest {
     fun `skips fetching when coverage is complete`() = runTest {
         val bars = FakeBars()
         bars.coverage["AAPL" to Timeframe.ONE_MINUTE] =
-            BarCoverage(LocalDateTime.parse("2026-06-10T04:00"), LocalDateTime.parse("2026-06-10T19:59"))
+            BarCoverage(LocalDateTime.parse("2026-06-09T04:00"), LocalDateTime.parse("2026-06-11T19:59"))
+        bars.coverage["AAPL" to Timeframe.DAILY] =
+            BarCoverage(LocalDateTime.parse("2026-04-11T00:00"), LocalDateTime.parse("2026-06-12T23:59"))
         val yahoo = FakeProvider()
         val result = service(bars = bars, yahoo = yahoo).sync()
 
@@ -151,10 +158,10 @@ class MarketDataServiceTest {
     }
 
     @Test
-    fun `rejected keys abort alpaca fetches but yahoo fetches continue`() = runTest {
+    fun `rejected keys abort alpaca fetches but yahoo daily fetches continue`() = runTest {
         val yahoo = FakeProvider()
         val alpaca = FakeProvider().apply { failures.addLast(InvalidKeysException("rejected")) }
-        // Two symbols needing Alpaca + one needing Yahoo
+        // All three symbols need Alpaca for 1-min; daily routes to Yahoo for all
         val result = service(
             transactions = mapOf(1L to oldDayTrade(symbol = "AAPL") + oldDayTrade(symbol = "TSLA") + recentDayTrade(symbol = "NVDA")),
             yahoo = yahoo,
@@ -163,24 +170,34 @@ class MarketDataServiceTest {
         ).sync()
 
         assertTrue(result.keysRejected)
-        assertEquals(listOf("NVDA"), yahoo.calls.map { it.symbol })
+        // Daily bars for all symbols still route to Yahoo regardless of key status
+        assertTrue(yahoo.calls.any { it.symbol == "AAPL" && it.timeframe == Timeframe.DAILY })
+        assertTrue(yahoo.calls.any { it.symbol == "TSLA" && it.timeframe == Timeframe.DAILY })
+        assertTrue(yahoo.calls.any { it.symbol == "NVDA" && it.timeframe == Timeframe.DAILY })
+        // 1-min never routes to Yahoo
+        assertTrue(yahoo.calls.none { it.timeframe == Timeframe.ONE_MINUTE })
     }
 
     @Test
     fun `transient failure retries once and succeeds`() = runTest {
         val yahoo = FakeProvider().apply { failures.addLast(TransientFetchException("blip")) }
-        val result = service(yahoo = yahoo).sync()
+        val alpaca = FakeProvider()
+        val result = service(yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaCredentials("id", "secret"))).sync()
 
-        assertEquals(1, yahoo.calls.size)
+        assertEquals(1, yahoo.calls.size)   // daily: retry succeeds
+        assertEquals(1, alpaca.calls.size)  // 1-min: first try succeeds
         assertTrue(result.failedSymbols.isEmpty())
     }
 
     @Test
     fun `repeated transient failure marks the symbol failed but others continue`() = runTest {
+        // Fail both ranges (ONE_MINUTE + DAILY) for AAPL so neither succeeds.
         val yahoo = FakeProvider().apply {
-            symbolFailures["AAPL"] = ArrayDeque(listOf(
-                TransientFetchException("down"),
-                TransientFetchException("still down"),
+            symbolTimeframeFailures["AAPL" to Timeframe.ONE_MINUTE] = ArrayDeque(listOf(
+                TransientFetchException("down"), TransientFetchException("still down"),
+            ))
+            symbolTimeframeFailures["AAPL" to Timeframe.DAILY] = ArrayDeque(listOf(
+                TransientFetchException("down"), TransientFetchException("still down"),
             ))
         }
         val result = service(
@@ -189,19 +206,40 @@ class MarketDataServiceTest {
         ).sync()
 
         assertEquals(listOf("AAPL"), result.failedSymbols)
-        assertEquals(listOf("TSLA"), yahoo.calls.map { it.symbol })
+        assertTrue(yahoo.calls.none { it.symbol == "AAPL" })
+        assertTrue(yahoo.calls.any { it.symbol == "TSLA" })
     }
 
     @Test
     fun `unknown symbol is skipped without failing the run`() = runTest {
-        val yahoo = FakeProvider().apply { failures.addLast(SymbolNotFoundException("AAPL")) }
+        // Both ranges (ONE_MINUTE + DAILY) for AAPL must get SymbolNotFound.
+        val yahoo = FakeProvider().apply {
+            symbolFailures["AAPL"] = ArrayDeque(listOf(
+                SymbolNotFoundException("AAPL"), SymbolNotFoundException("AAPL"),
+            ))
+        }
         val result = service(
             transactions = mapOf(1L to recentDayTrade(symbol = "AAPL") + recentDayTrade(symbol = "TSLA")),
             yahoo = yahoo,
         ).sync()
 
         assertTrue(result.failedSymbols.isEmpty())
-        assertEquals(listOf("TSLA"), yahoo.calls.map { it.symbol })
+        assertTrue(yahoo.calls.none { it.symbol == "AAPL" })
+        assertTrue(yahoo.calls.any { it.symbol == "TSLA" })
+    }
+
+    @Test
+    fun `transient failure on one range does not prevent other ranges for the same symbol from being fetched`() = runTest {
+        // ONE_MINUTE is processed first; failing it permanently must not block DAILY.
+        val yahoo = FakeProvider().apply {
+            symbolTimeframeFailures["AAPL" to Timeframe.ONE_MINUTE] = ArrayDeque(listOf(
+                TransientFetchException("down"),
+                TransientFetchException("still down"),
+            ))
+        }
+        service(yahoo = yahoo).sync()
+
+        assertTrue(yahoo.calls.any { it.symbol == "AAPL" && it.timeframe == Timeframe.DAILY })
     }
 
     @Test

@@ -55,6 +55,8 @@ class MarketDataService(
     private val scope: CoroutineScope? = null,
     private val todayProvider: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
 ) {
+    private val yahooSemaphore = Semaphore(MAX_YAHOO_CONCURRENT)
+    private val alpacaSemaphore = Semaphore(MAX_ALPACA_CONCURRENT)
 
     private val _status = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val status: StateFlow<SyncStatus> = _status.asStateFlow()
@@ -76,19 +78,18 @@ class MarketDataService(
 
         val work = requiredRanges(positions, today)
             .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe)) }
-            .flatMap { range -> route(range, today, hasKeys) }
+            .flatMap { range -> route(range, hasKeys) }
             .groupBy { it.range.symbol }
 
         _status.value = SyncStatus.Syncing(0, work.size)
 
-        val semaphore = Semaphore(MAX_CONCURRENT_FETCHES)
         val progressMutex = Mutex()
         var completed = 0
 
         val symbolResults: List<SymbolFetchResult> = coroutineScope {
             work.entries.map { (symbol, routedRanges) ->
                 async {
-                    val result = semaphore.withPermit { fetchSymbol(symbol, routedRanges) }
+                    val result = fetchSymbol(symbol, routedRanges)
                     progressMutex.withLock {
                         completed++
                         _status.value = SyncStatus.Syncing(completed, work.size)
@@ -109,39 +110,48 @@ class MarketDataService(
     }
 
     private suspend fun fetchSymbol(symbol: String, routedRanges: List<RoutedRange>): SymbolFetchResult {
+        val outcomes = coroutineScope {
+            routedRanges.map { routed -> async { fetchRange(routed) } }.awaitAll()
+        }
+
         var fetched = false
         var failed = false
         var keysRejected = false
         var needsKeys = false
 
-        symbolLoop@ for (routed in routedRanges) {
-            val provider = when (routed.source) {
-                BarSource.YAHOO -> yahooProvider
-                BarSource.ALPACA -> {
-                    if (keysRejected) continue@symbolLoop
-                    alpacaProvider
-                }
-                BarSource.UNAVAILABLE -> {
-                    needsKeys = true
-                    continue@symbolLoop
-                }
-            }
-            try {
-                val bars = fetchWithRetry(provider, routed.range)
-                marketDataRepository.upsertBars(bars)
-                fetched = true
-            } catch (e: InvalidKeysException) {
-                keysRejected = true
-            } catch (e: SymbolNotFoundException) {
-                break@symbolLoop
-            } catch (e: TransientFetchException) {
-                failed = true
-                break@symbolLoop
+        for (outcome in outcomes) {
+            when (outcome) {
+                RangeOutcome.Success -> fetched = true
+                RangeOutcome.NeedsKeys -> needsKeys = true
+                RangeOutcome.KeysRejected -> keysRejected = true
+                RangeOutcome.SymbolNotFound -> return SymbolFetchResult(symbol, false, false, false, false)
+                RangeOutcome.Failed -> failed = true
             }
         }
 
         return SymbolFetchResult(symbol, fetched, failed, keysRejected, needsKeys)
     }
+
+    private suspend fun fetchRange(routed: RoutedRange): RangeOutcome {
+        val (provider, semaphore) = when (routed.source) {
+            BarSource.YAHOO -> yahooProvider to yahooSemaphore
+            BarSource.ALPACA -> alpacaProvider to alpacaSemaphore
+            BarSource.UNAVAILABLE -> return RangeOutcome.NeedsKeys
+        }
+        return try {
+            val bars = semaphore.withPermit { fetchWithRetry(provider, routed.range) }
+            marketDataRepository.upsertBars(bars)
+            RangeOutcome.Success
+        } catch (e: InvalidKeysException) {
+            RangeOutcome.KeysRejected
+        } catch (e: SymbolNotFoundException) {
+            RangeOutcome.SymbolNotFound
+        } catch (e: TransientFetchException) {
+            RangeOutcome.Failed
+        }
+    }
+
+    private enum class RangeOutcome { Success, NeedsKeys, KeysRejected, SymbolNotFound, Failed }
 
     private suspend fun fetchWithRetry(provider: MarketDataProvider, range: BarRange): List<Bar> =
         try {
@@ -161,6 +171,7 @@ class MarketDataService(
 
     companion object {
         private const val RETRY_DELAY_MS = 2_000L
-        private const val MAX_CONCURRENT_FETCHES = 6
+        private const val MAX_YAHOO_CONCURRENT = 20
+        private const val MAX_ALPACA_CONCURRENT = 30
     }
 }

@@ -20,28 +20,33 @@ data class RoutedRange(val range: BarRange, val source: BarSource)
 private const val SWING_LEAD_DAYS = 60
 private const val SWING_TAIL_DAYS = 30
 
-/** Yahoo serves 1-min bars for the trailing 30 days only (today inclusive). */
-private const val YAHOO_INTRADAY_WINDOW_DAYS = 30
+/** 1-min bars: one extra day before entry and after exit for context around the trade. */
+private const val INTRADAY_LEAD_DAYS = 1
+private const val INTRADAY_TAIL_DAYS = 1
 
 /**
  * Bars needed to chart the given positions: 1-min bars for day trades, buffered daily
  * bars for swings. Overlapping or adjacent ranges per symbol+timeframe are merged.
  */
 fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarRange> {
-    val raw = positions.map { position ->
+    val raw = positions.flatMap { position ->
+        val dailyRange = BarRange(
+            symbol = position.symbol,
+            timeframe = Timeframe.DAILY,
+            from = position.entryDatetime.date.minus(DatePeriod(days = SWING_LEAD_DAYS)),
+            to = minOf(position.exitDatetime.date.plus(DatePeriod(days = SWING_TAIL_DAYS)), today),
+        )
         when (classifyTradeType(position)) {
-            TradeType.DAY -> BarRange(
-                symbol = position.symbol,
-                timeframe = Timeframe.ONE_MINUTE,
-                from = position.entryDatetime.date,
-                to = position.exitDatetime.date,
+            TradeType.DAY -> listOf(
+                BarRange(
+                    symbol = position.symbol,
+                    timeframe = Timeframe.ONE_MINUTE,
+                    from = position.entryDatetime.date.minus(DatePeriod(days = INTRADAY_LEAD_DAYS)),
+                    to = minOf(position.exitDatetime.date.plus(DatePeriod(days = INTRADAY_TAIL_DAYS)), today),
+                ),
+                dailyRange,
             )
-            TradeType.SWING -> BarRange(
-                symbol = position.symbol,
-                timeframe = Timeframe.DAILY,
-                from = position.entryDatetime.date.minus(DatePeriod(days = SWING_LEAD_DAYS)),
-                to = minOf(position.exitDatetime.date.plus(DatePeriod(days = SWING_TAIL_DAYS)), today),
-            )
+            TradeType.SWING -> listOf(dailyRange)
         }
     }
     return raw
@@ -82,20 +87,11 @@ fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
 }
 
 /**
- * Picks the provider per range: daily always Yahoo; 1-min Yahoo inside its trailing
- * window, Alpaca (keys required) beyond it. Ranges spanning the boundary split.
+ * Picks the provider per range: daily always Yahoo; 1-min always Alpaca (keys required
+ * for full extended-hours coverage — Yahoo only serves regular-hours bars).
  */
-fun route(range: BarRange, today: LocalDate, hasAlpacaKeys: Boolean): List<RoutedRange> {
+fun route(range: BarRange, hasAlpacaKeys: Boolean): List<RoutedRange> {
     if (range.timeframe == Timeframe.DAILY) return listOf(RoutedRange(range, BarSource.YAHOO))
-
-    val yahooStart = today.minus(DatePeriod(days = YAHOO_INTRADAY_WINDOW_DAYS - 1))
-    val oldSource = if (hasAlpacaKeys) BarSource.ALPACA else BarSource.UNAVAILABLE
-    return when {
-        range.from >= yahooStart -> listOf(RoutedRange(range, BarSource.YAHOO))
-        range.to < yahooStart -> listOf(RoutedRange(range, oldSource))
-        else -> listOf(
-            RoutedRange(range.copy(to = yahooStart.minus(DatePeriod(days = 1))), oldSource),
-            RoutedRange(range.copy(from = yahooStart), BarSource.YAHOO),
-        )
-    }
+    val source = if (hasAlpacaKeys) BarSource.ALPACA else BarSource.UNAVAILABLE
+    return listOf(RoutedRange(range, source))
 }

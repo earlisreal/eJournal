@@ -30,15 +30,30 @@ class BarRangesTest {
     // --- requiredRanges ---
 
     @Test
+    fun `day trade one-minute range has 1-day lead and 1-day trail`() {
+        val ranges = requiredRanges(
+            listOf(position(entry = "2026-06-10T09:31", exit = "2026-06-10T10:15")),
+            today,
+        )
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-09"), LocalDate.parse("2026-06-11")) })
+    }
+
+    @Test
     fun `day trade requires one-minute bars for the trade day`() {
         val ranges = requiredRanges(
             listOf(position(entry = "2026-06-10T09:31", exit = "2026-06-10T10:15")),
             today,
         )
-        assertEquals(
-            listOf(BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"))),
-            ranges,
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-09"), LocalDate.parse("2026-06-11")) })
+    }
+
+    @Test
+    fun `day trade also requires daily bars with 60-day lead and 30-day tail buffer`() {
+        val ranges = requiredRanges(
+            listOf(position(entry = "2026-06-10T09:31", exit = "2026-06-10T10:15")),
+            today,
         )
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-04-11"), LocalDate.parse("2026-06-12")) })
     }
 
     @Test
@@ -85,7 +100,9 @@ class BarRangesTest {
             ),
             today,
         )
-        assertEquals(2, ranges.size)
+        assertTrue(ranges.none { it.symbol == "AAPL" && it.symbol == "TSLA" })
+        assertEquals(2, ranges.count { it.symbol == "AAPL" })
+        assertEquals(2, ranges.count { it.symbol == "TSLA" })
     }
 
     @Test
@@ -97,10 +114,8 @@ class BarRangesTest {
             ),
             today,
         )
-        assertEquals(
-            listOf(BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-09"), LocalDate.parse("2026-06-10"))),
-            ranges,
-        )
+        // Trade 1: 2026-06-08..2026-06-10, Trade 2: 2026-06-09..2026-06-11 → merged 2026-06-08..2026-06-11
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-11")) })
     }
 
     // --- subtractCoverage ---
@@ -135,39 +150,41 @@ class BarRangesTest {
 
     @Test
     fun `daily ranges always route to yahoo`() {
-        val routed = route(junRange, today, hasAlpacaKeys = false)
+        val routed = route(junRange, hasAlpacaKeys = false)
         assertEquals(listOf(RoutedRange(junRange, BarSource.YAHOO)), routed)
     }
 
     @Test
-    fun `recent one-minute range routes to yahoo`() {
-        val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"))
-        assertEquals(listOf(RoutedRange(range, BarSource.YAHOO)), route(range, today, hasAlpacaKeys = false))
+    fun `one-minute range routes to alpaca when keys exist regardless of age`() {
+        val recent = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"))
+        val old    = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-01-05"), LocalDate.parse("2026-01-05"))
+        assertEquals(listOf(RoutedRange(recent, BarSource.ALPACA)), route(recent, hasAlpacaKeys = true))
+        assertEquals(listOf(RoutedRange(old,    BarSource.ALPACA)), route(old,    hasAlpacaKeys = true))
+    }
+
+    @Test
+    fun `one-minute range is unavailable without keys regardless of age`() {
+        val recent = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"))
+        val old    = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-01-05"), LocalDate.parse("2026-01-05"))
+        assertEquals(listOf(RoutedRange(recent, BarSource.UNAVAILABLE)), route(recent, hasAlpacaKeys = false))
+        assertEquals(listOf(RoutedRange(old,    BarSource.UNAVAILABLE)), route(old,    hasAlpacaKeys = false))
     }
 
     @Test
     fun `old one-minute range routes to alpaca when keys exist`() {
         val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-01-05"), LocalDate.parse("2026-01-05"))
-        assertEquals(listOf(RoutedRange(range, BarSource.ALPACA)), route(range, today, hasAlpacaKeys = true))
+        assertEquals(listOf(RoutedRange(range, BarSource.ALPACA)), route(range, hasAlpacaKeys = true))
     }
 
     @Test
     fun `old one-minute range is unavailable without keys`() {
         val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-01-05"), LocalDate.parse("2026-01-05"))
-        assertEquals(listOf(RoutedRange(range, BarSource.UNAVAILABLE)), route(range, today, hasAlpacaKeys = false))
+        assertEquals(listOf(RoutedRange(range, BarSource.UNAVAILABLE)), route(range, hasAlpacaKeys = false))
     }
 
     @Test
-    fun `one-minute range spanning the 30-day boundary splits between providers`() {
+    fun `one-minute range spanning any date range routes entirely to alpaca`() {
         val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-05-01"), LocalDate.parse("2026-06-10"))
-        val routed = route(range, today, hasAlpacaKeys = true)
-        // Yahoo window: today - 29 days = 2026-05-14 onwards
-        assertEquals(
-            listOf(
-                RoutedRange(BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-05-01"), LocalDate.parse("2026-05-13")), BarSource.ALPACA),
-                RoutedRange(BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-05-14"), LocalDate.parse("2026-06-10")), BarSource.YAHOO),
-            ),
-            routed,
-        )
+        assertEquals(listOf(RoutedRange(range, BarSource.ALPACA)), route(range, hasAlpacaKeys = true))
     }
 }

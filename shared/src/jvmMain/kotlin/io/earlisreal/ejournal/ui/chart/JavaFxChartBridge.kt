@@ -43,6 +43,15 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
                         catch (e: Exception) { System.err.println("[chart] flush error: $e") }
                     }
                     pendingJs.clear()
+                    try {
+                        val r = engine.executeScript(
+                            "(function(){var g=chart.timeScale().getVisibleLogicalRange();" +
+                                "return g?(g.from.toFixed(1)+'..'+g.to.toFixed(1)):'null';})()"
+                        )
+                        println("[chart] VERIFY visibleRange $r")
+                    } catch (e: Exception) {
+                        System.err.println("[chart] probe failed: $e")
+                    }
                 }
             }
             engine.load(pageUrl)
@@ -62,12 +71,12 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         val vwapJson    = if (state.vwapEnabled && chartData.vwap.isNotEmpty())
             serializeVwap(chartData.vwap, tf) else "null"
         val markersJson = serializeMarkers(position.transactions, tf)
-        val scrollPos   = scrollPosition(position.entryDatetime, chartData.bars)
+        val firstTradeIdx = firstTradeBarIndex(position.entryDatetime, chartData.bars, tf)
 
         exec("setTheme(${state.isDarkTheme})")
         exec("setData($candlesJson, $volumeJson, $vwapJson)")
         exec("setMarkers($markersJson)")
-        exec("scrollTo($scrollPos)")
+        exec("scrollToFirstTrade($firstTradeIdx)")
         exec("updateTitle('${position.symbol}', '${tf.label}')")
     }
 
@@ -118,22 +127,23 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
             """{"time":${barTime(v.timestamp, tf)},"value":${"%.4f".format(v.value)}}"""
         }
 
-    private fun txTime(dt: LocalDateTime, tf: ChartTimeframe): String {
-        val snapped = when (tf) {
-            ChartTimeframe.ONE_MIN -> LocalDateTime(dt.date, LocalTime(dt.hour, dt.minute))
-            ChartTimeframe.FIVE_MIN -> {
-                val m = dt.minute - (dt.minute % 5)
-                LocalDateTime(dt.date, LocalTime(dt.hour, m))
-            }
-            ChartTimeframe.FIFTEEN_MIN -> {
-                val total = dt.hour * 60 + dt.minute
-                val bucket = total - (total % 15)
-                LocalDateTime(dt.date, LocalTime(bucket / 60, bucket % 60))
-            }
-            ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> dt
+    // Snap a transaction time down to the start of its timeframe bucket so it lines up with a bar.
+    private fun snapToBucket(dt: LocalDateTime, tf: ChartTimeframe): LocalDateTime = when (tf) {
+        ChartTimeframe.ONE_MIN -> LocalDateTime(dt.date, LocalTime(dt.hour, dt.minute))
+        ChartTimeframe.FIVE_MIN -> {
+            val m = dt.minute - (dt.minute % 5)
+            LocalDateTime(dt.date, LocalTime(dt.hour, m))
         }
-        return barTime(snapped, tf)
+        ChartTimeframe.FIFTEEN_MIN -> {
+            val total = dt.hour * 60 + dt.minute
+            val bucket = total - (total % 15)
+            LocalDateTime(dt.date, LocalTime(bucket / 60, bucket % 60))
+        }
+        ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> dt
     }
+
+    private fun txTime(dt: LocalDateTime, tf: ChartTimeframe): String =
+        barTime(snapToBucket(dt, tf), tf)
 
     private fun serializeMarkers(transactions: List<Transaction>, tf: ChartTimeframe): String {
         val seen = mutableSetOf<Long>()
@@ -144,10 +154,18 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         }
     }
 
-    private fun scrollPosition(entryDatetime: LocalDateTime, bars: List<Bar>): Int {
-        val entryDate = entryDatetime.date
-        val idx = bars.indexOfFirst { it.timestamp.date >= entryDate }
-        return if (idx < 0) -40 else (idx - bars.size + 40)
+    // Bar index of the first trade (entry), snapped to the active timeframe so it lines up with the
+    // entry marker. The JS side scrolls so this bar sits a few bars in from the left edge.
+    private fun firstTradeBarIndex(entryDatetime: LocalDateTime, bars: List<Bar>, tf: ChartTimeframe): Int {
+        val idx = when (tf) {
+            ChartTimeframe.DAILY, ChartTimeframe.WEEKLY ->
+                bars.indexOfFirst { it.timestamp.date >= entryDatetime.date }
+            else -> {
+                val snapped = snapToBucket(entryDatetime, tf)
+                bars.indexOfFirst { it.timestamp >= snapped }
+            }
+        }
+        return if (idx < 0) 0 else idx
     }
 
     companion object {

@@ -2,6 +2,7 @@ package io.earlisreal.ejournal
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -53,16 +54,17 @@ private fun extractTestChartFiles(): String {
 // ── JavaFX WebView via SwingPanel ─────────────────────────────────────────────
 
 private fun runJavaFxTest(url: String) {
-    println("[chart-test] creating JavaFxChartBridge for $url")
-    val bridge = JavaFxChartBridge.forUrl(url)
-
     application {
         val windowState = rememberWindowState(size = DpSize(1100.dp, 750.dp))
         Window(
-            onCloseRequest = ::exitApplication,
+            onCloseRequest = { JavaFxChartBridge.shutdown(); exitApplication() },
             state = windowState,
             title = "Chart Test — JavaFX WebView (Lightweight Charts v4)",
         ) {
+            // Create the bridge (which boots JavaFX) INSIDE the composable, after the Compose
+            // window exists. Booting JavaFX before application{} races the macOS main-thread
+            // event loop, so the window never appears.
+            val bridge = remember { JavaFxChartBridge.forUrl(url) }
             val density = LocalDensity.current.density
             SwingPanel(
                 modifier = Modifier

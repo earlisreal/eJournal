@@ -161,10 +161,11 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         val seen = mutableSetOf<Long>()
         val unique = transactions.filter { seen.add(it.id) }
         return unique.joinToString(",", "[", "]") { tx ->
-            val color = if (tx.action == Action.BUY) "rgba(165,214,167,0.9)" else "rgba(244,143,177,0.9)"
-            // Lightweight Charts v4 markers only support aboveBar/belowBar/inBar (no price-level
-            // placement); "inBar" sits the marker on the trade's bar.
-            """{"time":${txTime(tx.datetime, tf)},"position":"inBar","shape":"circle","color":"$color","size":1.5}"""
+            val color = if (tx.action == Action.BUY) "rgba(165,214,167,0.8)" else "rgba(244,143,177,0.8)"
+            // Diamond at the exact fill price: numeric position = price (custom v4 fork build —
+            // see ~/Projects/lwc-v4-diamond). Lighter/transparent colors so markers stand out
+            // against the candle bars.
+            """{"time":${txTime(tx.datetime, tf)},"position":${tx.price},"shape":"diamond","color":"$color","size":1.65}"""
         }
     }
 

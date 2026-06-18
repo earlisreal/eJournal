@@ -41,6 +41,8 @@ data class ShellNav(
     val onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     val themeMode: ThemeMode,
     val onThemeChange: (ThemeMode) -> Unit,
+    val analysisSource: Destination?,
+    val onBackFromAnalysis: (() -> Unit)?,
 )
 
 @Composable
@@ -59,6 +61,7 @@ fun AppShell(
     var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
     var analysisPositions by remember { mutableStateOf<List<ClosedPosition>>(emptyList()) }
     var analysisIndex by remember { mutableStateOf(0) }
+    var analysisSource by remember { mutableStateOf<Destination?>(null) }
     var showPortfolioManager by remember { mutableStateOf(false) }
 
     var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
@@ -73,6 +76,10 @@ fun AppShell(
         portfolios = portfolioRepository.getAll()
         selectedPortfolio = savedFilter?.portfolioId?.let { id -> portfolios.firstOrNull { it.id == id } }
             ?: portfolios.firstOrNull()
+        val portfolioId = selectedPortfolio?.id
+        if (portfolioId != null && transactionRepository.countByPortfolio(portfolioId) > 0L) {
+            current = Destination.DASHBOARD
+        }
     }
 
     fun persist() {
@@ -111,7 +118,12 @@ fun AppShell(
                 Sidebar(
                     state = sidebarState,
                     current = current,
-                    onSelect = { if (it.enabled) current = it },
+                    onSelect = { dest ->
+                        if (dest.enabled) {
+                            analysisSource = null
+                            current = dest
+                        }
+                    },
                     onToggle = { userExpanded = !userExpanded },
                 )
                 Column(modifier = Modifier.weight(1f)) {
@@ -135,6 +147,7 @@ fun AppShell(
                             analysisPositions = analysisPositions,
                             analysisIndex     = analysisIndex,
                             onAnalyze = { position, list ->
+                                analysisSource    = current
                                 selectedAnalysis  = position
                                 analysisPositions = list
                                 analysisIndex     = list.indexOf(position).coerceAtLeast(0)
@@ -142,6 +155,10 @@ fun AppShell(
                             },
                             themeMode    = themeMode,
                             onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
+                            analysisSource = analysisSource,
+                            onBackFromAnalysis = analysisSource?.let { src ->
+                                { current = src; analysisSource = null }
+                            },
                         ),
                     )
                 }

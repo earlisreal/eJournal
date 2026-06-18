@@ -30,6 +30,7 @@ data class CalendarState(
     val monthTotal: Double = 0.0,
     val selectedDate: LocalDate? = null,
     val loading: Boolean = false,
+    val availableYears: List<Int> = emptyList(),
 )
 
 /**
@@ -63,12 +64,19 @@ class CalendarViewModel(
             val positions = filterPositions(FifoMatcher.computeClosedPositions(txs), DateRange(null, null), segment)
             val summaries = dailySummaries(positions)
             val positionsByDay = positions.groupBy { it.exitDatetime.date }
-            val s = _state.value
-            _state.value = s.copy(
-                summaries = summaries,
+            val latestDate = summaries.keys.maxOrNull()
+            val displayYear  = latestDate?.year        ?: _state.value.year
+            val displayMonth = latestDate?.monthNumber ?: _state.value.month
+            val availableYears = summaries.keys.map { it.year }.distinct().sorted()
+            _state.value = _state.value.copy(
+                year           = displayYear,
+                month          = displayMonth,
+                grid           = monthGrid(displayYear, displayMonth),
+                summaries      = summaries,
                 positionsByDay = positionsByDay,
-                monthTotal = monthTotal(summaries, s.year, s.month),
-                loading = false,
+                monthTotal     = monthTotal(summaries, displayYear, displayMonth),
+                loading        = false,
+                availableYears = availableYears,
             )
         }
     }
@@ -89,6 +97,16 @@ class CalendarViewModel(
 
     fun selectDay(date: LocalDate?) {
         _state.value = _state.value.copy(selectedDate = date)
+    }
+
+    fun jumpToMonth(year: Int, month: Int) {
+        _state.value = _state.value.copy(
+            year         = year,
+            month        = month,
+            grid         = monthGrid(year, month),
+            monthTotal   = monthTotal(_state.value.summaries, year, month),
+            selectedDate = null,
+        )
     }
 
     private fun monthTotal(summaries: Map<LocalDate, DaySummary>, year: Int, month: Int): Double =

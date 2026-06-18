@@ -6,6 +6,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.earlisreal.ejournal.demo.runCsvGenerator
+import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "generate-csv") {
@@ -21,7 +22,12 @@ fun main(args: Array<String>) {
         val deps = AppDependencies()
         val windowState = rememberWindowState(size = DpSize(1360.dp, 880.dp))
         Window(
-            onCloseRequest = ::exitApplication,
+            // Shut down the JavaFX toolkit (kept alive by setImplicitExit(false)) before exiting,
+            // so the non-daemon FX thread doesn't block JVM shutdown.
+            onCloseRequest = {
+                JavaFxChartBridge.shutdown()
+                exitApplication()
+            },
             state = windowState,
             title = "eJournal",
         ) {
@@ -34,6 +40,7 @@ fun main(args: Array<String>) {
                 parsers = deps.parsers,
                 alpacaProvider = deps.alpacaProvider,
                 marketDataService = deps.marketDataService,
+                tradeZeroClient = deps.tradeZeroClient,
             )
         }
     }

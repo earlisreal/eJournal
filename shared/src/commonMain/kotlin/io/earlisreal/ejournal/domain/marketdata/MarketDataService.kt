@@ -138,15 +138,22 @@ class MarketDataService(
             BarSource.ALPACA -> alpacaProvider to alpacaSemaphore
             BarSource.UNAVAILABLE -> return RangeOutcome.NeedsKeys
         }
+        val r = routed.range
         return try {
-            val bars = semaphore.withPermit { fetchWithRetry(provider, routed.range) }
+            val bars = semaphore.withPermit { fetchWithRetry(provider, r) }
             marketDataRepository.upsertBars(bars)
             RangeOutcome.Success
         } catch (e: InvalidKeysException) {
             RangeOutcome.KeysRejected
         } catch (e: SymbolNotFoundException) {
+            println("[sync] symbol not found: ${r.symbol}")
             RangeOutcome.SymbolNotFound
         } catch (e: TransientFetchException) {
+            println("[sync] FAILED ${r.symbol} ${r.timeframe} ${r.from}..${r.to}: ${e.message}")
+            RangeOutcome.Failed
+        } catch (e: Exception) {
+            println("[sync] UNEXPECTED ${r.symbol} ${r.timeframe} ${r.from}..${r.to}: ${e::class.simpleName}: ${e.message}")
+            e.printStackTrace()
             RangeOutcome.Failed
         }
     }

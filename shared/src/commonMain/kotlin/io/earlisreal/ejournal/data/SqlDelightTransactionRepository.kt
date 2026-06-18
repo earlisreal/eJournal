@@ -20,7 +20,7 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
             .executeAsList()
             .map { it.toDomain() }
 
-    override suspend fun insert(transaction: Transaction): Long {
+    override suspend fun insert(transaction: Transaction): Long? {
         db.tradeTransactionQueries.insertTransaction(
             portfolioId = transaction.portfolioId,
             symbol      = transaction.symbol,
@@ -28,8 +28,12 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
             action      = transaction.action,
             price       = transaction.price,
             shares      = transaction.shares,
-            fees        = transaction.fees
+            fees        = transaction.fees,
+            externalId  = transaction.externalId
         )
+        // INSERT OR IGNORE skips duplicate externalIds; changes() is 0 when nothing was inserted,
+        // in which case lastInsertRowId() would return a stale id — so report the skip as null.
+        if (db.tradeTransactionQueries.changes().executeAsOne() == 0L) return null
         return db.tradeTransactionQueries.lastInsertRowId().executeAsOne()
     }
 
@@ -52,6 +56,7 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
         action      = action,
         price       = price,
         shares      = shares,
-        fees        = fees
+        fees        = fees,
+        externalId  = externalId
     )
 }

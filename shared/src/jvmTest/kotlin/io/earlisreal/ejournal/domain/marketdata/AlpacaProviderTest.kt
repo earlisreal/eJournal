@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.marketdata
 
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -15,14 +16,19 @@ import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private class FakeCredentials(var credentials: AlpacaCredentials? = AlpacaCredentials("key-id", "secret")) : CredentialsRepository {
     override fun getAlpacaCredentials(): AlpacaCredentials? = credentials
     override fun setAlpacaCredentials(credentials: AlpacaCredentials) { this.credentials = credentials }
+    override fun getTradeZeroCredentials(): TradeZeroCredentials? = null
+    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
 }
 
 class AlpacaProviderTest {
@@ -32,10 +38,11 @@ class AlpacaProviderTest {
 
     private fun provider(
         credentials: CredentialsRepository = FakeCredentials(),
+        now: () -> Instant = { kotlin.time.Clock.System.now() },
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): Pair<AlpacaProvider, MockEngine> {
         val engine = MockEngine { request -> handler(request) }
-        return AlpacaProvider(HttpClient(engine), credentials) to engine
+        return AlpacaProvider(HttpClient(engine), credentials, now) to engine
     }
 
     @Test
@@ -66,6 +73,44 @@ class AlpacaProviderTest {
         assertEquals("key-id", request.headers["APCA-API-KEY-ID"])
         assertEquals("secret", request.headers["APCA-API-SECRET-KEY"])
         assertEquals("1Day", request.url.parameters["timeframe"])
+    }
+
+    @Test
+    fun `clamps end to at least 15 minutes ago so free-tier SIP does not reject recent ranges`() = runTest {
+        val fixedNow = Instant.parse("2026-06-18T13:51:38Z")
+        val (provider, engine) = provider(now = { fixedNow }) {
+            jsonResponse("""{"bars":[],"symbol":"EHGO","next_page_token":null}""")
+        }
+        // 'to' is today, so the naive end (tomorrow 00:00 ET) is in the future — must be clamped.
+        provider.getBars("EHGO", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-17"), LocalDate.parse("2026-06-18"))
+
+        val end = Instant.parse(engine.requestHistory.single().url.parameters["end"]!!)
+        assertTrue(end <= fixedNow - 15.minutes, "end $end must be clamped to at least 15 min before $fixedNow")
+    }
+
+    @Test
+    fun `bar requests use the consolidated SIP feed for full pre-market coverage`() = runTest {
+        val (provider, engine) = provider {
+            jsonResponse("""{"bars":[],"symbol":"AAPL","next_page_token":null}""")
+        }
+        provider.getBars("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-17"), LocalDate.parse("2026-06-17"))
+        // IEX has almost no pre-market data for thinly-traded names; SIP (consolidated tape)
+        // covers the full 04:00 ET extended-hours session.
+        assertEquals("sip", engine.requestHistory.single().url.parameters["feed"])
+    }
+
+    @Test
+    fun `one-minute requests omit the unsupported extended_hours parameter`() = runTest {
+        val (provider, engine) = provider {
+            jsonResponse("""{"bars":[],"symbol":"AAPL","next_page_token":null}""")
+        }
+        provider.getBars("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-16"), LocalDate.parse("2026-06-16"))
+
+        val request = engine.requestHistory.single()
+        assertEquals("1Min", request.url.parameters["timeframe"])
+        // Alpaca's bars endpoint rejects extended_hours with HTTP 400; extended-hours bars
+        // are already included by default, so the parameter must not be sent.
+        assertNull(request.url.parameters["extended_hours"])
     }
 
     @Test

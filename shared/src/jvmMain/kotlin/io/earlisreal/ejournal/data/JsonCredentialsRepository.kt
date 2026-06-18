@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.data
 
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -32,6 +33,25 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
             readRoot().forEach { (key, value) -> if (key != "alpaca") put(key, value) }
             putJsonObject("alpaca") {
                 put("keyId", credentials.keyId)
+                put("secretKey", credentials.secretKey)
+            }
+        }
+        writeAtomically(json.encodeToString(JsonObject.serializer(), updated))
+    }
+
+    override fun getTradeZeroCredentials(): TradeZeroCredentials? {
+        val tz = readRoot()["tradeZero"] as? JsonObject ?: return null
+        val keyId     = (tz["keyId"]     as? JsonPrimitive)?.contentOrNull ?: return null
+        val secretKey = (tz["secretKey"] as? JsonPrimitive)?.contentOrNull ?: return null
+        if (keyId.isBlank() || secretKey.isBlank()) return null
+        return TradeZeroCredentials(keyId, secretKey)
+    }
+
+    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {
+        val updated = buildJsonObject {
+            readRoot().forEach { (key, value) -> if (key != "tradeZero") put(key, value) }
+            putJsonObject("tradeZero") {
+                put("keyId",     credentials.keyId)
                 put("secretKey", credentials.secretKey)
             }
         }

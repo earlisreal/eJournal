@@ -10,7 +10,8 @@ interface TransactionRepository {
         from: LocalDateTime,
         to: LocalDateTime
     ): List<Transaction>
-    suspend fun insert(transaction: Transaction): Long
+    /** Inserts a transaction, returning its new row id, or null if it was skipped as a duplicate (same externalId). */
+    suspend fun insert(transaction: Transaction): Long?
     suspend fun delete(id: Long)
     suspend fun countByPortfolio(portfolioId: Long): Long
     suspend fun deleteByPortfolio(portfolioId: Long)

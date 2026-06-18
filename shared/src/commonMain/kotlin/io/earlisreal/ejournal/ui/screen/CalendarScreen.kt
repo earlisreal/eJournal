@@ -9,13 +9,19 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -64,11 +70,46 @@ fun CalendarScreen(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     AppTextButton(text = "◀", onClick = { vm.previousMonth() })
-                    Text(
-                        "${monthName(state.month)} ${state.year}",
-                        color = AppTheme.colors.textPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+
+                    // Year dropdown
+                    var yearMenuOpen by remember { mutableStateOf(false) }
+                    val yearsToShow = if (state.availableYears.isEmpty()) listOf(state.year) else state.availableYears
+                    Box {
+                        Text(
+                            "${state.year}",
+                            color = AppTheme.colors.textPrimary,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.clickable { yearMenuOpen = true },
+                        )
+                        DropdownMenu(expanded = yearMenuOpen, onDismissRequest = { yearMenuOpen = false }) {
+                            yearsToShow.forEach { year ->
+                                DropdownMenuItem(
+                                    text = { Text("$year") },
+                                    onClick = { vm.jumpToMonth(year, state.month); yearMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+
+                    // Month dropdown
+                    var monthMenuOpen by remember { mutableStateOf(false) }
+                    Box {
+                        Text(
+                            monthName(state.month),
+                            color = AppTheme.colors.textPrimary,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.clickable { monthMenuOpen = true },
+                        )
+                        DropdownMenu(expanded = monthMenuOpen, onDismissRequest = { monthMenuOpen = false }) {
+                            (1..12).forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text(monthName(m)) },
+                                    onClick = { vm.jumpToMonth(state.year, m); monthMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
+
                     AppTextButton(text = "▶", onClick = { vm.nextMonth() })
                     Spacer(Modifier.weight(1f))
                     Text(

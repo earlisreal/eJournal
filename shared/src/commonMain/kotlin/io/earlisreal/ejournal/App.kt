@@ -11,6 +11,7 @@ import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.screen.AnalysisScreen
 import io.earlisreal.ejournal.ui.screen.CalendarScreen
 import io.earlisreal.ejournal.ui.screen.DashboardScreen
@@ -31,6 +32,7 @@ fun App(
     parsers: List<TransactionParser>,
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
+    tradeZeroClient: TradeZeroClient,
 ) {
     LaunchedEffect(Unit) { marketDataService.requestSync() }
 
@@ -58,6 +60,8 @@ fun App(
                 filter = filter,
                 onImportSuccess = { marketDataService.requestSync() },
                 marketDataService = marketDataService,
+                tradeZeroClient = tradeZeroClient,
+                tradeZeroConfigured = credentialsRepository.getTradeZeroCredentials() != null,
             )
             Destination.CALENDAR -> CalendarScreen(
                 transactionRepository = transactionRepository,
@@ -70,6 +74,8 @@ fun App(
                 marketDataRepository = marketDataRepository,
                 isDarkTheme = isDarkTheme,
                 symbol = filter.portfolio?.market?.symbol ?: "$",
+                sourceDestination = nav.analysisSource,
+                onBack = nav.onBackFromAnalysis,
             )
             Destination.SETTINGS -> SettingsScreen(
                 themeMode = nav.themeMode,
@@ -77,6 +83,7 @@ fun App(
                 credentialsRepository = credentialsRepository,
                 alpacaProvider = alpacaProvider,
                 marketDataService = marketDataService,
+                tradeZeroClient = tradeZeroClient,
             )
         }
     }

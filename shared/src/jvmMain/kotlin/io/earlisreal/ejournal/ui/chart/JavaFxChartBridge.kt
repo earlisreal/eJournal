@@ -15,6 +15,7 @@ import javafx.scene.web.WebView
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toInstant
 import java.awt.Component
 import java.io.File
@@ -30,6 +31,12 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     private var loaded = false
 
     init {
+        toolkitStarted = true
+        // Keep the JavaFX toolkit alive across chart-panel disposal (navigating away from the
+        // Analysis screen). With the default implicit-exit, removing the last JFXPanel terminates
+        // the QuantumRenderer; async WebKit image cleanup (RTImage.dispose) then submits to the dead
+        // renderer → RejectedExecutionException. The toolkit is torn down explicitly in shutdown().
+        Platform.setImplicitExit(false)
         Platform.runLater {
             val webView = WebView()
             val engine = webView.engine
@@ -45,8 +52,11 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
                     pendingJs.clear()
                     try {
                         val r = engine.executeScript(
-                            "(function(){var g=chart.timeScale().getVisibleLogicalRange();" +
-                                "return g?(g.from.toFixed(1)+'..'+g.to.toFixed(1)):'null';})()"
+                            "(function(){" +
+                                "if(typeof chart==='undefined')return 'chart not ready';" +
+                                "var g=chart.timeScale().getVisibleLogicalRange();" +
+                                "return g?(g.from.toFixed(1)+'..'+g.to.toFixed(1)):'null';" +
+                            "})()"
                         )
                         println("[chart] VERIFY visibleRange $r")
                     } catch (e: Exception) {
@@ -61,7 +71,7 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     // All JavaFX types are kept private; callers only need java.awt.Component.
     val uiComponent: Component get() = jfxPanel
 
-    fun sendState(state: AnalysisState) {
+    fun sendState(state: AnalysisState, scrollToTrade: Boolean = true) {
         val chartData = state.chartData ?: return
         val position = state.position ?: return
         val tf = state.activeTimeframe
@@ -76,7 +86,7 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         exec("setTheme(${state.isDarkTheme})")
         exec("setData($candlesJson, $volumeJson, $vwapJson)")
         exec("setMarkers($markersJson)")
-        exec("scrollToFirstTrade($firstTradeIdx)")
+        if (scrollToTrade) exec("scrollToFirstTrade($firstTradeIdx)")
         exec("updateTitle('${position.symbol}', '${tf.label}')")
     }
 
@@ -103,12 +113,14 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
 
     // ── Serialisation ────────────────────────────────────────────────────────────
 
+    // Always emit numeric UTC epoch seconds so Lightweight Charts v4 never has to
+    // switch between UTCTimestamp and BusinessDay time types (which throws at runtime).
+    // For daily/weekly bars, normalise to midnight UTC of that date so day-granularity
+    // comparisons work correctly regardless of whether the raw bar is at market-open.
     private fun barTime(ts: LocalDateTime, tf: ChartTimeframe): String = when (tf) {
-        ChartTimeframe.ONE_MIN,
-        ChartTimeframe.FIVE_MIN,
-        ChartTimeframe.FIFTEEN_MIN -> ts.toInstant(TimeZone.UTC).epochSeconds.toString()
         ChartTimeframe.DAILY,
-        ChartTimeframe.WEEKLY      -> "\"${ts.date}\""
+        ChartTimeframe.WEEKLY -> ts.date.atStartOfDayIn(TimeZone.UTC).epochSeconds.toString()
+        else                  -> ts.toInstant(TimeZone.UTC).epochSeconds.toString()
     }
 
     private fun serializeCandles(bars: List<Bar>, tf: ChartTimeframe): String =
@@ -150,7 +162,9 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         val unique = transactions.filter { seen.add(it.id) }
         return unique.joinToString(",", "[", "]") { tx ->
             val color = if (tx.action == Action.BUY) "rgba(165,214,167,0.9)" else "rgba(244,143,177,0.9)"
-            """{"time":${txTime(tx.datetime, tf)},"position":"atPriceMiddle","price":${tx.price},"shape":"circle","color":"$color","size":1.5}"""
+            // Lightweight Charts v4 markers only support aboveBar/belowBar/inBar (no price-level
+            // placement); "inBar" sits the marker on the trade's bar.
+            """{"time":${txTime(tx.datetime, tf)},"position":"inBar","shape":"circle","color":"$color","size":1.5}"""
         }
     }
 
@@ -169,11 +183,28 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     }
 
     companion object {
+        @Volatile private var toolkitStarted = false
+
+        /**
+         * Tear down the JavaFX toolkit on app shutdown. Required because setImplicitExit(false)
+         * keeps the non-daemon FX thread alive, which would otherwise block JVM exit. No-op if the
+         * chart was never opened (toolkit never started).
+         */
+        fun shutdown() {
+            if (toolkitStarted) runCatching { Platform.exit() }
+        }
+
         fun forUrl(url: String) = JavaFxChartBridge(url)
 
         private fun defaultHtmlFileUrl(): String {
             val dir = File(System.getProperty("java.io.tmpdir"), "ejournal-chart").also { it.mkdirs() }
-            listOf("trade-analysis.html", "trade-analysis.js", "lightweight-charts.standalone.production.js").forEach { name ->
+            // trade-analysis.html loads trade-analysis.js via <script src> — it must be copied
+            // alongside, or resize()/setData()/etc. are undefined in the WebView.
+            listOf(
+                "trade-analysis.html",
+                "trade-analysis.js",
+                "lightweight-charts.standalone.production.js",
+            ).forEach { name ->
                 JavaFxChartBridge::class.java.getResourceAsStream("/chart/$name")
                     ?.use { src -> File(dir, name).outputStream().use { dst -> src.copyTo(dst) } }
             }

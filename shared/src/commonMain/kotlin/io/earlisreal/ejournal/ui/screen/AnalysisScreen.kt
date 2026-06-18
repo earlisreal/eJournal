@@ -28,6 +28,7 @@ import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.chart.CandlestickChart
+import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.signedMoney
@@ -45,6 +46,8 @@ fun AnalysisScreen(
     marketDataRepository: MarketDataRepository,
     isDarkTheme: Boolean,
     symbol: String = "$",
+    sourceDestination: Destination? = null,
+    onBack: (() -> Unit)? = null,
 ) {
     val vm = viewModel { AnalysisViewModel(marketDataRepository) }
     val state by vm.state.collectAsState()
@@ -64,6 +67,23 @@ fun AnalysisScreen(
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
 
     Column(modifier = Modifier.fillMaxSize()) {
+
+        // ── Breadcrumb ──────────────────────────────────────────────────────
+        if (onBack != null && sourceDestination != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppTheme.colors.surface)
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+            ) {
+                Text(
+                    "← ${sourceDestination.label}",
+                    color = AppTheme.colors.accent,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.clickable { onBack() },
+                )
+            }
+        }
 
         // ── Header bar ──────────────────────────────────────────────────────
         Row(
@@ -123,6 +143,8 @@ fun AnalysisScreen(
                 listOf(ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
 
             timeframes.forEach { tf ->
+                val isIntraday = tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
+                val unavailable = isIntraday && !state.has1MinData
                 val active = state.activeTimeframe == tf
                 Text(
                     tf.label,
@@ -132,9 +154,13 @@ fun AnalysisScreen(
                             if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated,
                             RoundedCornerShape(4.dp),
                         )
-                        .clickable { vm.selectTimeframe(tf) }
+                        .clickable(enabled = !unavailable) { vm.selectTimeframe(tf) }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = if (active) AppTheme.colors.onAccent else AppTheme.colors.textMuted,
+                    color = when {
+                        unavailable -> AppTheme.colors.textMuted.copy(alpha = 0.4f)
+                        active      -> AppTheme.colors.onAccent
+                        else        -> AppTheme.colors.textMuted
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -162,14 +188,18 @@ fun AnalysisScreen(
         }
 
         // ── Chart area ───────────────────────────────────────────────────────
+        // CandlestickChart stays mounted across navigations so the JavaFX WebView
+        // isn't torn down and rebuilt on every position change. The loading
+        // indicator overlays it instead of replacing it.
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            when {
-                state.loading -> LoadingIndicator()
-                state.noDataForTimeframe -> EmptyState(
+            if (state.noDataForTimeframe) {
+                EmptyState(
                     title = "No market data",
                     subtitle = "Go to Settings → Sync market data to fetch OHLCV bars for this trade.",
                 )
-                state.chartData != null -> CandlestickChart(state = state, modifier = Modifier.fillMaxSize())
+            } else {
+                CandlestickChart(state = state, modifier = Modifier.fillMaxSize())
+                if (state.loading) LoadingIndicator()
             }
         }
 

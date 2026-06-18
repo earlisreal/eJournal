@@ -14,6 +14,8 @@ import kotlinx.datetime.LocalDateTime
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class SqlDelightTransactionRepositoryTest {
 
@@ -49,7 +51,8 @@ class SqlDelightTransactionRepositoryTest {
         datetime: String = "2024-01-01T09:30",
         price: Double = 100.0,
         shares: Double = 100.0,
-        fees: Double = 20.0
+        fees: Double = 20.0,
+        externalId: String? = null
     ) = Transaction(
         id = 0L,
         portfolioId = portfolioId,
@@ -58,7 +61,8 @@ class SqlDelightTransactionRepositoryTest {
         action = action,
         price = price,
         shares = shares,
-        fees = fees
+        fees = fees,
+        externalId = externalId
     )
 
     @Test
@@ -70,6 +74,30 @@ class SqlDelightTransactionRepositoryTest {
         assertEquals("BDO", result[0].symbol)
         assertEquals(Action.BUY, result[0].action)
         assertEquals(100.0, result[0].price)
+    }
+
+    @Test
+    fun duplicateExternalIdIsNotInserted() = runTest {
+        val pId = seedPortfolio()
+        txRepo.insert(tx(pId, externalId = "tz:1"))
+        txRepo.insert(tx(pId, externalId = "tz:1"))
+        assertEquals(1, txRepo.getByPortfolio(pId).size)
+    }
+
+    @Test
+    fun insertReturnsRowIdThenNullWhenDuplicateSkipped() = runTest {
+        val pId = seedPortfolio()
+        val firstId = txRepo.insert(tx(pId, externalId = "tz:1"))
+        assertNotNull(firstId)
+        assertNull(txRepo.insert(tx(pId, externalId = "tz:1")))
+    }
+
+    @Test
+    fun rowsWithNullExternalIdAreAlwaysInserted() = runTest {
+        val pId = seedPortfolio()
+        txRepo.insert(tx(pId, externalId = null))
+        txRepo.insert(tx(pId, externalId = null))
+        assertEquals(2, txRepo.getByPortfolio(pId).size)
     }
 
     @Test
@@ -98,7 +126,7 @@ class SqlDelightTransactionRepositoryTest {
     @Test
     fun deleteRemovesTransaction() = runTest {
         val pId = seedPortfolio()
-        val id = txRepo.insert(tx(pId))
+        val id = txRepo.insert(tx(pId))!!
         txRepo.delete(id)
         assertEquals(0, txRepo.getByPortfolio(pId).size)
     }

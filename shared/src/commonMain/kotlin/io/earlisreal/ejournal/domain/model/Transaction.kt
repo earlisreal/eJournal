@@ -10,5 +10,10 @@ data class Transaction(
     val action: Action,
     val price: Double,
     val shares: Double,
-    val fees: Double
+    val fees: Double,
+    /**
+     * Stable, source-namespaced identifier used to deduplicate imports (e.g. "tz:<tradeId>").
+     * Null for sources with no native identifier (manual entry, CSV) — those are never deduped.
+     */
+    val externalId: String? = null
 )

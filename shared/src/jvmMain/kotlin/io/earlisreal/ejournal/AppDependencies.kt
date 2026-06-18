@@ -16,6 +16,8 @@ import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClientImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import java.io.File
@@ -37,6 +39,7 @@ class AppDependencies {
     val parsers: List<TransactionParser> = listOf(GenericCsvParser())
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
+    val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)
     val marketDataService = MarketDataService(
         portfolioRepository = portfolioRepository,
         transactionRepository = transactionRepository,

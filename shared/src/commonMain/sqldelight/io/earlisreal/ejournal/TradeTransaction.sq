@@ -7,12 +7,18 @@ CREATE TABLE TradeTransaction (
     price       REAL    NOT NULL,
     shares      REAL    NOT NULL,
     fees        REAL    NOT NULL,
+    externalId  TEXT,
     FOREIGN KEY (portfolioId) REFERENCES Portfolio(id)
 );
 
+-- Dedup key for re-imported transactions. Nullable: SQLite treats every NULL as
+-- distinct, so manual/CSV rows (externalId = NULL) are never deduped, while
+-- source-namespaced ids (e.g. "tz:<tradeId>") collapse re-synced duplicates.
+CREATE UNIQUE INDEX TradeTransaction_externalId ON TradeTransaction(externalId);
+
 insertTransaction:
-INSERT INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 selectByPortfolio:
 SELECT * FROM TradeTransaction WHERE portfolioId = ? ORDER BY datetime ASC;
@@ -33,3 +39,6 @@ SELECT COUNT(*) FROM TradeTransaction WHERE portfolioId = ?;
 
 lastInsertRowId:
 SELECT last_insert_rowid();
+
+changes:
+SELECT changes();

@@ -42,7 +42,11 @@ class AnalysisViewModel(
             activeTimeframe = defaultTf,
             vwapEnabled     = true,
             isDarkTheme     = isDarkTheme,
+            loading         = true,
         )
+        viewModelScope.launch(Dispatchers.Default) {
+            _state.value = _state.value.copy(has1MinData = check1MinAvailability(position))
+        }
         loadBars(position, defaultTf)
     }
 
@@ -73,6 +77,9 @@ class AnalysisViewModel(
             position = position, currentIndex = index,
             activeTimeframe = tf, loading = true, chartData = null, noDataForTimeframe = false,
         )
+        viewModelScope.launch(Dispatchers.Default) {
+            _state.value = _state.value.copy(has1MinData = check1MinAvailability(position))
+        }
         loadBars(position, tf)
     }
 
@@ -80,25 +87,30 @@ class AnalysisViewModel(
         loadJob?.cancel()
         loadJob = viewModelScope.launch(Dispatchers.Default) {
             _state.value = _state.value.copy(loading = true)
-            val sourceTimeframe = when (tf) {
-                ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN -> Timeframe.ONE_MINUTE
-                ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> Timeframe.DAILY
-            }
-            val (from, to) = queryWindow(position, sourceTimeframe)
-            val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, from, to)
-            if (rawBars.isEmpty()) {
+            try {
+                val sourceTimeframe = when (tf) {
+                    ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN -> Timeframe.ONE_MINUTE
+                    ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> Timeframe.DAILY
+                }
+                val (from, to) = queryWindow(position, sourceTimeframe)
+                val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, from, to)
+                if (rawBars.isEmpty()) {
+                    _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
+                    return@launch
+                }
+                val aggregated = BarAggregator.aggregate(rawBars, tf)
+                _state.value = _state.value.copy(loading = false, chartData = aggregated, noDataForTimeframe = false)
+            } catch (e: Exception) {
+                System.err.println("[analysis] loadBars error: $e")
                 _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
-                return@launch
             }
-            val aggregated = BarAggregator.aggregate(rawBars, tf)
-            _state.value = _state.value.copy(loading = false, chartData = aggregated, noDataForTimeframe = false)
         }
     }
 
     private fun queryWindow(position: ClosedPosition, tf: Timeframe): Pair<LocalDateTime, LocalDateTime> {
         return if (tf == Timeframe.ONE_MINUTE) {
-            LocalDateTime(position.entryDatetime.date, LocalTime(0, 0)) to
-            LocalDateTime(position.exitDatetime.date,  LocalTime(23, 59))
+            LocalDateTime(position.entryDatetime.date.minus(DatePeriod(days = 1)), LocalTime(0, 0)) to
+            LocalDateTime(position.exitDatetime.date.plus(DatePeriod(days = 1)),   LocalTime(23, 59))
         } else {
             LocalDateTime(position.entryDatetime.date.minus(DatePeriod(days = 90)), LocalTime(0, 0)) to
             LocalDateTime(position.exitDatetime.date.plus(DatePeriod(days = 60)),   LocalTime(23, 59))
@@ -107,4 +119,10 @@ class AnalysisViewModel(
 
     private fun defaultTimeframe(position: ClosedPosition): ChartTimeframe =
         if (classifyTradeType(position) == TradeType.DAY) ChartTimeframe.ONE_MIN else ChartTimeframe.DAILY
+
+    private suspend fun check1MinAvailability(position: ClosedPosition): Boolean {
+        val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE) ?: return false
+        val tradeDate = position.entryDatetime.date
+        return tradeDate >= coverage.first.date && tradeDate <= coverage.last.date
+    }
 }

@@ -67,6 +67,12 @@ class YahooFinanceProvider(private val client: HttpClient) : MarketDataProvider 
         val chart = runCatching { json.decodeFromString<ChartResponse>(body).chart }.getOrNull()
 
         if (response.status == HttpStatusCode.NotFound) throw SymbolNotFoundException(symbol)
+        // Yahoo returns 400 "Data doesn't exist" when the requested range has no bars yet
+        // (e.g. requesting today's daily bar before market close). Treat as empty, not an error.
+        if (response.status == HttpStatusCode.BadRequest &&
+            chart?.error?.description?.contains("Data doesn't exist") == true) {
+            return emptyList()
+        }
         if (response.status.value >= 400 || chart == null) {
             throw TransientFetchException("Yahoo returned ${response.status} for $symbol: ${chart?.error?.description ?: body.take(200)}")
         }

@@ -30,6 +30,7 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
@@ -48,8 +49,9 @@ fun SettingsScreen(
     credentialsRepository: CredentialsRepository,
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
+    tradeZeroClient: TradeZeroClient,
 ) {
-    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider) }
+    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
 
@@ -114,6 +116,53 @@ fun SettingsScreen(
                             Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
                         }
                         state.connectionResult?.let { ConnectionResultText(it) }
+                    }
+                }
+            }
+
+            AppCard {
+                SectionTitle("Trade Zero API")
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Text(
+                        "Connect your Trade Zero account to import historical orders directly from the broker.",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "Keys are stored only on this machine, in ~/.ejournal/credentials.json.",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedTextField(
+                        value = state.tradeZeroKeyId,
+                        onValueChange = vm::updateTradeZeroKeyId,
+                        label = { Text("API Key ID") },
+                        singleLine = true,
+                        modifier = Modifier.width(420.dp),
+                    )
+                    OutlinedTextField(
+                        value = state.tradeZeroSecretKey,
+                        onValueChange = vm::updateTradeZeroSecretKey,
+                        label = { Text("API Secret Key") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.width(420.dp),
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        AppPrimaryButton(
+                            text = "Save",
+                            onClick = vm::saveTradeZero,
+                            enabled = state.tradeZeroKeyId.isNotBlank() && state.tradeZeroSecretKey.isNotBlank(),
+                        )
+                        AppSecondaryButton(
+                            text = if (state.tradeZeroTesting) "Testing…" else "Test Connection",
+                            onClick = vm::testTradeZeroConnection,
+                            enabled = !state.tradeZeroTesting && state.hasSavedTradeZeroCredentials,
+                        )
+                        if (state.tradeZeroJustSaved && state.tradeZeroConnectionResult == null) {
+                            Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
+                        }
+                        state.tradeZeroConnectionResult?.let { ConnectionResultText(it) }
                     }
                 }
             }

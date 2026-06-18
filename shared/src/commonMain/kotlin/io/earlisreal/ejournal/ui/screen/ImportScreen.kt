@@ -23,6 +23,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroFetchResult
+import kotlin.time.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.todayIn
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.DataTable
@@ -49,10 +57,14 @@ fun ImportScreen(
     filter: FilterState,
     onImportSuccess: () -> Unit,
     marketDataService: MarketDataService,
+    tradeZeroClient: TradeZeroClient,
+    tradeZeroConfigured: Boolean,
 ) {
     val vm = viewModel { ImportViewModel(transactionRepository, parsers) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
+    var tradeZeroSyncing by remember { mutableStateOf(false) }
+    var tradeZeroResult  by remember { mutableStateOf<String?>(null) }
 
     var isDragHovered by remember { mutableStateOf(false) }
     val portfolio = filter.portfolio
@@ -127,6 +139,62 @@ fun ImportScreen(
                     enabled = state.status !is ImportStatus.Importing,
                     modifier = Modifier.align(Alignment.End),
                 )
+            }
+
+            if (tradeZeroConfigured) {
+                val scope = rememberCoroutineScope()
+                io.earlisreal.ejournal.ui.components.AppCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        Text(
+                            "Trade Zero",
+                            color = AppTheme.colors.textPrimary,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            "Fetch all historical orders directly from your Trade Zero account.",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        ) {
+                            AppSecondaryButton(
+                                text = if (tradeZeroSyncing) "Syncing…" else "Sync last 7 days",
+                                enabled = !tradeZeroSyncing && portfolio != null,
+                                onClick = {
+                                    val portfolioId = portfolio?.id ?: return@AppSecondaryButton
+                                    tradeZeroSyncing = true
+                                    tradeZeroResult  = null
+                                    scope.launch {
+                                        val to   = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                                        val from = to.minus(6, DateTimeUnit.DAY)
+                                        when (val result = tradeZeroClient.fetchOrders(portfolioId, from, to)) {
+                                            is TradeZeroFetchResult.Success -> {
+                                                val inserted = result.transactions.count { transactionRepository.insert(it) != null }
+                                                val skipped = result.transactions.size - inserted
+                                                tradeZeroResult = if (skipped > 0)
+                                                    "Imported $inserted new, skipped $skipped duplicate(s)"
+                                                else
+                                                    "Imported $inserted transaction(s)"
+                                                if (inserted > 0) onImportSuccess()
+                                            }
+                                            TradeZeroFetchResult.InvalidCredentials ->
+                                                tradeZeroResult = "Invalid credentials — update them in Settings"
+                                            is TradeZeroFetchResult.NetworkError ->
+                                                tradeZeroResult = "Network error: ${result.message}"
+                                        }
+                                        tradeZeroSyncing = false
+                                    }
+                                },
+                            )
+                            tradeZeroResult?.let {
+                                Text(it, color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

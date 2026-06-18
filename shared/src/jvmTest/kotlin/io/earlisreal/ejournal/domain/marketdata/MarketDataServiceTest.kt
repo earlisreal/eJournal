@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.domain.marketdata
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.BarCoverage
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
@@ -66,6 +67,8 @@ private class FakeProvider : MarketDataProvider {
 private class FakeCreds(var creds: AlpacaCredentials? = null) : CredentialsRepository {
     override fun getAlpacaCredentials(): AlpacaCredentials? = creds
     override fun setAlpacaCredentials(credentials: AlpacaCredentials) { creds = credentials }
+    override fun getTradeZeroCredentials(): TradeZeroCredentials? = null
+    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
 }
 
 class MarketDataServiceTest {

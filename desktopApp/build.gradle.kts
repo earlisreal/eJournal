@@ -27,8 +27,13 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            // jpackage's auto-detected jlink runtime is too minimal — it omits java.sql
+            // (SQLDelight JDBC), jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) and
+            // jdk.jsobject (JavaFX WebView's JS bridge), causing "Failed to launch JVM" at startup.
+            // Bundle every JDK module for correctness; trim to an explicit modules(...) list later if size matters.
+            includeAllModules = true
             packageName = "eJournal"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
             description = "Trading journal — import broker CSVs, track closed positions and analytics."
             vendor = "earlisreal"
 

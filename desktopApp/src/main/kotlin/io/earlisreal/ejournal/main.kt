@@ -9,6 +9,8 @@ import io.earlisreal.ejournal.demo.runCsvGenerator
 import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
 
 fun main(args: Array<String>) {
+    FileLogging.init() // tee stdout/stderr to ~/.ejournal/logs so the packaged GUI app isn't silent
+
     if (args.firstOrNull() == "generate-csv") {
         runCsvGenerator(args.drop(1).toTypedArray())
         return

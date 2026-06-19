@@ -11,6 +11,8 @@ import io.ktor.http.HttpStatusCode
 import kotlin.time.Instant
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
@@ -90,10 +92,16 @@ class YahooFinanceProvider(private val client: HttpClient) : MarketDataProvider 
         val zone = TimeZone.of(result.meta.exchangeTimezoneName)
 
         val bars = timestamps.indices.mapNotNull { i ->
+            val raw = Instant.fromEpochSeconds(timestamps[i]).toLocalDateTime(zone)
+            // A daily bar is identified by its date. Yahoo stamps the most-recent (in-progress /
+            // just-closed) day at the last-trade time (e.g. 16:00:01) rather than the session open,
+            // so drop the intraday time — otherwise the same date fetched while live and again once
+            // finalised (09:30) lands as two rows under the (symbol, timeframe, timestamp) key.
+            val timestamp = if (timeframe == Timeframe.DAILY) LocalDateTime(raw.date, LocalTime(0, 0)) else raw
             Bar(
                 symbol = symbol,
                 timeframe = timeframe,
-                timestamp = Instant.fromEpochSeconds(timestamps[i]).toLocalDateTime(zone),
+                timestamp = timestamp,
                 open = quote.open?.getOrNull(i) ?: return@mapNotNull null,
                 high = quote.high?.getOrNull(i) ?: return@mapNotNull null,
                 low = quote.low?.getOrNull(i) ?: return@mapNotNull null,

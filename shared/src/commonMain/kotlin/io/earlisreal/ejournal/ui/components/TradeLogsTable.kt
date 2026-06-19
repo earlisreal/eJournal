@@ -21,6 +21,7 @@ import io.earlisreal.ejournal.domain.analytics.SortDirection
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
@@ -94,7 +95,7 @@ private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) 
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = Spacing.md, vertical = Spacing.sm),
     ) {
-        Cell(p.symbol, COLUMNS[0].weight, bold = true)
+        SymbolCell(p, COLUMNS[0].weight)
         Box(COLUMNS[1].weight) { TypeBadge(type) }
         Cell(formatDateTime(p.entryDatetime), COLUMNS[2].weight)
         Cell(formatDateTime(p.exitDatetime), COLUMNS[3].weight)
@@ -105,6 +106,33 @@ private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) 
         NumCell("%.2f".format(p.fees), COLUMNS[8].weight)
         NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor)
         NumCell("%+.1f%%".format(pct), COLUMNS[10].weight, color = pnlColor)
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.SymbolCell(p: ClosedPosition, weight: Float) {
+    Row(
+        modifier = Modifier.weight(weight),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            p.symbol,
+            color = AppTheme.colors.textPrimary,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodySmall,
+        )
+        if (p.direction == TradeDirection.SHORT) {
+            Text(
+                "S",
+                color = AppTheme.colors.loss,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .background(AppTheme.colors.loss.copy(alpha = 0.15f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 1.dp),
+            )
+        }
     }
 }
 

@@ -27,6 +27,7 @@ import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.ui.chart.CandlestickChart
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
@@ -109,8 +110,9 @@ fun AnalysisScreen(
                     style = NumberTextStyle,
                     modifier = Modifier.padding(end = Spacing.sm),
                 )
+                val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"
                 Text(
-                    "${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh",
+                    "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh",
                     color = AppTheme.colors.textMuted,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -215,8 +217,8 @@ fun AnalysisScreen(
                 val holdSec = position.exitDatetime.toInstant(TimeZone.UTC).epochSeconds -
                               position.entryDatetime.toInstant(TimeZone.UTC).epochSeconds
                 val holdStr = if (isDay) "${holdSec / 3600}h ${(holdSec % 3600) / 60}m" else "${holdSec / 86400}d"
-                StatCell("Avg Buy",  "%.2f".format(position.averageEntryPrice))
-                StatCell("Avg Sell", "%.2f".format(position.averageExitPrice))
+                StatCell("Avg Entry", "%.2f".format(position.averageEntryPrice))
+                StatCell("Avg Exit",  "%.2f".format(position.averageExitPrice))
                 StatCell("Shares",   "%.0f".format(position.shares))
                 StatCell("Fees",     "%.2f".format(position.fees))
                 StatCell("Entry",    "%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute))

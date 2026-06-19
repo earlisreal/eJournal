@@ -12,4 +12,5 @@ data class ClosedPosition(
     val fees: Double,
     val profitLoss: Double,
     val transactions: List<Transaction> = emptyList(),
+    val direction: TradeDirection = TradeDirection.LONG,
 )

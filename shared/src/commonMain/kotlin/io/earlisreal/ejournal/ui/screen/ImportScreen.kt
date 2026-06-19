@@ -173,11 +173,7 @@ fun ImportScreen(
                                         when (val result = tradeZeroClient.fetchOrders(portfolioId, from, to)) {
                                             is TradeZeroFetchResult.Success -> {
                                                 val inserted = result.transactions.count { transactionRepository.insert(it) != null }
-                                                val skipped = result.transactions.size - inserted
-                                                tradeZeroResult = if (skipped > 0)
-                                                    "Imported $inserted new, skipped $skipped duplicate(s)"
-                                                else
-                                                    "Imported $inserted transaction(s)"
+                                                tradeZeroResult = "Imported $inserted new transaction(s)"
                                                 if (inserted > 0) onImportSuccess()
                                             }
                                             TradeZeroFetchResult.InvalidCredentials ->

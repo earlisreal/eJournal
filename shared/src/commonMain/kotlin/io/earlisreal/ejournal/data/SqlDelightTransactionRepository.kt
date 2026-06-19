@@ -20,22 +20,27 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
             .executeAsList()
             .map { it.toDomain() }
 
-    override suspend fun insert(transaction: Transaction): Long? {
-        db.tradeTransactionQueries.insertTransaction(
-            portfolioId = transaction.portfolioId,
-            symbol      = transaction.symbol,
-            datetime    = transaction.datetime,
-            action      = transaction.action,
-            price       = transaction.price,
-            shares      = transaction.shares,
-            fees        = transaction.fees,
-            externalId  = transaction.externalId
-        )
-        // INSERT OR IGNORE skips duplicate externalIds; changes() is 0 when nothing was inserted,
-        // in which case lastInsertRowId() would return a stale id — so report the skip as null.
-        if (db.tradeTransactionQueries.changes().executeAsOne() == 0L) return null
-        return db.tradeTransactionQueries.lastInsertRowId().executeAsOne()
-    }
+    override suspend fun insert(transaction: Transaction): Long? =
+        // changes() and last_insert_rowid() are connection-local, and JdbcSqliteDriver pools
+        // connections for file-backed DBs — so the INSERT and these reads must run on the SAME
+        // connection or changes() sees 0 and a freshly-inserted row is wrongly reported as a skip.
+        // A transaction pins all three to one connection.
+        db.tradeTransactionQueries.transactionWithResult {
+            db.tradeTransactionQueries.insertTransaction(
+                portfolioId = transaction.portfolioId,
+                symbol      = transaction.symbol,
+                datetime    = transaction.datetime,
+                action      = transaction.action,
+                price       = transaction.price,
+                shares      = transaction.shares,
+                fees        = transaction.fees,
+                externalId  = transaction.externalId
+            )
+            // INSERT OR IGNORE skips duplicate externalIds; changes() is 0 when nothing was inserted,
+            // in which case lastInsertRowId() would return a stale id — so report the skip as null.
+            if (db.tradeTransactionQueries.changes().executeAsOne() == 0L) null
+            else db.tradeTransactionQueries.lastInsertRowId().executeAsOne()
+        }
 
     override suspend fun delete(id: Long) {
         db.tradeTransactionQueries.deleteById(id)

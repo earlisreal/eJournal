@@ -75,6 +75,28 @@ class YahooFinanceProviderTest {
     }
 
     @Test
+    fun `normalises daily bar timestamps to the date`() = runTest {
+        // Yahoo stamps the most-recent (in-progress / just-closed) day's daily bar at the last-trade
+        // time (e.g. 16:00:01) rather than the session open. Daily bars are identified by date, so the
+        // intraday time must be dropped — otherwise the same day fetched while live and again once
+        // finalised (09:30) becomes two rows under the (symbol, timeframe, timestamp) primary key.
+        val (provider, _) = provider {
+            jsonResponse(
+                chartJson(
+                    timestamps = listOf(epoch("2026-06-17T09:30"), epoch("2026-06-18T16:00:01")),
+                    opens = listOf(290.0, 291.0), highs = listOf(295.0, 296.0),
+                    lows = listOf(288.0, 289.0), closes = listOf(294.0, 295.0),
+                    volumes = listOf(50_000_000L, 51_000_000L),
+                )
+            )
+        }
+        val bars = provider.getBars("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-17"), LocalDate.parse("2026-06-18"))
+        assertEquals(2, bars.size)
+        assertEquals(LocalDateTime.parse("2026-06-17T00:00"), bars[0].timestamp)
+        assertEquals(LocalDateTime.parse("2026-06-18T00:00"), bars[1].timestamp)  // 16:00:01 → date only
+    }
+
+    @Test
     fun `sends explicit period params interval and user agent`() = runTest {
         val (provider, engine) = provider {
             jsonResponse(chartJson(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList()))

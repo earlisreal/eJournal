@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import io.earlisreal.ejournal.domain.marketdata.AggregatedChart
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisState
 import kotlin.math.roundToInt
@@ -20,13 +21,19 @@ actual fun CandlestickChart(state: AnalysisState, modifier: Modifier) {
     val bridge = remember { JavaFxChartBridge() }
     val density = LocalDensity.current.density
     var prevPosition by remember { mutableStateOf<ClosedPosition?>(null) }
+    var prevChartData by remember { mutableStateOf<AggregatedChart?>(null) }
 
     DisposableEffect(Unit) { onDispose { bridge.dispose() } }
 
     LaunchedEffect(state.chartData, state.vwapEnabled, state.position, state.isDarkTheme) {
         if (state.chartData != null && state.position != null) {
-            val scrollToTrade = state.position != prevPosition
+            // Re-anchor the view to the trade whenever the data reloads. A timeframe switch loads a
+            // new bar set, so the scroll must be re-applied or the chart lands on the first/last bar
+            // instead of the trade. A new chartData instance means a reload (position OR timeframe
+            // change); a VWAP/theme toggle keeps the same reference, so the view is left untouched.
+            val scrollToTrade = state.position != prevPosition || state.chartData !== prevChartData
             prevPosition = state.position
+            prevChartData = state.chartData
             bridge.sendState(state, scrollToTrade)
         } else {
             bridge.sendTheme(state.isDarkTheme)

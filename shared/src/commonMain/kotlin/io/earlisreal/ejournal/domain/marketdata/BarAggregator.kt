@@ -19,7 +19,7 @@ object BarAggregator {
         ChartTimeframe.ONE_MIN     -> fromMinute(bars)
         ChartTimeframe.FIVE_MIN    -> aggregateMinutes(bars, 5)
         ChartTimeframe.FIFTEEN_MIN -> aggregateMinutes(bars, 15)
-        ChartTimeframe.DAILY       -> AggregatedChart(bars, emptyList())
+        ChartTimeframe.DAILY       -> AggregatedChart(aggregateDaily(bars), emptyList())
         ChartTimeframe.WEEKLY      -> AggregatedChart(aggregateWeekly(bars), emptyList())
     }
 
@@ -102,6 +102,30 @@ object BarAggregator {
             Bar(acc.symbol, Timeframe.ONE_MINUTE, acc.timestamp, acc.open, acc.high, acc.low, acc.close, acc.volume)
         }
         return AggregatedChart(aggregatedBars, vwap)
+    }
+
+    // Collapse to one bar per calendar date. Providers occasionally store more than one "daily"
+    // bar for a date (e.g. a regular 09:30 bar plus a 16:00:01 end-of-day snapshot); those would
+    // otherwise reach the chart as duplicate-timestamp candles and break rendering. Input is assumed
+    // sorted by timestamp ascending (the repository query orders it), so per-date order is preserved.
+    private fun aggregateDaily(bars: List<Bar>): List<Bar> {
+        val days = LinkedHashMap<LocalDate, MutableList<Bar>>()
+        for (bar in bars) {
+            days.getOrPut(bar.timestamp.date) { mutableListOf() }.add(bar)
+        }
+        return days.values.map { dayBars ->
+            val first = dayBars.first()
+            Bar(
+                symbol    = first.symbol,
+                timeframe = Timeframe.DAILY,
+                timestamp = first.timestamp,
+                open      = first.open,
+                high      = dayBars.maxOf { it.high },
+                low       = dayBars.minOf { it.low },
+                close     = dayBars.last().close,
+                volume    = dayBars.sumOf { it.volume },
+            )
+        }
     }
 
     private fun aggregateWeekly(bars: List<Bar>): List<Bar> {

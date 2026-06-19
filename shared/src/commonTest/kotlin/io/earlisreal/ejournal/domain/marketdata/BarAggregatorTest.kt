@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.domain.marketdata
 
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,6 +75,33 @@ class BarAggregatorTest {
         assertEquals(9.0,  w.low)
         assertEquals(12.0, w.close)
         assertEquals(4500L, w.volume)
+        assertTrue(result.vwap.isEmpty())
+    }
+
+    @Test
+    fun dailyMergesMultipleBarsOnSameDate() {
+        // Real-world cause of a chart crash: the sync stored two DAILY bars for one date
+        // (a 09:30 bar and a 16:00:01 end-of-day bar). They normalise to the same chart time,
+        // so they must be merged into one bar — otherwise Lightweight Charts receives
+        // duplicate-timestamp candles and throws "Value is null" during rendering.
+        val bars = listOf(
+            bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-17T09:30",    open = 10.0, high = 11.0, low = 9.5,  close = 10.5, volume = 1000),
+            bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-18T09:30",    open = 10.5, high = 12.0, low = 10.0, close = 11.0, volume = 2000),
+            bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-18T16:00:01", open = 11.0, high = 13.0, low = 10.5, close = 12.5, volume = 500),
+        )
+        val result = BarAggregator.aggregate(bars, ChartTimeframe.DAILY)
+
+        assertEquals(2, result.bars.size)                                 // 06-17, plus a single merged 06-18
+        val dates = result.bars.map { it.timestamp.date }
+        assertEquals(dates.size, dates.distinct().size)                   // one bar per date — no duplicate chart times
+
+        val merged = result.bars.last()
+        assertEquals(LocalDate.parse("2026-06-18"), merged.timestamp.date)
+        assertEquals(10.5,  merged.open)                                  // first bar of the day
+        assertEquals(13.0,  merged.high)                                  // max across the day
+        assertEquals(10.0,  merged.low)                                   // min across the day
+        assertEquals(12.5,  merged.close)                                 // last bar of the day
+        assertEquals(2500L, merged.volume)                                // summed
         assertTrue(result.vwap.isEmpty())
     }
 

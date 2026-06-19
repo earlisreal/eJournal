@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.data
 
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
@@ -11,6 +12,7 @@ import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
+import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,11 +24,9 @@ class SqlDelightTransactionRepositoryTest {
     private lateinit var txRepo: SqlDelightTransactionRepository
     private lateinit var portfolioRepo: SqlDelightPortfolioRepository
 
-    @BeforeTest
-    fun setup() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    private fun buildDb(driver: SqlDriver): AppDatabase {
         AppDatabase.Schema.create(driver)
-        val db = AppDatabase(
+        return AppDatabase(
             driver = driver,
             TradeTransactionAdapter = io.earlisreal.ejournal.TradeTransaction.Adapter(
                 datetimeAdapter = DateTimeAdapter,
@@ -38,6 +38,11 @@ class SqlDelightTransactionRepositoryTest {
                 timeframeAdapter = TimeframeAdapter,
             ),
         )
+    }
+
+    @BeforeTest
+    fun setup() {
+        val db = buildDb(JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY))
         portfolioRepo = SqlDelightPortfolioRepository(db)
         txRepo = SqlDelightTransactionRepository(db)
     }
@@ -90,6 +95,23 @@ class SqlDelightTransactionRepositoryTest {
         val firstId = txRepo.insert(tx(pId, externalId = "tz:1"))
         assertNotNull(firstId)
         assertNull(txRepo.insert(tx(pId, externalId = "tz:1")))
+    }
+
+    @Test
+    fun insertReturnsRowIdForNewRowOnFileBackedDriver() = runTest {
+        // The real DB is file-backed. JdbcSqliteDriver pools connections for file URLs (unlike the
+        // single connection it keeps for :memory:), so changes()/last_insert_rowid() can run on a
+        // different connection than the INSERT and report a freshly-inserted row as "not inserted".
+        val dbFile = File.createTempFile("ejournal-insert-test", ".db").apply { delete(); deleteOnExit() }
+        val db = buildDb(JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}"))
+        val fileTxRepo = SqlDelightTransactionRepository(db)
+        val filerPortfolioRepo = SqlDelightPortfolioRepository(db)
+        val pId = filerPortfolioRepo.insert("File Portfolio", Market.US_STOCKS)
+
+        val firstId = fileTxRepo.insert(tx(pId, externalId = "tz:1"))
+        assertNotNull(firstId)                                       // new row must report its id, not null
+        assertNull(fileTxRepo.insert(tx(pId, externalId = "tz:1")))  // duplicate still skipped
+        assertEquals(1, fileTxRepo.getByPortfolio(pId).size)
     }
 
     @Test

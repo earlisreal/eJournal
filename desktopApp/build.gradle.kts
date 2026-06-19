@@ -16,6 +16,11 @@ val jbrLauncher = javaToolchains.launcherFor {
     vendor.set(JvmVendorSpec.JETBRAINS)
 }
 
+// Installer version. CI derives it from the release tag (vX.Y.Z -> X.Y.Z) and passes -PappVersion;
+// local/dev builds fall back to a valid numeric default. Must stay numeric major.minor.patch — MSI
+// rejects suffixes like -beta.
+val appVersion: String = (project.findProperty("appVersion") as String?)?.takeIf { it.isNotBlank() } ?: "1.0.0"
+
 dependencies {
     implementation(projects.shared)
 
@@ -48,7 +53,7 @@ compose.desktop {
                 "jdk.jfr", "jdk.jsobject", "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",
             )
             packageName = "eJournal"
-            packageVersion = "1.0.2"
+            packageVersion = appVersion
             description = "Trading journal — import broker CSVs, track closed positions and analytics."
             vendor = "earlisreal"
 

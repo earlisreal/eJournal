@@ -41,10 +41,22 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Tag vX.Y.Z -> packageVersion X.Y.Z. A non-version ref (e.g. manual workflow_dispatch on a
+      # branch) falls back to 0.0.0 so the build still succeeds.
+      - name: Derive app version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref_name }}"
+          if ($ref -match '^v?(\d+\.\d+\.\d+)$') { $v = $Matches[1] }
+          else { $v = "0.0.0"; Write-Host "::warning::ref '$ref' is not a vX.Y.Z tag; defaulting packageVersion to $v" }
+          Write-Host "packageVersion = $v"
+          "version=$v" >> $env:GITHUB_OUTPUT
+
       - name: Build MSI installer and portable app image
         # --no-configuration-cache: jpackage tasks don't always play well with the config
         # cache (enabled in gradle.properties); packaging runs once so the cache buys nothing here.
-        run: .\gradlew.bat :desktopApp:packageMsi :desktopApp:createDistributable --no-configuration-cache --stacktrace
+        run: .\gradlew.bat :desktopApp:packageMsi :desktopApp:createDistributable "-PappVersion=${{ steps.version.outputs.version }}" --no-configuration-cache --stacktrace
 
       - name: Stage release artifacts
         shell: pwsh

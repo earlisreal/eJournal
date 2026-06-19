@@ -27,8 +27,18 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.earlisreal.ejournal"
+            packageName = "eJournal"
             packageVersion = "1.0.0"
+            description = "Trading journal — import broker CSVs, track closed positions and analytics."
+            vendor = "earlisreal"
+
+            windows {
+                menuGroup = "eJournal"
+                shortcut = true
+                // Stable identity so future MSIs upgrade in place instead of installing side-by-side.
+                // Generated once; do not change between releases.
+                upgradeUuid = "a3f1c9e2-7b4d-4e8a-9c1f-2d6b8e0a4f57"
+            }
         }
     }
 }

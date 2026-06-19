@@ -28,7 +28,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      # Temurin only bootstraps the JVM that runs Gradle. The app itself is compiled with, and
+      # bundles, the JetBrains Runtime (JBR) — the Kotlin toolchain requests vendor=JETBRAINS and
+      # the foojay resolver auto-provisions jbrsdk_jcef-25 for windows-x64 during the build (see
+      # build.gradle.kts). gradle/actions/setup-gradle caches the provisioned JBR between runs.
+      - name: Set up JDK 25 (Gradle bootstrap)
         uses: actions/setup-java@v4
         with:
           distribution: temurin

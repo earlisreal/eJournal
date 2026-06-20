@@ -69,7 +69,7 @@ class AnalysisViewModel(
     fun navigatePrev() = navigateTo(_state.value.currentIndex - 1)
     fun navigateNext() = navigateTo(_state.value.currentIndex + 1)
 
-    private fun navigateTo(index: Int) {
+    fun navigateTo(index: Int) {
         if (index < 0 || index >= positions.size) return
         val position = positions[index]
         val tf = defaultTimeframe(position)

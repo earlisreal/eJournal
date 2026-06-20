@@ -89,6 +89,12 @@ fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
 /**
  * Picks the provider per range: daily always Yahoo; 1-min always Alpaca (keys required
  * for full extended-hours coverage — Yahoo only serves regular-hours bars).
+ *
+ * NOTE: daily-is-Yahoo-only is load-bearing. YahooFinanceProvider normalizes daily bar
+ * timestamps to the date so a calendar day maps to exactly one OhlcvBar row (deduped by the
+ * primary key across re-syncs). If you ever route DAILY to Alpaca, its 1Day bars need the same
+ * date-normalization — otherwise the same day stored under two intraday timestamps becomes two
+ * rows again (see the duplicate-daily-bar bug this guards against).
  */
 fun route(range: BarRange, hasAlpacaKeys: Boolean): List<RoutedRange> {
     if (range.timeframe == Timeframe.DAILY) return listOf(RoutedRange(range, BarSource.YAHOO))

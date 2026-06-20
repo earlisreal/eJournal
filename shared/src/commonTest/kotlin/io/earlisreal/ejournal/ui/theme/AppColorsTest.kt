@@ -24,4 +24,17 @@ class AppColorsTest {
     fun darkBackgroundDiffersFromLightBackground() {
         assertNotEquals(lightAppColors.background, darkAppColors.background)
     }
+
+    @Test
+    fun lightContentIsWhiteAndSidebarIsOffWhite() {
+        assertEquals(Color(0xFFFFFFFF), lightAppColors.contentBackground)
+        assertEquals(Color(0xFFF4F5F9), lightAppColors.sidebarBackground)
+        assertNotEquals(lightAppColors.contentBackground, lightAppColors.sidebarBackground)
+    }
+
+    @Test
+    fun darkContentAndSidebarPreserveExistingSurfaces() {
+        assertEquals(darkAppColors.background, darkAppColors.contentBackground)
+        assertEquals(darkAppColors.surface, darkAppColors.sidebarBackground)
+    }
 }

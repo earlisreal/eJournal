@@ -2,6 +2,8 @@ package io.earlisreal.ejournal.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -20,7 +22,8 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    contentFillsHeight: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         shape = CardShape,
@@ -29,7 +32,8 @@ fun AppCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(Spacing.lg)) { content() }
+        val contentModifier = if (contentFillsHeight) Modifier.fillMaxHeight() else Modifier
+        Column(modifier = contentModifier.padding(Spacing.lg)) { content() }
     }
 }
 

@@ -7,18 +7,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,13 +36,14 @@ import io.earlisreal.ejournal.ui.chart.CandlestickChart
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
+import io.earlisreal.ejournal.ui.components.PositionTransactionsTable
+import io.earlisreal.ejournal.ui.components.TradesNavList
+import io.earlisreal.ejournal.ui.components.formatHold
 import io.earlisreal.ejournal.ui.components.signedMoney
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisViewModel
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 
 @Composable
 fun AnalysisScreen(
@@ -86,154 +91,181 @@ fun AnalysisScreen(
             }
         }
 
-        // ── Header bar ──────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppTheme.colors.surfaceElevated)
-                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (position != null) {
-                val pnlColor = if (position.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
-                val cost = position.averageEntryPrice * position.shares
-                val pct = if (cost != 0.0) position.profitLoss / cost * 100.0 else 0.0
-                Text(
-                    position.symbol,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AppTheme.colors.textPrimary,
-                )
-                Text(
-                    "  ${signedMoney(position.profitLoss, symbol)} (${"%+.1f%%".format(pct)})",
-                    color = pnlColor,
-                    style = NumberTextStyle,
-                    modifier = Modifier.padding(end = Spacing.sm),
-                )
-                val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"
-                Text(
-                    "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh",
-                    color = AppTheme.colors.textMuted,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            Box(modifier = Modifier.weight(1f))
-            val total = state.totalCount
-            val idx   = state.currentIndex
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                NavButton("◀", enabled = idx > 0) { vm.navigatePrev() }
-                Text(
-                    "${idx + 1} / $total",
-                    color = AppTheme.colors.textMuted,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-                NavButton("▶", enabled = idx < total - 1) { vm.navigateNext() }
-            }
-        }
+        // ── Main area: analysis column + trades navigation list ─────────────
+        Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
 
-        // ── Control bar ─────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val timeframes = if (isDay)
-                listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN, ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
-            else
-                listOf(ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
 
-            timeframes.forEach { tf ->
-                val isIntraday = tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
-                val unavailable = isIntraday && !state.has1MinData
-                val active = state.activeTimeframe == tf
-                Text(
-                    tf.label,
+                // ── Header bar ───────────────────────────────────────────────
+                Row(
                     modifier = Modifier
-                        .padding(end = 4.dp)
-                        .background(
-                            if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated,
-                            RoundedCornerShape(4.dp),
+                        .fillMaxWidth()
+                        .background(AppTheme.colors.surfaceElevated)
+                        .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (position != null) {
+                        val pnlColor = if (position.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
+                        val cost = position.averageEntryPrice * position.shares
+                        val pct = if (cost != 0.0) position.profitLoss / cost * 100.0 else 0.0
+                        Text(
+                            position.symbol,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.textPrimary,
                         )
-                        .clickable(enabled = !unavailable) { vm.selectTimeframe(tf) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = when {
-                        unavailable -> AppTheme.colors.textMuted.copy(alpha = 0.4f)
-                        active      -> AppTheme.colors.onAccent
-                        else        -> AppTheme.colors.textMuted
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+                        Text(
+                            "  ${signedMoney(position.profitLoss, symbol)} (${"%+.1f%%".format(pct)})",
+                            color = pnlColor,
+                            style = NumberTextStyle,
+                            modifier = Modifier.padding(end = Spacing.sm),
+                        )
+                        val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"
+                        Text(
+                            "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f))
+                    val total = state.totalCount
+                    val idx   = state.currentIndex
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        NavButton("◀", enabled = idx > 0) { vm.navigatePrev() }
+                        Text(
+                            "${idx + 1} / $total",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                        NavButton("▶", enabled = idx < total - 1) { vm.navigateNext() }
+                    }
+                }
 
-            Box(modifier = Modifier.weight(1f))
-
-            if (state.activeTimeframe in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
-                val vwapOn = state.vwapEnabled
-                Text(
-                    "⬤ VWAP",
+                // ── Control bar ──────────────────────────────────────────────
+                Row(
                     modifier = Modifier
-                        .border(1.dp, if (vwapOn) AppTheme.colors.accent else AppTheme.colors.border, RoundedCornerShape(12.dp))
-                        .background(
-                            if (vwapOn) AppTheme.colors.accent.copy(alpha = 0.15f) else AppTheme.colors.surface,
-                            RoundedCornerShape(12.dp),
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val timeframes = if (isDay)
+                        listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN, ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
+                    else
+                        listOf(ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
+
+                    timeframes.forEach { tf ->
+                        val isIntraday = tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
+                        val unavailable = isIntraday && !state.has1MinData
+                        val active = state.activeTimeframe == tf
+                        Text(
+                            tf.label,
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .background(
+                                    if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated,
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .clickable(enabled = !unavailable) { vm.selectTimeframe(tf) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = when {
+                                unavailable -> AppTheme.colors.textMuted.copy(alpha = 0.4f)
+                                active      -> AppTheme.colors.onAccent
+                                else        -> AppTheme.colors.textMuted
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                         )
-                        .clickable { vm.toggleVwap() }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    color = if (vwapOn) AppTheme.colors.accent else AppTheme.colors.textMuted,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
+                    }
 
-        // ── Chart area ───────────────────────────────────────────────────────
-        // CandlestickChart stays mounted across navigations so the JavaFX WebView
-        // isn't torn down and rebuilt on every position change. The loading
-        // indicator overlays it instead of replacing it.
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (state.noDataForTimeframe) {
-                EmptyState(
-                    title = "No market data",
-                    subtitle = "Go to Settings → Sync market data to fetch OHLCV bars for this trade.",
-                )
-            } else {
-                CandlestickChart(state = state, modifier = Modifier.fillMaxSize())
-                if (state.loading) LoadingIndicator()
-            }
-        }
+                    Box(modifier = Modifier.weight(1f))
 
-        // ── Summary bar ──────────────────────────────────────────────────────
-        if (position != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(AppTheme.colors.surfaceElevated)
-                    .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                val holdSec = position.exitDatetime.toInstant(TimeZone.UTC).epochSeconds -
-                              position.entryDatetime.toInstant(TimeZone.UTC).epochSeconds
-                val holdStr = if (isDay) "${holdSec / 3600}h ${(holdSec % 3600) / 60}m" else "${holdSec / 86400}d"
-                StatCell("Avg Entry", "%.2f".format(position.averageEntryPrice))
-                StatCell("Avg Exit",  "%.2f".format(position.averageExitPrice))
-                StatCell("Shares",   "%.0f".format(position.shares))
-                StatCell("Fees",     "%.2f".format(position.fees))
-                StatCell("Entry",    "%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute))
-                StatCell("Exit",     "%02d:%02d".format(position.exitDatetime.hour,  position.exitDatetime.minute))
-                StatCell("Hold",     holdStr)
+                    if (state.activeTimeframe in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
+                        val vwapOn = state.vwapEnabled
+                        Text(
+                            "⬤ VWAP",
+                            modifier = Modifier
+                                .border(1.dp, if (vwapOn) AppTheme.colors.accent else AppTheme.colors.border, RoundedCornerShape(12.dp))
+                                .background(
+                                    if (vwapOn) AppTheme.colors.accent.copy(alpha = 0.15f) else AppTheme.colors.surface,
+                                    RoundedCornerShape(12.dp),
+                                )
+                                .clickable { vm.toggleVwap() }
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            color = if (vwapOn) AppTheme.colors.accent else AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                // ── Chart area ───────────────────────────────────────────────
+                // CandlestickChart stays mounted across navigations so the JavaFX WebView
+                // isn't torn down and rebuilt on every position change. The loading
+                // indicator overlays it instead of replacing it.
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    if (state.noDataForTimeframe) {
+                        EmptyState(
+                            title = "No market data",
+                            subtitle = "Go to Settings → Sync market data to fetch OHLCV bars for this trade.",
+                        )
+                    } else {
+                        CandlestickChart(state = state, modifier = Modifier.fillMaxSize())
+                        if (state.loading) LoadingIndicator()
+                    }
+                }
+
+                // ── Transactions table ───────────────────────────────────────
+                if (position != null && position.transactions.isNotEmpty()) {
+                    PositionTransactionsTable(
+                        position = position,
+                        symbol = symbol,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    )
+                }
+
+                // ── Summary bar ──────────────────────────────────────────────
+                if (position != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(AppTheme.colors.surfaceElevated)
+                            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                    ) {
+                        val pnlColor = if (position.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
+                        StatCell("Net P/L", signedMoney(position.profitLoss, symbol), valueColor = pnlColor)
+                        StatCell("Avg Entry", "%.2f".format(position.averageEntryPrice))
+                        StatCell("Avg Exit",  "%.2f".format(position.averageExitPrice))
+                        StatCell("Shares",   "%.0f".format(position.shares))
+                        StatCell("Fees",     "%.2f".format(position.fees))
+                        StatCell("Entry",    "%02d:%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute, position.entryDatetime.second))
+                        StatCell("Exit",     "%02d:%02d:%02d".format(position.exitDatetime.hour,  position.exitDatetime.minute,  position.exitDatetime.second))
+                        StatCell("Hold",     formatHold(position.entryDatetime, position.exitDatetime, isDay))
+                    }
+                }
             }
+
+            VerticalDivider(color = AppTheme.colors.border)
+
+            TradesNavList(
+                positions = positions,
+                currentIndex = state.currentIndex,
+                onSelect = { vm.navigateTo(it) },
+                symbol = symbol,
+                modifier = Modifier.width(280.dp).fillMaxHeight(),
+            )
         }
     }
 }
 
 @Composable
-private fun StatCell(label: String, value: String) {
+private fun StatCell(label: String, value: String, valueColor: Color = AppTheme.colors.textPrimary) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
-        Text(value, color = AppTheme.colors.textPrimary, style = NumberTextStyle)
+        Text(value, color = valueColor, style = NumberTextStyle)
     }
 }
 

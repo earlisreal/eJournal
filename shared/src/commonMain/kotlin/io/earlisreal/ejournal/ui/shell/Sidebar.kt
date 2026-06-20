@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Dashboard
@@ -41,7 +42,7 @@ fun Sidebar(
     modifier: Modifier = Modifier,
 ) {
     val expanded = state == SidebarState.EXPANDED
-    val surfaceColor = AppTheme.colors.surface
+    val surfaceColor = AppTheme.colors.sidebarBackground
     val borderColor = AppTheme.colors.border
     Column(
         modifier = modifier
@@ -93,7 +94,7 @@ private fun NavItem(
         .fillMaxWidth()
         .clickable(enabled = dest.enabled) { onClick() }
         .background(
-            if (active) AppTheme.colors.background else androidx.compose.ui.graphics.Color.Transparent,
+            if (active) AppTheme.colors.contentBackground else androidx.compose.ui.graphics.Color.Transparent,
             RoundedCornerShape(8.dp),
         )
         .let { base ->
@@ -130,7 +131,7 @@ private fun NavItem(
 private val Destination.icon: ImageVector
     get() = when (this) {
         Destination.DASHBOARD -> Icons.Outlined.Dashboard
-        Destination.TRADE_LOGS -> Icons.Outlined.ReceiptLong
+        Destination.TRADE_LOGS -> Icons.AutoMirrored.Outlined.ReceiptLong
         Destination.IMPORT -> Icons.Outlined.FileUpload
         Destination.CALENDAR -> Icons.Outlined.CalendarMonth
         Destination.ANALYSIS -> Icons.Outlined.Analytics

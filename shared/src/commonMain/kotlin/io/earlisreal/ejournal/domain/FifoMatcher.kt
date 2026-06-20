@@ -118,4 +118,37 @@ object FifoMatcher {
 
         return result
     }
+
+    /**
+     * Realized P/L attributed to each transaction of [position], aligned by index to
+     * [ClosedPosition.transactions]. Opening/scale-in fills carry `null` (they realize nothing);
+     * closing fills carry the FIFO-matched realized P/L, net of the matched open + close fees — so
+     * the non-null values sum to [ClosedPosition.profitLoss].
+     */
+    fun realizedPnLByTransaction(position: ClosedPosition): List<Double?> {
+        val sign = if (position.direction == TradeDirection.LONG) 1.0 else -1.0
+        val openQueue = ArrayDeque<Lot>()
+        return position.transactions.map { tx ->
+            val txSide = if (tx.action == Action.BUY) TradeDirection.LONG else TradeDirection.SHORT
+            if (txSide == position.direction) {
+                openQueue.addLast(Lot(tx.price, tx.shares, tx.shares, tx.fees))
+                null
+            } else {
+                var remaining = tx.shares
+                val closeFeePerShare = if (tx.shares != 0.0) tx.fees / tx.shares else 0.0
+                var pnl = 0.0
+                while (remaining > 0.0 && openQueue.isNotEmpty()) {
+                    val lot = openQueue.first()
+                    val matched = minOf(remaining, lot.remainingShares)
+                    val openFee = lot.totalFee * (matched / lot.totalShares)
+                    val closeFee = closeFeePerShare * matched
+                    pnl += sign * (tx.price - lot.price) * matched - (openFee + closeFee)
+                    lot.remainingShares -= matched
+                    remaining -= matched
+                    if (lot.remainingShares <= 0.0) openQueue.removeFirst()
+                }
+                pnl
+            }
+        }
+    }
 }

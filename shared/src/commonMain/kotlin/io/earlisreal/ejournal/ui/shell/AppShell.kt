@@ -112,7 +112,7 @@ fun AppShell(
 
     val systemDark = isSystemInDarkTheme()
     AppTheme(darkTheme = resolveDarkMode(themeMode, systemDark)) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(AppTheme.colors.background)) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(AppTheme.colors.contentBackground)) {
             val sidebarState = resolveSidebarState(maxWidth.value.toInt(), userExpanded)
             Row(modifier = Modifier.fillMaxSize()) {
                 Sidebar(

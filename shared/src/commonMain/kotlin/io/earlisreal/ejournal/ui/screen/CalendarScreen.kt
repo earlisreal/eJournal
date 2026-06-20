@@ -155,7 +155,7 @@ fun CalendarScreen(
                                 positions = dayPositions,
                                 onAnalyze = onAnalyze,
                                 symbol = symbol,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                         }
                     }

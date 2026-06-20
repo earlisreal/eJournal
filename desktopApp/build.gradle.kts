@@ -75,7 +75,16 @@ compose.desktop {
             description = "Trading journal — import broker CSVs, track closed positions and analytics."
             vendor = "earlisreal"
 
+            // App icons live in desktopApp/icons/ (generated from icons/icon-master.png — the 1024²
+            // eJ monogram). Each platform takes its own container format.
+            macOS {
+                iconFile.set(project.file("icons/icon.icns"))
+            }
+            linux {
+                iconFile.set(project.file("icons/icon.png"))
+            }
             windows {
+                iconFile.set(project.file("icons/icon.ico"))
                 menuGroup = "eJournal"
                 shortcut = true
                 // Stable identity so future MSIs upgrade in place instead of installing side-by-side.

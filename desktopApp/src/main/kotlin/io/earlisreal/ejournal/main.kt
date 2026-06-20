@@ -43,6 +43,9 @@ fun main(args: Array<String>) {
                 alpacaProvider = deps.alpacaProvider,
                 marketDataService = deps.marketDataService,
                 tradeZeroClient = deps.tradeZeroClient,
+                backgroundTaskTracker = deps.backgroundTaskTracker,
+                tradeZeroSyncService = deps.tradeZeroSyncService,
+                startupSyncCoordinator = deps.startupSyncCoordinator,
             )
         }
     }

@@ -7,11 +7,14 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
+import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
 import io.earlisreal.ejournal.ui.screen.AnalysisScreen
 import io.earlisreal.ejournal.ui.screen.CalendarScreen
 import io.earlisreal.ejournal.ui.screen.DashboardScreen
@@ -33,8 +36,11 @@ fun App(
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
     tradeZeroClient: TradeZeroClient,
+    backgroundTaskTracker: BackgroundTaskTracker,
+    tradeZeroSyncService: TradeZeroSyncService,
+    startupSyncCoordinator: StartupSyncCoordinator,
 ) {
-    LaunchedEffect(Unit) { marketDataService.requestSync() }
+    LaunchedEffect(Unit) { startupSyncCoordinator.run() }
 
     val systemDark = isSystemInDarkTheme()
 
@@ -42,6 +48,7 @@ fun App(
         portfolioRepository = portfolioRepository,
         transactionRepository = transactionRepository,
         settingsRepository = settingsRepository,
+        backgroundTaskTracker = backgroundTaskTracker,
     ) { destination, filter, nav ->
         val isDarkTheme = resolveDarkMode(nav.themeMode, systemDark)
         when (destination) {
@@ -60,7 +67,7 @@ fun App(
                 filter = filter,
                 onImportSuccess = { marketDataService.requestSync() },
                 marketDataService = marketDataService,
-                tradeZeroClient = tradeZeroClient,
+                tradeZeroSyncService = tradeZeroSyncService,
                 tradeZeroConfigured = credentialsRepository.getTradeZeroCredentials() != null,
             )
             Destination.CALENDAR -> CalendarScreen(
@@ -84,6 +91,7 @@ fun App(
                 alpacaProvider = alpacaProvider,
                 marketDataService = marketDataService,
                 tradeZeroClient = tradeZeroClient,
+                settingsRepository = settingsRepository,
             )
         }
     }

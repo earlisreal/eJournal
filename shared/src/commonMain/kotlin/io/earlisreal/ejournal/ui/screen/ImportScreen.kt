@@ -23,8 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroFetchResult
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncOutcome
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
 import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -57,7 +57,7 @@ fun ImportScreen(
     filter: FilterState,
     onImportSuccess: () -> Unit,
     marketDataService: MarketDataService,
-    tradeZeroClient: TradeZeroClient,
+    tradeZeroSyncService: TradeZeroSyncService,
     tradeZeroConfigured: Boolean,
 ) {
     val vm = viewModel { ImportViewModel(transactionRepository, parsers) }
@@ -170,16 +170,15 @@ fun ImportScreen(
                                     scope.launch {
                                         val to   = Clock.System.todayIn(TimeZone.currentSystemDefault())
                                         val from = to.minus(6, DateTimeUnit.DAY)
-                                        when (val result = tradeZeroClient.fetchOrders(portfolioId, from, to)) {
-                                            is TradeZeroFetchResult.Success -> {
-                                                val inserted = result.transactions.count { transactionRepository.insert(it) != null }
-                                                tradeZeroResult = "Imported $inserted new transaction(s)"
-                                                if (inserted > 0) onImportSuccess()
+                                        when (val outcome = tradeZeroSyncService.sync(portfolioId, from, to)) {
+                                            is TradeZeroSyncOutcome.Imported -> {
+                                                tradeZeroResult = "Imported ${outcome.inserted} new transaction(s)"
+                                                if (outcome.inserted > 0) onImportSuccess()
                                             }
-                                            TradeZeroFetchResult.InvalidCredentials ->
+                                            TradeZeroSyncOutcome.InvalidCredentials ->
                                                 tradeZeroResult = "Invalid credentials — update them in Settings"
-                                            is TradeZeroFetchResult.NetworkError ->
-                                                tradeZeroResult = "Network error: ${result.message}"
+                                            is TradeZeroSyncOutcome.NetworkError ->
+                                                tradeZeroResult = "Network error: ${outcome.message}"
                                         }
                                         tradeZeroSyncing = false
                                     }

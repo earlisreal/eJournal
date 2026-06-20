@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
@@ -50,8 +52,9 @@ fun SettingsScreen(
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
     tradeZeroClient: TradeZeroClient,
+    settingsRepository: SettingsRepository,
 ) {
-    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient) }
+    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient, settingsRepository) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
 
@@ -163,6 +166,17 @@ fun SettingsScreen(
                             Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
                         }
                         state.tradeZeroConnectionResult?.let { ConnectionResultText(it) }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Switch(
+                            checked = state.autoSyncTradeZeroOnStartup,
+                            onCheckedChange = vm::setAutoSyncTradeZeroOnStartup,
+                        )
+                        Text(
+                            "Automatically sync the last 7 days on startup",
+                            color = AppTheme.colors.textPrimary,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
             }

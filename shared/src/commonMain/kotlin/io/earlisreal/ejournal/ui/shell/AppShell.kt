@@ -6,14 +6,17 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
@@ -25,6 +28,7 @@ import io.earlisreal.ejournal.domain.analytics.resolveRange
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
+import io.earlisreal.ejournal.ui.components.StatusBar
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
@@ -50,6 +54,7 @@ fun AppShell(
     portfolioRepository: PortfolioRepository,
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
+    backgroundTaskTracker: BackgroundTaskTracker,
     content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
     val savedFilter = remember { settingsRepository.getFilterPrefs() }
@@ -112,57 +117,63 @@ fun AppShell(
 
     val systemDark = isSystemInDarkTheme()
     AppTheme(darkTheme = resolveDarkMode(themeMode, systemDark)) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(AppTheme.colors.contentBackground)) {
-            val sidebarState = resolveSidebarState(maxWidth.value.toInt(), userExpanded)
-            Row(modifier = Modifier.fillMaxSize()) {
-                Sidebar(
-                    state = sidebarState,
-                    current = current,
-                    onSelect = { dest ->
-                        if (dest.enabled) {
-                            analysisSource = null
-                            current = dest
-                        }
-                    },
-                    onToggle = { userExpanded = !userExpanded },
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    TopBar(
-                        portfolios = portfolios,
-                        selectedPortfolio = selectedPortfolio,
-                        onSelectPortfolio = { selectedPortfolio = it; persist() },
-                        preset = preset,
-                        customRange = customRange,
-                        onDateChange = { p, r -> preset = p; customRange = r; persist() },
-                        segment = segment,
-                        onSegmentChange = { segment = it; persist() },
-                        showDateFilter = current != Destination.CALENDAR,
-                        onManagePortfolios = { showPortfolioManager = true },
+        val backgroundTasks by backgroundTaskTracker.tasks.collectAsState()
+        Column(modifier = Modifier.fillMaxSize()) {
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth().weight(1f).background(AppTheme.colors.contentBackground),
+            ) {
+                val sidebarState = resolveSidebarState(maxWidth.value.toInt(), userExpanded)
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Sidebar(
+                        state = sidebarState,
+                        current = current,
+                        onSelect = { dest ->
+                            if (dest.enabled) {
+                                analysisSource = null
+                                current = dest
+                            }
+                        },
+                        onToggle = { userExpanded = !userExpanded },
                     )
-                    content(
-                        current,
-                        filterState,
-                        ShellNav(
-                            selectedAnalysis  = selectedAnalysis,
-                            analysisPositions = analysisPositions,
-                            analysisIndex     = analysisIndex,
-                            onAnalyze = { position, list ->
-                                analysisSource    = current
-                                selectedAnalysis  = position
-                                analysisPositions = list
-                                analysisIndex     = list.indexOf(position).coerceAtLeast(0)
-                                current = Destination.ANALYSIS
-                            },
-                            themeMode    = themeMode,
-                            onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
-                            analysisSource = analysisSource,
-                            onBackFromAnalysis = analysisSource?.let { src ->
-                                { current = src; analysisSource = null }
-                            },
-                        ),
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        TopBar(
+                            portfolios = portfolios,
+                            selectedPortfolio = selectedPortfolio,
+                            onSelectPortfolio = { selectedPortfolio = it; persist() },
+                            preset = preset,
+                            customRange = customRange,
+                            onDateChange = { p, r -> preset = p; customRange = r; persist() },
+                            segment = segment,
+                            onSegmentChange = { segment = it; persist() },
+                            showDateFilter = current != Destination.CALENDAR,
+                            onManagePortfolios = { showPortfolioManager = true },
+                        )
+                        content(
+                            current,
+                            filterState,
+                            ShellNav(
+                                selectedAnalysis  = selectedAnalysis,
+                                analysisPositions = analysisPositions,
+                                analysisIndex     = analysisIndex,
+                                onAnalyze = { position, list ->
+                                    analysisSource    = current
+                                    selectedAnalysis  = position
+                                    analysisPositions = list
+                                    analysisIndex     = list.indexOf(position).coerceAtLeast(0)
+                                    current = Destination.ANALYSIS
+                                },
+                                themeMode    = themeMode,
+                                onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
+                                analysisSource = analysisSource,
+                                onBackFromAnalysis = analysisSource?.let { src ->
+                                    { current = src; analysisSource = null }
+                                },
+                            ),
+                        )
+                    }
                 }
             }
+            StatusBar(tasks = backgroundTasks)
         }
 
         if (showPortfolioManager) {

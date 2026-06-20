@@ -11,19 +11,25 @@ import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
+import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
+import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClientImpl
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class AppDependencies {
     private val db = JvmDatabaseFactory.create()
@@ -49,4 +55,26 @@ class AppDependencies {
         credentialsRepository = credentialsRepository,
         scope = backgroundScope,
     )
+
+    val backgroundTaskTracker = BackgroundTaskTracker()
+
+    val tradeZeroSyncService = TradeZeroSyncService(tradeZeroClient, transactionRepository, backgroundTaskTracker)
+
+    val startupSyncCoordinator = StartupSyncCoordinator(
+        settingsRepository = settingsRepository,
+        credentialsRepository = credentialsRepository,
+        portfolioRepository = portfolioRepository,
+        tradeZeroSyncService = tradeZeroSyncService,
+        requestMarketDataSync = { marketDataService.requestSync() },
+    )
+
+    init {
+        // Mirror market-data sync into the global status bar without coupling the service to the UI.
+        marketDataService.status
+            .onEach { status ->
+                status.toBackgroundTask(retry = { marketDataService.requestSync() })
+                    ?.let(backgroundTaskTracker::update)
+            }
+            .launchIn(backgroundScope)
+    }
 }

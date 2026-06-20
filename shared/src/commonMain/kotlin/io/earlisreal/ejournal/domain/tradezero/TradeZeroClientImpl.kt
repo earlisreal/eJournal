@@ -21,6 +21,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val BASE_URL = "https://webapi.tradezero.com"
 private val EASTERN = TimeZone.of("America/New_York")
@@ -51,6 +52,14 @@ private data class FillRow(
     val execTime: String? = null,
 )
 
+// Outcome of looking up the trading account, kept distinct so an empty-but-valid response
+// (a transient TradeZero hiccup) isn't reported to the user as a parse/network failure.
+private sealed interface AccountResolution {
+    data class Found(val accountId: String) : AccountResolution
+    data object NoAccounts : AccountResolution
+    data class Error(val message: String) : AccountResolution
+}
+
 class TradeZeroClientImpl(
     private val httpClient: HttpClient,
     private val credentialsRepository: CredentialsRepository,
@@ -76,10 +85,18 @@ class TradeZeroClientImpl(
         val creds = credentialsRepository.getTradeZeroCredentials()
             ?: return TradeZeroFetchResult.InvalidCredentials
         return try {
-            val (accountId, accountBody) = resolveAccountId(creds)
-            if (accountId == null) {
-                println("[TradeZero] ERROR resolving account: $accountBody")
-                return TradeZeroFetchResult.NetworkError("accounts parse error: $accountBody")
+            val accountId = when (val resolution = resolveAccountId(creds)) {
+                is AccountResolution.Found -> resolution.accountId
+                AccountResolution.NoAccounts -> {
+                    println("[TradeZero] no accounts returned")
+                    return TradeZeroFetchResult.NetworkError(
+                        "TradeZero returned no accounts — likely a temporary broker issue, try again shortly"
+                    )
+                }
+                is AccountResolution.Error -> {
+                    println("[TradeZero] ERROR resolving account: ${resolution.message}")
+                    return TradeZeroFetchResult.NetworkError(resolution.message)
+                }
             }
             println("[TradeZero] accountId=$accountId  from=$from  to=$to")
 
@@ -135,7 +152,7 @@ class TradeZeroClientImpl(
                 }
                 status == HttpStatusCode.TooManyRequests -> {
                     println("[TradeZero] 429 on $weekStart (attempt ${attempt + 1}), retrying in ${delayMs}ms…")
-                    delay(delayMs)
+                    delay(delayMs.milliseconds)
                     delayMs *= 2
                 }
                 status.value >= 400 -> {
@@ -150,18 +167,35 @@ class TradeZeroClientImpl(
         return null
     }
 
-    // Returns (accountId, rawBody) — null first element means parse failed, body has the raw response.
-    private suspend fun resolveAccountId(creds: TradeZeroCredentials): Pair<String?, String> {
-        val response = httpClient.get("$BASE_URL/v1/api/accounts") { addAuthHeaders(creds) }
-        val body = response.bodyAsText()
-        println("[TradeZero] accounts status=${response.status} body=${body.take(400)}")
-        if (response.status != HttpStatusCode.OK) return null to "HTTP ${response.status}: ${body.take(400)}"
-        return try {
-            json.decodeFromString<AccountsResponse>(body).accounts.firstOrNull()?.account to body
-        } catch (e: Exception) {
-            println("[TradeZero] accounts parse exception: ${e.message}")
-            null to body.take(400)
+    // Resolves the trading account id. TradeZero intermittently returns 200 with an empty
+    // accounts list (a transient broker hiccup), so we retry that case with backoff — mirroring
+    // fetchWeekWithRetry — before giving up. A real HTTP error or unparseable body fails fast.
+    private suspend fun resolveAccountId(creds: TradeZeroCredentials): AccountResolution {
+        var delayMs = 1_000L
+        var lastBody = ""
+        repeat(3) { attempt ->
+            val response = httpClient.get("$BASE_URL/v1/api/accounts") { addAuthHeaders(creds) }
+            val body = response.bodyAsText()
+            lastBody = body
+            println("[TradeZero] accounts status=${response.status} body=${body.take(400)}")
+            if (response.status != HttpStatusCode.OK) {
+                return AccountResolution.Error("HTTP ${response.status}: ${body.take(400)}")
+            }
+            val accountId = try {
+                json.decodeFromString<AccountsResponse>(body).accounts.firstOrNull()?.account
+            } catch (e: Exception) {
+                println("[TradeZero] accounts parse exception: ${e.message}")
+                return AccountResolution.Error("accounts parse error: ${body.take(400)}")
+            }
+            if (accountId != null) return AccountResolution.Found(accountId)
+            if (attempt < 2) {
+                println("[TradeZero] accounts empty (attempt ${attempt + 1}), retrying in ${delayMs}ms…")
+                delay(delayMs.milliseconds)
+                delayMs *= 2
+            }
         }
+        println("[TradeZero] accounts still empty after retries: ${lastBody.take(400)}")
+        return AccountResolution.NoAccounts
     }
 
     private fun io.ktor.client.request.HttpRequestBuilder.addAuthHeaders(creds: TradeZeroCredentials) {

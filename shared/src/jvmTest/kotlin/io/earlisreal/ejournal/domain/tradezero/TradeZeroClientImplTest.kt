@@ -17,7 +17,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 private class FakeCredentials(
     private val tradeZero: TradeZeroCredentials? = TradeZeroCredentials("key-id", "secret"),
@@ -83,5 +85,50 @@ class TradeZeroClientImplTest {
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(LocalDateTime.parse("2026-06-17T06:11:33"), success.transactions[0].datetime)
+    }
+
+    @Test
+    fun `empty accounts list yields a clear no-accounts error, not a parse error`() = runTest {
+        val client = client { request ->
+            when {
+                request.url.encodedPath.endsWith("/accounts") -> json("""{"accounts":[]}""")
+                else -> json("""{"orders":[]}""")
+            }
+        }
+
+        val date = LocalDate.parse("2026-06-16")
+        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+
+        val error = assertIs<TradeZeroFetchResult.NetworkError>(result)
+        assertTrue(error.message.contains("no accounts", ignoreCase = true), "was: ${error.message}")
+        assertFalse(error.message.contains("parse", ignoreCase = true), "was: ${error.message}")
+    }
+
+    @Test
+    fun `retries accounts lookup, then succeeds when a later attempt returns an account`() = runTest {
+        var accountsCalls = 0
+        val client = client { request ->
+            when {
+                request.url.encodedPath.endsWith("/accounts") -> {
+                    accountsCalls++
+                    if (accountsCalls < 3) json("""{"accounts":[]}""")
+                    else json("""{"accounts":[{"account":"ACC1"}]}""")
+                }
+                request.url.encodedPath.contains("/orders/start-date/") ->
+                    json(
+                        """{"orders":[{"symbol":"AAPL","securityType":"Stock","side":"Buy","qty":100,
+                            "price":50.0,"commission":1.0,"totalFees":0.5,
+                            "tradeDate":"2026-06-16T00:00:00","canceled":false,"tradeId":987654}]}""",
+                    )
+                else -> json("""{"orders":[]}""")
+            }
+        }
+
+        val date = LocalDate.parse("2026-06-16")
+        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+
+        val success = assertIs<TradeZeroFetchResult.Success>(result)
+        assertEquals(1, success.transactions.size)
+        assertEquals(3, accountsCalls)
     }
 }

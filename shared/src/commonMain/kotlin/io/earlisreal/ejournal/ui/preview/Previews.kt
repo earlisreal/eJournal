@@ -16,6 +16,7 @@ import io.earlisreal.ejournal.domain.analytics.SortColumn
 import io.earlisreal.ejournal.domain.analytics.SortDirection
 import io.earlisreal.ejournal.domain.analytics.computeMetrics
 import io.earlisreal.ejournal.domain.analytics.dailySummaries
+import io.earlisreal.ejournal.domain.analytics.equityCurve
 import io.earlisreal.ejournal.domain.analytics.monthGrid
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
@@ -32,6 +33,7 @@ import io.earlisreal.ejournal.ui.components.StatCard
 import io.earlisreal.ejournal.ui.components.TradeLogsTable
 import io.earlisreal.ejournal.ui.screen.DashboardContent
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.viewmodel.DashboardState
 import io.earlisreal.ejournal.ui.theme.Spacing
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -59,6 +61,13 @@ private val samplePositions = listOf(
 )
 
 private val sampleMetrics = computeMetrics(samplePositions)
+private val sampleDashboardState = DashboardState(
+    metrics = sampleMetrics,
+    equityCurve = equityCurve(samplePositions),
+    recentTrades = samplePositions.sortedByDescending { it.exitDatetime }.take(8),
+    topTrades = samplePositions.filter { it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(5),
+    worstTrades = samplePositions.filter { it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(5),
+)
 private val sampleSummaries = dailySummaries(samplePositions)
 private val samplePositionsByDay = samplePositions.groupBy { it.exitDatetime.date }
 private val sampleGrid = monthGrid(2024, 6)
@@ -159,13 +168,13 @@ fun DayDetailPanelPreview() = PreviewBox {
 @Preview
 @Composable
 fun DashboardContentPreview() = PreviewBox {
-    DashboardContent(metrics = sampleMetrics, symbol = "$")
+    DashboardContent(state = sampleDashboardState, symbol = "$", onAnalyze = { _, _ -> }, onViewAllTrades = {})
 }
 
 @Preview
 @Composable
 fun DashboardContentDarkPreview() = PreviewBox(dark = true) {
-    DashboardContent(metrics = sampleMetrics, symbol = "$")
+    DashboardContent(state = sampleDashboardState, symbol = "$", onAnalyze = { _, _ -> }, onViewAllTrades = {})
 }
 
 @Preview

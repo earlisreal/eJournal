@@ -55,6 +55,8 @@ fun App(
             Destination.DASHBOARD -> DashboardScreen(
                 transactionRepository = transactionRepository,
                 filter = filter,
+                onAnalyze = nav.onAnalyze,
+                onViewAllTrades = { nav.onNavigate(Destination.TRADE_LOGS) },
             )
             Destination.TRADE_LOGS -> TradeLogsScreen(
                 transactionRepository = transactionRepository,

@@ -43,6 +43,7 @@ data class ShellNav(
     val analysisPositions: List<ClosedPosition>,
     val analysisIndex: Int,
     val onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
+    val onNavigate: (Destination) -> Unit,
     val themeMode: ThemeMode,
     val onThemeChange: (ThemeMode) -> Unit,
     val analysisSource: Destination?,
@@ -161,6 +162,9 @@ fun AppShell(
                                     analysisPositions = list
                                     analysisIndex     = list.indexOf(position).coerceAtLeast(0)
                                     current = Destination.ANALYSIS
+                                },
+                                onNavigate = { dest ->
+                                    if (dest.enabled) { analysisSource = null; current = dest }
                                 },
                                 themeMode    = themeMode,
                                 onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },

@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,3 +12,10 @@ import androidx.compose.ui.Modifier
  */
 @Composable
 expect fun ListVerticalScrollbar(listState: LazyListState, modifier: Modifier = Modifier)
+
+/**
+ * Vertical scrollbar for a plain [ScrollState]-backed scrolling container (e.g. a `verticalScroll`
+ * Column). Desktop draws the native scrollbar; other targets render nothing. Overlay it inside a Box.
+ */
+@Composable
+expect fun ColumnVerticalScrollbar(scrollState: ScrollState, modifier: Modifier = Modifier)

@@ -2,8 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.FifoMatcher
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DaySummary
 import io.earlisreal.ejournal.domain.analytics.Segment
@@ -38,7 +37,7 @@ data class CalendarState(
  * Month navigation just re-slices the loaded data — no reload — since daily summaries cover all dates.
  */
 class CalendarViewModel(
-    private val transactionRepository: TransactionRepository,
+    private val closedPositions: ClosedPositionService,
     initialYear: Int,
     initialMonth: Int,
 ) : ViewModel() {
@@ -60,8 +59,7 @@ class CalendarViewModel(
         }
         _state.value = _state.value.copy(loading = true)
         loadJob = viewModelScope.launch(Dispatchers.Default) {
-            val txs = transactionRepository.getByPortfolio(portfolioId)
-            val positions = filterPositions(FifoMatcher.computeClosedPositions(txs), DateRange(null, null), segment)
+            val positions = filterPositions(closedPositions.forPortfolio(portfolioId), DateRange(null, null), segment)
             val summaries = dailySummaries(positions)
             val positionsByDay = positions.groupBy { it.exitDatetime.date }
             val latestDate = summaries.keys.maxOrNull()

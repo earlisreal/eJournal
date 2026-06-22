@@ -26,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.AppTextButton
 import io.earlisreal.ejournal.ui.components.DayDetailPanel
@@ -46,12 +46,12 @@ import kotlinx.datetime.todayIn
 
 @Composable
 fun CalendarScreen(
-    transactionRepository: TransactionRepository,
+    closedPositions: ClosedPositionService,
     filter: FilterState,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    val vm = viewModel { CalendarViewModel(transactionRepository, today.year, today.monthNumber) }
+    val vm = viewModel { CalendarViewModel(closedPositions, today.year, today.monthNumber) }
     val state by vm.state.collectAsState()
 
     LaunchedEffect(filter.portfolio, filter.segment) {

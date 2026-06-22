@@ -12,6 +12,7 @@ import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
@@ -44,6 +45,7 @@ fun App(
     startupSyncCoordinator: StartupSyncCoordinator,
     startDestination: Destination,
     initialPortfolios: List<Portfolio>,
+    closedPositions: ClosedPositionService,
 ) {
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { startupSyncCoordinator.run() } }
 
@@ -60,13 +62,13 @@ fun App(
         val isDarkTheme = resolveDarkMode(nav.themeMode, systemDark)
         when (destination) {
             Destination.DASHBOARD -> DashboardScreen(
-                transactionRepository = transactionRepository,
+                closedPositions = closedPositions,
                 filter = filter,
                 onAnalyze = nav.onAnalyze,
                 onViewAllTrades = { nav.onNavigate(Destination.TRADE_LOGS) },
             )
             Destination.TRADE_LOGS -> TradeLogsScreen(
-                transactionRepository = transactionRepository,
+                closedPositions = closedPositions,
                 filter = filter,
                 onAnalyze = nav.onAnalyze,
             )
@@ -80,7 +82,7 @@ fun App(
                 tradeZeroConfigured = credentialsRepository.getTradeZeroCredentials() != null,
             )
             Destination.CALENDAR -> CalendarScreen(
-                transactionRepository = transactionRepository,
+                closedPositions = closedPositions,
                 filter = filter,
                 onAnalyze = nav.onAnalyze,
             )

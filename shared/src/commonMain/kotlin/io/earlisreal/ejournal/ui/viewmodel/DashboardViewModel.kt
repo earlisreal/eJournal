@@ -2,8 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.FifoMatcher
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.analytics.DashboardMetrics
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.EquityPoint
@@ -33,7 +32,7 @@ data class DashboardState(
 )
 
 class DashboardViewModel(
-    private val transactionRepository: TransactionRepository,
+    private val closedPositions: ClosedPositionService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -49,8 +48,7 @@ class DashboardViewModel(
         }
         _state.value = _state.value.copy(loading = true)
         loadJob = viewModelScope.launch(Dispatchers.Default) {
-            val txs = transactionRepository.getByPortfolio(portfolioId)
-            val positions = FifoMatcher.computeClosedPositions(txs)
+            val positions = closedPositions.forPortfolio(portfolioId)
             val filtered = filterPositions(positions, range, segment)
             val byRecency = filtered.sortedByDescending { it.exitDatetime }
             _state.value = DashboardState(

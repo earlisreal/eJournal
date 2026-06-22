@@ -2,8 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.FifoMatcher
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.analytics.SortColumn
@@ -26,7 +25,7 @@ data class TradeLogsState(
 )
 
 class TradeLogsViewModel(
-    private val transactionRepository: TransactionRepository,
+    private val closedPositions: ClosedPositionService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TradeLogsState())
@@ -44,8 +43,7 @@ class TradeLogsViewModel(
         }
         _state.value = _state.value.copy(loading = true)
         loadJob = viewModelScope.launch(Dispatchers.Default) {
-            val txs = transactionRepository.getByPortfolio(portfolioId)
-            val positions = FifoMatcher.computeClosedPositions(txs)
+            val positions = closedPositions.forPortfolio(portfolioId)
             filtered = filterPositions(positions, range, segment)
             _state.value = _state.value.copy(
                 positions = sortPositions(filtered, _state.value.sortColumn, _state.value.sortDirection),

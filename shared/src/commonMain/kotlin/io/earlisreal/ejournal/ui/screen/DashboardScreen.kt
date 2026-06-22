@@ -30,7 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.ColumnVerticalScrollbar
@@ -50,12 +50,12 @@ import io.earlisreal.ejournal.ui.viewmodel.DashboardViewModel
 
 @Composable
 fun DashboardScreen(
-    transactionRepository: TransactionRepository,
+    closedPositions: ClosedPositionService,
     filter: FilterState,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     onViewAllTrades: () -> Unit = {},
 ) {
-    val vm = viewModel { DashboardViewModel(transactionRepository) }
+    val vm = viewModel { DashboardViewModel(closedPositions) }
     val state by vm.state.collectAsState()
 
     LaunchedEffect(filter) {

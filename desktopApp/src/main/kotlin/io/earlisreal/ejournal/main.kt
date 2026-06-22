@@ -83,6 +83,7 @@ fun main(args: Array<String>) {
                         startupSyncCoordinator = ready.deps.startupSyncCoordinator,
                         startDestination = ready.startDestination,
                         initialPortfolios = ready.portfolios,
+                        closedPositions = ready.deps.closedPositionService,
                     )
                 }
             }

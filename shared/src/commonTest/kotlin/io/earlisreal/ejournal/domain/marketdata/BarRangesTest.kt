@@ -48,22 +48,24 @@ class BarRangesTest {
     }
 
     @Test
-    fun `day trade also requires daily bars with 60-day lead and 30-day tail buffer`() {
+    fun `day trade also requires full daily history with a 60-day tail buffer`() {
         val ranges = requiredRanges(
             listOf(position(entry = "2026-06-10T09:31", exit = "2026-06-10T10:15")),
             today,
         )
-        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-04-11"), LocalDate.parse("2026-06-12")) })
+        // exit + 60 days = 2026-08-09, capped at today.
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("1970-01-01"), LocalDate.parse("2026-06-12")) })
     }
 
     @Test
-    fun `swing trade requires daily bars with 60-day lead and 30-day tail buffer`() {
+    fun `swing trade requires full daily history with a 60-day tail buffer`() {
         val ranges = requiredRanges(
             listOf(position(entry = "2026-01-15T09:31", exit = "2026-02-10T10:15")),
             today,
         )
+        // exit + 60 days = 2026-04-11 (well before today, so uncapped).
         assertEquals(
-            listOf(BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2025-11-16"), LocalDate.parse("2026-03-12"))),
+            listOf(BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("1970-01-01"), LocalDate.parse("2026-04-11"))),
             ranges,
         )
     }
@@ -87,8 +89,9 @@ class BarRangesTest {
             today,
         )
         assertEquals(1, ranges.size)
-        assertEquals(LocalDate.parse("2025-11-16"), ranges.single().from)
-        assertEquals(LocalDate.parse("2026-03-31"), ranges.single().to)
+        assertEquals(LocalDate.parse("1970-01-01"), ranges.single().from)
+        // Later trade dominates the tail: 2026-03-01 exit + 60 days = 2026-04-30.
+        assertEquals(LocalDate.parse("2026-04-30"), ranges.single().to)
     }
 
     @Test
@@ -134,13 +137,28 @@ class BarRangesTest {
     }
 
     @Test
-    fun `partial coverage leaves missing edges`() {
+    fun `daily partial coverage only extends the trailing tail, never the leading edge`() {
+        // Daily is always requested from the full-history sentinel, so existing coverage already
+        // reaches the symbol's first bar — re-fetching the leading edge would be a wasted probe.
         val coverage = BarCoverage(LocalDateTime.parse("2026-06-03T00:00"), LocalDateTime.parse("2026-06-07T00:00"))
         val missing = subtractCoverage(junRange, coverage)
         assertEquals(
             listOf(
-                BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-02")),
                 BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-10")),
+            ),
+            missing,
+        )
+    }
+
+    @Test
+    fun `one-minute partial coverage backfills both leading and trailing edges`() {
+        val minRange = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-10"))
+        val coverage = BarCoverage(LocalDateTime.parse("2026-06-03T00:00"), LocalDateTime.parse("2026-06-07T00:00"))
+        val missing = subtractCoverage(minRange, coverage)
+        assertEquals(
+            listOf(
+                BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-02")),
+                BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-10")),
             ),
             missing,
         )

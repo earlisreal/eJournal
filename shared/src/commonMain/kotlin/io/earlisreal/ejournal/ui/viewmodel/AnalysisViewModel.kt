@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.minus
@@ -112,8 +113,10 @@ class AnalysisViewModel(
             LocalDateTime(position.entryDatetime.date.minus(DatePeriod(days = 1)), LocalTime(0, 0)) to
             LocalDateTime(position.exitDatetime.date.plus(DatePeriod(days = 1)),   LocalTime(23, 59))
         } else {
-            LocalDateTime(position.entryDatetime.date.minus(DatePeriod(days = 90)), LocalTime(0, 0)) to
-            LocalDateTime(position.exitDatetime.date.plus(DatePeriod(days = 60)),   LocalTime(23, 59))
+            // Daily/weekly: load the symbol's full stored history. The chart frames the trade via
+            // its initial visible range (JavaFxChartBridge) and lets the user scroll/zoom out to all
+            // of it, so the query is intentionally unbounded rather than a window around the trade.
+            ALL_HISTORY
         }
     }
 
@@ -124,5 +127,12 @@ class AnalysisViewModel(
         val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE) ?: return false
         val tradeDate = position.entryDatetime.date
         return tradeDate >= coverage.first.date && tradeDate <= coverage.last.date
+    }
+
+    private companion object {
+        // Wide bounds that select every stored daily bar for a symbol (storage starts at 1970).
+        private val ALL_HISTORY =
+            LocalDateTime(LocalDate.parse("1900-01-01"), LocalTime(0, 0)) to
+            LocalDateTime(LocalDate.parse("2100-01-01"), LocalTime(0, 0))
     }
 }

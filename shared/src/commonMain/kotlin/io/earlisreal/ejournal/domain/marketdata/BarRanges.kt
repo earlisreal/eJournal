@@ -16,9 +16,14 @@ enum class BarSource { YAHOO, ALPACA, UNAVAILABLE }
 
 data class RoutedRange(val range: BarRange, val source: BarSource)
 
-/** Daily bars around a swing trade: lead for chart context, tail to see the aftermath. */
-private const val SWING_LEAD_DAYS = 60
-private const val SWING_TAIL_DAYS = 30
+/**
+ * Daily bars are stored as full history: the lead is a fixed sentinel that Yahoo clips to the
+ * symbol's first available trading day, and the tail runs to exit + [DAILY_TAIL_DAYS] so storage
+ * fully backs the chart's initial view window. The chart loads all of it and just zooms to the
+ * trade. (Pre-1970 history is dropped — irrelevant for a trading journal.)
+ */
+private val EARLIEST_DAILY = LocalDate.parse("1970-01-01")
+private const val DAILY_TAIL_DAYS = 60
 
 /** 1-min bars: one extra day before entry and after exit for context around the trade. */
 private const val INTRADAY_LEAD_DAYS = 1
@@ -33,8 +38,8 @@ fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarR
         val dailyRange = BarRange(
             symbol = position.symbol,
             timeframe = Timeframe.DAILY,
-            from = position.entryDatetime.date.minus(DatePeriod(days = SWING_LEAD_DAYS)),
-            to = minOf(position.exitDatetime.date.plus(DatePeriod(days = SWING_TAIL_DAYS)), today),
+            from = EARLIEST_DAILY,
+            to = minOf(position.exitDatetime.date.plus(DatePeriod(days = DAILY_TAIL_DAYS)), today),
         )
         when (classifyTradeType(position)) {
             TradeType.DAY -> listOf(
@@ -71,13 +76,21 @@ private fun mergeRanges(ranges: List<BarRange>): List<BarRange> {
 /**
  * The parts of [range] not already in storage. Coverage is coarse (min/max), so only
  * the missing leading/trailing edges are returned — over-fetch is harmless (upserts).
+ *
+ * Daily is the exception: it is always requested from [EARLIEST_DAILY], so any existing daily
+ * coverage already reaches the symbol's first available bar. Re-fetching the leading edge would
+ * just fire an empty pre-history request every sync (and keep the symbol perpetually "in work"),
+ * so for daily we only ever extend the trailing tail once coverage exists. A fresh symbol (null
+ * coverage) still pulls the full history. 1-min keeps both edges — it is fetched in per-trade
+ * windows, so an earlier trade can still need a leading backfill.
  */
 fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
     if (coverage == null) return listOf(range)
     val missing = mutableListOf<BarRange>()
     val coveredFrom = coverage.first.date
     val coveredTo = coverage.last.date
-    if (range.from < coveredFrom) {
+    val backfillLeadingEdge = range.timeframe != Timeframe.DAILY
+    if (backfillLeadingEdge && range.from < coveredFrom) {
         missing.add(range.copy(to = minOf(range.to, coveredFrom.minus(DatePeriod(days = 1)))))
     }
     if (range.to > coveredTo) {

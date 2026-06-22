@@ -12,10 +12,13 @@ import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import java.awt.Component
 import java.io.File
@@ -81,14 +84,43 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         val vwapJson    = if (state.vwapEnabled && chartData.vwap.isNotEmpty())
             serializeVwap(chartData.vwap, tf) else "null"
         val markersJson = serializeMarkers(position.transactions, tf)
-        val firstTradeIdx = firstTradeBarIndex(position.entryDatetime, chartData.bars, tf)
 
         exec("setTheme(${state.isDarkTheme})")
         exec("setData($candlesJson, $volumeJson, $vwapJson)")
         exec("setMarkers($markersJson)")
-        if (scrollToTrade) exec("scrollToFirstTrade($firstTradeIdx)")
+        if (scrollToTrade) {
+            exec(initialViewCommand(position.entryDatetime, position.exitDatetime, chartData.bars, tf))
+        }
         exec("updateTitle('${position.symbol}', '${tf.label}')")
     }
+
+    // Daily/weekly charts load the symbol's full history, so frame the trade with an explicit
+    // visible range [entry-90d, exit+60d] (clamped to the loaded data) and let the user zoom out
+    // from there. Intraday data is already a tight per-trade window, so just scroll the entry into
+    // view at the current zoom.
+    private fun initialViewCommand(
+        entry: LocalDateTime,
+        exit: LocalDateTime,
+        bars: List<Bar>,
+        tf: ChartTimeframe,
+    ): String = when (tf) {
+        ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> {
+            val firstSec = bars.firstOrNull()?.let { barTimeSec(it.timestamp, tf) }
+            val lastSec = bars.lastOrNull()?.let { barTimeSec(it.timestamp, tf) }
+            if (firstSec == null || lastSec == null) {
+                "scrollToFirstTrade(0)"
+            } else {
+                val from = maxOf(dateEpochSec(entry.date.minus(DatePeriod(days = VIEW_LEAD_DAYS))), firstSec)
+                val to = minOf(dateEpochSec(exit.date.plus(DatePeriod(days = VIEW_TAIL_DAYS))), lastSec)
+                if (from >= to) "scrollToFirstTrade(${firstTradeBarIndex(entry, bars, tf)})"
+                else "setVisibleRange($from, $to)"
+            }
+        }
+        else -> "scrollToFirstTrade(${firstTradeBarIndex(entry, bars, tf)})"
+    }
+
+    private fun dateEpochSec(date: kotlinx.datetime.LocalDate): Long =
+        date.atStartOfDayIn(TimeZone.UTC).epochSeconds
 
     fun resize(w: Int, h: Int) = exec("resize($w, $h)")
 
@@ -117,11 +149,13 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     // switch between UTCTimestamp and BusinessDay time types (which throws at runtime).
     // For daily/weekly bars, normalise to midnight UTC of that date so day-granularity
     // comparisons work correctly regardless of whether the raw bar is at market-open.
-    private fun barTime(ts: LocalDateTime, tf: ChartTimeframe): String = when (tf) {
+    private fun barTimeSec(ts: LocalDateTime, tf: ChartTimeframe): Long = when (tf) {
         ChartTimeframe.DAILY,
-        ChartTimeframe.WEEKLY -> ts.date.atStartOfDayIn(TimeZone.UTC).epochSeconds.toString()
-        else                  -> ts.toInstant(TimeZone.UTC).epochSeconds.toString()
+        ChartTimeframe.WEEKLY -> ts.date.atStartOfDayIn(TimeZone.UTC).epochSeconds
+        else                  -> ts.toInstant(TimeZone.UTC).epochSeconds
     }
+
+    private fun barTime(ts: LocalDateTime, tf: ChartTimeframe): String = barTimeSec(ts, tf).toString()
 
     private fun serializeCandles(bars: List<Bar>, tf: ChartTimeframe): String =
         bars.joinToString(",", "[", "]") { b ->
@@ -184,6 +218,11 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     }
 
     companion object {
+        // Initial daily/weekly view window around the trade: ~90 days of pre-entry setup and ~60
+        // days of aftermath. Just the opening zoom — the full history is loaded and scrollable.
+        private const val VIEW_LEAD_DAYS = 90
+        private const val VIEW_TAIL_DAYS = 60
+
         @Volatile private var toolkitStarted = false
 
         init {

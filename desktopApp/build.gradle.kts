@@ -47,9 +47,15 @@ compose.desktop {
         // NOTE: no --add-exports for javafx.graphics — our JavaFX comes from org.openjfx jars on the
         // classpath (the unnamed module), where no export is needed. With JavaFX off the module path
         // that flag only printed "WARNING: Unknown module: javafx.graphics specified to --add-exports".
+        // Favor fast startup over peak JIT throughput — good for a desktop app. Validated on JBR 25.
+        jvmArgs += "-XX:TieredStopAtLevel=2"
+        // Paint a splash from JVM boot. $APPDIR is substituted by the jpackage launcher; splash.png
+        // is placed in $APPDIR/resources/ via appResourcesRootDir below. Auto-closes when the first window shows.
+        jvmArgs += "-splash:${'$'}APPDIR/resources/splash.png"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
             // jpackage's default jlink runtime omits modules our deps need at startup — java.sql
             // (SQLDelight JDBC), jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) and
             // jdk.jsobject (JavaFX WebView's JS bridge) — which caused "Failed to launch JVM".
@@ -80,4 +86,6 @@ compose.desktop {
 tasks.withType<JavaExec>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     jvmArgs("--sun-misc-unsafe-memory-access=allow")
+    jvmArgs("-XX:TieredStopAtLevel=2")
+    jvmArgs("-splash:${project.projectDir}/resources/common/splash.png")
 }

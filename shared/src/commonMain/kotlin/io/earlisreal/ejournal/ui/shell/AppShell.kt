@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,12 +55,14 @@ fun AppShell(
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
     backgroundTaskTracker: BackgroundTaskTracker,
+    initialDestination: Destination,
+    initialPortfolios: List<Portfolio>,
     content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
     val savedFilter = remember { settingsRepository.getFilterPrefs() }
     val scope = rememberCoroutineScope()
 
-    var current by remember { mutableStateOf(Destination.DEFAULT) }
+    var current by remember { mutableStateOf(initialDestination) }
     var userExpanded by remember { mutableStateOf(true) }
     var themeMode by remember { mutableStateOf(settingsRepository.getThemeMode()) }
     var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
@@ -76,17 +77,15 @@ fun AppShell(
     }
     var segment by remember { mutableStateOf(savedFilter?.segment ?: Segment.ALL) }
 
-    var portfolios by remember { mutableStateOf<List<Portfolio>>(emptyList()) }
-    var selectedPortfolio by remember { mutableStateOf<Portfolio?>(null) }
-    LaunchedEffect(Unit) {
-        portfolios = portfolioRepository.getAll()
-        selectedPortfolio = savedFilter?.portfolioId?.let { id -> portfolios.firstOrNull { it.id == id } }
-            ?: portfolios.firstOrNull()
-        val portfolioId = selectedPortfolio?.id
-        if (portfolioId != null && transactionRepository.countByPortfolio(portfolioId) > 0L) {
-            current = Destination.DASHBOARD
-        }
+    var portfolios by remember { mutableStateOf(initialPortfolios) }
+    var selectedPortfolio by remember {
+        mutableStateOf(
+            savedFilter?.portfolioId?.let { id -> initialPortfolios.firstOrNull { it.id == id } }
+                ?: initialPortfolios.firstOrNull()
+        )
     }
+    // (removed: LaunchedEffect that loaded portfolios and switched to DASHBOARD — now resolved
+    //  behind the splash by resolveStartDestination / buildReadyApp)
 
     fun persist() {
         settingsRepository.setFilterPrefs(

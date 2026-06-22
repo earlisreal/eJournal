@@ -3,6 +3,9 @@ package io.earlisreal.ejournal
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import io.earlisreal.ejournal.domain.model.Portfolio
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
@@ -39,8 +42,10 @@ fun App(
     backgroundTaskTracker: BackgroundTaskTracker,
     tradeZeroSyncService: TradeZeroSyncService,
     startupSyncCoordinator: StartupSyncCoordinator,
+    startDestination: Destination,
+    initialPortfolios: List<Portfolio>,
 ) {
-    LaunchedEffect(Unit) { startupSyncCoordinator.run() }
+    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { startupSyncCoordinator.run() } }
 
     val systemDark = isSystemInDarkTheme()
 
@@ -49,6 +54,8 @@ fun App(
         transactionRepository = transactionRepository,
         settingsRepository = settingsRepository,
         backgroundTaskTracker = backgroundTaskTracker,
+        initialDestination = startDestination,
+        initialPortfolios = initialPortfolios,
     ) { destination, filter, nav ->
         val isDarkTheme = resolveDarkMode(nav.themeMode, systemDark)
         when (destination) {

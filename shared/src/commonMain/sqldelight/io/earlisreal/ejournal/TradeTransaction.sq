@@ -12,8 +12,9 @@ CREATE TABLE TradeTransaction (
 );
 
 -- Dedup key for re-imported transactions. Nullable: SQLite treats every NULL as
--- distinct, so manual/CSV rows (externalId = NULL) are never deduped, while
--- source-namespaced ids (e.g. "tz:<tradeId>") collapse re-synced duplicates.
+-- distinct, so manual rows (externalId = NULL) are never deduped, while stable ids
+-- (e.g. the shared TradeZero natural key "tz:AAPL:2026-06-16T00:00:00:BUY:100.0#0",
+-- used by both the API sync and the CSV import) collapse duplicates across sources.
 CREATE UNIQUE INDEX TradeTransaction_externalId ON TradeTransaction(externalId);
 
 insertTransaction:

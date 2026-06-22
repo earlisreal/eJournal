@@ -41,7 +41,7 @@ class TradeZeroClientImplTest {
         TradeZeroClientImpl(HttpClient(MockEngine { request -> handler(request) }), FakeCredentials())
 
     @Test
-    fun `maps tradeId to namespaced externalId`() = runTest {
+    fun `builds a natural-key externalId independent of tradeId`() = runTest {
         val client = client { request ->
             when {
                 request.url.encodedPath.endsWith("/accounts") ->
@@ -61,7 +61,35 @@ class TradeZeroClientImplTest {
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(1, success.transactions.size)
-        assertEquals("tz:987654", success.transactions[0].externalId)
+        assertEquals("tz:AAPL:2026-06-16T00:00:00:BUY:100.0#0", success.transactions[0].externalId)
+    }
+
+    @Test
+    fun `the same fill from the API and the CSV import share an externalId`() = runTest {
+        val client = client { request ->
+            when {
+                request.url.encodedPath.endsWith("/accounts") ->
+                    json("""{"accounts":[{"account":"ACC1"}]}""")
+                request.url.encodedPath.contains("/orders/start-date/") ->
+                    json(
+                        """{"orders":[{"symbol":"AAPL","securityType":"Stock","side":"Buy","qty":100,
+                            "price":50.0,"commission":1.0,"totalFees":0.5,
+                            "tradeDate":"2026-06-16T00:00:00","canceled":false,"tradeId":987654}]}""",
+                    )
+                else -> json("""{"orders":[]}""")
+            }
+        }
+        val date = LocalDate.parse("2026-06-16")
+        val apiTx = assertIs<TradeZeroFetchResult.Success>(client.fetchOrders(7L, date, date)).transactions.single()
+
+        // The equivalent fill as a TradeHistory CSV row.
+        val csv = (
+            "Account,T/D,S/D,Currency,Type,Side,Symbol,Qty,Price,Exec Time,Comm,SEC,TAF,NSCC,Nasdaq,ECN Remove,ECN Add,Gross Proceeds,Net Proceeds,Clr Broker,Liq,Note\n" +
+                "ACC1,06/16/2026,06/17/2026,USD,2,B,AAPL,100,50.0,00:00:00,1.0,0.5,0,0,0,0,0,-5000,-5001,LAMP,,"
+            ).encodeToByteArray()
+        val csvTx = io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser().parse(csv, portfolioId = 7L).single()
+
+        assertEquals(apiTx.externalId, csvTx.externalId)
     }
 
     @Test

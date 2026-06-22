@@ -8,6 +8,9 @@ class GenericCsvParser : TransactionParser {
     override val brokerName = "Generic CSV"
     override val supportedExtensions = listOf("csv")
 
+    // The generic parser is a manual-only fallback — it never wins auto-detection.
+    override fun detect(content: ByteArray) = false
+
     override fun parse(content: ByteArray, portfolioId: Long): List<Transaction> {
         val lines = content.decodeToString().lines().drop(1).filter { it.isNotBlank() }
         return lines.mapNotNull { line ->

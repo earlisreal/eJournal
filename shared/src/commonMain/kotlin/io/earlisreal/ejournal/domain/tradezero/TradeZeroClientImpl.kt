@@ -46,7 +46,8 @@ private data class FillRow(
     val totalFees: Double,
     val tradeDate: String,
     val canceled: Boolean,
-    // Per-fill primary key from the start-date orders endpoint; used to deduplicate re-syncs.
+    // Per-fill primary key from the start-date orders endpoint. No longer used for the externalId
+    // (the CSV import has no equivalent, so dedup uses a shared natural key instead); kept for parsing.
     val tradeId: Long,
     // Intraday fill time ("HH:mm:ss") — tradeDate itself is date-only (midnight).
     val execTime: String? = null,
@@ -122,9 +123,10 @@ class TradeZeroClientImpl(
             }
 
             println("[TradeZero] done — $weeksDone weeks, ${fills.size} raw fills")
+            val externalIds = TradeZeroExternalIdFactory()
             val transactions = fills
                 .filter { !it.canceled && it.securityType == "Stock" }
-                .map { it.toTransaction(portfolioId) }
+                .map { it.toTransaction(portfolioId, externalIds) }
 
             TradeZeroFetchResult.Success(transactions)
         } catch (e: Exception) {
@@ -203,18 +205,21 @@ class TradeZeroClientImpl(
         header("TZ-API-SECRET-KEY", creds.secretKey)
     }
 
-    private fun FillRow.toTransaction(portfolioId: Long): Transaction {
+    private fun FillRow.toTransaction(portfolioId: Long, externalIds: TradeZeroExternalIdFactory): Transaction {
         val action = if (side == "Buy") Action.BUY else Action.SELL
+        val datetime = resolveDatetime()
         return Transaction(
             id          = 0L,
             portfolioId = portfolioId,
             symbol      = symbol,
-            datetime    = resolveDatetime(),
+            datetime    = datetime,
             action      = action,
             price       = price,
             shares      = qty,
             fees        = commission + totalFees,
-            externalId  = "tz:$tradeId",
+            // Natural key shared with the CSV import (tradeId isn't available there), so the same
+            // fill from either source dedups. See TradeZeroExternalIdFactory.
+            externalId  = externalIds.create(symbol, datetime, action, qty),
         )
     }
 

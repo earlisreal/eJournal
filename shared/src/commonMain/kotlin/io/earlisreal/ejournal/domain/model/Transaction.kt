@@ -12,8 +12,10 @@ data class Transaction(
     val shares: Double,
     val fees: Double,
     /**
-     * Stable, source-namespaced identifier used to deduplicate imports (e.g. "tz:<tradeId>").
-     * Null for sources with no native identifier (manual entry, CSV) — those are never deduped.
+     * Stable identifier used to deduplicate imports. TradeZero (both API sync and CSV import) uses a
+     * shared natural key (e.g. "tz:AAPL:2026-06-16T00:00:00:BUY:100.0#0") so the same fill from either
+     * source collapses to one row; moomoo uses "moomoo:...". Null for sources with no stable key
+     * (manual entry) — those are never deduped.
      */
     val externalId: String? = null
 )

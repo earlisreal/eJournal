@@ -18,6 +18,8 @@ import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
+import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
+import io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClientImpl
@@ -42,7 +44,8 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
-    val parsers: List<TransactionParser> = listOf(GenericCsvParser())
+    // moomoo & TradeZero first so auto-detect routes to them; Generic last (manual-only fallback).
+    val parsers: List<TransactionParser> = listOf(MoomooCsvParser(), TradeZeroCsvParser(), GenericCsvParser())
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
     val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)

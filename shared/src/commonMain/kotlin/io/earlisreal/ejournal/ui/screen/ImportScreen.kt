@@ -84,10 +84,14 @@ fun ImportScreen(
                 var parserExpanded by remember { mutableStateOf(false) }
                 Box {
                     AppSecondaryButton(
-                        text = state.selectedParser?.brokerName ?: "Select Parser",
+                        text = state.selectedParser?.brokerName ?: "Auto-detect",
                         onClick = { parserExpanded = true },
                     )
                     DropdownMenu(expanded = parserExpanded, onDismissRequest = { parserExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Auto-detect") },
+                            onClick = { vm.selectParser(null); parserExpanded = false },
+                        )
                         parsers.forEach { parser ->
                             DropdownMenuItem(
                                 text = { Text(parser.brokerName) },
@@ -107,6 +111,14 @@ fun ImportScreen(
             when (val status = state.status) {
                 is ImportStatus.Error -> ErrorBanner(status.message)
                 else -> {}
+            }
+
+            state.detectionSummary?.let { summary ->
+                Text(
+                    summary,
+                    color = AppTheme.colors.textMuted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
 
             MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })

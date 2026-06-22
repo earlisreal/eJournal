@@ -19,8 +19,11 @@ sealed class ImportStatus {
 }
 
 data class ImportState(
+    /** null means Auto-detect: each dropped file is routed to the parser whose `detect()` matches. */
     val selectedParser: TransactionParser? = null,
     val parsedTransactions: List<Transaction> = emptyList(),
+    /** Human-readable breakdown of the last parse (per-broker counts / unrecognized files). */
+    val detectionSummary: String? = null,
     val status: ImportStatus = ImportStatus.Idle,
 )
 
@@ -30,22 +33,38 @@ class ImportViewModel(
     val parsers: List<TransactionParser>,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ImportState(selectedParser = parsers.firstOrNull()))
+    // Defaults to Auto-detect (null selectedParser).
+    private val _state = MutableStateFlow(ImportState())
     val state: StateFlow<ImportState> = _state.asStateFlow()
 
-    fun selectParser(parser: TransactionParser) {
-        _state.value = _state.value.copy(selectedParser = parser, parsedTransactions = emptyList())
+    fun selectParser(parser: TransactionParser?) {
+        _state.value = _state.value.copy(
+            selectedParser = parser,
+            parsedTransactions = emptyList(),
+            detectionSummary = null,
+        )
     }
 
     fun parseFiles(files: List<ByteArray>, portfolioId: Long) {
-        val parser = _state.value.selectedParser ?: return
         viewModelScope.launch(Dispatchers.Default) {
-            val transactions = files.flatMap { parser.parse(it, portfolioId) }
+            val result = parseImportFiles(files, parsers, _state.value.selectedParser, portfolioId)
             _state.value = _state.value.copy(
-                parsedTransactions = transactions,
+                parsedTransactions = result.transactions,
+                detectionSummary = buildSummary(result, files.size),
                 status = ImportStatus.Idle,
             )
         }
+    }
+
+    private fun buildSummary(result: ImportParseResult, fileCount: Int): String? {
+        if (fileCount == 0) return null
+        val parts = result.perParser.entries
+            .filter { it.value > 0 }
+            .map { "${it.key}: ${it.value}" }
+            .toMutableList()
+        if (result.unrecognizedFiles > 0) parts += "${result.unrecognizedFiles} file(s) not recognized"
+        if (parts.isEmpty()) return "No transactions found in the selected file(s)."
+        return parts.joinToString(" · ")
     }
 
     fun import(onSuccess: () -> Unit) {
@@ -54,10 +73,13 @@ class ImportViewModel(
         _state.value = _state.value.copy(status = ImportStatus.Importing)
         viewModelScope.launch {
             try {
-                transactions.forEach { transactionRepository.insert(it) }
+                // insert() returns null for rows skipped as duplicates (idempotent re-imports),
+                // so count actual inserts rather than parsed rows — matching TradeZeroSyncService.
+                val inserted = transactions.count { transactionRepository.insert(it) != null }
                 _state.value = _state.value.copy(
-                    status = ImportStatus.Success(transactions.size),
+                    status = ImportStatus.Success(inserted),
                     parsedTransactions = emptyList(),
+                    detectionSummary = null,
                 )
                 onSuccess()
             } catch (e: Exception) {

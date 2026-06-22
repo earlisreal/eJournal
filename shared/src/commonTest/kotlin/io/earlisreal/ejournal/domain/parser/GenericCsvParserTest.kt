@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.domain.model.Action
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class GenericCsvParserTest {
 
@@ -47,6 +48,26 @@ class GenericCsvParserTest {
             "2024-01-10T09:30,BDO,SELL,120.0,200.0,25.0"
         )
         assertEquals(2, parser.parse(content, portfolioId).size)
+    }
+
+    @Test
+    fun skipsMalformedRowsButKeepsValidOnes() {
+        val content = csv(
+            "2024-01-01T09:30,BDO,BUY,100.0,200.0,20.0",
+            "2024-01-02T09:30,BDO,NOPE,100.0,200.0,20.0", // unknown action -> Action.valueOf throws
+            "not,enough,columns",                         // too short -> IndexOutOfBounds
+            "2024-01-03T09:30,BDO,SELL,abc,200.0,20.0",    // non-numeric price -> toDouble throws
+            "2024-01-10T09:30,BDO,SELL,120.0,200.0,25.0",
+        )
+        val result = parser.parse(content, portfolioId)
+        assertEquals(2, result.size)
+        assertEquals(Action.BUY, result[0].action)
+        assertEquals(Action.SELL, result[1].action)
+    }
+
+    @Test
+    fun neverAutoDetects() {
+        assertFalse(parser.detect(csv("2024-01-01T09:30,BDO,BUY,100.0,200.0,20.0")))
     }
 
     @Test

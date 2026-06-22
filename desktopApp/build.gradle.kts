@@ -29,7 +29,8 @@ dependencies {
 
     implementation(libs.compose.uiToolingPreview)
 
-    // Silences the SLF4J "no binding" startup notice from the SQLite JDBC driver (logs are discarded).
+    // Provides a no-op SLF4J binding so the SQLite JDBC driver's logging is discarded silently.
+    // Version must match the slf4j-api forced onto the classpath (2.x) — see libs.versions.toml.
     runtimeOnly(libs.slf4j.nop)
 }
 
@@ -37,9 +38,15 @@ compose.desktop {
     application {
         mainClass = "io.earlisreal.ejournal.MainKt"
         javaHome = jbrLauncher.get().metadata.installationPath.asFile.absolutePath
+        // Silences the JDK 24+ restricted-native-access warning from JavaFX's NativeLibLoader
+        // (com.sun.glass.utils.NativeLibLoader calling System::load from the unnamed module).
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
-        // JFXPanel needs access to internal JavaFX initialization APIs on JDK 17+.
-        jvmArgs += "--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
+        // JavaFX 21's Marlin renderer calls the terminally-deprecated sun.misc.Unsafe memory methods;
+        // on JDK 25 that prints a 4-line warning on first paint. "allow" permits it without warning.
+        jvmArgs += "--sun-misc-unsafe-memory-access=allow"
+        // NOTE: no --add-exports for javafx.graphics — our JavaFX comes from org.openjfx jars on the
+        // classpath (the unnamed module), where no export is needed. With JavaFX off the module path
+        // that flag only printed "WARNING: Unknown module: javafx.graphics specified to --add-exports".
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -68,7 +75,9 @@ compose.desktop {
     }
 }
 
+// Applies to `run`, `hotRun` (Compose Hot Reload's run task extends JavaExec) and other JavaExec tasks,
+// so dev runs match the packaged app's JVM args above.
 tasks.withType<JavaExec>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
-    jvmArgs("--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED")
+    jvmArgs("--sun-misc-unsafe-memory-access=allow")
 }

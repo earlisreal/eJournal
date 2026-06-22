@@ -186,6 +186,20 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     companion object {
         @Volatile private var toolkitStarted = false
 
+        init {
+            // Our JavaFX (org.openjfx) jars load from the classpath (the unnamed module), so JavaFX
+            // logs a benign one-shot JUL WARNING when the toolkit starts: "Unsupported JavaFX
+            // configuration: classes were loaded from 'unnamed module ...'". It's emitted via
+            // com.sun.javafx.util.Logging.getJavaFXLogger(), whose JUL logger is named "javafx" — NOT
+            // the PlatformImpl source class shown in the log line. Modularising a Compose Desktop app
+            // to silence it isn't worth the jpackage risk, so we raise that logger above WARNING. This
+            // runs at class-load, before the first JFXPanel() starts the toolkit, so the level is in
+            // effect by the time the warning would fire (verified). Real SEVERE FX errors still
+            // surface; switch to Level.WARNING here when diagnosing an actual FX startup failure.
+            java.util.logging.Logger.getLogger("javafx")
+                .level = java.util.logging.Level.SEVERE
+        }
+
         /**
          * Tear down the JavaFX toolkit on app shutdown. Required because setImplicitExit(false)
          * keeps the non-daemon FX thread alive, which would otherwise block JVM exit. No-op if the

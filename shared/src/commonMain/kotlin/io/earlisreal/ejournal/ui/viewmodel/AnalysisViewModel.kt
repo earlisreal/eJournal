@@ -8,6 +8,8 @@ import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.marketdata.BarAggregator
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.marketdata.Timeframe
+import io.earlisreal.ejournal.domain.marketdata.nextTradingDay
+import io.earlisreal.ejournal.domain.marketdata.previousTradingDay
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,12 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 
 class AnalysisViewModel(
     private val marketDataRepo: MarketDataRepository,
@@ -110,8 +109,10 @@ class AnalysisViewModel(
 
     private fun queryWindow(position: ClosedPosition, tf: Timeframe): Pair<LocalDateTime, LocalDateTime> {
         return if (tf == Timeframe.ONE_MINUTE) {
-            LocalDateTime(position.entryDatetime.date.minus(DatePeriod(days = 1)), LocalTime(0, 0)) to
-            LocalDateTime(position.exitDatetime.date.plus(DatePeriod(days = 1)),   LocalTime(23, 59))
+            // Trade day plus the adjacent trading sessions — must match the 1-min storage window
+            // in requiredRanges so the stored previous/next-day bars are actually loaded.
+            LocalDateTime(previousTradingDay(position.entryDatetime.date), LocalTime(0, 0)) to
+            LocalDateTime(nextTradingDay(position.exitDatetime.date),      LocalTime(23, 59))
         } else {
             // Daily/weekly: load the symbol's full stored history. The chart frames the trade via
             // its initial visible range (JavaFxChartBridge) and lets the user scroll/zoom out to all

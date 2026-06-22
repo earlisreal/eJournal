@@ -25,9 +25,22 @@ data class RoutedRange(val range: BarRange, val source: BarSource)
 private val EARLIEST_DAILY = LocalDate.parse("1970-01-01")
 private const val DAILY_TAIL_DAYS = 60
 
-/** 1-min bars: one extra day before entry and after exit for context around the trade. */
-private const val INTRADAY_LEAD_DAYS = 1
-private const val INTRADAY_TAIL_DAYS = 1
+/**
+ * 1-min bars cover the trade day plus the immediately adjacent trading sessions, so the previous
+ * day's and next day's intraday action is visible. Weekends are skipped (a Monday trade reaches
+ * back to Friday); market holidays are not modelled, so a holiday-adjacent session may be empty.
+ */
+fun previousTradingDay(date: LocalDate): LocalDate {
+    var d = date.minus(DatePeriod(days = 1))
+    while (d.dayOfWeek.ordinal >= 5) d = d.minus(DatePeriod(days = 1)) // Sat=5, Sun=6
+    return d
+}
+
+fun nextTradingDay(date: LocalDate): LocalDate {
+    var d = date.plus(DatePeriod(days = 1))
+    while (d.dayOfWeek.ordinal >= 5) d = d.plus(DatePeriod(days = 1)) // Sat=5, Sun=6
+    return d
+}
 
 /**
  * Bars needed to chart the given positions: 1-min bars for day trades, buffered daily
@@ -46,8 +59,8 @@ fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarR
                 BarRange(
                     symbol = position.symbol,
                     timeframe = Timeframe.ONE_MINUTE,
-                    from = position.entryDatetime.date.minus(DatePeriod(days = INTRADAY_LEAD_DAYS)),
-                    to = minOf(position.exitDatetime.date.plus(DatePeriod(days = INTRADAY_TAIL_DAYS)), today),
+                    from = previousTradingDay(position.entryDatetime.date),
+                    to = minOf(nextTradingDay(position.exitDatetime.date), today),
                 ),
                 dailyRange,
             )
@@ -100,8 +113,8 @@ fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
 }
 
 /**
- * Picks the provider per range: daily always Yahoo; 1-min always Alpaca (keys required
- * for full extended-hours coverage — Yahoo only serves regular-hours bars).
+ * Picks the provider per range: daily always Yahoo; 1-min always Alpaca regardless of the
+ * trade's age (Yahoo has no extended-hours coverage, so 1-min always needs Alpaca keys).
  *
  * NOTE: daily-is-Yahoo-only is load-bearing. YahooFinanceProvider normalizes daily bar
  * timestamps to the date so a calendar day maps to exactly one OhlcvBar row (deduped by the

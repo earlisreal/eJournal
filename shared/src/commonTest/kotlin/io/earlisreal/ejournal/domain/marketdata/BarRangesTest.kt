@@ -121,6 +121,17 @@ class BarRangesTest {
         assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-11")) })
     }
 
+    @Test
+    fun `day trade one-minute range spans the adjacent trading days across a weekend`() {
+        // 2026-01-05 is a Monday: the previous trading day is Fri 2026-01-02 (skipping the weekend),
+        // the next is Tue 2026-01-06 — so a Monday trade still gets a real prior session.
+        val ranges = requiredRanges(
+            listOf(position(entry = "2026-01-05T09:31", exit = "2026-01-05T10:15")),
+            today,
+        )
+        assertTrue(ranges.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-01-02"), LocalDate.parse("2026-01-06")) })
+    }
+
     // --- subtractCoverage ---
 
     private val junRange = BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-10"))

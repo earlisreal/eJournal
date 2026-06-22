@@ -77,6 +77,6 @@ class MarketDataTaskTest {
         val task = SyncStatus.Finished(SyncResult(1, emptyList(), keysRejected = false, needsKeys = true))
             .toBackgroundTask(noRetry)!!
         assertEquals(TaskState.Success, task.state)
-        assertEquals("Market data synced — add Alpaca keys in Settings for intraday older than 30 days", task.detail)
+        assertEquals("Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars", task.detail)
     }
 }

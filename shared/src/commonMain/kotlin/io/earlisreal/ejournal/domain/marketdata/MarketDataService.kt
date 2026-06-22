@@ -29,7 +29,7 @@ data class SyncResult(
     val fetchedSymbols: Int,
     val failedSymbols: List<String>,
     val keysRejected: Boolean,
-    /** Some 1-min history was outside Yahoo's window and no Alpaca keys are configured. */
+    /** 1-min bars were needed but no Alpaca keys are configured — 1-min always requires Alpaca. */
     val needsKeys: Boolean,
 )
 

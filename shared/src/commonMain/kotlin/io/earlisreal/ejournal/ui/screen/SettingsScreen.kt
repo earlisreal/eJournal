@@ -75,8 +75,8 @@ fun SettingsScreen(
                 SectionTitle("Market Data")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
-                        "Daily and recent intraday prices come from Yahoo Finance — no setup needed. " +
-                            "Add free Alpaca API keys to fetch 1-minute history older than 30 days.",
+                        "Daily prices come from Yahoo Finance — no setup needed. " +
+                            "Add free Alpaca API keys to fetch 1-minute (intraday) bars.",
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )

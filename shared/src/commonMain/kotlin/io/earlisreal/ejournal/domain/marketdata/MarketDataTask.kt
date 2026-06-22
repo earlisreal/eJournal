@@ -11,7 +11,7 @@ private const val MARKET_DATA_LABEL = "Market data"
 fun SyncResult.describe(): String = when {
     keysRejected -> "Alpaca keys rejected — check Settings"
     failedSymbols.isNotEmpty() -> "Market data failed for ${failedSymbols.size} symbol(s)"
-    needsKeys -> "Market data synced — add Alpaca keys in Settings for intraday older than 30 days"
+    needsKeys -> "Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars"
     fetchedSymbols > 0 -> "Market data fetched for $fetchedSymbols symbol(s)"
     else -> "Market data up to date"
 }

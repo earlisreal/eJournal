@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +47,7 @@ import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AnalysisScreen(
     positions: List<ClosedPosition>,
@@ -227,13 +230,17 @@ fun AnalysisScreen(
                 }
 
                 // ── Summary bar ──────────────────────────────────────────────
+                // FlowRow so the stat cells wrap onto a second line when the window is
+                // narrow, instead of being squeezed to zero width (which forces the
+                // trailing values to wrap one character per line).
                 if (position != null) {
-                    Row(
+                    FlowRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(AppTheme.colors.surfaceElevated)
                             .padding(horizontal = Spacing.md, vertical = Spacing.xs),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                     ) {
                         val pnlColor = if (position.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
                         StatCell("Net P/L", signedMoney(position.profitLoss, symbol), valueColor = pnlColor)

@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -7,6 +8,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.earlisreal.ejournal.demo.runCsvGenerator
 import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
+import java.awt.Dimension
 
 fun main(args: Array<String>) {
     FileLogging.init() // tee stdout/stderr to ~/.ejournal/logs so the packaged GUI app isn't silent
@@ -33,6 +35,11 @@ fun main(args: Array<String>) {
             state = windowState,
             title = "eJournal",
         ) {
+            // Floor the window so the user can't drag it smaller than the layout supports.
+            // minimumSize is raw device pixels (not dp), so it shrinks on HiDPI displays — tune if needed.
+            LaunchedEffect(Unit) {
+                window.minimumSize = Dimension(1100, 720)
+            }
             App(
                 portfolioRepository = deps.portfolioRepository,
                 transactionRepository = deps.transactionRepository,

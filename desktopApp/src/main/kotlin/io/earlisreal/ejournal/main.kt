@@ -34,6 +34,8 @@ fun main(args: Array<String>) {
         return
     }
 
+    val trainMode = args.firstOrNull() == "--train"
+
     application {
         // Build everything off the UI thread behind the native -splash; show the window only once ready.
         val initializer = remember { AsyncInitializer { buildReadyApp() } }
@@ -69,6 +71,13 @@ fun main(args: Array<String>) {
                         window.minimumSize = Dimension(1100, 720)
                         StartupTrace.mark("window-shown")
                         StartupTrace.logSummary()
+                        if (trainMode) {
+                            // AOT-cache training run: reach the real window (so startup-path classes
+                            // are loaded/linked), then exit cleanly so -XX:AOTCacheOutput writes on shutdown.
+                            delay(1500)
+                            JavaFxChartBridge.shutdown()
+                            exitApplication()
+                        }
                     }
                     LaunchedEffect(Unit) {
                         delay(1500) // let the first frame paint and settle before warming JavaFX

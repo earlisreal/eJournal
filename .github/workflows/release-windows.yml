@@ -53,10 +53,50 @@ jobs:
           Write-Host "packageVersion = $v"
           "version=$v" >> $env:GITHUB_OUTPUT
 
+      # NOTE: This AOT-cache generation step is unvalidated until the next real release run.
+      # If generation fails (e.g. the launcher can't open a display, or JBR doesn't support
+      # AOTCacheOutput on this runner), the build still succeeds — AOTMode=auto means the shipped
+      # app silently falls back to normal class loading when the cache is absent or stale.
+      #
+      # Sequence:
+      #   1. Build the app image (createDistributable) with the AOT flags already in jvmArgs.
+      #   2. Run the launcher once in --train mode with JAVA_TOOL_OPTIONS=-XX:AOTCacheOutput=<path>
+      #      so JBR's exact bundled classpath is used (no manual reconstruction needed). On Windows
+      #      the runner has a desktop session so no xvfb-run wrapper is needed.
+      #   3. Copy the produced .aot into the app image's resources/ dir (where $APPDIR/resources/
+      #      resolves at runtime) so the subsequent packageMsi step bundles it into the installer.
+      - name: Build app image and generate JDK 25 AOT cache
+        shell: pwsh
+        run: |
+          .\gradlew.bat :desktopApp:createDistributable "-PappVersion=${{ steps.version.outputs.version }}" --no-configuration-cache --stacktrace
+
+          $appRoot = "desktopApp/build/compose/binaries/main/app"
+          $appDir = (Get-ChildItem -Directory $appRoot | Select-Object -First 1).FullName
+          $launcher = Join-Path $appDir "eJournal.exe"
+          $aotOut = "build/aot/ejournal.aot"
+          New-Item -ItemType Directory -Force -Path (Split-Path $aotOut) | Out-Null
+
+          Write-Host "Generating AOT cache via --train mode..."
+          $env:JAVA_TOOL_OPTIONS = "-XX:AOTCacheOutput=$PWD/$aotOut"
+          & $launcher --train
+          Remove-Item Env:\JAVA_TOOL_OPTIONS
+
+          if (Test-Path $aotOut) {
+            $size = (Get-Item $aotOut).Length
+            Write-Host "AOT cache generated: $aotOut ($size bytes)"
+            $resourcesDir = Join-Path $appDir "app/resources"
+            New-Item -ItemType Directory -Force -Path $resourcesDir | Out-Null
+            Copy-Item $aotOut -Destination (Join-Path $resourcesDir "ejournal.aot") -Force
+            Write-Host "Copied AOT cache into app image resources."
+          } else {
+            Write-Warning "AOT cache was NOT generated — continuing without it (AOTMode=auto will degrade safely)."
+          }
+
       - name: Build MSI installer and portable app image
         # --no-configuration-cache: jpackage tasks don't always play well with the config
         # cache (enabled in gradle.properties); packaging runs once so the cache buys nothing here.
-        run: .\gradlew.bat :desktopApp:packageMsi :desktopApp:createDistributable "-PappVersion=${{ steps.version.outputs.version }}" --no-configuration-cache --stacktrace
+        # createDistributable was already run in the AOT step above; packageMsi reuses its output.
+        run: .\gradlew.bat :desktopApp:packageMsi "-PappVersion=${{ steps.version.outputs.version }}" --no-configuration-cache --stacktrace
 
       - name: Stage release artifacts
         shell: pwsh

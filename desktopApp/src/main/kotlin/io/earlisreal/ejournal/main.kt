@@ -14,9 +14,11 @@ import io.earlisreal.ejournal.demo.runCsvGenerator
 import io.earlisreal.ejournal.startup.AsyncInitializer
 import io.earlisreal.ejournal.startup.InitState
 import io.earlisreal.ejournal.startup.buildReadyApp
+import io.earlisreal.ejournal.ui.chart.ChartPreload
 import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
 import io.earlisreal.ejournal.ui.startup.StartupErrorWindow
 import java.awt.Dimension
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 fun main(args: Array<String>) {
@@ -67,6 +69,10 @@ fun main(args: Array<String>) {
                         window.minimumSize = Dimension(1100, 720)
                         StartupTrace.mark("window-shown")
                         StartupTrace.logSummary()
+                    }
+                    LaunchedEffect(Unit) {
+                        delay(1500) // let the first frame paint and settle before warming JavaFX
+                        ChartPreload.warm()
                     }
                     App(
                         portfolioRepository = ready.deps.portfolioRepository,

@@ -34,7 +34,13 @@ class ClosedPositionService(
             ?.let { return it.positions }
 
         val positions = compute(txs)
-        mutex.withLock { cache[portfolioId] = Entry(signature, positions) }
+        // Don't clobber a fresher entry written by a concurrent caller while we computed.
+        mutex.withLock {
+            val current = cache[portfolioId]
+            if (current == null || current.signature == signature) {
+                cache[portfolioId] = Entry(signature, positions)
+            }
+        }
         return positions
     }
 }

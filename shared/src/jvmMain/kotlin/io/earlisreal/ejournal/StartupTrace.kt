@@ -18,6 +18,7 @@ object StartupTrace {
     @Synchronized
     fun summary(): String = renderTrace(marks)
 
+    @Synchronized
     fun logSummary() {
         println("[startup] ${summary()}")
     }

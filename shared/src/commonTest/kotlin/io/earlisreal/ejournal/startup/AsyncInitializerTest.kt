@@ -1,7 +1,9 @@
 package io.earlisreal.ejournal.startup
 
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
 
 class AsyncInitializerTest {
@@ -24,6 +26,12 @@ class AsyncInitializerTest {
         val init = AsyncInitializer<String> { throw IllegalStateException("db is locked") }
         init.run()
         assertEquals(InitState.Failed("db is locked"), init.state.value)
+    }
+
+    @Test
+    fun rethrowsCancellationExceptionInsteadOfFailing() = runTest {
+        val init = AsyncInitializer<String> { throw CancellationException("cancelled") }
+        assertFailsWith<CancellationException> { init.run() }
     }
 
     @Test

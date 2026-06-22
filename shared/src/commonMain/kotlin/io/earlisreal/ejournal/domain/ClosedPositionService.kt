@@ -23,6 +23,7 @@ class ClosedPositionService(
     private data class Entry(val signature: Int, val positions: List<ClosedPosition>)
 
     private val mutex = Mutex()
+    // No eviction needed: entry count is bounded by the (small) number of portfolios.
     private val cache = mutableMapOf<Long, Entry>()
 
     suspend fun forPortfolio(portfolioId: Long): List<ClosedPosition> {

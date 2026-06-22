@@ -3,19 +3,17 @@ package io.earlisreal.ejournal
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import io.earlisreal.ejournal.domain.model.Portfolio
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
-import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
+import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
@@ -28,6 +26,8 @@ import io.earlisreal.ejournal.ui.screen.TradeLogsScreen
 import io.earlisreal.ejournal.ui.shell.AppShell
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun App(

@@ -57,11 +57,6 @@ compose.desktop {
         jvmArgs += "-XX:+UseSerialGC"
         jvmArgs += "-Xms128m"
         jvmArgs += "-Xmx512m"
-        // Use a per-release, per-platform AOT cache when present (generated + injected by the release
-        // pipeline). AOTMode=auto silently ignores a missing/stale cache, so this is safe on dev image
-        // builds and on platforms whose cache hasn't been generated yet.
-        jvmArgs += "-XX:AOTCache=${'$'}APPDIR/resources/ejournal.aot"
-        jvmArgs += "-XX:AOTMode=auto"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

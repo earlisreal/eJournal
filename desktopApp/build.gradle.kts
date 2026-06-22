@@ -52,6 +52,11 @@ compose.desktop {
         // Paint a splash from JVM boot. $APPDIR is substituted by the jpackage launcher; splash.png
         // is placed in $APPDIR/resources/ via appResourcesRootDir below. Auto-closes when the first window shows.
         jvmArgs += "-splash:${'$'}APPDIR/resources/splash.png"
+        // Serial GC avoids parallel-GC thread pool spin-up on this small-heap desktop app.
+        // Pre-sized heap prevents early resize pauses. Validated on JBR 25.
+        jvmArgs += "-XX:+UseSerialGC"
+        jvmArgs += "-Xms128m"
+        jvmArgs += "-Xmx512m"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -88,4 +93,9 @@ tasks.withType<JavaExec>().configureEach {
     jvmArgs("--sun-misc-unsafe-memory-access=allow")
     jvmArgs("-XX:TieredStopAtLevel=2")
     jvmArgs("-splash:${project.projectDir}/resources/common/splash.png")
+    // Match packaged app heap/GC flags — serial GC avoids thread pool spin-up; pre-sized heap
+    // prevents early resize pauses. Validated on JBR 25.
+    jvmArgs("-XX:+UseSerialGC")
+    jvmArgs("-Xms128m")
+    jvmArgs("-Xmx512m")
 }

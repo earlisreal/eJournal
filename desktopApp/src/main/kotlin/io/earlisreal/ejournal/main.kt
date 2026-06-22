@@ -11,6 +11,7 @@ import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
 import java.awt.Dimension
 
 fun main(args: Array<String>) {
+    StartupTrace.mark("main")
     FileLogging.init() // tee stdout/stderr to ~/.ejournal/logs so the packaged GUI app isn't silent
 
     if (args.firstOrNull() == "generate-csv") {

@@ -16,6 +16,7 @@ import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
@@ -47,11 +48,13 @@ class AppDependencies {
     // moomoo & TradeZero first so auto-detect routes to them; Generic last (manual-only fallback).
     val parsers: List<TransactionParser> = listOf(MoomooCsvParser(), TradeZeroCsvParser(), GenericCsvParser())
 
+    val closedPositionService = ClosedPositionService(transactionRepository)
+
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
     val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)
     val marketDataService = MarketDataService(
         portfolioRepository = portfolioRepository,
-        transactionRepository = transactionRepository,
+        closedPositions = closedPositionService,
         marketDataRepository = marketDataRepository,
         yahooProvider = YahooFinanceProvider(httpClient),
         alpacaProvider = alpacaProvider,

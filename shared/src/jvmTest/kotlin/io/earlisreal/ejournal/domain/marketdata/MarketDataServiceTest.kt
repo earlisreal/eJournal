@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
@@ -102,7 +103,7 @@ class MarketDataServiceTest {
         creds: FakeCreds = FakeCreds(),
     ) = MarketDataService(
         portfolioRepository = FakePortfolios(portfolios),
-        transactionRepository = FakeTransactions(transactions),
+        closedPositions = ClosedPositionService(FakeTransactions(transactions)),
         marketDataRepository = bars,
         yahooProvider = yahoo,
         alpacaProvider = alpaca,

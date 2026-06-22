@@ -3,8 +3,7 @@ package io.earlisreal.ejournal.domain.marketdata
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
-import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.FifoMatcher
+import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Market
 import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +46,7 @@ sealed class SyncStatus {
  */
 class MarketDataService(
     private val portfolioRepository: PortfolioRepository,
-    private val transactionRepository: TransactionRepository,
+    private val closedPositions: ClosedPositionService,
     private val marketDataRepository: MarketDataRepository,
     private val yahooProvider: MarketDataProvider,
     private val alpacaProvider: MarketDataProvider,
@@ -74,7 +73,7 @@ class MarketDataService(
 
         val positions = portfolioRepository.getAll()
             .filter { it.market == Market.US_STOCKS }
-            .flatMap { FifoMatcher.computeClosedPositions(transactionRepository.getByPortfolio(it.id)) }
+            .flatMap { closedPositions.forPortfolio(it.id) }
 
         val work = requiredRanges(positions, today)
             .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe)) }

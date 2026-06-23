@@ -39,12 +39,6 @@ class PreferencesSettingsRepository(
         prefs.put(KEY_TO, prefs0.customTo?.toString() ?: "")
     }
 
-    override fun getAutoSyncTradeZeroOnStartup(): Boolean = prefs.getBoolean(KEY_TZ_AUTO_SYNC, true)
-
-    override fun setAutoSyncTradeZeroOnStartup(enabled: Boolean) {
-        prefs.putBoolean(KEY_TZ_AUTO_SYNC, enabled)
-    }
-
     private companion object {
         const val KEY_THEME = "theme_mode"
         const val KEY_PORTFOLIO = "filter_portfolio_id"
@@ -52,6 +46,5 @@ class PreferencesSettingsRepository(
         const val KEY_SEGMENT = "filter_segment"
         const val KEY_FROM = "filter_custom_from"
         const val KEY_TO = "filter_custom_to"
-        const val KEY_TZ_AUTO_SYNC = "tradezero_auto_sync_startup"
     }
 }

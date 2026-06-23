@@ -19,7 +19,4 @@ interface SettingsRepository {
     fun setThemeMode(mode: ThemeMode)
     fun getFilterPrefs(): FilterPrefs?   // null when nothing has been stored yet
     fun setFilterPrefs(prefs: FilterPrefs)
-    /** Whether TradeZero orders are pulled automatically on app startup. Defaults to true. */
-    fun getAutoSyncTradeZeroOnStartup(): Boolean
-    fun setAutoSyncTradeZeroOnStartup(enabled: Boolean)
 }

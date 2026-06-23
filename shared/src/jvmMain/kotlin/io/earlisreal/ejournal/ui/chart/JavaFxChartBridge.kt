@@ -61,7 +61,6 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
                                 "return g?(g.from.toFixed(1)+'..'+g.to.toFixed(1)):'null';" +
                             "})()"
                         )
-                        println("[chart] VERIFY visibleRange $r")
                     } catch (e: Exception) {
                         System.err.println("[chart] probe failed: $e")
                     }

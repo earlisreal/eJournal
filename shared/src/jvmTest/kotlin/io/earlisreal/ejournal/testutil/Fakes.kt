@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.data.repository.TransactionRepository
@@ -77,7 +78,6 @@ class FakeTransactionRepository(
 }
 
 class FakeSettingsRepository(
-    var autoSync: Boolean = true,
     filterPrefs: FilterPrefs? = null,
     themeMode: ThemeMode = ThemeMode.SYSTEM,
 ) : SettingsRepository {
@@ -87,8 +87,16 @@ class FakeSettingsRepository(
     override fun setThemeMode(mode: ThemeMode) { storedTheme = mode }
     override fun getFilterPrefs(): FilterPrefs? = storedFilterPrefs
     override fun setFilterPrefs(prefs: FilterPrefs) { storedFilterPrefs = prefs }
-    override fun getAutoSyncTradeZeroOnStartup(): Boolean = autoSync
-    override fun setAutoSyncTradeZeroOnStartup(enabled: Boolean) { autoSync = enabled }
+}
+
+class FakePortfolioSettingsRepository : PortfolioSettingsRepository {
+    private val store = mutableMapOf<Pair<Long, String>, String>()
+    override suspend fun getString(portfolioId: Long, key: String): String? = store[portfolioId to key]
+    override suspend fun putString(portfolioId: Long, key: String, value: String) { store[portfolioId to key] = value }
+    override suspend fun getBoolean(portfolioId: Long, key: String, default: Boolean): Boolean =
+        store[portfolioId to key]?.toBooleanStrictOrNull() ?: default
+    override suspend fun putBoolean(portfolioId: Long, key: String, value: Boolean) { store[portfolioId to key] = value.toString() }
+    override suspend fun clear(portfolioId: Long) { store.keys.removeAll { it.first == portfolioId } }
 }
 
 class FakeCredentialsRepository(

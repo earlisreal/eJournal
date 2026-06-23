@@ -10,13 +10,19 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 import kotlinx.serialization.Serializable
@@ -26,6 +32,12 @@ import kotlin.time.Duration.Companion.milliseconds
 private const val BASE_URL = "https://webapi.tradezero.com"
 private val EASTERN = TimeZone.of("America/New_York")
 
+// orders-with-pagination caps the page size at 100 and the forward span at 365 days. Pages are
+// independent (offset/limit), so once the first page reports the total we fetch the rest in parallel.
+private const val PAGE_SIZE = 100
+private const val MAX_DAYS = 365
+private const val MAX_CONCURRENCY = 6
+
 @Serializable
 private data class AccountsResponse(val accounts: List<AccountRow>)
 
@@ -33,7 +45,15 @@ private data class AccountsResponse(val accounts: List<AccountRow>)
 private data class AccountRow(val account: String)
 
 @Serializable
-private data class OrdersResponse(val orders: List<FillRow>)
+private data class PaginatedOrders(val pagination: Pagination, val tradingHistory: List<FillRow>)
+
+@Serializable
+private data class Pagination(
+    val currentLimit: Int = 0,
+    val currentOffset: Int = 0,
+    val totalRecords: Int = 0,
+    val specifiedSymbol: String? = null,
+)
 
 @Serializable
 private data class FillRow(
@@ -46,10 +66,11 @@ private data class FillRow(
     val totalFees: Double,
     val tradeDate: String,
     val canceled: Boolean,
-    // Per-fill primary key from the start-date orders endpoint. No longer used for the externalId
-    // (the CSV import has no equivalent, so dedup uses a shared natural key instead); kept for parsing.
+    // Per-fill primary key. Not used for the externalId (the CSV import has no equivalent, so dedup
+    // uses a shared natural key instead); kept for parsing. The endpoint returns extra fields
+    // (currency, entryDate, grossProceeds, netProceeds, settleDate, …) ignored via ignoreUnknownKeys.
     val tradeId: Long,
-    // Intraday fill time ("HH:mm:ss") — tradeDate itself is date-only (midnight).
+    // Intraday fill time ("HH:mm:ss") — present when tradeDate is date-only (midnight).
     val execTime: String? = null,
 )
 
@@ -99,30 +120,38 @@ class TradeZeroClientImpl(
                     return TradeZeroFetchResult.NetworkError(resolution.message)
                 }
             }
-            println("[TradeZero] accountId=$accountId  from=$from  to=$to")
+            // The endpoint takes a start date plus a forward span (max 365 days). Anchor the window
+            // to `to` so a stale/old `from` (e.g. a long-ago last-synced date) never drops the most
+            // recent days when the span is clamped.
+            val startDate = maxOf(from, to.minus(MAX_DAYS, DateTimeUnit.DAY))
+            val numberOfDays = startDate.daysUntil(to).coerceIn(1, MAX_DAYS)
+            println("[TradeZero] accountId=$accountId  startDate=$startDate  numberOfDays=$numberOfDays")
 
-            val fills = mutableListOf<FillRow>()
-            var weekStart = from
-            var weeksDone = 0
-            val weeksTotal = generateSequence(from) { it.plus(7, DateTimeUnit.DAY) }.takeWhile { it <= to }.count()
+            // First page reports the total; the remaining offsets are independent, so fetch them
+            // concurrently (bounded) rather than walking the weeks one-by-one.
+            val firstBody = fetchPageWithRetry(creds, accountId, startDate, numberOfDays, offset = 0)
+                ?: return TradeZeroFetchResult.InvalidCredentials
+            val firstPage = parsePage(firstBody)
+                ?: return TradeZeroFetchResult.NetworkError("orders parse error: ${firstBody.take(400)}")
 
-            while (weekStart <= to) {
-                val body = fetchWeekWithRetry(creds, accountId, weekStart)
-                    ?: return TradeZeroFetchResult.InvalidCredentials
-                try {
-                    fills += json.decodeFromString<OrdersResponse>(body).orders
-                } catch (e: Exception) {
-                    println("[TradeZero] ERROR parsing $weekStart: ${e.message}\nbody: ${body.take(800)}")
-                    return TradeZeroFetchResult.NetworkError(
-                        "orders parse error ($weekStart): ${e.message}\nbody: ${body.take(400)}"
-                    )
+            val fills = firstPage.tradingHistory.toMutableList()
+            val remainingOffsets = (PAGE_SIZE until firstPage.pagination.totalRecords step PAGE_SIZE).toList()
+            if (remainingOffsets.isNotEmpty()) {
+                val gate = Semaphore(MAX_CONCURRENCY)
+                val bodies = coroutineScope {
+                    remainingOffsets.map { offset ->
+                        async { gate.withPermit { fetchPageWithRetry(creds, accountId, startDate, numberOfDays, offset) } }
+                    }.awaitAll()
                 }
-                weeksDone++
-                weekStart = weekStart.plus(7, DateTimeUnit.DAY)
-                if (weeksDone % 10 == 0) println("[TradeZero] $weeksDone/$weeksTotal weeks fetched…")
+                for (body in bodies) {
+                    val pageBody = body ?: return TradeZeroFetchResult.InvalidCredentials
+                    val parsed = parsePage(pageBody)
+                        ?: return TradeZeroFetchResult.NetworkError("orders parse error: ${pageBody.take(400)}")
+                    fills += parsed.tradingHistory
+                }
             }
 
-            println("[TradeZero] done — $weeksDone weeks, ${fills.size} raw fills")
+            println("[TradeZero] done — ${fills.size} fills (totalRecords=${firstPage.pagination.totalRecords})")
             val externalIds = TradeZeroExternalIdFactory()
             val transactions = fills
                 .filter { !it.canceled && it.securityType == "Stock" }
@@ -136,36 +165,47 @@ class TradeZeroClientImpl(
         }
     }
 
-    // Returns response body, or null on 404 (auth failure). Retries up to 3 times on 429.
-    private suspend fun fetchWeekWithRetry(
+    private fun parsePage(body: String): PaginatedOrders? =
+        try {
+            json.decodeFromString<PaginatedOrders>(body)
+        } catch (e: Exception) {
+            println("[TradeZero] ERROR parsing page: ${e.message}\nbody: ${body.take(800)}")
+            null
+        }
+
+    // Returns one page's response body, or null on 404 (auth failure). Retries up to 3 times on 429.
+    private suspend fun fetchPageWithRetry(
         creds: TradeZeroCredentials,
         accountId: String,
-        weekStart: LocalDate,
+        startDate: LocalDate,
+        numberOfDays: Int,
+        offset: Int,
     ): String? {
-        val url = "$BASE_URL/v1/api/accounts/$accountId/orders/start-date/$weekStart"
+        val url = "$BASE_URL/v1/api/accounts/$accountId/orders-with-pagination/start-date/$startDate" +
+            "?numberOfDays=$numberOfDays&limit=$PAGE_SIZE&offset=$offset"
         var delayMs = 1_000L
         repeat(3) { attempt ->
             val response = httpClient.get(url) { addAuthHeaders(creds) }
             val status = response.status
             when {
                 status == HttpStatusCode.NotFound -> {
-                    println("[TradeZero] 404 on $weekStart — treating as auth failure")
+                    println("[TradeZero] 404 at offset=$offset — treating as auth failure")
                     return null
                 }
                 status == HttpStatusCode.TooManyRequests -> {
-                    println("[TradeZero] 429 on $weekStart (attempt ${attempt + 1}), retrying in ${delayMs}ms…")
+                    println("[TradeZero] 429 at offset=$offset (attempt ${attempt + 1}), retrying in ${delayMs}ms…")
                     delay(delayMs.milliseconds)
                     delayMs *= 2
                 }
                 status.value >= 400 -> {
                     val body = response.bodyAsText()
-                    println("[TradeZero] HTTP $status on $weekStart: $body")
+                    println("[TradeZero] HTTP $status at offset=$offset: $body")
                     return body // let the caller's parse step surface the error
                 }
                 else -> return response.bodyAsText()
             }
         }
-        println("[TradeZero] ERROR gave up on $weekStart after 3 retries")
+        println("[TradeZero] ERROR gave up at offset=$offset after 3 retries")
         return null
     }
 

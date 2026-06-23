@@ -4,11 +4,13 @@ import io.earlisreal.ejournal.data.JsonCredentialsRepository
 import io.earlisreal.ejournal.data.PreferencesSettingsRepository
 import io.earlisreal.ejournal.data.SqlDelightMarketDataRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioRepository
+import io.earlisreal.ejournal.data.SqlDelightPortfolioSettingsRepository
 import io.earlisreal.ejournal.data.SqlDelightTransactionRepository
 import io.earlisreal.ejournal.data.database.JvmDatabaseFactory
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
@@ -42,6 +44,7 @@ class AppDependencies {
     val portfolioRepository: PortfolioRepository = SqlDelightPortfolioRepository(db)
     val transactionRepository: TransactionRepository = SqlDelightTransactionRepository(db)
     val settingsRepository: SettingsRepository = PreferencesSettingsRepository()
+    val portfolioSettingsRepository: PortfolioSettingsRepository = SqlDelightPortfolioSettingsRepository(db)
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
@@ -64,12 +67,14 @@ class AppDependencies {
 
     val backgroundTaskTracker = BackgroundTaskTracker()
 
-    val tradeZeroSyncService = TradeZeroSyncService(tradeZeroClient, transactionRepository, backgroundTaskTracker)
+    val tradeZeroSyncService =
+        TradeZeroSyncService(tradeZeroClient, transactionRepository, backgroundTaskTracker, portfolioSettingsRepository)
 
     val startupSyncCoordinator = StartupSyncCoordinator(
         settingsRepository = settingsRepository,
         credentialsRepository = credentialsRepository,
         portfolioRepository = portfolioRepository,
+        portfolioSettings = portfolioSettingsRepository,
         tradeZeroSyncService = tradeZeroSyncService,
         requestMarketDataSync = { marketDataService.requestSync() },
     )

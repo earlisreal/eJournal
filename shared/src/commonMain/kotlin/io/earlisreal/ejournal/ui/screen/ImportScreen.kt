@@ -20,17 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncOutcome
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
-import kotlin.time.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.DataTable
@@ -54,13 +49,14 @@ import java.net.URI
 fun ImportScreen(
     transactionRepository: TransactionRepository,
     parsers: List<TransactionParser>,
+    portfolioSettings: PortfolioSettingsRepository,
     filter: FilterState,
     onImportSuccess: () -> Unit,
     marketDataService: MarketDataService,
     tradeZeroSyncService: TradeZeroSyncService,
     tradeZeroConfigured: Boolean,
 ) {
-    val vm = viewModel { ImportViewModel(transactionRepository, parsers) }
+    val vm = viewModel { ImportViewModel(transactionRepository, parsers, portfolioSettings) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
     var tradeZeroSyncing by remember { mutableStateOf(false) }
@@ -77,6 +73,7 @@ fun ImportScreen(
             )
             return@ScreenScaffold
         }
+        LaunchedEffect(portfolio.id) { vm.loadAutoSync(portfolio.id) }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg), modifier = Modifier.fillMaxSize()) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
                 Pill(text = "Into: ${portfolio.name} · ${portfolio.market.label}")
@@ -173,16 +170,14 @@ fun ImportScreen(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         ) {
                             AppSecondaryButton(
-                                text = if (tradeZeroSyncing) "Syncing…" else "Sync last 7 days",
+                                text = if (tradeZeroSyncing) "Syncing…" else "Sync TradeZero",
                                 enabled = !tradeZeroSyncing && portfolio != null,
                                 onClick = {
                                     val portfolioId = portfolio?.id ?: return@AppSecondaryButton
                                     tradeZeroSyncing = true
                                     tradeZeroResult  = null
                                     scope.launch {
-                                        val to   = Clock.System.todayIn(TimeZone.currentSystemDefault())
-                                        val from = to.minus(6, DateTimeUnit.DAY)
-                                        when (val outcome = tradeZeroSyncService.sync(portfolioId, from, to)) {
+                                        when (val outcome = tradeZeroSyncService.syncIncremental(portfolioId)) {
                                             is TradeZeroSyncOutcome.Imported -> {
                                                 tradeZeroResult = "Imported ${outcome.inserted} new transaction(s)"
                                                 if (outcome.inserted > 0) onImportSuccess()
@@ -199,6 +194,20 @@ fun ImportScreen(
                             tradeZeroResult?.let {
                                 Text(it, color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
                             }
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        ) {
+                            Switch(
+                                checked = state.autoSyncOnStartup,
+                                onCheckedChange = { vm.setAutoSyncOnStartup(portfolio.id, it) },
+                            )
+                            Text(
+                                "Auto-sync this portfolio on startup",
+                                color = AppTheme.colors.textPrimary,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
                     }
                 }

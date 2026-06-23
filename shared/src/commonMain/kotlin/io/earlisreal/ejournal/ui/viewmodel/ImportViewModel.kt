@@ -2,9 +2,11 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,17 +27,37 @@ data class ImportState(
     /** Human-readable breakdown of the last parse (per-broker counts / unrecognized files). */
     val detectionSummary: String? = null,
     val status: ImportStatus = ImportStatus.Idle,
+    /** Whether the currently-shown portfolio auto-pulls TradeZero on startup. */
+    val autoSyncOnStartup: Boolean = false,
 )
 
 /** Import targets the globally-selected portfolio (passed to [parseFiles]); it does not own portfolio state. */
 class ImportViewModel(
     private val transactionRepository: TransactionRepository,
     val parsers: List<TransactionParser>,
+    private val portfolioSettings: PortfolioSettingsRepository,
 ) : ViewModel() {
 
     // Defaults to Auto-detect (null selectedParser).
     private val _state = MutableStateFlow(ImportState())
     val state: StateFlow<ImportState> = _state.asStateFlow()
+
+    /** Loads the per-portfolio auto-sync flag; call when the shown portfolio changes. */
+    fun loadAutoSync(portfolioId: Long) {
+        viewModelScope.launch {
+            val enabled = portfolioSettings.getBoolean(
+                portfolioId, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, TradeZeroSettings.AUTO_SYNC_DEFAULT,
+            )
+            _state.value = _state.value.copy(autoSyncOnStartup = enabled)
+        }
+    }
+
+    fun setAutoSyncOnStartup(portfolioId: Long, enabled: Boolean) {
+        _state.value = _state.value.copy(autoSyncOnStartup = enabled)
+        viewModelScope.launch {
+            portfolioSettings.putBoolean(portfolioId, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, enabled)
+        }
+    }
 
     fun selectParser(parser: TransactionParser?) {
         _state.value = _state.value.copy(

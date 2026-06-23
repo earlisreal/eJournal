@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
@@ -21,6 +22,7 @@ data class PortfolioManagerState(
 class PortfolioManagerViewModel(
     private val portfolioRepository: PortfolioRepository,
     private val transactionRepository: TransactionRepository,
+    private val portfolioSettings: PortfolioSettingsRepository,
     private val onChanged: () -> Unit,
 ) : ViewModel() {
 
@@ -64,6 +66,9 @@ class PortfolioManagerViewModel(
         val portfolio = _state.value.pendingDelete ?: return
         viewModelScope.launch {
             transactionRepository.deleteByPortfolio(portfolio.id)
+            // FK cascade isn't enforced (PRAGMA foreign_keys is off), so clear the portfolio's
+            // settings explicitly — matching how transactions are removed above.
+            portfolioSettings.clear(portfolio.id)
             portfolioRepository.delete(portfolio.id)
             _state.value = _state.value.copy(pendingDelete = null, pendingDeleteCount = 0)
             reload(); onChanged()

@@ -42,4 +42,28 @@ class JvmDatabaseFactoryMigrationTest {
         val db = JvmDatabaseFactory.create(dir) // second open must not re-create or re-migrate
         assertEquals(0, db.portfolioQueries.selectAll().executeAsList().size)
     }
+
+    @Test
+    fun `fresh install includes the PortfolioSetting table`() {
+        val dir = tempDir()
+        JvmDatabaseFactory.create(dir)
+        assertTrue("PortfolioSetting" in tableNames(File(dir, "ejournal.db")))
+    }
+
+    @Test
+    fun `migrating a v1 database adds the PortfolioSetting table`() {
+        val dir = tempDir()
+        val dbFile = File(dir, "ejournal.db")
+        // Simulate a v1 database: the full current schema minus the v2 table, stamped as version 1.
+        val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+        AppDatabase.Schema.create(seed)
+        seed.execute(null, "DROP TABLE PortfolioSetting", 0)
+        seed.execute(null, "PRAGMA user_version = 1", 0)
+        seed.close()
+        assertTrue("PortfolioSetting" !in tableNames(dbFile)) // precondition
+
+        JvmDatabaseFactory.create(dir) // detects v1 < v2 and runs the migration
+
+        assertTrue("PortfolioSetting" in tableNames(dbFile))
+    }
 }

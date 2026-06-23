@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -37,10 +38,11 @@ import io.earlisreal.ejournal.ui.viewmodel.PortfolioManagerViewModel
 fun PortfolioManagerDialog(
     portfolioRepository: PortfolioRepository,
     transactionRepository: TransactionRepository,
+    portfolioSettings: PortfolioSettingsRepository,
     onChanged: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val vm = viewModel { PortfolioManagerViewModel(portfolioRepository, transactionRepository, onChanged) }
+    val vm = viewModel { PortfolioManagerViewModel(portfolioRepository, transactionRepository, portfolioSettings, onChanged) }
     val state by vm.state.collectAsState()
 
     var editingId by remember { mutableStateOf<Long?>(null) }

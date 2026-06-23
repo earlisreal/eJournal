@@ -78,6 +78,7 @@ fun main(args: Array<String>) {
                         portfolioRepository = ready.deps.portfolioRepository,
                         transactionRepository = ready.deps.transactionRepository,
                         settingsRepository = ready.deps.settingsRepository,
+                        portfolioSettings = ready.deps.portfolioSettingsRepository,
                         credentialsRepository = ready.deps.credentialsRepository,
                         marketDataRepository = ready.deps.marketDataRepository,
                         parsers = ready.deps.parsers,

@@ -1,0 +1,8 @@
+-- Migrate schema v1 -> v2: add the generic per-portfolio settings table.
+CREATE TABLE PortfolioSetting (
+    portfolioId INTEGER NOT NULL,
+    key         TEXT    NOT NULL,
+    value       TEXT    NOT NULL,
+    PRIMARY KEY (portfolioId, key),
+    FOREIGN KEY (portfolioId) REFERENCES Portfolio(id)
+);

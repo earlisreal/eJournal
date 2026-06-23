@@ -1,0 +1,22 @@
+-- Generic per-portfolio key/value settings. Broker-agnostic: keys are namespaced strings
+-- (e.g. "tradezero.lastSyncedDate", "tradezero.autoSyncOnStartup"), so a new broker reuses this
+-- table without a schema change. Lives in ejournal.db so it shares the DB's lifecycle: recreating
+-- the DB drops these rows, which is exactly what we want (a stale sync cursor must not outlive the
+-- transactions it describes). The FK is declared for documentation, matching TradeTransaction;
+-- SQLite FK enforcement is off, so rows are cleared explicitly when a portfolio is deleted.
+CREATE TABLE PortfolioSetting (
+    portfolioId INTEGER NOT NULL,
+    key         TEXT    NOT NULL,
+    value       TEXT    NOT NULL,
+    PRIMARY KEY (portfolioId, key),
+    FOREIGN KEY (portfolioId) REFERENCES Portfolio(id)
+);
+
+get:
+SELECT value FROM PortfolioSetting WHERE portfolioId = ? AND key = ?;
+
+upsert:
+INSERT OR REPLACE INTO PortfolioSetting (portfolioId, key, value) VALUES (?, ?, ?);
+
+deleteByPortfolio:
+DELETE FROM PortfolioSetting WHERE portfolioId = ?;

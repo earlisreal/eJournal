@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
@@ -34,6 +35,7 @@ fun App(
     portfolioRepository: PortfolioRepository,
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
+    portfolioSettings: PortfolioSettingsRepository,
     credentialsRepository: CredentialsRepository,
     marketDataRepository: MarketDataRepository,
     parsers: List<TransactionParser>,
@@ -55,6 +57,7 @@ fun App(
         portfolioRepository = portfolioRepository,
         transactionRepository = transactionRepository,
         settingsRepository = settingsRepository,
+        portfolioSettings = portfolioSettings,
         backgroundTaskTracker = backgroundTaskTracker,
         initialDestination = startDestination,
         initialPortfolios = initialPortfolios,
@@ -75,6 +78,7 @@ fun App(
             Destination.IMPORT -> ImportScreen(
                 transactionRepository = transactionRepository,
                 parsers = parsers,
+                portfolioSettings = portfolioSettings,
                 filter = filter,
                 onImportSuccess = { marketDataService.requestSync() },
                 marketDataService = marketDataService,
@@ -102,7 +106,6 @@ fun App(
                 alpacaProvider = alpacaProvider,
                 marketDataService = marketDataService,
                 tradeZeroClient = tradeZeroClient,
-                settingsRepository = settingsRepository,
             )
         }
     }

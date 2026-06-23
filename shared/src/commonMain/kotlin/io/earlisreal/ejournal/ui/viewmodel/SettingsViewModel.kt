@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
@@ -28,14 +27,12 @@ data class SettingsState(
     val tradeZeroJustSaved: Boolean = false,
     val tradeZeroTesting: Boolean = false,
     val tradeZeroConnectionResult: ConnectionResult? = null,
-    val autoSyncTradeZeroOnStartup: Boolean = true,
 )
 
 class SettingsViewModel(
     private val credentialsRepository: CredentialsRepository,
     private val alpacaProvider: AlpacaProvider,
     private val tradeZeroClient: TradeZeroClient,
-    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(initialState())
@@ -51,13 +48,7 @@ class SettingsViewModel(
             tradeZeroKeyId               = savedTz?.keyId.orEmpty(),
             tradeZeroSecretKey           = savedTz?.secretKey.orEmpty(),
             hasSavedTradeZeroCredentials = savedTz != null,
-            autoSyncTradeZeroOnStartup   = settingsRepository.getAutoSyncTradeZeroOnStartup(),
         )
-    }
-
-    fun setAutoSyncTradeZeroOnStartup(enabled: Boolean) {
-        settingsRepository.setAutoSyncTradeZeroOnStartup(enabled)
-        _state.value = _state.value.copy(autoSyncTradeZeroOnStartup = enabled)
     }
 
     fun updateKeyId(value: String) {

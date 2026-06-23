@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeTransactionRepository
 import io.earlisreal.ejournal.testutil.tx
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +41,7 @@ class ImportViewModelTest {
         val parser = fixedParser(
             listOf(tx(externalId = "a"), tx(externalId = dupId), tx(externalId = "b")),
         )
-        val vm = ImportViewModel(repo, listOf(parser))
+        val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
 
         vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
         vm.state.first { it.parsedTransactions.size == 3 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.analytics.DateRange
@@ -54,6 +55,7 @@ fun AppShell(
     portfolioRepository: PortfolioRepository,
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
+    portfolioSettings: PortfolioSettingsRepository,
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
     initialPortfolios: List<Portfolio>,
@@ -183,6 +185,7 @@ fun AppShell(
             PortfolioManagerDialog(
                 portfolioRepository = portfolioRepository,
                 transactionRepository = transactionRepository,
+                portfolioSettings = portfolioSettings,
                 onChanged = { reloadPortfolios() },
                 onDismiss = { showPortfolioManager = false },
             )

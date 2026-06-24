@@ -16,11 +16,11 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 
 | Dashboard | P&L Calendar |
 | --- | --- |
-| ![Dashboard](https://github.com/user-attachments/assets/REPLACE_WITH_DASHBOARD) | ![Calendar](https://github.com/user-attachments/assets/REPLACE_WITH_CALENDAR) |
+| ![Dashboard](https://github.com/user-attachments/assets/8e8f0f06-0bba-4c3b-a182-bfcd80f28500) | ![Calendar](https://github.com/user-attachments/assets/a5013294-1ec0-4959-bc26-01416ae30167) |
 
 | Trade Log | Trade Analysis |
 | --- | --- |
-| ![Trade Log](https://github.com/user-attachments/assets/REPLACE_WITH_TRADE_LOGS) | ![Analysis](https://github.com/user-attachments/assets/REPLACE_WITH_ANALYSIS) |
+| ![Trade Log](https://github.com/user-attachments/assets/cad889b3-e82f-482a-9b17-f43e7a85bf11) | ![Analysis](https://github.com/user-attachments/assets/08e5f787-454d-4ee1-93c5-69ee7d1f9309) |
 
 ## Features
 

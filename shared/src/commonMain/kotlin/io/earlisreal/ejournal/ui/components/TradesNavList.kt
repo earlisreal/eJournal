@@ -17,7 +17,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,7 +30,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 /**
  * Right-side navigation list of the positions being analyzed: each row shows the
  * symbol, trade type, and net P/L (calendar-style). The current position is
- * highlighted, the list auto-scrolls to it, and clicking a row navigates there.
+ * highlighted, and clicking a row navigates there.
  */
 @Composable
 fun TradesNavList(
@@ -42,9 +41,6 @@ fun TradesNavList(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(currentIndex) {
-        if (currentIndex in positions.indices) listState.animateScrollToItem(currentIndex)
-    }
 
     Column(modifier = modifier.background(AppTheme.colors.surface)) {
         Text(

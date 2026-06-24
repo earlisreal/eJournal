@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +23,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -75,7 +84,26 @@ fun AnalysisScreen(
     val position = state.position
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    // Arrow-key navigation: Up/Left → previous trade, Down/Right → next (both wrap around).
+    // The root grabs focus on entry so keys work immediately; clicking the native chart WebView
+    // can take focus away, after which interacting with any Compose control restores it.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionUp, Key.DirectionLeft -> { vm.navigatePrev(); true }
+                    Key.DirectionDown, Key.DirectionRight -> { vm.navigateNext(); true }
+                    else -> false
+                }
+            },
+    ) {
 
         // ── Breadcrumb ──────────────────────────────────────────────────────
         if (onBack != null && sourceDestination != null) {
@@ -134,14 +162,14 @@ fun AnalysisScreen(
                     val total = state.totalCount
                     val idx   = state.currentIndex
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        NavButton("◀", enabled = idx > 0) { vm.navigatePrev() }
+                        NavButton("◀", enabled = total > 1) { vm.navigatePrev() }
                         Text(
                             "${idx + 1} / $total",
                             color = AppTheme.colors.textMuted,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 4.dp),
                         )
-                        NavButton("▶", enabled = idx < total - 1) { vm.navigateNext() }
+                        NavButton("▶", enabled = total > 1) { vm.navigateNext() }
                     }
                 }
 

@@ -1,5 +1,6 @@
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
+import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -93,6 +94,14 @@ compose.desktop {
             }
         }
     }
+}
+
+// The runtime window icon (loaded via painterResource("icon.png") in main.kt) reuses the single
+// source of truth in icons/ — the same PNG jpackage ships for Linux — instead of a checked-in copy
+// under src/main/resources. Copying just icon.png onto the classpath root keeps the 1024² master and
+// the .icns/.ico container formats off the runtime classpath.
+tasks.named<ProcessResources>("processResources") {
+    from("icons/icon.png")
 }
 
 // Applies to `run`, `hotRun` (Compose Hot Reload's run task extends JavaExec) and other JavaExec tasks,

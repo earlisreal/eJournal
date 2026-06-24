@@ -66,8 +66,19 @@ class AnalysisViewModel(
         _state.value = _state.value.copy(vwapEnabled = !_state.value.vwapEnabled)
     }
 
-    fun navigatePrev() = navigateTo(_state.value.currentIndex - 1)
-    fun navigateNext() = navigateTo(_state.value.currentIndex + 1)
+    // Wrap-around: from the first trade, prev jumps to the last; from the last, next jumps to
+    // the first. Keeps the ◀ ▶ buttons and arrow keys cycling continuously.
+    fun navigatePrev() {
+        val size = positions.size
+        if (size == 0) return
+        navigateTo((_state.value.currentIndex - 1 + size) % size)
+    }
+
+    fun navigateNext() {
+        val size = positions.size
+        if (size == 0) return
+        navigateTo((_state.value.currentIndex + 1) % size)
+    }
 
     fun navigateTo(index: Int) {
         if (index < 0 || index >= positions.size) return

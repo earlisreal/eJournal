@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -21,11 +22,17 @@ import io.earlisreal.ejournal.ui.theme.ThemeMode
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
 
 @Composable
-fun StartupErrorWindow(message: String, onRetry: () -> Unit, onQuit: () -> Unit) {
+fun StartupErrorWindow(
+    message: String,
+    onRetry: () -> Unit,
+    onQuit: () -> Unit,
+    icon: Painter? = null,
+) {
     Window(
         onCloseRequest = onQuit,
         state = rememberWindowState(size = DpSize(520.dp, 300.dp)),
         title = "eJournal — startup error",
+        icon = icon,
     ) {
         AppTheme(darkTheme = resolveDarkMode(ThemeMode.SYSTEM, isSystemInDarkTheme())) {
             Column(

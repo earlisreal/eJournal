@@ -11,12 +11,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,13 +99,10 @@ fun SettingsScreen(
                         singleLine = true,
                         modifier = Modifier.width(420.dp),
                     )
-                    OutlinedTextField(
+                    SecretKeyTextField(
                         value = state.secretKey,
                         onValueChange = vm::updateSecretKey,
-                        label = { Text("Alpaca Secret Key") },
-                        singleLine = true,
-                        visualTransformation = if (state.hasSavedKeys && state.secretKey.isNotEmpty())
-                            PasswordVisualTransformation() else VisualTransformation.None,
+                        label = "Alpaca Secret Key",
                         modifier = Modifier.width(420.dp),
                     )
 
@@ -140,12 +145,10 @@ fun SettingsScreen(
                         singleLine = true,
                         modifier = Modifier.width(420.dp),
                     )
-                    OutlinedTextField(
+                    SecretKeyTextField(
                         value = state.tradeZeroSecretKey,
                         onValueChange = vm::updateTradeZeroSecretKey,
-                        label = { Text("API Secret Key") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
+                        label = "API Secret Key",
                         modifier = Modifier.width(420.dp),
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -197,6 +200,33 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(bottom = Spacing.md),
+    )
+}
+
+/** Masked secret-key field with a trailing eye toggle to reveal/hide the value. */
+@Composable
+private fun SecretKeyTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    var visible by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = { visible = !visible }) {
+                Icon(
+                    imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                    contentDescription = if (visible) "Hide secret key" else "Show secret key",
+                )
+            }
+        },
+        modifier = modifier,
     )
 }
 

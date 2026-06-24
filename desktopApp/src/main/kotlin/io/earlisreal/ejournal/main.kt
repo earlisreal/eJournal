@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -35,6 +36,10 @@ fun main(args: Array<String>) {
     }
 
     application {
+        // The eJournal window icon (title bar + Windows taskbar). Without this the JetBrains Runtime
+        // logo is used. Resolved from the classpath root; the build copies desktopApp/icons/icon.png
+        // there via processResources (see desktopApp/build.gradle.kts) so there's no duplicate PNG.
+        val appIcon = painterResource("icon.png")
         // Build everything off the UI thread behind the native -splash; show the window only once ready.
         val initializer = remember { AsyncInitializer { buildReadyApp() } }
         val state by initializer.state.collectAsState()
@@ -49,6 +54,7 @@ fun main(args: Array<String>) {
                 message = s.message,
                 onRetry = { scope.launch { initializer.run() } },
                 onQuit = ::exitApplication,
+                icon = appIcon,
             )
 
             is InitState.Ready -> {
@@ -63,6 +69,7 @@ fun main(args: Array<String>) {
                     },
                     state = windowState,
                     title = "eJournal",
+                    icon = appIcon,
                 ) {
                     LaunchedEffect(Unit) {
                         // minimumSize is raw device pixels (not dp); shrinks on HiDPI — tune if needed.

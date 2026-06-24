@@ -3,15 +3,20 @@ package io.earlisreal.ejournal.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +60,7 @@ fun TradeLogsTable(
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
     androidx.compose.foundation.layout.Column(
         modifier = modifier.border(1.dp, AppTheme.colors.border, CardShape),
     ) {
@@ -76,11 +82,17 @@ fun TradeLogsTable(
             }
         }
         HorizontalDivider(color = AppTheme.colors.border)
-        LazyColumn {
-            itemsIndexed(positions) { index, p ->
-                PositionRow(p, symbol, onClick = { onAnalyze(p, positions) })
-                if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                itemsIndexed(positions) { index, p ->
+                    PositionRow(p, symbol, onClick = { onAnalyze(p, positions) })
+                    if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
+                }
             }
+            ListVerticalScrollbar(
+                listState = listState,
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            )
         }
     }
 }

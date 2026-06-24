@@ -1,3 +1,7 @@
+import java.awt.Color
+import java.awt.Font
+import java.awt.RenderingHints
+import javax.imageio.ImageIO
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.language.jvm.tasks.ProcessResources
@@ -21,6 +25,40 @@ val jbrLauncher = javaToolchains.launcherFor {
 // local/dev builds fall back to a valid numeric default. Must stay numeric major.minor.patch — MSI
 // rejects suffixes like -beta.
 val appVersion: String = (project.findProperty("appVersion") as String?)?.takeIf { it.isNotBlank() } ?: "1.0.0"
+
+// Bake the version into the splash at build time so it shows together with the image — no runtime
+// pop-in (drawing on the live splash from main() pays a one-time AWT/font-init cost on launch).
+// Copies resources/ into a generated appResources root, then renders "v<appVersion>" onto
+// common/splash.png. Up-to-date unless appVersion or the source resources change, so day-to-day dev
+// builds skip it. Inputs/outputs are captured at configuration time to stay config-cache-safe.
+val versionedAppResources = layout.buildDirectory.dir("generated/appResources")
+val generateVersionedSplash by tasks.registering {
+    val sourceResources = layout.projectDirectory.dir("resources").asFile
+    val outputDir = versionedAppResources
+    val version = appVersion
+    inputs.dir(sourceResources)
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+    doLast {
+        val out = outputDir.get().asFile
+        out.deleteRecursively()
+        sourceResources.copyRecursively(out, overwrite = true)
+        out.walkTopDown().filter { it.name == ".DS_Store" }.forEach { it.delete() }
+
+        val splash = out.resolve("common/splash.png")
+        val image = ImageIO.read(splash)
+        val g = image.createGraphics()
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g.font = Font("SansSerif", Font.PLAIN, 13)
+        g.color = Color(60, 64, 84, 200) // dark navy matching the logo, slightly translucent
+        val label = "v$version"
+        val metrics = g.fontMetrics
+        // Bottom-right, clear of the centered logo.
+        g.drawString(label, image.width - metrics.stringWidth(label) - 16, image.height - 16)
+        g.dispose()
+        ImageIO.write(image, "png", splash)
+    }
+}
 
 dependencies {
     implementation(projects.shared)
@@ -61,7 +99,11 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
+            // Version-stamped resources (see generateVersionedSplash). Mapping the property off the
+            // task provider carries the task dependency into Compose's prepareAppResources, so the
+            // versioned splash is generated before it's packaged. $APPDIR/resources/splash.png (the
+            // -splash: target above) resolves to this common/splash.png.
+            appResourcesRootDir.set(layout.dir(generateVersionedSplash.map { versionedAppResources.get().asFile }))
             // jpackage's default jlink runtime omits modules our deps need at startup — java.sql
             // (SQLDelight JDBC), jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) and
             // jdk.jsobject (JavaFX WebView's JS bridge) — which caused "Failed to launch JVM".
@@ -107,10 +149,11 @@ tasks.named<ProcessResources>("processResources") {
 // Applies to `run`, `hotRun` (Compose Hot Reload's run task extends JavaExec) and other JavaExec tasks,
 // so dev runs match the packaged app's JVM args above.
 tasks.withType<JavaExec>().configureEach {
+    dependsOn(generateVersionedSplash)
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     jvmArgs("--sun-misc-unsafe-memory-access=allow")
     jvmArgs("-XX:TieredStopAtLevel=2")
-    jvmArgs("-splash:${project.projectDir}/resources/common/splash.png")
+    jvmArgs("-splash:${versionedAppResources.get().asFile}/common/splash.png")
     // Match packaged app heap/GC flags — serial GC avoids thread pool spin-up; pre-sized heap
     // prevents early resize pauses. Validated on JBR 25.
     jvmArgs("-XX:+UseSerialGC")

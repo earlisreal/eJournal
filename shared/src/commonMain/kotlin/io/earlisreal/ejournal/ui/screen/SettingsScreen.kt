@@ -29,9 +29,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
@@ -85,9 +91,30 @@ fun SettingsScreen(
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    val alpacaGuideUrl = "https://alpaca.markets/learn/connect-to-alpaca-api"
+                    val linkColor = AppTheme.colors.accent
                     Text(
-                        "Keys are stored only on this machine, in ~/.ejournal/credentials.json. " +
-                            "Get free keys at alpaca.markets.",
+                        text = buildAnnotatedString {
+                            append("To get free keys, follow steps 1 and 2 of Alpaca's guide: ")
+                            withLink(
+                                LinkAnnotation.Url(
+                                    alpacaGuideUrl,
+                                    TextLinkStyles(
+                                        style = SpanStyle(
+                                            color = linkColor,
+                                            textDecoration = TextDecoration.Underline,
+                                        ),
+                                    ),
+                                ),
+                            ) {
+                                append(alpacaGuideUrl)
+                            }
+                        },
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "Keys are stored only on this machine, in ~/.ejournal/credentials.json.",
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )

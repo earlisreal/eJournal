@@ -6,6 +6,12 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import ejournal.shared.generated.resources.Res
+import ejournal.shared.generated.resources.jetbrains_mono_medium
+import ejournal.shared.generated.resources.jetbrains_mono_regular
+import org.jetbrains.compose.resources.Font
 
 object AppTheme {
     val colors: AppColors
@@ -51,7 +57,15 @@ fun AppTheme(
         )
     }
 
-    CompositionLocalProvider(LocalAppColors provides appColors) {
+    val monoFontFamily = FontFamily(
+        Font(Res.font.jetbrains_mono_regular, FontWeight.Normal),
+        Font(Res.font.jetbrains_mono_medium, FontWeight.Medium),
+    )
+
+    CompositionLocalProvider(
+        LocalAppColors provides appColors,
+        LocalMonoFontFamily provides monoFontFamily,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = AppTypography,

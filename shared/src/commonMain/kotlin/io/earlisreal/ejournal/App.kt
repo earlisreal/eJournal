@@ -81,7 +81,6 @@ fun App(
                 portfolioSettings = portfolioSettings,
                 filter = filter,
                 onImportSuccess = { marketDataService.requestSync() },
-                marketDataService = marketDataService,
                 tradeZeroSyncService = tradeZeroSyncService,
                 tradeZeroConfigured = credentialsRepository.getTradeZeroCredentials() != null,
             )

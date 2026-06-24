@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
@@ -37,13 +38,17 @@ fun AppCard(
     }
 }
 
-/** Label + value stat tile. `emphasized` draws the amber bottom-border accent. */
+/**
+ * Label + value stat tile. `emphasized` draws the amber bottom-border accent. Pass [valueColor]
+ * to tint the figure by sign (profit/loss) where the sign carries information; defaults to neutral.
+ */
 @Composable
 fun StatCard(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
     emphasized: Boolean = false,
+    valueColor: Color? = null,
 ) {
     val accent = AppTheme.colors.accent
     AppCard(
@@ -60,6 +65,6 @@ fun StatCard(
         } else modifier
     ) {
         Text(label.uppercase(), color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
-        Text(value, style = NumberTextStyle, color = AppTheme.colors.textPrimary)
+        Text(value, style = NumberTextStyle, color = valueColor ?: AppTheme.colors.textPrimary)
     }
 }

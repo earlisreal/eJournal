@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +37,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.domain.analytics.TradeType
@@ -145,10 +147,13 @@ fun AnalysisScreen(
                             fontWeight = FontWeight.Bold,
                             color = AppTheme.colors.textPrimary,
                         )
+                        Spacer(Modifier.width(Spacing.sm))
                         Text(
-                            "  ${signedMoney(position.profitLoss, symbol)} (${"%+.1f%%".format(pct)})",
+                            "${signedMoney(position.profitLoss, symbol)} (${"%+.1f%%".format(pct)})",
                             color = pnlColor,
                             style = NumberTextStyle,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(end = Spacing.sm),
                         )
                         val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"

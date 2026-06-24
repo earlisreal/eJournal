@@ -24,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.ClosedPosition
@@ -112,11 +114,20 @@ fun CalendarScreen(
 
                     AppTextButton(text = "▶", onClick = { vm.nextMonth() })
                     Spacer(Modifier.weight(1f))
-                    Text(
-                        signedMoney(state.monthTotal, symbol),
-                        color = if (state.monthTotal >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
-                        style = NumberTextStyle,
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "MONTH P&L",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                        Text(
+                            signedMoney(state.monthTotal, symbol),
+                            color = if (state.monthTotal >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
+                            style = NumberTextStyle,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
                 BoxWithConstraints(Modifier.weight(1f)) {
                     val dayPositions = state.selectedDate?.let { state.positionsByDay[it] } ?: emptyList()

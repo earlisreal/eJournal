@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -72,9 +74,10 @@ fun SettingsScreen(
     ScreenScaffold(title = "Settings") {
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.lg),
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            // Cap the form width so all cards share one width and lines stay readable on wide windows.
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).widthIn(max = 720.dp),
         ) {
-            AppCard {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Appearance")
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text("Theme", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
@@ -82,7 +85,7 @@ fun SettingsScreen(
                 }
             }
 
-            AppCard {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Market Data")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
@@ -152,7 +155,7 @@ fun SettingsScreen(
                 }
             }
 
-            AppCard {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Trade Zero API")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
@@ -197,7 +200,7 @@ fun SettingsScreen(
                 }
             }
 
-            AppCard {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Sync")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(

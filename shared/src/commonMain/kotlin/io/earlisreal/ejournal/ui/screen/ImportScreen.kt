@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncOutcome
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
@@ -31,11 +30,11 @@ import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.DataTable
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.ErrorBanner
-import io.earlisreal.ejournal.ui.components.MarketDataSyncStatus
 import io.earlisreal.ejournal.ui.components.Pill
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.shell.FilterState
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.ImportStatus
 import io.earlisreal.ejournal.ui.viewmodel.ImportViewModel
@@ -52,13 +51,11 @@ fun ImportScreen(
     portfolioSettings: PortfolioSettingsRepository,
     filter: FilterState,
     onImportSuccess: () -> Unit,
-    marketDataService: MarketDataService,
     tradeZeroSyncService: TradeZeroSyncService,
     tradeZeroConfigured: Boolean,
 ) {
     val vm = viewModel { ImportViewModel(transactionRepository, parsers, portfolioSettings) }
     val state by vm.state.collectAsState()
-    val syncStatus by marketDataService.status.collectAsState()
     var tradeZeroSyncing by remember { mutableStateOf(false) }
     var tradeZeroResult  by remember { mutableStateOf<String?>(null) }
 
@@ -75,6 +72,8 @@ fun ImportScreen(
         }
         LaunchedEffect(portfolio.id) { vm.loadAutoSync(portfolio.id) }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg), modifier = Modifier.fillMaxSize()) {
+            // Label the methods only when there's more than one to choose between.
+            if (tradeZeroConfigured) SectionLabel("From CSV file")
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
                 Pill(text = "Into: ${portfolio.name} · ${portfolio.market.label}")
 
@@ -118,8 +117,6 @@ fun ImportScreen(
                 )
             }
 
-            MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })
-
             if (state.parsedTransactions.isNotEmpty()) {
                 Text(
                     "${state.parsedTransactions.size} transactions parsed",
@@ -151,6 +148,7 @@ fun ImportScreen(
             }
 
             if (tradeZeroConfigured) {
+                SectionLabel("From broker")
                 val scope = rememberCoroutineScope()
                 io.earlisreal.ejournal.ui.components.AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -260,19 +258,17 @@ private fun DropZone(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(150.dp)
             .border(
                 BorderStroke(
-                    2.dp,
-                    if (isDragHovered) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outline
+                    if (isDragHovered) 2.dp else 1.dp,
+                    if (isDragHovered) AppTheme.colors.accent else AppTheme.colors.border,
                 ),
-                RoundedCornerShape(12.dp)
+                CardShape,
             )
             .background(
-                if (isDragHovered) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                else Color.Transparent,
-                RoundedCornerShape(12.dp)
+                if (isDragHovered) AppTheme.colors.accent.copy(alpha = 0.08f) else Color.Transparent,
+                CardShape,
             )
             .dragAndDropTarget(
                 shouldStartDragAndDrop = { event ->
@@ -284,26 +280,38 @@ private fun DropZone(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             Text(
                 if (isDragHovered) "Drop files here" else "Drag & drop CSV files here",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Medium,
+                color = if (isDragHovered) AppTheme.colors.accent else AppTheme.colors.textPrimary,
             )
-            OutlinedButton(onClick = {
-                scope.launch(Dispatchers.IO) {
-                    val dialog = FileDialog(null as Frame?, "Select CSV files", FileDialog.LOAD).apply {
-                        isMultipleMode = true
-                        file = "*.csv"
-                        isVisible = true
+            Text(
+                "Accepts broker CSV exports · drop several at once",
+                style = MaterialTheme.typography.labelSmall,
+                color = AppTheme.colors.textMuted,
+            )
+            AppSecondaryButton(
+                text = "Browse files…",
+                onClick = {
+                    scope.launch(Dispatchers.IO) {
+                        val dialog = FileDialog(null as Frame?, "Select CSV files", FileDialog.LOAD).apply {
+                            isMultipleMode = true
+                            file = "*.csv"
+                            isVisible = true
+                        }
+                        val files = dialog.files?.map { it.readBytes() } ?: emptyList()
+                        if (files.isNotEmpty()) currentOnFilesDropped(files)
                     }
-                    val files = dialog.files?.map { it.readBytes() } ?: emptyList()
-                    if (files.isNotEmpty()) currentOnFilesDropped(files)
-                }
-            }) {
-                Text("Browse files…")
-            }
+                },
+            )
         }
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(text.uppercase(), color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
 }

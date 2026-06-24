@@ -116,7 +116,7 @@ private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) 
         NumCell("%.2f".format(p.averageEntryPrice), COLUMNS[6].weight)
         NumCell("%.2f".format(p.averageExitPrice), COLUMNS[7].weight)
         NumCell("%.2f".format(p.fees), COLUMNS[8].weight)
-        NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor)
+        NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor, bold = true)
         NumCell("%+.1f%%".format(pct), COLUMNS[10].weight, color = pnlColor)
     }
 }
@@ -159,8 +159,20 @@ private fun androidx.compose.foundation.layout.RowScope.Cell(text: String, weigh
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.NumCell(text: String, weight: Float, color: androidx.compose.ui.graphics.Color = AppTheme.colors.textPrimary) {
-    Text(text, modifier = Modifier.weight(weight), textAlign = TextAlign.End, color = color, style = NumberTextStyle)
+private fun androidx.compose.foundation.layout.RowScope.NumCell(
+    text: String,
+    weight: Float,
+    color: androidx.compose.ui.graphics.Color = AppTheme.colors.textPrimary,
+    bold: Boolean = false,
+) {
+    Text(
+        text,
+        modifier = Modifier.weight(weight),
+        textAlign = TextAlign.End,
+        color = color,
+        fontWeight = if (bold) FontWeight.SemiBold else null,
+        style = NumberTextStyle,
+    )
 }
 
 @Composable

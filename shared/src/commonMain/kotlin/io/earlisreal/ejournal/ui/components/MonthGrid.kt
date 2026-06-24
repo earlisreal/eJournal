@@ -88,17 +88,21 @@ private fun DayCell(
         return
     }
     val hasTrades = summary != null && summary.tradeCount > 0
+    val pnlColor = if ((summary?.netPnl ?: 0.0) >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss
+    // Days with trades carry the content, so they get a tinted fill, a sign-colored edge, and a
+    // bold figure. Empty days recede: no fill, a faint hairline, and a dimmed date number — the
+    // eye lands on the days that actually happened.
     val tint = when {
-        summary == null -> Color.Transparent
-        summary.netPnl > 0 -> AppTheme.colors.profit.copy(alpha = 0.12f)
-        summary.netPnl < 0 -> AppTheme.colors.loss.copy(alpha = 0.12f)
+        !hasTrades -> Color.Transparent
+        summary!!.netPnl > 0 -> AppTheme.colors.profit.copy(alpha = 0.14f)
+        summary.netPnl < 0 -> AppTheme.colors.loss.copy(alpha = 0.14f)
         else -> AppTheme.colors.surfaceElevated
     }
-    val pnlColor = if ((summary?.netPnl ?: 0.0) >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss
     val borderColor = when {
         isSelected -> AppTheme.colors.accent
         isToday -> AppTheme.colors.accent.copy(alpha = 0.5f)
-        else -> AppTheme.colors.border
+        hasTrades -> pnlColor.copy(alpha = 0.35f)
+        else -> AppTheme.colors.border.copy(alpha = 0.4f)
     }
     Column(
         modifier = modifier
@@ -111,16 +115,18 @@ private fun DayCell(
     ) {
         Text(
             date.dayOfMonth.toString(),
-            color = AppTheme.colors.textMuted,
+            color = if (hasTrades) AppTheme.colors.textPrimary else AppTheme.colors.textMuted.copy(alpha = 0.55f),
+            fontWeight = if (hasTrades) FontWeight.SemiBold else FontWeight.Normal,
             style = MaterialTheme.typography.labelSmall,
         )
-        if (summary != null) {
+        if (hasTrades) {
             Spacer(Modifier.weight(1f))
             Text(
-                signedMoney(summary.netPnl, symbol),
+                signedMoney(summary!!.netPnl, symbol),
                 color = pnlColor,
                 style = NumberTextStyle,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

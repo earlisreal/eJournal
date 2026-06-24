@@ -43,13 +43,27 @@ fun DayDetailPanel(
                 style = MaterialTheme.typography.bodyMedium,
             )
         } else {
-            Text(
-                longDate(date),
-                color = AppTheme.colors.textPrimary,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = Spacing.sm),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.sm),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    longDate(date),
+                    color = AppTheme.colors.textPrimary,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (positions.isNotEmpty()) {
+                    val dayTotal = positions.sumOf { it.profitLoss }
+                    Text(
+                        signedMoney(dayTotal, symbol),
+                        color = if (dayTotal >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
+                        style = NumberTextStyle,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
             if (positions.isEmpty()) {
                 Text(
                     "No trades closed this day",

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -27,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,8 +42,10 @@ import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.components.StatCard
 import io.earlisreal.ejournal.ui.components.TopTradesList
 import io.earlisreal.ejournal.ui.components.formatDuration
+import io.earlisreal.ejournal.ui.components.signedMoney
 import io.earlisreal.ejournal.ui.shell.FilterState
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.HeroNumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.DashboardState
 import io.earlisreal.ejournal.ui.viewmodel.DashboardViewModel
@@ -101,9 +103,10 @@ internal fun DashboardContent(
             modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg),
         ) {
+            HeroBlock(state = state, symbol = symbol)
+
             SectionLabel("Profit & Loss")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                Tile("Net P&L", money(metrics.netPnl, symbol), emphasized = true)
                 Tile("Gross profit", money(metrics.grossProfit, symbol))
                 Tile("Gross loss", money(metrics.grossLoss, symbol))
                 Tile("Largest win", moneyOrDash(metrics.largestWin, symbol))
@@ -121,7 +124,11 @@ internal fun DashboardContent(
                 if (metrics.breakEvenCount > 0) Tile("Break-even", metrics.breakEvenCount.toString())
                 Tile("Profit factor", ratioOrDash(metrics.profitFactor))
                 Tile("Reward : risk", payoffOrDash(metrics.payoffRatio))
-                Tile("Expectancy", moneyOrDash(metrics.expectancy, symbol))
+                Tile(
+                    "Expectancy",
+                    moneyOrDash(metrics.expectancy, symbol),
+                    valueColor = metrics.expectancy?.let { signColor(it) },
+                )
                 Tile("Max win streak", metrics.maxWinStreak.toString())
                 Tile("Max loss streak", metrics.maxLossStreak.toString())
                 Tile("Avg hold", holdOrDash(metrics.avgHoldSeconds))
@@ -132,14 +139,24 @@ internal fun DashboardContent(
                 modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
             ) {
                 AppCard(modifier = Modifier.weight(2f), contentFillsHeight = true) {
-                    SectionLabel("Equity curve")
-                    EquityCurveChart(
-                        points = state.equityCurve,
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        SectionLabel("Recent trades")
+                        Spacer(Modifier.weight(1f))
+                        if (state.recentTrades.isNotEmpty()) {
+                            Text(
+                                "View all →",
+                                color = AppTheme.colors.accent,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable { onViewAllTrades() },
+                            )
+                        }
+                    }
+                    RecentTradesList(
+                        trades = state.recentTrades,
                         symbol = symbol,
-                        // Fill the card's height (it stretches to match the taller of the two cards
-                        // via the Row's IntrinsicSize.Min) with a sensible floor, so the curve uses
-                        // the full area instead of leaving blank space below a fixed-height chart.
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp).weight(1f).padding(top = Spacing.sm),
+                        onSelect = { onAnalyze(it, state.recentTrades) },
+                        modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
                     )
                 }
                 AppCard(modifier = Modifier.weight(1f), contentFillsHeight = true) {
@@ -151,28 +168,6 @@ internal fun DashboardContent(
                     )
                 }
             }
-
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SectionLabel("Recent trades")
-                Spacer(Modifier.weight(1f))
-                if (state.recentTrades.isNotEmpty()) {
-                    Text(
-                        "View all in Trade Logs →",
-                        color = AppTheme.colors.accent,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { onViewAllTrades() },
-                    )
-                }
-            }
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                RecentTradesList(
-                    trades = state.recentTrades,
-                    symbol = symbol,
-                    onSelect = { onAnalyze(it, state.recentTrades) },
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                )
-            }
         }
         ColumnVerticalScrollbar(
             scrollState = scrollState,
@@ -183,15 +178,56 @@ internal fun DashboardContent(
     }
 }
 
+/**
+ * The dashboard's thesis: the running P&L as an oversized ticker readout, sign-colored, paired with
+ * the equity curve. Lead with the number that matters before the supporting metric grids below.
+ */
+@Composable
+private fun HeroBlock(state: DashboardState, symbol: String) {
+    val metrics = state.metrics
+    val context = buildString {
+        append(metrics.tradeCount)
+        append(if (metrics.tradeCount == 1) " trade" else " trades")
+        metrics.winRate?.let { append(" · %.1f%% win rate".format(it * 100)) }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().height(200.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        AppCard(modifier = Modifier.weight(1f), contentFillsHeight = true) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                Text("NET P&L", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.height(Spacing.sm))
+                Text(signedMoney(metrics.netPnl, symbol), style = HeroNumberTextStyle, color = signColor(metrics.netPnl))
+                Spacer(Modifier.height(Spacing.sm))
+                Text(context, color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        AppCard(modifier = Modifier.weight(1.9f), contentFillsHeight = true) {
+            SectionLabel("Equity curve")
+            EquityCurveChart(
+                points = state.equityCurve,
+                symbol = symbol,
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(top = Spacing.sm),
+            )
+        }
+    }
+}
+
 @Composable
 private fun SectionLabel(text: String) {
     Text(text.uppercase(), color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
 }
 
 @Composable
-private fun Tile(label: String, value: String, emphasized: Boolean = false) {
-    StatCard(label = label, value = value, emphasized = emphasized, modifier = Modifier.width(150.dp))
+private fun Tile(label: String, value: String, emphasized: Boolean = false, valueColor: Color? = null) {
+    StatCard(label = label, value = value, emphasized = emphasized, valueColor = valueColor, modifier = Modifier.width(150.dp))
 }
+
+/** Profit/loss tint for a signed figure; zero reads as profit (break-even leans neutral-positive). */
+@Composable
+private fun signColor(value: Double): Color =
+    if (value >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss
 
 private fun money(v: Double, symbol: String): String = (if (v < 0) "−" else "") + symbol + "%,.2f".format(kotlin.math.abs(v))
 private fun moneyOrDash(v: Double?, symbol: String): String = if (v == null) "—" else money(v, symbol)

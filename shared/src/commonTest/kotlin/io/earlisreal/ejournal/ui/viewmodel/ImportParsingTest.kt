@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
+import io.earlisreal.ejournal.domain.parser.SchwabCsvParser
 import io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,5 +55,19 @@ class ImportParsingTest {
     fun overrideParsesWhenFileMatchesChosenParser() {
         val result = parseImportFiles(listOf(tzFile), parsers, override = TradeZeroCsvParser(), portfolioId)
         assertEquals(1, result.transactions.size)
+    }
+
+    @Test
+    fun aggregatesSkippedRowsAcrossFiles() {
+        val schwab = SchwabCsvParser()
+        val schwabFile = (
+            "\"Transactions  for account ...000 as of 09/27/2022\"\n" +
+                "\"Date\",\"Action\",\"Symbol\",\"Description\",\"Quantity\",\"Price\",\"Fees & Comm\",\"Amount\"\n" +
+                "\"02/09/2021\",\"Buy\",\"BNDX\",\"x\",\"81\",\"\$57.99\",\"\",\"-\$4697.99\"\n" +
+                "\"03/04/2021\",\"Cash Dividend\",\"BNDX\",\"x\",\"\",\"\",\"\",\"\$3.65\""
+            ).encodeToByteArray()
+        val result = parseImportFiles(listOf(schwabFile), listOf(schwab), override = null, portfolioId)
+        assertEquals(1, result.transactions.size)
+        assertEquals(1, result.skipped.nonTrade)
     }
 }

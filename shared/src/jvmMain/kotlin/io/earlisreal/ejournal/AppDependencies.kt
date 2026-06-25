@@ -20,10 +20,14 @@ import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
+import io.earlisreal.ejournal.domain.parser.EtradeCsvParser
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
+import io.earlisreal.ejournal.domain.parser.RobinhoodCsvParser
+import io.earlisreal.ejournal.domain.parser.SchwabCsvParser
 import io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser
 import io.earlisreal.ejournal.domain.parser.TransactionParser
+import io.earlisreal.ejournal.domain.parser.WebullCsvParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClientImpl
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
@@ -48,8 +52,16 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
-    // moomoo & TradeZero first so auto-detect routes to them; Generic last (manual-only fallback).
-    val parsers: List<TransactionParser> = listOf(MoomooCsvParser(), TradeZeroCsvParser(), GenericCsvParser())
+    // Broker-specific parsers first (distinctive header sniffs, no collisions); Generic last (manual-only fallback).
+    val parsers: List<TransactionParser> = listOf(
+        MoomooCsvParser(),
+        TradeZeroCsvParser(),
+        SchwabCsvParser(),
+        RobinhoodCsvParser(),
+        WebullCsvParser(),
+        EtradeCsvParser(),
+        GenericCsvParser(),
+    )
 
     val closedPositionService = ClosedPositionService(transactionRepository)
 

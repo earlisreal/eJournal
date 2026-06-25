@@ -20,6 +20,7 @@ import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
+import io.earlisreal.ejournal.domain.parser.EtoroXlsxParser
 import io.earlisreal.ejournal.domain.parser.EtradeCsvParser
 import io.earlisreal.ejournal.domain.parser.FidelityCsvParser
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
@@ -55,7 +56,7 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
-    // Broker-specific parsers first (distinctive header sniffs, no collisions); Generic last (manual-only fallback).
+    // Broker-specific parsers first (distinctive header/format sniffs, no collisions); Generic last (manual-only fallback).
     val parsers: List<TransactionParser> = listOf(
         MoomooCsvParser(),
         TradeZeroCsvParser(),
@@ -66,6 +67,7 @@ class AppDependencies {
         FidelityCsvParser(),
         IbkrCsvParser(),
         TastytradeCsvParser(),
+        EtoroXlsxParser(),
         GenericCsvParser(),
     )
 

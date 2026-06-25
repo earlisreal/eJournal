@@ -29,6 +29,7 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.driver.sqlite)
+            implementation(libs.sqlite.jdbc)
             implementation(libs.ktor.client.cio)
             implementation(compose.desktop.currentOs)
 

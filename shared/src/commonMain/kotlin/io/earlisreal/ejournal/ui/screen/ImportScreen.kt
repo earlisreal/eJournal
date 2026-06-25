@@ -41,6 +41,7 @@ import io.earlisreal.ejournal.ui.viewmodel.ImportViewModel
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import java.io.FilenameFilter
 import java.net.URI
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -283,13 +284,13 @@ private fun DropZone(
             verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             Text(
-                if (isDragHovered) "Drop files here" else "Drag & drop CSV files here",
+                if (isDragHovered) "Drop files here" else "Drag & drop CSV or XLSX files here",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = if (isDragHovered) AppTheme.colors.accent else AppTheme.colors.textPrimary,
             )
             Text(
-                "Accepts broker CSV exports · drop several at once",
+                "Accepts broker CSV exports and eToro XLSX statements · drop several at once",
                 style = MaterialTheme.typography.labelSmall,
                 color = AppTheme.colors.textMuted,
             )
@@ -297,9 +298,13 @@ private fun DropZone(
                 text = "Browse files…",
                 onClick = {
                     scope.launch(Dispatchers.IO) {
-                        val dialog = FileDialog(null as Frame?, "Select CSV files", FileDialog.LOAD).apply {
+                        val dialog = FileDialog(null as Frame?, "Select CSV or XLSX files", FileDialog.LOAD).apply {
                             isMultipleMode = true
-                            file = "*.csv"
+                            // Honored on Windows/Linux; macOS may ignore it and show all files (still selectable).
+                            filenameFilter = FilenameFilter { _, name ->
+                                val n = name.lowercase()
+                                n.endsWith(".csv") || n.endsWith(".xlsx")
+                            }
                             isVisible = true
                         }
                         val files = dialog.files?.map { it.readBytes() } ?: emptyList()

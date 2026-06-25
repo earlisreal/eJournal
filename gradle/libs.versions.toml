@@ -6,6 +6,9 @@ kotlin = "2.4.0"
 kotlinx-coroutines = "1.11.0"
 material3 = "1.11.0-alpha07"
 sqldelight = "2.0.2"
+# Pinned to the version sqldelight 2.0.2 forces transitively; declared explicitly so org.sqlite.*
+# (SQLiteConfig, used to open the DB in WAL mode) is on the jvmMain compile classpath.
+sqlite-jdbc = "3.45.2.0"
 kotlinx-datetime = "0.7.1"
 # Must track the slf4j-api version that deps (sqlite-jdbc, kotlinx-coroutines-slf4j) force onto the
 # runtime classpath — currently 2.0.x. A 1.7.x slf4j-nop ships only the legacy StaticLoggerBinder,
@@ -28,6 +31,7 @@ compose-components-resources = { module = "org.jetbrains.compose.components:comp
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 sqldelight-driver-sqlite = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }

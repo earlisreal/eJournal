@@ -40,7 +40,13 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 | --- | --- | --- |
 | **TradeZero** | TradeHistory CSV export (plus optional API sync) | ✅ Supported |
 | **moomoo** | Order history CSV export | ✅ Supported |
+| **Charles Schwab** | Transaction history CSV (web "History" export) | ✅ Supported |
+| **E\*TRADE** | Transaction history CSV (classic `DownloadTxnHistory.csv`) | ✅ Supported |
+| **Robinhood** | Account activity report CSV | ✅ Supported |
+| **Webull** | Order history CSV (`Webull_Orders_Records.csv`) | ✅ Supported |
 | **Generic CSV** | `datetime, symbol, action, price, shares, fees` | ✅ Manual fallback |
+
+Every file is auto-detected on drop. Only stock **buy/sell** rows are imported; option legs and non-trade rows (dividends, interest, transfers, cancelled orders) are detected and skipped, with the skipped count shown in the import summary. Most US web exports are date-only — same-day trades land at midnight — except Webull, which carries intraday execution times.
 
 Don't see your broker? Use the **Generic CSV** importer with any file that has the columns above, or open an issue/PR to add a parser.
 

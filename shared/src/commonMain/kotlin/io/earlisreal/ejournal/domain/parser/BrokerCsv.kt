@@ -96,3 +96,20 @@ internal fun locateHeader(content: ByteArray, isHeader: (String) -> Boolean): He
 /** Reads this row's cell for column [name] (case-insensitive), trimmed; null if the column or cell is absent. */
 internal fun List<String>.field(index: Map<String, Int>, name: String): String? =
     index[name.trim().lowercase()]?.let { getOrNull(it)?.trim() }
+
+/**
+ * Parses an ISO-8601 datetime that carries a timezone offset and DROPS the offset, keeping wall-clock
+ * local time (matching how TradeZero/moomoo store Eastern wall-clock). Handles a trailing "Z",
+ * "+HH:MM"/"-HH:MM", or "+HHMM"/"-HHMM". Returns null if there's no time part or the local part doesn't
+ * parse. e.g. "2026-05-21T03:15:45+1200" -> 2026-05-21T03:15:45
+ */
+internal fun parseIsoDateTimeDropOffset(raw: String): LocalDateTime? {
+    val s = raw.trim()
+    val tIdx = s.indexOf('T')
+    if (tIdx < 0) return null
+    // The offset, if present, is in the time portion: a 'Z' or a '+'/'-' AFTER the 'T'.
+    val timePart = s.substring(tIdx + 1)
+    val offsetInTime = timePart.indexOfFirst { it == 'Z' || it == '+' || it == '-' }
+    val local = if (offsetInTime >= 0) s.substring(0, tIdx + 1 + offsetInTime) else s
+    return runCatching { LocalDateTime.parse(local) }.getOrNull()
+}

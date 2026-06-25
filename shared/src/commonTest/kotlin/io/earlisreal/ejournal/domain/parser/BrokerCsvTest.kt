@@ -63,6 +63,30 @@ class BrokerCsvValueTest {
         assertEquals(LocalDateTime.parse("2021-12-23T09:53:38"), parseUsDateTime("12/23/2021 09:53:38 EST"))
         assertEquals(LocalDateTime.parse("2026-06-24T13:05:00"), parseUsDateTime("6/24/2026 13:05 EDT"))
     }
+
+    @Test
+    fun parseIsoDateTimeDropOffsetDropsPositiveAndNegativeOffsets() {
+        assertEquals(LocalDateTime.parse("2026-05-21T03:15:45"), parseIsoDateTimeDropOffset("2026-05-21T03:15:45+1200"))
+        assertEquals(LocalDateTime.parse("2023-12-29T09:43:35"), parseIsoDateTimeDropOffset("2023-12-29T09:43:35-0800"))
+    }
+
+    @Test
+    fun parseIsoDateTimeDropOffsetHandlesZuluAndColonOffset() {
+        assertEquals(LocalDateTime.parse("2024-01-03T14:00:00"), parseIsoDateTimeDropOffset("2024-01-03T14:00:00Z"))
+        assertEquals(LocalDateTime.parse("2026-05-20T07:53:38"), parseIsoDateTimeDropOffset("2026-05-20T07:53:38+02:00"))
+    }
+
+    @Test
+    fun parseIsoDateTimeDropOffsetKeepsOffsetlessLocal() {
+        assertEquals(LocalDateTime.parse("2026-05-20T07:53:38"), parseIsoDateTimeDropOffset("2026-05-20T07:53:38"))
+    }
+
+    @Test
+    fun parseIsoDateTimeDropOffsetReturnsNullForGarbage() {
+        assertNull(parseIsoDateTimeDropOffset(""))
+        assertNull(parseIsoDateTimeDropOffset("not a date"))
+        assertNull(parseIsoDateTimeDropOffset("2026-05-20"))
+    }
 }
 
 class BrokerCsvStructureTest {

@@ -21,10 +21,13 @@ import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.parser.EtradeCsvParser
+import io.earlisreal.ejournal.domain.parser.FidelityCsvParser
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
+import io.earlisreal.ejournal.domain.parser.IbkrCsvParser
 import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
 import io.earlisreal.ejournal.domain.parser.RobinhoodCsvParser
 import io.earlisreal.ejournal.domain.parser.SchwabCsvParser
+import io.earlisreal.ejournal.domain.parser.TastytradeCsvParser
 import io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.parser.WebullCsvParser
@@ -60,6 +63,9 @@ class AppDependencies {
         RobinhoodCsvParser(),
         WebullCsvParser(),
         EtradeCsvParser(),
+        FidelityCsvParser(),
+        IbkrCsvParser(),
+        TastytradeCsvParser(),
         GenericCsvParser(),
     )
 

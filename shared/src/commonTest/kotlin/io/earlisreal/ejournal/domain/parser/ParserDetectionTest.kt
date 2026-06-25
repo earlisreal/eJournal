@@ -14,11 +14,15 @@ class ParserDetectionTest {
         "Robinhood" to "Activity Date,Process Date,Settle Date,Instrument,Description,Trans Code,Quantity,Price,Amount".encodeToByteArray(),
         "Webull" to "Name,Symbol,Side,Status,Filled,Total Qty,Price,Avg Price,Time-in-Force,Placed Time,Filled Time".encodeToByteArray(),
         "E*TRADE" to "TransactionDate,TransactionType,SecurityType,Symbol,Quantity,Amount,Price,Commission,Description".encodeToByteArray(),
+        "Fidelity" to "Run Date,Action,Symbol,Description,Type,Quantity,Price (\$),Commission (\$),Fees (\$),Accrued Interest (\$),Amount (\$),Cash Balance (\$),Settlement Date".encodeToByteArray(),
+        "Interactive Brokers" to "Trades,Header,DataDiscriminator,Asset Category,Currency,Symbol,Date/Time,Quantity,T. Price,C. Price,Proceeds,Comm/Fee,Basis,Realized P/L,MTM P/L,Code".encodeToByteArray(),
+        "Tastytrade" to "Date,Type,Sub Type,Action,Symbol,Instrument Type,Description,Value,Quantity,Average Price,Commissions,Fees,Multiplier,Root Symbol,Underlying Symbol,Expiration Date,Strike Price,Call or Put,Order #,Total,Currency".encodeToByteArray(),
     )
 
     private val parsers: List<TransactionParser> = listOf(
         MoomooCsvParser(), TradeZeroCsvParser(), SchwabCsvParser(),
-        RobinhoodCsvParser(), WebullCsvParser(), EtradeCsvParser(), GenericCsvParser(),
+        RobinhoodCsvParser(), WebullCsvParser(), EtradeCsvParser(),
+        FidelityCsvParser(), IbkrCsvParser(), TastytradeCsvParser(), GenericCsvParser(),
     )
 
     @Test

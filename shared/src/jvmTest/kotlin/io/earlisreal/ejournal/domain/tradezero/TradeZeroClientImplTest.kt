@@ -104,7 +104,7 @@ class TradeZeroClientImplTest {
             "Account,T/D,S/D,Currency,Type,Side,Symbol,Qty,Price,Exec Time,Comm,SEC,TAF,NSCC,Nasdaq,ECN Remove,ECN Add,Gross Proceeds,Net Proceeds,Clr Broker,Liq,Note\n" +
                 "ACC1,06/16/2026,06/17/2026,USD,2,B,AAPL,100,50.0,00:00:00,1.0,0.5,0,0,0,0,0,-5000,-5001,LAMP,,"
             ).encodeToByteArray()
-        val csvTx = io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser().parse(csv, portfolioId = 7L).single()
+        val csvTx = io.earlisreal.ejournal.domain.parser.TradeZeroCsvParser().parse(csv, portfolioId = 7L).transactions.single()
 
         assertEquals(apiTx.externalId, csvTx.externalId)
     }

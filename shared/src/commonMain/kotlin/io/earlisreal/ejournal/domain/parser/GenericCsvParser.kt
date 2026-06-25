@@ -11,10 +11,12 @@ class GenericCsvParser : TransactionParser {
     // The generic parser is a manual-only fallback — it never wins auto-detection.
     override fun detect(content: ByteArray) = false
 
-    override fun parse(content: ByteArray, portfolioId: Long): List<Transaction> {
+    override fun parse(content: ByteArray, portfolioId: Long): ParseResult {
         val lines = content.decodeToString().lines().drop(1).filter { it.isNotBlank() }
-        return lines.mapNotNull { line ->
-            runCatching {
+        val transactions = mutableListOf<Transaction>()
+        var unparsed = 0
+        for (line in lines) {
+            val tx = runCatching {
                 val parts = line.split(",")
                 Transaction(
                     id = 0L,
@@ -24,9 +26,11 @@ class GenericCsvParser : TransactionParser {
                     action = Action.valueOf(parts[2].trim().uppercase()),
                     price = parts[3].trim().toDouble(),
                     shares = parts[4].trim().toDouble(),
-                    fees = parts[5].trim().toDouble()
+                    fees = parts[5].trim().toDouble(),
                 )
             }.getOrNull()
+            if (tx != null) transactions += tx else unparsed++
         }
+        return ParseResult(transactions, SkipSummary(unparsed = unparsed))
     }
 }

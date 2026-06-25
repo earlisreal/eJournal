@@ -54,7 +54,7 @@ class MoomooCsvParserTest {
 
     @Test
     fun parsesFilledBuyOrder() {
-        val tx = parser.parse(csv(suneBuy), portfolioId).single()
+        val tx = parser.parse(csv(suneBuy), portfolioId).transactions.single()
         assertEquals("SUNE", tx.symbol)
         assertEquals(Action.BUY, tx.action)
         assertEquals(2.47, tx.price)
@@ -66,7 +66,7 @@ class MoomooCsvParserTest {
 
     @Test
     fun usesWholeOrderQuantityAndAvgPriceForPartialFills() {
-        val result = parser.parse(csv(skyqBuy, skyqBuyContinuation), portfolioId)
+        val result = parser.parse(csv(skyqBuy, skyqBuyContinuation), portfolioId).transactions
         val tx = result.single { it.symbol == "SKYQ" }
         assertEquals(183.0, tx.shares)        // not 83 from the first fill
         assertEquals(2.36454, tx.price)       // order avg, not a single fill price
@@ -76,7 +76,7 @@ class MoomooCsvParserTest {
 
     @Test
     fun importsPartiallyCancelledOrderWithFill() {
-        val tx = parser.parse(csv(chaiSellPartial), portfolioId).single()
+        val tx = parser.parse(csv(chaiSellPartial), portfolioId).transactions.single()
         assertEquals("CHAI", tx.symbol)
         assertEquals(Action.SELL, tx.action)
         assertEquals(1.0, tx.shares)
@@ -87,12 +87,14 @@ class MoomooCsvParserTest {
 
     @Test
     fun skipsCancelledAndFailedOrders() {
-        assertTrue(parser.parse(csv(lxehFailed, skyqSellCancelled), portfolioId).isEmpty())
+        val result = parser.parse(csv(lxehFailed, skyqSellCancelled), portfolioId)
+        assertTrue(result.transactions.isEmpty())
+        assertEquals(2, result.skipped.nonTrade)
     }
 
     @Test
     fun parsesThousandsSeparatorInQuantity() {
-        val tx = parser.parse(csv(devsSell), portfolioId).single()
+        val tx = parser.parse(csv(devsSell), portfolioId).transactions.single()
         assertEquals(1127.0, tx.shares)
         assertEquals(0.5589, tx.price)
         assertEquals(4.6, tx.fees)
@@ -100,7 +102,7 @@ class MoomooCsvParserTest {
 
     @Test
     fun buildsDeterministicExternalIdFromOrderTime() {
-        val tx = parser.parse(csv(suneBuy), portfolioId).single()
+        val tx = parser.parse(csv(suneBuy), portfolioId).transactions.single()
         assertEquals("moomoo:SUNE:2026-06-08T06:51:04:BUY:172.0", tx.externalId)
     }
 }

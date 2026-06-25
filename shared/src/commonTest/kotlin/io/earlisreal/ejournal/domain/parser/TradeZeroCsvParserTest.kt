@@ -36,7 +36,7 @@ class TradeZeroCsvParserTest {
 
     @Test
     fun parsesBuyExecution() {
-        val tx = parser.parse(csv(seBuy), portfolioId).single()
+        val tx = parser.parse(csv(seBuy), portfolioId).transactions.single()
         assertEquals("SE", tx.symbol)
         assertEquals(Action.BUY, tx.action)
         assertEquals(2.0, tx.shares)
@@ -47,21 +47,21 @@ class TradeZeroCsvParserTest {
 
     @Test
     fun mapsSellSide() {
-        val tx = parser.parse(csv(seSell), portfolioId).single()
+        val tx = parser.parse(csv(seSell), portfolioId).transactions.single()
         assertEquals(Action.SELL, tx.action)
     }
 
     @Test
     fun sumsAllFeeColumnsIncludingScientificNotation() {
         // Comm 0.99 + SEC 0 + TAF 0 + NSCC 0.033 + Nasdaq 3.14E-05 + ECN 0 + 0
-        val tx = parser.parse(csv(seBuy), portfolioId).single()
+        val tx = parser.parse(csv(seBuy), portfolioId).transactions.single()
         assertEquals(1.0230314, tx.fees, absoluteTolerance = 1e-9)
     }
 
     @Test
     fun buildsUnifiedNaturalKeyExternalId() {
         // Same scheme as the API sync (no "tzcsv:" prefix, price excluded) so the two sources dedup.
-        val tx = parser.parse(csv(seBuy), portfolioId).single()
+        val tx = parser.parse(csv(seBuy), portfolioId).transactions.single()
         assertEquals("tz:SE:2021-06-24T10:29:39:BUY:2.0#0", tx.externalId)
     }
 
@@ -69,7 +69,7 @@ class TradeZeroCsvParserTest {
     fun givesDistinctIdsToIdenticalSameSecondFills() {
         // Two byte-identical executions (same symbol/side/qty/second) must not collide,
         // or INSERT OR IGNORE would silently drop the second fill.
-        val result = parser.parse(csv(seBuy, seBuy), portfolioId)
+        val result = parser.parse(csv(seBuy, seBuy), portfolioId).transactions
         assertEquals(2, result.size)
         assertEquals(2, result.map { it.externalId }.toSet().size)
         assertEquals(
@@ -82,12 +82,12 @@ class TradeZeroCsvParserTest {
     fun parsesThousandsSeparatorInQuotedQuantity() {
         val row =
             "ESA06710,06/24/2021,06/28/2021,USD,2,B,SE,\"1,500\",294.248,10:29:39,0.99,0,0,0.033,3.14E-05,0,0,-588.496,-589.519,LAMP,,"
-        val tx = parser.parse(csv(row), portfolioId).single()
+        val tx = parser.parse(csv(row), portfolioId).transactions.single()
         assertEquals(1500.0, tx.shares)
     }
 
     @Test
     fun parsesMultipleRows() {
-        assertEquals(2, parser.parse(csv(seBuy, seSell), portfolioId).size)
+        assertEquals(2, parser.parse(csv(seBuy, seSell), portfolioId).transactions.size)
     }
 }

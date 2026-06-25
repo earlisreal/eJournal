@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.parser.SkipSummary
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 
 /**
@@ -9,11 +10,13 @@ import io.earlisreal.ejournal.domain.parser.TransactionParser
  * @param transactions all parsed transactions across every file
  * @param perParser broker name -> number of transactions it produced (used for a status summary)
  * @param unrecognizedFiles count of files no parser detected (auto-detect mode only)
+ * @param skipped aggregated count of rows parsers recognized but did not emit (non-trade/options/unparsed)
  */
 data class ImportParseResult(
     val transactions: List<Transaction>,
     val perParser: Map<String, Int>,
     val unrecognizedFiles: Int,
+    val skipped: SkipSummary = SkipSummary(),
 )
 
 /**
@@ -30,6 +33,7 @@ fun parseImportFiles(
     val transactions = mutableListOf<Transaction>()
     val perParser = mutableMapOf<String, Int>()
     var unrecognizedFiles = 0
+    var skipped = SkipSummary()
 
     for (file in files) {
         val parser = override ?: parsers.firstOrNull { it.detect(file) }
@@ -37,10 +41,11 @@ fun parseImportFiles(
             unrecognizedFiles++
             continue
         }
-        val parsed = parser.parse(file, portfolioId)
-        transactions += parsed
-        perParser[parser.brokerName] = (perParser[parser.brokerName] ?: 0) + parsed.size
+        val result = parser.parse(file, portfolioId)
+        transactions += result.transactions
+        perParser[parser.brokerName] = (perParser[parser.brokerName] ?: 0) + result.transactions.size
+        skipped += result.skipped
     }
 
-    return ImportParseResult(transactions, perParser, unrecognizedFiles)
+    return ImportParseResult(transactions, perParser, unrecognizedFiles, skipped)
 }

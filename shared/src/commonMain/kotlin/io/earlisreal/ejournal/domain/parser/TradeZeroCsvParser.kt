@@ -23,12 +23,16 @@ class TradeZeroCsvParser : TransactionParser {
         return header.startsWith("Account,T/D,S/D,Currency,Type,Side,Symbol")
     }
 
-    override fun parse(content: ByteArray, portfolioId: Long): List<Transaction> {
+    override fun parse(content: ByteArray, portfolioId: Long): ParseResult {
         val externalIds = TradeZeroExternalIdFactory()
-        return content.decodeToString().lines().drop(1).mapNotNull { line ->
-            if (line.isBlank()) null
-            else runCatching { parseRow(parseCsvLine(line), portfolioId, externalIds) }.getOrNull()
+        val transactions = mutableListOf<Transaction>()
+        var unparsed = 0
+        for (line in content.decodeToString().lines().drop(1)) {
+            if (line.isBlank()) continue
+            val tx = runCatching { parseRow(parseCsvLine(line), portfolioId, externalIds) }.getOrNull()
+            if (tx != null) transactions += tx else unparsed++
         }
+        return ParseResult(transactions, SkipSummary(unparsed = unparsed))
     }
 
     private fun parseRow(c: List<String>, portfolioId: Long, externalIds: TradeZeroExternalIdFactory): Transaction {

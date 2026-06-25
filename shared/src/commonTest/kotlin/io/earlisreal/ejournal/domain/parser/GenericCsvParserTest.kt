@@ -18,7 +18,7 @@ class GenericCsvParserTest {
     @Test
     fun parsesBasicBuyRow() {
         val content = csv("2024-01-01T09:30,BDO,BUY,100.0,200.0,20.0")
-        val result = parser.parse(content, portfolioId)
+        val result = parser.parse(content, portfolioId).transactions
         assertEquals(1, result.size)
         assertEquals("BDO", result[0].symbol)
         assertEquals(Action.BUY, result[0].action)
@@ -35,7 +35,7 @@ class GenericCsvParserTest {
             "2024-01-01T09:30,BDO,BUY,100.0,200.0,20.0",
             "2024-01-10T09:30,BDO,SELL,120.0,200.0,25.0"
         )
-        val result = parser.parse(content, portfolioId)
+        val result = parser.parse(content, portfolioId).transactions
         assertEquals(2, result.size)
         assertEquals(Action.SELL, result[1].action)
     }
@@ -47,7 +47,7 @@ class GenericCsvParserTest {
             "",
             "2024-01-10T09:30,BDO,SELL,120.0,200.0,25.0"
         )
-        assertEquals(2, parser.parse(content, portfolioId).size)
+        assertEquals(2, parser.parse(content, portfolioId).transactions.size)
     }
 
     @Test
@@ -60,9 +60,10 @@ class GenericCsvParserTest {
             "2024-01-10T09:30,BDO,SELL,120.0,200.0,25.0",
         )
         val result = parser.parse(content, portfolioId)
-        assertEquals(2, result.size)
-        assertEquals(Action.BUY, result[0].action)
-        assertEquals(Action.SELL, result[1].action)
+        assertEquals(2, result.transactions.size)
+        assertEquals(3, result.skipped.unparsed)
+        assertEquals(Action.BUY, result.transactions[0].action)
+        assertEquals(Action.SELL, result.transactions[1].action)
     }
 
     @Test
@@ -73,6 +74,6 @@ class GenericCsvParserTest {
     @Test
     fun actionIsCaseInsensitive() {
         val content = csv("2024-01-01T09:30,BDO,buy,100.0,200.0,20.0")
-        assertEquals(Action.BUY, parser.parse(content, portfolioId)[0].action)
+        assertEquals(Action.BUY, parser.parse(content, portfolioId).transactions[0].action)
     }
 }

@@ -23,11 +23,19 @@ class MoomooCsvParser : TransactionParser {
         return header.contains("Filled@Avg Price")
     }
 
-    override fun parse(content: ByteArray, portfolioId: Long): List<Transaction> =
-        content.decodeToString().lines().drop(1).mapNotNull { line ->
-            if (line.isBlank()) null
-            else runCatching { parseRow(parseCsvLine(line), portfolioId) }.getOrNull()
+    override fun parse(content: ByteArray, portfolioId: Long): ParseResult {
+        val transactions = mutableListOf<Transaction>()
+        var nonTrade = 0
+        for (line in content.decodeToString().lines().drop(1)) {
+            if (line.isBlank()) continue
+            val c = runCatching { parseCsvLine(line) }.getOrNull() ?: continue
+            // continuation row (blank Side): its fill is already in the order's average — skip, do not count.
+            if (c.getOrNull(SIDE)?.trim().isNullOrEmpty()) continue
+            val tx = runCatching { parseRow(c, portfolioId) }.getOrNull()
+            if (tx != null) transactions += tx else nonTrade++ // cancelled/failed/unparseable order
         }
+        return ParseResult(transactions, SkipSummary(nonTrade = nonTrade))
+    }
 
     private fun parseRow(c: List<String>, portfolioId: Long): Transaction? {
         val side = c[SIDE].trim()

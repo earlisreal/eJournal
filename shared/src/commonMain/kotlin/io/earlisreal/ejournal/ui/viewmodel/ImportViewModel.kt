@@ -84,6 +84,8 @@ class ImportViewModel(
             .filter { it.value > 0 }
             .map { "${it.key}: ${it.value}" }
             .toMutableList()
+        if (result.skipped.nonTrade > 0) parts += "${result.skipped.nonTrade} non-trade skipped"
+        if (result.skipped.options > 0) parts += "${result.skipped.options} options skipped"
         if (result.unrecognizedFiles > 0) parts += "${result.unrecognizedFiles} file(s) not recognized"
         if (parts.isEmpty()) return "No transactions found in the selected file(s)."
         return parts.joinToString(" · ")

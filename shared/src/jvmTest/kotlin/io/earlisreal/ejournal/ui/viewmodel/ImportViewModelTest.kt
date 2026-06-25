@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.parser.ParseResult
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeTransactionRepository
@@ -31,7 +32,7 @@ class ImportViewModelTest {
         override val brokerName = "fixed"
         override val supportedExtensions = listOf("csv")
         override fun detect(content: ByteArray) = true
-        override fun parse(content: ByteArray, portfolioId: Long) = transactions
+        override fun parse(content: ByteArray, portfolioId: Long) = ParseResult(transactions)
     }
 
     @Test

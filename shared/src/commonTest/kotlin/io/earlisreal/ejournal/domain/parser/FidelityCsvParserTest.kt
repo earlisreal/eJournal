@@ -82,4 +82,14 @@ class FidelityCsvParserTest {
         val tx = parser.parse(csv(buy), portfolioId).transactions.single()
         assertEquals("fidelity:FXNAX:2025-07-07T00:00:00:BUY:8301.158#0", tx.externalId)
     }
+
+    @Test
+    fun sumsCommissionAndFeesIntoSingleFee() {
+        // A kept trade with BOTH Commission ($) and Fees ($) non-zero — guards the fee-sum that feeds FIFO.
+        val feeBuy = "06/02/2025,\"YOU BOUGHT APPLE INC (AAPL) (Cash)\",AAPL,\"APPLE INC\",Cash,10,150.00,4.95,0.03,,-1504.98,100.00,06/03/2025"
+        val tx = parser.parse(csv(feeBuy), portfolioId).transactions.single()
+        assertEquals(4.98, tx.fees, absoluteTolerance = 1e-9) // 4.95 + 0.03
+        assertEquals(10.0, tx.shares)
+        assertEquals(150.0, tx.price)
+    }
 }

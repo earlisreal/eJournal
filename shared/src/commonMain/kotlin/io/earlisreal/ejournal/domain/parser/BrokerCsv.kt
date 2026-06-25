@@ -68,3 +68,31 @@ private fun normalizeTime(t: String): String? {
     if (hh !in 0..23 || mi !in 0..59 || ss !in 0..59) return null
     return "${hh.toString().padStart(2, '0')}:${mi.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}"
 }
+
+/** A located header row plus the data lines that follow it. */
+data class HeaderLocation(
+    val columns: List<String>,
+    /** normalized (trimmed, lowercased) column name -> index */
+    val index: Map<String, Int>,
+    /** raw lines after the header (blank lines NOT removed — callers skip them) */
+    val dataLines: List<String>,
+)
+
+/**
+ * Decodes [content] (stripping a UTF-8 BOM and tolerating CRLF), finds the first non-blank line for which
+ * [isHeader] is true, and returns its parsed columns + a name->index map + the lines after it. Used by both
+ * `detect()` (non-null result == recognized) and `parse()`. Returns null if no header matches.
+ */
+internal fun locateHeader(content: ByteArray, isHeader: (String) -> Boolean): HeaderLocation? {
+    val text = content.decodeToString().removePrefix("﻿")
+    val lines = text.split("\n").map { it.removeSuffix("\r") }
+    val headerIdx = lines.indexOfFirst { it.isNotBlank() && isHeader(it) }
+    if (headerIdx < 0) return null
+    val columns = parseCsvLine(lines[headerIdx]).map { it.trim() }
+    val index = columns.withIndex().associate { (i, name) -> name.trim().lowercase() to i }
+    return HeaderLocation(columns, index, lines.drop(headerIdx + 1))
+}
+
+/** Reads this row's cell for column [name] (case-insensitive), trimmed; null if the column or cell is absent. */
+internal fun List<String>.field(index: Map<String, Int>, name: String): String? =
+    index[name.trim().lowercase()]?.let { getOrNull(it)?.trim() }

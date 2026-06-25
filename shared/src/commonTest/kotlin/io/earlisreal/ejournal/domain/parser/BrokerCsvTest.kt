@@ -64,3 +64,46 @@ class BrokerCsvValueTest {
         assertEquals(LocalDateTime.parse("2026-06-24T13:05:00"), parseUsDateTime("6/24/2026 13:05 EDT"))
     }
 }
+
+class BrokerCsvStructureTest {
+
+    @Test
+    fun locateHeaderSkipsBomAndPreambleAndReturnsDataLines() {
+        val content = (
+            "﻿\"Transactions  for account ...000 as of 09/27/2022 02:03:53 AM ET\"\n" +
+                "\"Date\",\"Action\",\"Symbol\",\"Description\",\"Quantity\",\"Price\",\"Fees & Comm\",\"Amount\"\n" +
+                "\"05/06/2025\",\"Sell\",\"BNDX\",\"x\",\"8\",\"\$247.37\",\"\$0.06\",\"\$1978.90\""
+            ).encodeToByteArray()
+        val loc = locateHeader(content) { it.contains("Fees & Comm") }!!
+        assertEquals("Date", loc.columns[0])
+        assertEquals(8, loc.columns.size)
+        assertEquals(1, loc.dataLines.size)
+        assertEquals(0, loc.index["date"])
+        assertEquals(6, loc.index["fees & comm"])
+    }
+
+    @Test
+    fun locateHeaderReturnsNullWhenNoMatch() {
+        val content = "foo,bar,baz\n1,2,3".encodeToByteArray()
+        assertNull(locateHeader(content) { it.contains("Fees & Comm") })
+    }
+
+    @Test
+    fun fieldReadsCellByNameCaseInsensitively() {
+        val loc = locateHeader(
+            "Date,Action,Symbol\n05/06/2025,Sell,BNDX".encodeToByteArray(),
+        ) { it.startsWith("Date,Action") }!!
+        val cells = parseCsvLine(loc.dataLines[0])
+        assertEquals("Sell", cells.field(loc.index, "Action"))
+        assertEquals("BNDX", cells.field(loc.index, "symbol"))
+        assertNull(cells.field(loc.index, "Missing"))
+    }
+
+    @Test
+    fun naturalKeyIsDeterministicAndDisambiguatesSameKeyRows() {
+        val keys = NaturalKeyFactory("schwab")
+        val dt = LocalDateTime.parse("2025-05-06T00:00:00")
+        assertEquals("schwab:BNDX:2025-05-06T00:00:00:SELL:8.0#0", keys.create("BNDX", dt, io.earlisreal.ejournal.domain.model.Action.SELL, 8.0))
+        assertEquals("schwab:BNDX:2025-05-06T00:00:00:SELL:8.0#1", keys.create("BNDX", dt, io.earlisreal.ejournal.domain.model.Action.SELL, 8.0))
+    }
+}

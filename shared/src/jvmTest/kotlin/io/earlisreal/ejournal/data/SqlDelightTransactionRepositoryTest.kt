@@ -57,7 +57,7 @@ class SqlDelightTransactionRepositoryTest {
         price: Double = 100.0,
         shares: Double = 100.0,
         fees: Double = 20.0,
-        externalId: String? = null
+        externalId: String? = null,
     ) = Transaction(
         id = 0L,
         portfolioId = portfolioId,

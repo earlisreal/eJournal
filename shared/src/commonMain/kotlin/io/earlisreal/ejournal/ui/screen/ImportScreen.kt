@@ -74,7 +74,7 @@ fun ImportScreen(
         // new file replaces the current preview without first clearing it.
         val dropTarget = rememberCsvDropTarget(
             onDragHoverChange = { isDragHovered = it },
-            onFilesDropped = { files -> vm.parseFiles(files, portfolio.id) },
+            onFilesDropped = { files -> vm.parseFiles(files, portfolio.id, portfolio.market) },
         )
         val portfolioLabel = "Into: ${portfolio.name} · ${portfolio.market.label}"
 
@@ -155,7 +155,7 @@ fun ImportScreen(
                 DropZone(
                     isDragHovered = isDragHovered,
                     dropTarget = dropTarget,
-                    onFilesPicked = { files -> vm.parseFiles(files, portfolio.id) },
+                    onFilesPicked = { files -> vm.parseFiles(files, portfolio.id, portfolio.market) },
                 )
 
                 (state.status as? ImportStatus.Error)?.let { ErrorBanner(it.message) }

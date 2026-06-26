@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.parser
 
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Market
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -115,6 +116,19 @@ class EtoroXlsxParserTest {
     fun parseReturnsEmptyForNonXlsxBytes() {
         val result = parser.parse("not a zip".encodeToByteArray(), portfolioId)
         assertEquals(0, result.transactions.size)
+    }
+
+    @Test
+    fun marketAwareParseKeepsOnlyTheTargetMarket() {
+        val bytes = etoroBytes(
+            listOf(
+                listOf("25/03/2021 16:41:08", "Open Position", "AAPL/USD", "1000.00", "5", "", "", "", "1", "Stocks", "0"),
+                listOf("18/05/2021 10:00:00", "Open Position", "BTC/USD", "500.00", "2", "", "", "", "2", "Crypto", "0"),
+            )
+        )
+        val crypto = parser.parse(bytes, portfolioId, Market.CRYPTO)
+        assertEquals(listOf("BTC"), crypto.transactions.map { it.symbol })
+        assertEquals(1, crypto.skipped.offMarket)
     }
 
     // --- minimal OOXML workbook builder -------------------------------------------------------------

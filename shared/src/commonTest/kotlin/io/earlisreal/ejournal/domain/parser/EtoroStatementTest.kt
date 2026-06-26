@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.parser
 
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,8 +23,14 @@ class EtoroStatementTest {
         "Realized Equity Change", "Realized Equity", "Balance", "Position ID", "Asset type", "NWA",
     )
 
-    private fun row(date: String, type: String, details: String, amount: String, units: String) =
-        listOf(date, type, details, amount, units, "0", "0", "0", "123", "Stocks", "0")
+    private fun row(
+        date: String,
+        type: String,
+        details: String,
+        amount: String,
+        units: String,
+        assetType: String = "Stocks",
+    ) = listOf(date, type, details, amount, units, "0", "0", "0", "123", assetType, "0")
 
     // --- date parsing: eToro AUS uses DD/MM/YYYY ---
 
@@ -143,6 +150,68 @@ class EtoroStatementTest {
         assertEquals(3, txns.size)
         assertEquals(listOf(Action.BUY, Action.SELL, Action.SELL), txns.map { it.action })
         assertEquals(listOf(10.0, 5.0, 5.0), txns.map { it.shares })
+    }
+
+    // --- asset-class filtering: rows are kept only when their class matches the target portfolio's market ---
+
+    @Test
+    fun cryptoRowKeptForCryptoPortfolio() {
+        val rows = listOf(header, row("18/05/2021 10:00:00", "Open Position", "BTC/USD", "500", "2", assetType = "Crypto"))
+        val result = parseEtoroActivity(rows, portfolioId, Market.CRYPTO)
+        assertEquals("BTC", result.transactions.single().symbol)
+        assertEquals(0, result.skipped.offMarket)
+    }
+
+    @Test
+    fun cfdRowTreatedAsCryptoAndKeptForCryptoPortfolio() {
+        // This AUS export labels crypto positions "CFD".
+        val rows = listOf(header, row("18/05/2021 10:00:00", "Open Position", "ZEC/USD", "500", "2", assetType = "CFD"))
+        assertEquals("ZEC", parseEtoroActivity(rows, portfolioId, Market.CRYPTO).transactions.single().symbol)
+    }
+
+    @Test
+    fun cryptoRowSkippedAsOffMarketForStocksPortfolio() {
+        val rows = listOf(header, row("18/05/2021 10:00:00", "Open Position", "BTC/USD", "500", "2", assetType = "Crypto"))
+        val result = parseEtoroActivity(rows, portfolioId, Market.US_STOCKS)
+        assertTrue(result.transactions.isEmpty())
+        assertEquals(1, result.skipped.offMarket)
+    }
+
+    @Test
+    fun stockRowKeptForStocksPortfolio() {
+        val rows = listOf(header, row("05/04/2021 13:30:47", "Open Position", "LOW/USD", "2500", "10", assetType = "Stocks"))
+        assertEquals("LOW", parseEtoroActivity(rows, portfolioId, Market.US_STOCKS).transactions.single().symbol)
+    }
+
+    @Test
+    fun stockRowSkippedAsOffMarketForCryptoPortfolio() {
+        val rows = listOf(header, row("05/04/2021 13:30:47", "Open Position", "LOW/USD", "2500", "10", assetType = "Stocks"))
+        val result = parseEtoroActivity(rows, portfolioId, Market.CRYPTO)
+        assertTrue(result.transactions.isEmpty())
+        assertEquals(1, result.skipped.offMarket)
+    }
+
+    @Test
+    fun blankAssetTypeTreatedAsStock() {
+        val rows = listOf(header, row("05/04/2021 13:30:47", "Open Position", "LOW/USD", "2500", "10", assetType = ""))
+        assertEquals("LOW", parseEtoroActivity(rows, portfolioId, Market.US_STOCKS).transactions.single().symbol)
+        assertEquals(1, parseEtoroActivity(rows, portfolioId, Market.CRYPTO).skipped.offMarket)
+    }
+
+    @Test
+    fun splitsMixedStatementByTargetMarket() {
+        val rows = listOf(
+            header,
+            row("05/04/2021 13:30:47", "Open Position", "LOW/USD", "2500", "10", assetType = "Stocks"),
+            row("18/05/2021 10:00:00", "Open Position", "BTC/USD", "500", "2", assetType = "Crypto"),
+        )
+        val stocks = parseEtoroActivity(rows, portfolioId, Market.US_STOCKS)
+        assertEquals(listOf("LOW"), stocks.transactions.map { it.symbol })
+        assertEquals(1, stocks.skipped.offMarket)
+
+        val crypto = parseEtoroActivity(rows, portfolioId, Market.CRYPTO)
+        assertEquals(listOf("BTC"), crypto.transactions.map { it.symbol })
+        assertEquals(1, crypto.skipped.offMarket)
     }
 
     // --- malformed trade rows are counted as unparsed, not silently dropped ---

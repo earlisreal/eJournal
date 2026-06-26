@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.parser
 
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import kotlinx.datetime.LocalDateTime
 
@@ -60,11 +61,30 @@ private fun Int.pad(width: Int) = toString().padStart(width, '0')
 private fun etoroSymbol(details: String): String = details.substringBeforeLast("/").trim()
 
 /**
- * Maps the rows of an "Account Activity" sheet (header row included, anywhere in [rows]) to BUY/SELL
- * [Transaction]s. Rows recognized but not emitted are tallied in [ParseResult.skipped]: non-trade ledger
- * entries as `nonTrade`, and trade rows whose figures don't parse as `unparsed`.
+ * Whether a row's "Asset type" cell denotes crypto. eToro labels crypto positions `CFD` in this AUS
+ * export (real equities are `Stocks`); other regions use a literal `Crypto`, so we accept both. NB:
+ * `CFD` literally means contract-for-difference, which in general eToro can also be a leveraged stock /
+ * index / commodity / forex position — but this account only ever trades crypto as CFD, so the mapping
+ * holds. Refine with a known-crypto-symbol check when crypto market data lands.
  */
-internal fun parseEtoroActivity(rows: List<List<String>>, portfolioId: Long): ParseResult {
+internal fun etoroRowIsCrypto(raw: String?): Boolean {
+    val v = raw?.trim()?.lowercase().orEmpty()
+    return v == "cfd" || "crypto" in v
+}
+
+/**
+ * Maps the rows of an "Account Activity" sheet (header row included, anywhere in [rows]) to BUY/SELL
+ * [Transaction]s, keeping only trades whose asset class matches [market] — eToro statements mix stocks
+ * and crypto, but portfolios are single-asset, so crypto trades belong to a crypto portfolio and stock
+ * trades to a stocks portfolio. Rows recognized but not emitted are tallied in [ParseResult.skipped]:
+ * non-trade ledger entries as `nonTrade`, trades for the other asset class as `offMarket`, and trade
+ * rows whose figures don't parse as `unparsed`.
+ */
+internal fun parseEtoroActivity(
+    rows: List<List<String>>,
+    portfolioId: Long,
+    market: Market = Market.US_STOCKS,
+): ParseResult {
     val headerIdx = rows.indexOfFirst { r ->
         val norm = r.map { it.trim().lowercase() }
         "type" in norm && "details" in norm && norm.any { it.startsWith("units") }
@@ -74,9 +94,11 @@ internal fun parseEtoroActivity(rows: List<List<String>>, portfolioId: Long): Pa
     val columns = rows[headerIdx].map { it.trim() }
     val index = columns.withIndex().associate { (i, name) -> name.trim().lowercase() to i }
 
+    val wantCrypto = market == Market.CRYPTO
     val keys = NaturalKeyFactory("etoro")
     val txns = mutableListOf<Transaction>()
     var nonTrade = 0
+    var offMarket = 0
     var unparsed = 0
 
     for (row in rows.drop(headerIdx + 1)) {
@@ -86,6 +108,8 @@ internal fun parseEtoroActivity(rows: List<List<String>>, portfolioId: Long): Pa
             "position closed" -> Action.SELL
             else -> { nonTrade++; continue }
         }
+        // Single-asset portfolios: keep only rows matching the target market; tally the rest as offMarket.
+        if (etoroRowIsCrypto(row.field(index, "Asset type")) != wantCrypto) { offMarket++; continue }
         val symbol = etoroSymbol(row.field(index, "Details").orEmpty())
         val amount = cleanMoney(row.field(index, "Amount"))
         val units = cleanMoney(row.field(index, "Units / Contracts"))
@@ -106,5 +130,5 @@ internal fun parseEtoroActivity(rows: List<List<String>>, portfolioId: Long): Pa
             externalId = keys.create(symbol, datetime, action, units),
         )
     }
-    return ParseResult(txns, SkipSummary(nonTrade = nonTrade, unparsed = unparsed))
+    return ParseResult(txns, SkipSummary(nonTrade = nonTrade, unparsed = unparsed, offMarket = offMarket))
 }

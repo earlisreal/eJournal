@@ -13,12 +13,14 @@ data class SkipSummary(
     val nonTrade: Int = 0,   // dividends, interest, transfers, fees, splits, cancelled orders, footer/total rows
     val options: Int = 0,    // option legs (cannot be modeled as BUY/SELL)
     val unparsed: Int = 0,   // rows that looked like data but failed to parse
+    val offMarket: Int = 0,  // trades whose asset class doesn't match the target portfolio's market (e.g. crypto in a stocks portfolio)
 ) {
     operator fun plus(other: SkipSummary) = SkipSummary(
         nonTrade = nonTrade + other.nonTrade,
         options = options + other.options,
         unparsed = unparsed + other.unparsed,
+        offMarket = offMarket + other.offMarket,
     )
 
-    val total: Int get() = nonTrade + options + unparsed
+    val total: Int get() = nonTrade + options + unparsed + offMarket
 }

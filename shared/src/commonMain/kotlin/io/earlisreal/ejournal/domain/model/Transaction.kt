@@ -17,5 +17,5 @@ data class Transaction(
      * source collapses to one row; moomoo uses "moomoo:...". Null for sources with no stable key
      * (manual entry) — those are never deduped.
      */
-    val externalId: String? = null
+    val externalId: String? = null,
 )

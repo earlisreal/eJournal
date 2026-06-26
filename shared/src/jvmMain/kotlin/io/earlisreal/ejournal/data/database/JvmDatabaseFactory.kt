@@ -40,8 +40,8 @@ object JvmDatabaseFactory {
         return AppDatabase(
             driver = driver,
             TradeTransactionAdapter = TradeTransaction.Adapter(
-                datetimeAdapter = DateTimeAdapter,
-                actionAdapter   = ActionAdapter
+                datetimeAdapter  = DateTimeAdapter,
+                actionAdapter    = ActionAdapter
             ),
             PortfolioAdapter = Portfolio.Adapter(marketAdapter = MarketAdapter),
             OhlcvBarAdapter = OhlcvBar.Adapter(

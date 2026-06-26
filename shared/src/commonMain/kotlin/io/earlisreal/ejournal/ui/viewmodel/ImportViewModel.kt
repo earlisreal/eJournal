@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSettings
@@ -67,18 +68,18 @@ class ImportViewModel(
         )
     }
 
-    fun parseFiles(files: List<ByteArray>, portfolioId: Long) {
+    fun parseFiles(files: List<ByteArray>, portfolioId: Long, market: Market) {
         viewModelScope.launch(Dispatchers.Default) {
-            val result = parseImportFiles(files, parsers, _state.value.selectedParser, portfolioId)
+            val result = parseImportFiles(files, parsers, _state.value.selectedParser, portfolioId, market)
             _state.value = _state.value.copy(
                 parsedTransactions = result.transactions,
-                detectionSummary = buildSummary(result, files.size),
+                detectionSummary = buildSummary(result, files.size, market),
                 status = ImportStatus.Idle,
             )
         }
     }
 
-    private fun buildSummary(result: ImportParseResult, fileCount: Int): String? {
+    private fun buildSummary(result: ImportParseResult, fileCount: Int, market: Market): String? {
         if (fileCount == 0) return null
         val parts = result.perParser.entries
             .filter { it.value > 0 }
@@ -86,6 +87,12 @@ class ImportViewModel(
             .toMutableList()
         if (result.skipped.nonTrade > 0) parts += "${result.skipped.nonTrade} non-trade skipped"
         if (result.skipped.options > 0) parts += "${result.skipped.options} options skipped"
+        if (result.skipped.offMarket > 0) {
+            // eToro mixes asset classes; rows for the other class can't go in this single-asset portfolio.
+            val (kind, target) = if (market == Market.CRYPTO) "stock" to "a stocks portfolio"
+                                 else "crypto" to "a Crypto portfolio"
+            parts += "${result.skipped.offMarket} $kind rows skipped — import them into $target"
+        }
         if (result.unrecognizedFiles > 0) parts += "${result.unrecognizedFiles} file(s) not recognized"
         if (parts.isEmpty()) return "No transactions found in the selected file(s)."
         return parts.joinToString(" · ")

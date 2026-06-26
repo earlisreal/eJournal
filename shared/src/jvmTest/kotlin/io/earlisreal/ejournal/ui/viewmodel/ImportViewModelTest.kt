@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.ParseResult
 import io.earlisreal.ejournal.domain.parser.TransactionParser
@@ -45,7 +46,7 @@ class ImportViewModelTest {
         )
         val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
 
-        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
+        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L, market = Market.US_STOCKS)
         vm.state.first { it.parsedTransactions.size == 3 }
 
         vm.import(portfolioId = 1L, onSuccess = {})
@@ -62,7 +63,7 @@ class ImportViewModelTest {
         val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
 
         // File parsed while portfolio 1 was selected...
-        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
+        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L, market = Market.US_STOCKS)
         vm.state.first { it.parsedTransactions.size == 2 }
 
         // ...but imported after switching the selected portfolio to 2.
@@ -82,7 +83,7 @@ class ImportViewModelTest {
         val parser = fixedParser(listOf(tx(externalId = "a"), tx(externalId = "b")))
         val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
 
-        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
+        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L, market = Market.US_STOCKS)
         vm.state.first { it.parsedTransactions.size == 2 && it.detectionSummary != null }
 
         vm.clearParsed()

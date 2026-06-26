@@ -1,6 +1,8 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.parser.MarketAwareParser
 import io.earlisreal.ejournal.domain.parser.SkipSummary
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 
@@ -22,13 +24,16 @@ data class ImportParseResult(
 /**
  * Routes each file to a parser and parses it. When [override] is non-null every file is parsed with
  * that parser (manual selection); otherwise each file goes to the first parser whose `detect()`
- * recognizes it, and files nothing recognizes are counted as unrecognized.
+ * recognizes it, and files nothing recognizes are counted as unrecognized. [market] is the target
+ * portfolio's market: a [MarketAwareParser] (eToro) keeps only the matching asset class; every other
+ * parser is single-asset and ignores it.
  */
 fun parseImportFiles(
     files: List<ByteArray>,
     parsers: List<TransactionParser>,
     override: TransactionParser?,
     portfolioId: Long,
+    market: Market,
 ): ImportParseResult {
     val transactions = mutableListOf<Transaction>()
     val perParser = mutableMapOf<String, Int>()
@@ -41,7 +46,10 @@ fun parseImportFiles(
             unrecognizedFiles++
             continue
         }
-        val result = parser.parse(file, portfolioId)
+        val result = when (parser) {
+            is MarketAwareParser -> parser.parse(file, portfolioId, market)
+            else -> parser.parse(file, portfolioId)
+        }
         transactions += result.transactions
         perParser[parser.brokerName] = (perParser[parser.brokerName] ?: 0) + result.transactions.size
         skipped += result.skipped

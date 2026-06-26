@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.parser.GenericCsvParser
 import io.earlisreal.ejournal.domain.parser.MoomooCsvParser
 import io.earlisreal.ejournal.domain.parser.SchwabCsvParser
@@ -27,7 +28,7 @@ class ImportParsingTest {
 
     @Test
     fun autoRoutesEachFileToTheParserThatDetectsIt() {
-        val result = parseImportFiles(listOf(moomooFile, tzFile), parsers, override = null, portfolioId)
+        val result = parseImportFiles(listOf(moomooFile, tzFile), parsers, override = null, portfolioId, market = Market.US_STOCKS)
         assertEquals(2, result.transactions.size)
         assertEquals(1, result.perParser["moomoo"])
         assertEquals(1, result.perParser["TradeZero (CSV)"])
@@ -36,7 +37,7 @@ class ImportParsingTest {
 
     @Test
     fun autoMarksFilesNoParserDetectsAsUnrecognized() {
-        val result = parseImportFiles(listOf(unknownFile), parsers, override = null, portfolioId)
+        val result = parseImportFiles(listOf(unknownFile), parsers, override = null, portfolioId, market = Market.US_STOCKS)
         assertTrue(result.transactions.isEmpty())
         assertEquals(1, result.unrecognizedFiles)
     }
@@ -45,7 +46,7 @@ class ImportParsingTest {
     fun overrideForcesChosenParserAndIgnoresDetection() {
         // A moomoo file but the user forced the TradeZero parser: it produces nothing and is NOT
         // re-routed to the moomoo parser — proving the override path is taken over auto-detect.
-        val result = parseImportFiles(listOf(moomooFile), parsers, override = TradeZeroCsvParser(), portfolioId)
+        val result = parseImportFiles(listOf(moomooFile), parsers, override = TradeZeroCsvParser(), portfolioId, market = Market.US_STOCKS)
         assertTrue(result.transactions.isEmpty())
         assertEquals(0, result.unrecognizedFiles)
         assertEquals(setOf("TradeZero (CSV)"), result.perParser.keys)
@@ -53,7 +54,7 @@ class ImportParsingTest {
 
     @Test
     fun overrideParsesWhenFileMatchesChosenParser() {
-        val result = parseImportFiles(listOf(tzFile), parsers, override = TradeZeroCsvParser(), portfolioId)
+        val result = parseImportFiles(listOf(tzFile), parsers, override = TradeZeroCsvParser(), portfolioId, market = Market.US_STOCKS)
         assertEquals(1, result.transactions.size)
     }
 
@@ -66,7 +67,7 @@ class ImportParsingTest {
                 "\"02/09/2021\",\"Buy\",\"BNDX\",\"x\",\"81\",\"\$57.99\",\"\",\"-\$4697.99\"\n" +
                 "\"03/04/2021\",\"Cash Dividend\",\"BNDX\",\"x\",\"\",\"\",\"\",\"\$3.65\""
             ).encodeToByteArray()
-        val result = parseImportFiles(listOf(schwabFile), listOf(schwab), override = null, portfolioId)
+        val result = parseImportFiles(listOf(schwabFile), listOf(schwab), override = null, portfolioId, market = Market.US_STOCKS)
         assertEquals(1, result.transactions.size)
         assertEquals(1, result.skipped.nonTrade)
     }

@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.marketdata.VwapPoint
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.ui.platform.JavaFxToolkit
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisState
 import javafx.application.Platform
 import javafx.concurrent.Worker
@@ -34,7 +35,10 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
     private var loaded = false
 
     init {
-        toolkitStarted = true
+        // Register the toolkit start with the shared owner so app shutdown tears it down even if
+        // the file picker (not the chart) was what first started it. JFXPanel() above has already
+        // brought the toolkit up; ensureStarted() just records that and is otherwise a no-op.
+        JavaFxToolkit.ensureStarted()
         // Keep the JavaFX toolkit alive across chart-panel disposal (navigating away from the
         // Analysis screen). With the default implicit-exit, removing the last JFXPanel terminates
         // the QuantumRenderer; async WebKit image cleanup (RTImage.dispose) then submits to the dead
@@ -222,8 +226,6 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         private const val VIEW_LEAD_DAYS = 90
         private const val VIEW_TAIL_DAYS = 60
 
-        @Volatile private var toolkitStarted = false
-
         init {
             // Our JavaFX (org.openjfx) jars load from the classpath (the unnamed module), so JavaFX
             // logs a benign one-shot JUL WARNING when the toolkit starts: "Unsupported JavaFX
@@ -241,11 +243,10 @@ class JavaFxChartBridge private constructor(private val pageUrl: String) {
         /**
          * Tear down the JavaFX toolkit on app shutdown. Required because setImplicitExit(false)
          * keeps the non-daemon FX thread alive, which would otherwise block JVM exit. No-op if the
-         * chart was never opened (toolkit never started).
+         * toolkit was never started (no chart opened and no file picked). Delegates to the shared
+         * [JavaFxToolkit] owner so it also covers the file picker starting the toolkit.
          */
-        fun shutdown() {
-            if (toolkitStarted) runCatching { Platform.exit() }
-        }
+        fun shutdown() = JavaFxToolkit.shutdown()
 
         fun forUrl(url: String) = JavaFxChartBridge(url)
 

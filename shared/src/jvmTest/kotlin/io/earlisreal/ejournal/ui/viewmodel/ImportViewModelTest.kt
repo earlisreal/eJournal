@@ -17,6 +17,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImportViewModelTest {
@@ -47,10 +48,47 @@ class ImportViewModelTest {
         vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
         vm.state.first { it.parsedTransactions.size == 3 }
 
-        vm.import(onSuccess = {})
+        vm.import(portfolioId = 1L, onSuccess = {})
         val success = vm.state.first { it.status is ImportStatus.Success }.status as ImportStatus.Success
 
         assertEquals(2, success.count) // 3 parsed, 1 was a duplicate skip
         assertEquals(2, repo.inserted.size)
+    }
+
+    @Test
+    fun importTargetsThePortfolioPassedAtImportTimeNotParseTime() = runTest {
+        val repo = FakeTransactionRepository()
+        val parser = fixedParser(listOf(tx(externalId = "a"), tx(externalId = "b")))
+        val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
+
+        // File parsed while portfolio 1 was selected...
+        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
+        vm.state.first { it.parsedTransactions.size == 2 }
+
+        // ...but imported after switching the selected portfolio to 2.
+        vm.import(portfolioId = 2L, onSuccess = {})
+        vm.state.first { it.status is ImportStatus.Success }
+
+        assertEquals(2, repo.inserted.size)
+        assertTrue(
+            repo.inserted.all { it.portfolioId == 2L },
+            "imported rows should target the import-time portfolio (2), not the parse-time one (1)",
+        )
+    }
+
+    @Test
+    fun clearParsedResetsPreviewState() = runTest {
+        val repo = FakeTransactionRepository()
+        val parser = fixedParser(listOf(tx(externalId = "a"), tx(externalId = "b")))
+        val vm = ImportViewModel(repo, listOf(parser), FakePortfolioSettingsRepository())
+
+        vm.parseFiles(listOf(ByteArray(1)), portfolioId = 1L)
+        vm.state.first { it.parsedTransactions.size == 2 && it.detectionSummary != null }
+
+        vm.clearParsed()
+
+        val state = vm.state.first { it.parsedTransactions.isEmpty() }
+        assertEquals(null, state.detectionSummary)
+        assertEquals(ImportStatus.Idle, state.status)
     }
 }

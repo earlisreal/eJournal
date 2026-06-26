@@ -91,8 +91,11 @@ class ImportViewModel(
         return parts.joinToString(" · ")
     }
 
-    fun import(onSuccess: () -> Unit) {
-        val transactions = _state.value.parsedTransactions
+    fun import(portfolioId: Long, onSuccess: () -> Unit) {
+        // Re-stamp to the portfolio selected *now* (the one the "Into:" pill shows). The parse-time
+        // portfolioId is only a placeholder, so switching portfolios after parsing still imports into
+        // the live selection. portfolioId never affects externalId, so dedup is unchanged.
+        val transactions = _state.value.parsedTransactions.map { it.copy(portfolioId = portfolioId) }
         if (transactions.isEmpty()) return
         _state.value = _state.value.copy(status = ImportStatus.Importing)
         viewModelScope.launch {
@@ -116,5 +119,14 @@ class ImportViewModel(
 
     fun clearStatus() {
         _state.value = _state.value.copy(status = ImportStatus.Idle)
+    }
+
+    /** Discards the current parse preview, returning the Import screen to its drop-zone state. */
+    fun clearParsed() {
+        _state.value = _state.value.copy(
+            parsedTransactions = emptyList(),
+            detectionSummary = null,
+            status = ImportStatus.Idle,
+        )
     }
 }

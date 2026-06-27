@@ -45,6 +45,7 @@ object JvmDatabaseFactory {
             ),
             PortfolioAdapter = Portfolio.Adapter(marketAdapter = MarketAdapter),
             OhlcvBarAdapter = OhlcvBar.Adapter(
+                marketAdapter    = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
                 timeframeAdapter = TimeframeAdapter,
             ),

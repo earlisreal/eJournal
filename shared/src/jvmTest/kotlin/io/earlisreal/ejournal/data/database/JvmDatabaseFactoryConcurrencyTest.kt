@@ -5,6 +5,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.SqlDelightMarketDataRepository
 import io.earlisreal.ejournal.domain.marketdata.Bar
 import io.earlisreal.ejournal.domain.marketdata.Timeframe
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -76,12 +77,12 @@ class JvmDatabaseFactoryConcurrencyTest {
         // Hammer the write path from many real threads at once — the production sync shape.
         runBlocking {
             symbols.map { symbol ->
-                async(Dispatchers.IO) { repo.upsertBars(barsFor(symbol)) }
+                async(Dispatchers.IO) { repo.upsertBars(Market.US_STOCKS, barsFor(symbol)) }
             }.awaitAll()
 
             for (symbol in symbols) {
                 val stored = repo.getBars(
-                    symbol, Timeframe.ONE_MINUTE,
+                    symbol, Timeframe.ONE_MINUTE, Market.US_STOCKS,
                     from = LocalDateTime.parse("2020-01-01T00:00"),
                     to = LocalDateTime.parse("2020-01-01T23:59"),
                 )

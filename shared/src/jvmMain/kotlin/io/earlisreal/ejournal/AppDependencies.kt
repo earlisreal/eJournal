@@ -14,8 +14,10 @@ import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
+import io.earlisreal.ejournal.domain.marketdata.AlpacaCryptoProvider
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
+import io.earlisreal.ejournal.domain.marketdata.YahooCryptoProvider
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
@@ -71,16 +73,20 @@ class AppDependencies {
         GenericCsvParser(),
     )
 
-    val closedPositionService = ClosedPositionService(transactionRepository)
+    val closedPositionService = ClosedPositionService(transactionRepository, portfolioRepository)
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
+    val cryptoProvider = AlpacaCryptoProvider(httpClient, credentialsRepository)
+    private val yahooProvider = YahooFinanceProvider(httpClient)
     val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)
     val marketDataService = MarketDataService(
         portfolioRepository = portfolioRepository,
         closedPositions = closedPositionService,
         marketDataRepository = marketDataRepository,
-        yahooProvider = YahooFinanceProvider(httpClient),
+        yahooProvider = yahooProvider,
+        yahooCryptoProvider = YahooCryptoProvider(yahooProvider),
         alpacaProvider = alpacaProvider,
+        cryptoProvider = cryptoProvider,
         credentialsRepository = credentialsRepository,
         scope = backgroundScope,
     )

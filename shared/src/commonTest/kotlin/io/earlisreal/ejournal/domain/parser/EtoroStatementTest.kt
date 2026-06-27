@@ -103,9 +103,11 @@ class EtoroStatementTest {
     }
 
     @Test
-    fun keepsExchangeSuffixInSymbol() {
+    fun stripsUsExchangeSuffix() {
+        // eToro tags some US tickers with a `.US` exchange suffix (e.g. "SNX.US", "IP.US"). Yahoo and
+        // Alpaca only know the bare ticker, so strip it or market-data sync 404s the symbol.
         val rows = listOf(header, row("05/04/2021 13:30:47", "Open Position", "SNX.US/USD", "2500", "20"))
-        assertEquals("SNX.US", parseEtoroActivity(rows, portfolioId).transactions.single().symbol)
+        assertEquals("SNX", parseEtoroActivity(rows, portfolioId).transactions.single().symbol)
     }
 
     // --- non-trade rows are skipped and tallied, never emitted ---

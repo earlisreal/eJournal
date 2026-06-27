@@ -8,6 +8,7 @@ import io.earlisreal.ejournal.data.database.MarketAdapter
 import io.earlisreal.ejournal.data.database.TimeframeAdapter
 import io.earlisreal.ejournal.domain.marketdata.Bar
 import io.earlisreal.ejournal.domain.marketdata.Timeframe
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.BeforeTest
@@ -31,6 +32,7 @@ class SqlDelightMarketDataRepositoryTest {
             ),
             PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
+                marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
                 timeframeAdapter = TimeframeAdapter,
             ),
@@ -55,6 +57,7 @@ class SqlDelightMarketDataRepositoryTest {
     @Test
     fun `upsert and query bars in range`() = runTest {
         repo.upsertBars(
+            Market.US_STOCKS,
             listOf(
                 bar(timestamp = "2026-06-01T00:00"),
                 bar(timestamp = "2026-06-02T00:00"),
@@ -62,7 +65,7 @@ class SqlDelightMarketDataRepositoryTest {
             )
         )
         val bars = repo.getBars(
-            "AAPL", Timeframe.DAILY,
+            "AAPL", Timeframe.DAILY, Market.US_STOCKS,
             from = LocalDateTime.parse("2026-06-01T00:00"),
             to = LocalDateTime.parse("2026-06-02T23:59"),
         )
@@ -72,10 +75,10 @@ class SqlDelightMarketDataRepositoryTest {
 
     @Test
     fun `upserting the same bar twice keeps one row with latest values`() = runTest {
-        repo.upsertBars(listOf(bar(close = 100.0)))
-        repo.upsertBars(listOf(bar(close = 105.0)))
+        repo.upsertBars(Market.US_STOCKS, listOf(bar(close = 100.0)))
+        repo.upsertBars(Market.US_STOCKS, listOf(bar(close = 105.0)))
         val bars = repo.getBars(
-            "AAPL", Timeframe.DAILY,
+            "AAPL", Timeframe.DAILY, Market.US_STOCKS,
             from = LocalDateTime.parse("2026-01-01T00:00"),
             to = LocalDateTime.parse("2026-12-31T00:00"),
         )
@@ -86,6 +89,7 @@ class SqlDelightMarketDataRepositoryTest {
     @Test
     fun `coverage returns min and max timestamps per symbol and timeframe`() = runTest {
         repo.upsertBars(
+            Market.US_STOCKS,
             listOf(
                 bar(timestamp = "2026-06-02T00:00"),
                 bar(timestamp = "2026-06-05T00:00"),
@@ -93,30 +97,54 @@ class SqlDelightMarketDataRepositoryTest {
                 bar(timeframe = Timeframe.ONE_MINUTE, timestamp = "2026-06-10T09:30"),
             )
         )
-        val coverage = repo.getCoverage("AAPL", Timeframe.DAILY)!!
+        val coverage = repo.getCoverage("AAPL", Timeframe.DAILY, Market.US_STOCKS)!!
         assertEquals(LocalDateTime.parse("2026-06-02T00:00"), coverage.first)
         assertEquals(LocalDateTime.parse("2026-06-05T00:00"), coverage.last)
     }
 
     @Test
     fun `coverage is null when no bars stored`() = runTest {
-        assertNull(repo.getCoverage("AAPL", Timeframe.DAILY))
+        assertNull(repo.getCoverage("AAPL", Timeframe.DAILY, Market.US_STOCKS))
     }
 
     @Test
     fun `bars are isolated by timeframe`() = runTest {
         repo.upsertBars(
+            Market.US_STOCKS,
             listOf(
                 bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-01T00:00"),
                 bar(timeframe = Timeframe.ONE_MINUTE, timestamp = "2026-06-01T09:30"),
             )
         )
         val daily = repo.getBars(
-            "AAPL", Timeframe.DAILY,
+            "AAPL", Timeframe.DAILY, Market.US_STOCKS,
             from = LocalDateTime.parse("2026-06-01T00:00"),
             to = LocalDateTime.parse("2026-06-01T23:59"),
         )
         assertEquals(1, daily.size)
         assertEquals(Timeframe.DAILY, daily[0].timeframe)
+    }
+
+    @Test
+    fun `bars are isolated by market so the same symbol in two markets is two rows`() = runTest {
+        // A crypto "BTC" and a (hypothetical) stock "BTC" share symbol+timeframe+timestamp but must
+        // never collide — the market is part of the primary key.
+        repo.upsertBars(Market.CRYPTO, listOf(bar(symbol = "BTC", close = 60_000.0)))
+        repo.upsertBars(Market.US_STOCKS, listOf(bar(symbol = "BTC", close = 12.0)))
+
+        val crypto = repo.getBars(
+            "BTC", Timeframe.DAILY, Market.CRYPTO,
+            from = LocalDateTime.parse("2026-06-01T00:00"),
+            to = LocalDateTime.parse("2026-06-01T23:59"),
+        )
+        val stock = repo.getBars(
+            "BTC", Timeframe.DAILY, Market.US_STOCKS,
+            from = LocalDateTime.parse("2026-06-01T00:00"),
+            to = LocalDateTime.parse("2026-06-01T23:59"),
+        )
+        assertEquals(1, crypto.size)
+        assertEquals(60_000.0, crypto.single().close)
+        assertEquals(1, stock.size)
+        assertEquals(12.0, stock.single().close)
     }
 }

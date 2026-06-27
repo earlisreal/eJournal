@@ -104,7 +104,7 @@ class AnalysisViewModel(
                     ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> Timeframe.DAILY
                 }
                 val (from, to) = queryWindow(position, sourceTimeframe)
-                val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, from, to)
+                val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, position.market, from, to)
                 if (rawBars.isEmpty()) {
                     _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
                     return@launch
@@ -136,7 +136,7 @@ class AnalysisViewModel(
         if (classifyTradeType(position) == TradeType.DAY) ChartTimeframe.ONE_MIN else ChartTimeframe.DAILY
 
     private suspend fun check1MinAvailability(position: ClosedPosition): Boolean {
-        val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE) ?: return false
+        val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE, position.market) ?: return false
         val tradeDate = position.entryDatetime.date
         return tradeDate >= coverage.first.date && tradeDate <= coverage.last.date
     }

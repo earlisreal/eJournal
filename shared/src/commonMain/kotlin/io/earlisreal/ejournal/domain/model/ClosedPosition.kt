@@ -13,4 +13,8 @@ data class ClosedPosition(
     val profitLoss: Double,
     val transactions: List<Transaction> = emptyList(),
     val direction: TradeDirection = TradeDirection.LONG,
+    // The portfolio's market — stamped by ClosedPositionService so the market-data layer can
+    // namespace bars (a crypto "BTC" and a stock "BTC" are distinct instruments). Defaults to US
+    // stocks for the FifoMatcher/test/preview constructors that don't carry a portfolio.
+    val market: Market = Market.US_STOCKS,
 )

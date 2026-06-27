@@ -1,5 +1,6 @@
 CREATE TABLE OhlcvBar (
     symbol    TEXT NOT NULL,
+    market    TEXT AS io.earlisreal.ejournal.domain.model.Market NOT NULL,
     timeframe TEXT AS io.earlisreal.ejournal.domain.marketdata.Timeframe NOT NULL,
     timestamp TEXT AS kotlinx.datetime.LocalDateTime NOT NULL,
     open      REAL NOT NULL,
@@ -7,18 +8,18 @@ CREATE TABLE OhlcvBar (
     low       REAL NOT NULL,
     close     REAL NOT NULL,
     volume    INTEGER NOT NULL,
-    PRIMARY KEY (symbol, timeframe, timestamp)
+    PRIMARY KEY (symbol, market, timeframe, timestamp)
 );
 
 upsertBar:
-INSERT OR REPLACE INTO OhlcvBar (symbol, timeframe, timestamp, open, high, low, close, volume)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO OhlcvBar (symbol, market, timeframe, timestamp, open, high, low, close, volume)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectCoverage:
 SELECT MIN(timestamp) AS first, MAX(timestamp) AS last
-FROM OhlcvBar WHERE symbol = ? AND timeframe = ?;
+FROM OhlcvBar WHERE symbol = ? AND market = ? AND timeframe = ?;
 
 selectBarsInRange:
 SELECT * FROM OhlcvBar
-WHERE symbol = ? AND timeframe = ? AND timestamp >= ? AND timestamp <= ?
+WHERE symbol = ? AND market = ? AND timeframe = ? AND timestamp >= ? AND timestamp <= ?
 ORDER BY timestamp ASC;

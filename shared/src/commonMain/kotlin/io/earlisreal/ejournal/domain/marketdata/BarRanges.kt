@@ -4,15 +4,22 @@ import io.earlisreal.ejournal.data.repository.BarCoverage
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-/** An inclusive day range of bars needed for one symbol+timeframe. */
-data class BarRange(val symbol: String, val timeframe: Timeframe, val from: LocalDate, val to: LocalDate)
+/** An inclusive day range of bars needed for one symbol+timeframe in a given market. */
+data class BarRange(
+    val symbol: String,
+    val timeframe: Timeframe,
+    val from: LocalDate,
+    val to: LocalDate,
+    val market: Market = Market.US_STOCKS,
+)
 
-enum class BarSource { YAHOO, ALPACA, UNAVAILABLE }
+enum class BarSource { YAHOO, YAHOO_CRYPTO, ALPACA, ALPACA_CRYPTO, UNAVAILABLE }
 
 data class RoutedRange(val range: BarRange, val source: BarSource)
 
@@ -53,6 +60,7 @@ fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarR
             timeframe = Timeframe.DAILY,
             from = EARLIEST_DAILY,
             to = minOf(position.exitDatetime.date.plus(DatePeriod(days = DAILY_TAIL_DAYS)), today),
+            market = position.market,
         )
         when (classifyTradeType(position)) {
             TradeType.DAY -> listOf(
@@ -61,6 +69,7 @@ fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarR
                     timeframe = Timeframe.ONE_MINUTE,
                     from = previousTradingDay(position.entryDatetime.date),
                     to = minOf(nextTradingDay(position.exitDatetime.date), today),
+                    market = position.market,
                 ),
                 dailyRange,
             )
@@ -68,7 +77,7 @@ fun requiredRanges(positions: List<ClosedPosition>, today: LocalDate): List<BarR
         }
     }
     return raw
-        .groupBy { it.symbol to it.timeframe }
+        .groupBy { Triple(it.symbol, it.timeframe, it.market) }
         .flatMap { (_, ranges) -> mergeRanges(ranges) }
 }
 
@@ -113,16 +122,25 @@ fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
 }
 
 /**
- * Picks the provider per range: daily always Yahoo; 1-min always Alpaca regardless of the
- * trade's age (Yahoo has no extended-hours coverage, so 1-min always needs Alpaca keys).
+ * Picks the provider per range.
  *
- * NOTE: daily-is-Yahoo-only is load-bearing. YahooFinanceProvider normalizes daily bar
- * timestamps to the date so a calendar day maps to exactly one OhlcvBar row (deduped by the
+ * Symmetric by timeframe: DAILY → Yahoo, 1-min → Alpaca; the crypto variants differ only in symbol
+ * format. Crypto daily uses Yahoo because Alpaca's crypto history is shallow (~2021 onward, and many
+ * altcoins are absent entirely), so older crypto trades have no daily data there — Yahoo has deep
+ * crypto history and is keyless. Crypto 1-min still needs Alpaca (Yahoo has no deep intraday).
+ *
+ * NOTE: daily-is-Yahoo-only is load-bearing. Yahoo (and the YahooCrypto wrapper around it) normalize
+ * daily bar timestamps to the date so a calendar day maps to exactly one OhlcvBar row (deduped by the
  * primary key across re-syncs). If you ever route DAILY to Alpaca, its 1Day bars need the same
- * date-normalization — otherwise the same day stored under two intraday timestamps becomes two
- * rows again (see the duplicate-daily-bar bug this guards against).
+ * date-normalization — otherwise the same day stored under two intraday timestamps becomes two rows
+ * again (see the duplicate-daily-bar bug this guards against).
  */
 fun route(range: BarRange, hasAlpacaKeys: Boolean): List<RoutedRange> {
+    if (range.market == Market.CRYPTO) {
+        if (range.timeframe == Timeframe.DAILY) return listOf(RoutedRange(range, BarSource.YAHOO_CRYPTO))
+        val source = if (hasAlpacaKeys) BarSource.ALPACA_CRYPTO else BarSource.UNAVAILABLE
+        return listOf(RoutedRange(range, source))
+    }
     if (range.timeframe == Timeframe.DAILY) return listOf(RoutedRange(range, BarSource.YAHOO))
     val source = if (hasAlpacaKeys) BarSource.ALPACA else BarSource.UNAVAILABLE
     return listOf(RoutedRange(range, source))

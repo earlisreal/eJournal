@@ -41,9 +41,9 @@ private class FakeTransactions(private val bySymbolPortfolio: Map<Long, List<Tra
 private class FakeBars : MarketDataRepository {
     val stored = mutableListOf<Bar>()
     val coverage = mutableMapOf<Pair<String, Timeframe>, BarCoverage>()
-    override suspend fun upsertBars(bars: List<Bar>) { stored.addAll(bars) }
-    override suspend fun getCoverage(symbol: String, timeframe: Timeframe): BarCoverage? = coverage[symbol to timeframe]
-    override suspend fun getBars(symbol: String, timeframe: Timeframe, from: LocalDateTime, to: LocalDateTime) = error("unused")
+    override suspend fun upsertBars(market: Market, bars: List<Bar>) { stored.addAll(bars) }
+    override suspend fun getCoverage(symbol: String, timeframe: Timeframe, market: Market): BarCoverage? = coverage[symbol to timeframe]
+    override suspend fun getBars(symbol: String, timeframe: Timeframe, market: Market, from: LocalDateTime, to: LocalDateTime) = error("unused")
 }
 
 private class FakeProvider : MarketDataProvider {
@@ -99,14 +99,18 @@ class MarketDataServiceTest {
         transactions: Map<Long, List<Transaction>> = mapOf(1L to recentDayTrade()),
         bars: FakeBars = FakeBars(),
         yahoo: FakeProvider = FakeProvider(),
+        yahooCrypto: FakeProvider = FakeProvider(),
         alpaca: FakeProvider = FakeProvider(),
+        crypto: FakeProvider = FakeProvider(),
         creds: FakeCreds = FakeCreds(),
     ) = MarketDataService(
         portfolioRepository = FakePortfolios(portfolios),
-        closedPositions = ClosedPositionService(FakeTransactions(transactions)),
+        closedPositions = ClosedPositionService(FakeTransactions(transactions), FakePortfolios(portfolios)),
         marketDataRepository = bars,
         yahooProvider = yahoo,
+        yahooCryptoProvider = yahooCrypto,
         alpacaProvider = alpaca,
+        cryptoProvider = crypto,
         credentialsRepository = creds,
         todayProvider = { TODAY },
     )
@@ -247,7 +251,7 @@ class MarketDataServiceTest {
     }
 
     @Test
-    fun `non-US portfolios are not synced`() = runTest {
+    fun `non-US non-crypto portfolios are not synced`() = runTest {
         val yahoo = FakeProvider()
         val result = service(
             portfolios = listOf(Portfolio(id = 1L, name = "PH", market = Market.PH_STOCKS)),
@@ -257,5 +261,63 @@ class MarketDataServiceTest {
 
         assertTrue(yahoo.calls.isEmpty())
         assertEquals(0, result.fetchedSymbols)
+    }
+
+    /** A crypto swing: entry and exit on different days, so only a daily range is needed. */
+    private fun cryptoSwing(portfolioId: Long = 1L, symbol: String = "ADA") = listOf(
+        tx(portfolioId, symbol, Action.BUY, "2026-06-01T09:31"),
+        tx(portfolioId, symbol, Action.SELL, "2026-06-08T10:15"),
+    )
+
+    @Test
+    fun `crypto day trade fetches daily via yahoo-crypto and one-minute via alpaca-crypto`() = runTest {
+        val yahoo = FakeProvider()
+        val yahooCrypto = FakeProvider()
+        val alpaca = FakeProvider()
+        val crypto = FakeProvider()
+        val result = service(
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            transactions = mapOf(1L to recentDayTrade(symbol = "BTC")),
+            yahoo = yahoo, yahooCrypto = yahooCrypto, alpaca = alpaca, crypto = crypto,
+            creds = FakeCreds(AlpacaCredentials("id", "secret")),
+        ).sync()
+
+        assertTrue(yahooCrypto.calls.any { it.symbol == "BTC" && it.timeframe == Timeframe.DAILY })
+        assertTrue(crypto.calls.any { it.symbol == "BTC" && it.timeframe == Timeframe.ONE_MINUTE })
+        // Crypto never touches the stock providers, and daily never hits Alpaca crypto.
+        assertTrue(yahoo.calls.isEmpty())
+        assertTrue(alpaca.calls.isEmpty())
+        assertTrue(crypto.calls.none { it.timeframe == Timeframe.DAILY })
+        assertEquals(1, result.fetchedSymbols)
+    }
+
+    @Test
+    fun `crypto daily is fetched without keys via yahoo-crypto`() = runTest {
+        // A swing trade needs only daily bars, which now come keyless from Yahoo — no needsKeys.
+        val yahooCrypto = FakeProvider()
+        val result = service(
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            transactions = mapOf(1L to cryptoSwing(symbol = "ADA")),
+            yahooCrypto = yahooCrypto,
+        ).sync()
+
+        assertTrue(yahooCrypto.calls.any { it.symbol == "ADA" && it.timeframe == Timeframe.DAILY })
+        assertEquals(1, result.fetchedSymbols)
+        assertTrue(!result.needsKeys)
+    }
+
+    @Test
+    fun `crypto day trade without keys still fetches daily but reports needing keys for one-minute`() = runTest {
+        val yahooCrypto = FakeProvider()
+        val crypto = FakeProvider()
+        val result = service(
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            transactions = mapOf(1L to recentDayTrade(symbol = "BTC")),
+            yahooCrypto = yahooCrypto, crypto = crypto,
+        ).sync()
+
+        assertTrue(yahooCrypto.calls.any { it.symbol == "BTC" && it.timeframe == Timeframe.DAILY })
+        assertTrue(crypto.calls.isEmpty())
+        assertTrue(result.needsKeys)
     }
 }

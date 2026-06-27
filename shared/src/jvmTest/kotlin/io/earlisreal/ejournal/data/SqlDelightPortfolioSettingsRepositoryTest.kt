@@ -30,6 +30,7 @@ class SqlDelightPortfolioSettingsRepositoryTest {
             ),
             PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
+                marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
                 timeframeAdapter = TimeframeAdapter,
             ),

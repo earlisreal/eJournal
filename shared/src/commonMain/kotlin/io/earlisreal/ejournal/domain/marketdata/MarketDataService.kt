@@ -49,13 +49,16 @@ class MarketDataService(
     private val closedPositions: ClosedPositionService,
     private val marketDataRepository: MarketDataRepository,
     private val yahooProvider: MarketDataProvider,
+    private val yahooCryptoProvider: MarketDataProvider,
     private val alpacaProvider: MarketDataProvider,
+    private val cryptoProvider: MarketDataProvider,
     private val credentialsRepository: CredentialsRepository,
     private val scope: CoroutineScope? = null,
     private val todayProvider: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
 ) {
     private val yahooSemaphore = Semaphore(MAX_YAHOO_CONCURRENT)
     private val alpacaSemaphore = Semaphore(MAX_ALPACA_CONCURRENT)
+    private val cryptoSemaphore = Semaphore(MAX_ALPACA_CONCURRENT)
 
     private val _status = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val status: StateFlow<SyncStatus> = _status.asStateFlow()
@@ -72,11 +75,11 @@ class MarketDataService(
         val hasKeys = credentialsRepository.getAlpacaCredentials() != null
 
         val positions = portfolioRepository.getAll()
-            .filter { it.market == Market.US_STOCKS }
+            .filter { it.market == Market.US_STOCKS || it.market == Market.CRYPTO }
             .flatMap { closedPositions.forPortfolio(it.id) }
 
         val work = requiredRanges(positions, today)
-            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe)) }
+            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe, range.market)) }
             .flatMap { range -> route(range, hasKeys) }
             .groupBy { it.range.symbol }
 
@@ -134,13 +137,15 @@ class MarketDataService(
     private suspend fun fetchRange(routed: RoutedRange): RangeOutcome {
         val (provider, semaphore) = when (routed.source) {
             BarSource.YAHOO -> yahooProvider to yahooSemaphore
+            BarSource.YAHOO_CRYPTO -> yahooCryptoProvider to yahooSemaphore
             BarSource.ALPACA -> alpacaProvider to alpacaSemaphore
+            BarSource.ALPACA_CRYPTO -> cryptoProvider to cryptoSemaphore
             BarSource.UNAVAILABLE -> return RangeOutcome.NeedsKeys
         }
         val r = routed.range
         return try {
             val bars = semaphore.withPermit { fetchWithRetry(provider, r) }
-            marketDataRepository.upsertBars(bars)
+            marketDataRepository.upsertBars(r.market, bars)
             RangeOutcome.Success
         } catch (e: InvalidKeysException) {
             RangeOutcome.KeysRejected

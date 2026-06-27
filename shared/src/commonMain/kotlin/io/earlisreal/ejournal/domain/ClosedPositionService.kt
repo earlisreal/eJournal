@@ -1,7 +1,9 @@
 package io.earlisreal.ejournal.domain
 
+import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,6 +20,7 @@ import kotlinx.coroutines.sync.withLock
  */
 class ClosedPositionService(
     private val transactionRepository: TransactionRepository,
+    private val portfolioRepository: PortfolioRepository,
     private val compute: (List<Transaction>) -> List<ClosedPosition> = FifoMatcher::computeClosedPositions,
 ) {
     private data class Entry(val signature: Int, val positions: List<ClosedPosition>)
@@ -34,7 +37,10 @@ class ClosedPositionService(
             ?.takeIf { it.signature == signature }
             ?.let { return it.positions }
 
-        val positions = compute(txs)
+        // Stamp the portfolio's market onto every position so the market-data layer can namespace
+        // bars. Looked up only on a cache miss; cached positions are already stamped.
+        val market = portfolioRepository.getById(portfolioId)?.market ?: Market.US_STOCKS
+        val positions = compute(txs).map { it.copy(market = market) }
         // Don't clobber a fresher entry written by a concurrent caller while we computed.
         mutex.withLock {
             val current = cache[portfolioId]

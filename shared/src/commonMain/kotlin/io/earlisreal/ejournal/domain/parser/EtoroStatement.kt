@@ -57,8 +57,14 @@ internal fun parseEtoroDateTime(raw: String): LocalDateTime? {
 
 private fun Int.pad(width: Int) = toString().padStart(width, '0')
 
-/** The instrument's base symbol: the `Details` cell with its `/USD` quote suffix and any stray space removed. */
-private fun etoroSymbol(details: String): String = details.substringBeforeLast("/").trim()
+/**
+ * The instrument's base symbol: the `Details` cell with its `/USD` quote suffix, stray space, and
+ * eToro's `.US` exchange suffix removed. eToro tags some US tickers as `TICKER.US` (e.g. "SNX.US",
+ * "IP.US"); Yahoo and Alpaca only know the bare ticker, so the suffix must go or market-data sync
+ * 404s the symbol. (Only the US exchange is handled — this app's stock market data is US-only.)
+ */
+private fun etoroSymbol(details: String): String =
+    details.substringBeforeLast("/").trim().removeSuffix(".US")
 
 /**
  * Whether a row's "Asset type" cell denotes crypto. eToro labels crypto positions `CFD` in this AUS

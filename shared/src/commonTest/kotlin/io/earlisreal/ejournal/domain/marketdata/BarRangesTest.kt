@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.marketdata
 
 import io.earlisreal.ejournal.data.repository.BarCoverage
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
@@ -16,6 +17,7 @@ class BarRangesTest {
         symbol: String = "AAPL",
         entry: String,
         exit: String,
+        market: Market = Market.US_STOCKS,
     ) = ClosedPosition(
         symbol = symbol,
         entryDatetime = LocalDateTime.parse(entry),
@@ -25,6 +27,7 @@ class BarRangesTest {
         shares = 10.0,
         fees = 1.0,
         profitLoss = 99.0,
+        market = market,
     )
 
     // --- requiredRanges ---
@@ -215,5 +218,39 @@ class BarRangesTest {
     fun `one-minute range spanning any date range routes entirely to alpaca`() {
         val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-05-01"), LocalDate.parse("2026-06-10"))
         assertEquals(listOf(RoutedRange(range, BarSource.ALPACA)), route(range, hasAlpacaKeys = true))
+    }
+
+    // --- crypto ---
+
+    @Test
+    fun `crypto positions produce ranges tagged with the crypto market`() {
+        val ranges = requiredRanges(
+            listOf(position(symbol = "BTC", entry = "2026-06-10T09:31", exit = "2026-06-10T10:15", market = Market.CRYPTO)),
+            today,
+        )
+        assertTrue(ranges.isNotEmpty())
+        assertTrue(ranges.all { it.market == Market.CRYPTO })
+    }
+
+    @Test
+    fun `crypto daily routes to yahoo crypto regardless of keys (deep history, keyless)`() {
+        // Alpaca's crypto history is shallow (~2021, many coins absent); Yahoo has deep daily history.
+        val range = BarRange("BTC", Timeframe.DAILY, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-10"), Market.CRYPTO)
+        assertEquals(listOf(RoutedRange(range, BarSource.YAHOO_CRYPTO)), route(range, hasAlpacaKeys = true))
+        assertEquals(listOf(RoutedRange(range, BarSource.YAHOO_CRYPTO)), route(range, hasAlpacaKeys = false))
+    }
+
+    @Test
+    fun `crypto one-minute routes to the alpaca crypto provider when keys exist`() {
+        val range = BarRange("BTC", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"), Market.CRYPTO)
+        assertEquals(listOf(RoutedRange(range, BarSource.ALPACA_CRYPTO)), route(range, hasAlpacaKeys = true))
+    }
+
+    @Test
+    fun `crypto one-minute is unavailable without keys, but daily still routes to yahoo`() {
+        val min = BarRange("BTC", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-10"), LocalDate.parse("2026-06-10"), Market.CRYPTO)
+        val daily = BarRange("BTC", Timeframe.DAILY, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-10"), Market.CRYPTO)
+        assertEquals(listOf(RoutedRange(min, BarSource.UNAVAILABLE)), route(min, hasAlpacaKeys = false))
+        assertEquals(listOf(RoutedRange(daily, BarSource.YAHOO_CRYPTO)), route(daily, hasAlpacaKeys = false))
     }
 }

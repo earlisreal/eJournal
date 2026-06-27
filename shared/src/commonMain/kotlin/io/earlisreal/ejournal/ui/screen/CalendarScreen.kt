@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,6 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,13 +73,35 @@ fun CalendarScreen(
             EmptyState(title = "No portfolio selected", subtitle = "Import transactions to get started.")
         } else {
             val symbol = filter.portfolio.market.symbol
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+            // Arrow keys step the calendar month (left/up = previous, right/down = next). Focus is
+            // requested on entry so the keys work without a click; onKeyEvent (not preview) lets
+            // focused day cells keep their own handling and lets unhandled arrows bubble up here
+            // even after a day is selected.
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) { focusRequester.requestFocus() }
+            Column(
+                Modifier.fillMaxSize()
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .onKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown) {
+                            when (event.key) {
+                                Key.DirectionLeft, Key.DirectionUp -> { vm.previousMonth(); true }
+                                Key.DirectionRight, Key.DirectionDown -> { vm.nextMonth(); true }
+                                else -> false
+                            }
+                        } else {
+                            false
+                        }
+                    },
+                verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+            ) {
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
-                    AppTextButton(text = "◀", onClick = { vm.previousMonth() })
+                    AppTextButton(text = "◀", onClick = { vm.previousMonth() }, enabled = state.canGoPrevious)
 
                     // Year dropdown
                     var yearMenuOpen by remember { mutableStateOf(false) }
@@ -112,7 +142,7 @@ fun CalendarScreen(
                         }
                     }
 
-                    AppTextButton(text = "▶", onClick = { vm.nextMonth() })
+                    AppTextButton(text = "▶", onClick = { vm.nextMonth() }, enabled = state.canGoNext)
                     Spacer(Modifier.weight(1f))
                     Column(horizontalAlignment = Alignment.End) {
                         Text(

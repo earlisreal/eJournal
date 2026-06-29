@@ -34,7 +34,9 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.jcefmaven)
 
-            // JavaFX WebView for chart rendering (replaces JCEF — far more reliable on macOS).
+            // JavaFX: JCEF/Chromium renders the chart; JavaFX remains only for the native file
+            // picker (Platform + FileChooser + JFXPanel/Swing interop). javafx-web and javafx-media
+            // are not needed and are intentionally excluded to keep the Windows bundle lean.
             // Full module list required: Maven won't resolve platform-classified transitive jars.
             val javafxOs = when {
                 System.getProperty("os.name").lowercase().startsWith("mac") ->
@@ -46,8 +48,6 @@ kotlin {
             implementation("org.openjfx:javafx-base:$javafxVer:$javafxOs")
             implementation("org.openjfx:javafx-graphics:$javafxVer:$javafxOs")
             implementation("org.openjfx:javafx-controls:$javafxVer:$javafxOs")
-            implementation("org.openjfx:javafx-media:$javafxVer:$javafxOs")
-            implementation("org.openjfx:javafx-web:$javafxVer:$javafxOs")
             implementation("org.openjfx:javafx-swing:$javafxVer:$javafxOs")
         }
         jvmTest.dependencies {

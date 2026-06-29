@@ -87,8 +87,8 @@ fun AnalysisScreen(
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
 
     // Arrow-key navigation: Up/Left → previous trade, Down/Right → next (both wrap around).
-    // The root grabs focus on entry so keys work immediately; clicking the native chart WebView
-    // can take focus away, after which interacting with any Compose control restores it.
+    // The root grabs focus on entry so keys work immediately; clicking the native JCEF/Chromium
+    // chart can take focus away, after which interacting with any Compose control restores it.
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -236,8 +236,8 @@ fun AnalysisScreen(
                 }
 
                 // ── Chart area ───────────────────────────────────────────────
-                // CandlestickChart stays mounted across navigations so the JavaFX WebView
-                // isn't torn down and rebuilt on every position change. The loading
+                // CandlestickChart stays mounted across navigations so the JCEF/Chromium
+                // chart isn't torn down and rebuilt on every position change. The loading
                 // indicator overlays it instead of replacing it.
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (state.noDataForTimeframe) {

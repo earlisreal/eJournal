@@ -205,4 +205,3 @@ tasks.withType<JavaExec>().configureEach {
         ).joinToString(","),
     )
 }
-

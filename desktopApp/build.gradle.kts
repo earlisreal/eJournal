@@ -71,6 +71,11 @@ dependencies {
     // Provides a no-op SLF4J binding so the SQLite JDBC driver's logging is discarded silently.
     // Version must match the slf4j-api forced onto the classpath (2.x) — see libs.versions.toml.
     runtimeOnly(libs.slf4j.nop)
+
+    // JCEF via jcefmaven — SPIKE ONLY (LWC-v5-on-Chromium experiment). Brings org.cef + a matching
+    // CEF native bundle it downloads on first run. Used by the `jcef-test` launch mode only; the
+    // production chart still renders on JavaFX WebView. Remove if the experiment is abandoned.
+    implementation(libs.jcefmaven)
 }
 
 compose.desktop {
@@ -159,4 +164,58 @@ tasks.withType<JavaExec>().configureEach {
     jvmArgs("-XX:+UseSerialGC")
     jvmArgs("-Xms128m")
     jvmArgs("-Xmx512m")
+}
+
+// Dedicated launcher for the JCEF + Lightweight Charts v5 spike — kept separate from `run` so its
+// JCEF-specific JVM flags never touch the production JavaFX path.
+//   ./gradlew :desktopApp:runJcefTest
+tasks.register<JavaExec>("runJcefTest") {
+    group = "application"
+    description = "Run the JCEF + Lightweight Charts v5 spike (jcef-test mode)"
+    dependsOn("jar", generateVersionedSplash)
+    mainClass.set("io.earlisreal.ejournal.MainKt")
+    args("jcef-test")
+    javaLauncher.set(jbrLauncher)
+    classpath = sourceSets["main"].runtimeClasspath
+    // jcefmaven needs deep reflection into AWT internals on JDK 16+.
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
+    // CRITICAL: suppress JBR's bundled `jcef` and `jogl.all` SYSTEM modules. They export org.cef /
+    // org.jogamp unqualified and auto-resolve as roots, shadowing jcefmaven's classpath jars — so
+    // org.cef.CefApp loads from the JBR module (no build_meta.json, mismatched natives → crash).
+    // Limiting the observable module set (classpath jars are unaffected) forces the classpath stack.
+    jvmArgs(
+        "--limit-modules",
+        listOf(
+            "java.base", "java.desktop", "java.logging", "java.management", "java.naming",
+            "java.net.http", "java.prefs", "java.sql", "java.xml", "java.datatransfer",
+            "java.scripting", "java.instrument", "jdk.unsupported", "jdk.unsupported.desktop",
+            "jdk.jfr", "jdk.jsobject", "jdk.xml.dom",
+        ).joinToString(","),
+    )
+}
+
+// Second spike engine: run on a full jbr_jcef runtime (build 475.60) that BUNDLES the matching CEF
+// payload, using JBR's OWN `jcef` module (the production-aligned alternative to jcefmaven). The
+// runtime is the matched b475.60 archive, stashed at ~/.ejournal/jbr-jcef-475 (override -PjbrJcefHome).
+//   ./gradlew :desktopApp:runJcefJbrTest
+tasks.register<JavaExec>("runJcefJbrTest") {
+    group = "application"
+    description = "Run the JCEF + Lightweight Charts v5 spike on JBR's bundled jcef module"
+    dependsOn("jar", generateVersionedSplash)
+    mainClass.set("io.earlisreal.ejournal.MainKt")
+    args("jcef-jbr-test")
+    val jbrJcefHome = (project.findProperty("jbrJcefHome") as String?)
+        ?: "${System.getProperty("user.home")}/.ejournal/jbr-jcef-475/Contents/Home"
+    executable("$jbrJcefHome/bin/java")
+    classpath = sourceSets["main"].runtimeClasspath
+    // Resolve JBR's bundled jcef module (brings org.cef + com.jetbrains.cef + jogl.all). NO
+    // --limit-modules here — unlike the jcefmaven path, we WANT the module to win over the classpath.
+    jvmArgs("--add-modules", "jcef")
+    jvmArgs("--enable-native-access=jcef")
+    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
 }

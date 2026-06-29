@@ -16,6 +16,10 @@ kotlinx-datetime = "0.7.1"
 slf4j = "2.0.17"
 ktor = "3.2.0"
 kotlinx-serialization = "1.9.0"
+# JCEF (Chromium Embedded Framework for Java) via jcefmaven — spike only (desktopApp). Ships its own
+# internally version-matched CEF (Chromium 146) + libjcef, so no ABI-match dance with JBR's bundled
+# JCEF. 146.0.10 is the latest as of 2026-06. See docs/superpowers for the LWC-v5-on-JCEF experiment.
+jcefmaven = "146.0.10"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -39,6 +43,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+jcefmaven = { module = "me.friwi:jcefmaven", version.ref = "jcefmaven" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

@@ -34,6 +34,14 @@ fun main(args: Array<String>) {
         runChartTest(args.getOrElse(1) { "kandy" })
         return
     }
+    if (args.firstOrNull() == "jcef-test") {
+        runJcefChartTest()
+        return
+    }
+    if (args.firstOrNull() == "jcef-jbr-test") {
+        runJbrJcefChartTest()
+        return
+    }
 
     application {
         // The eJournal window icon (title bar + Windows taskbar). Without this the JetBrains Runtime

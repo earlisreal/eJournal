@@ -10,7 +10,7 @@ import java.io.File
 class JcefChartBridge private constructor(private val pageUrl: String) {
     constructor() : this(defaultHtmlFileUrl())
 
-    private val client = JcefRuntime.client()
+    private val client = JcefRuntime.createClient()
     private val browser: CefBrowser = client.createBrowser(pageUrl, false, false)
     private val pending = ArrayDeque<String>()
     @Volatile private var loaded = false
@@ -40,7 +40,10 @@ class JcefChartBridge private constructor(private val pageUrl: String) {
 
     fun resize(w: Int, h: Int) = exec("resize($w, $h)")
     fun sendTheme(isDark: Boolean) = exec("setTheme($isDark)")
-    fun dispose() = runCatching { browser.close(true) }.let {}
+    fun dispose() {
+        runCatching { browser.close(true) }
+        runCatching { client.dispose() }
+    }
 
     private fun exec(js: String) = synchronized(pending) { if (loaded) exec0(js) else pending.add(js) }
     private fun exec0(js: String) = browser.executeJavaScript(js, browser.url ?: pageUrl, 0)

@@ -9,18 +9,19 @@ import org.cef.CefSettings
 import java.io.File
 
 /**
- * Owns the JCEF (jcefmaven) lifecycle for the spike: builds the singleton [CefApp] + shared
- * [CefClient]. [warmUp] blocks while jcefmaven downloads + installs the matching CEF native bundle
+ * Owns the JCEF (jcefmaven) lifecycle for the spike: builds the singleton [CefApp].
+ * [warmUp] blocks while jcefmaven downloads + installs the matching CEF native bundle
  * (~100MB) on first run; subsequent runs reuse the install dir and return immediately.
  *
  * Call [warmUp] on a plain thread BEFORE Compose's application{} starts the AWT/Skiko event loop —
- * the standard jcefmaven ordering (build CefApp, then show UI). Browsers are created via [client].
+ * the standard jcefmaven ordering (build CefApp, then show UI). Each bridge creates its own
+ * [CefClient] via [createClient] so that every bridge's [addLoadHandler] registers on a fresh
+ * client (CefClient only holds one load handler at a time).
  */
 object JcefRuntime {
     private const val TAG = "[jcef]"
 
     @Volatile private var cefApp: CefApp? = null
-    @Volatile private var cefClient: CefClient? = null
 
     /** Persisted so the ~100MB CEF bundle is downloaded once, not per run. */
     private val installDir = File(System.getProperty("user.home"), ".ejournal/jcef-bundle")
@@ -46,20 +47,18 @@ object JcefRuntime {
         })
         val app = builder.build() // blocks: install (first run) + native init
         cefApp = app
-        cefClient = app.createClient()
         val version = runCatching { app.version }.getOrNull()
         println("$TAG ready in ${System.currentTimeMillis() - t}ms; version=$version")
     }
 
-    fun client(): CefClient {
+    /** Returns a fresh [CefClient] owned by the caller; the caller must dispose it when done. */
+    fun createClient(): CefClient {
         warmUp()
-        return cefClient ?: error("CefClient unavailable after warmUp()")
+        return (cefApp ?: error("CefApp unavailable after warmUp()")).createClient()
     }
 
     fun dispose() {
-        runCatching { cefClient?.dispose() }
         runCatching { cefApp?.dispose() }
-        cefClient = null
         cefApp = null
     }
 }

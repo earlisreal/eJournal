@@ -4,11 +4,11 @@ import io.earlisreal.ejournal.StartupTrace
 import java.awt.EventQueue
 import javax.swing.SwingUtilities
 
-/** App-wide chart preloader: builds one JavaFxChartBridge on the EDT, off the startup critical path. */
+/** App-wide chart preloader: builds one JcefChartBridge on the EDT, off the startup critical path. */
 object ChartPreload {
-    private val preloader = ChartPreloader<JavaFxChartBridge>(
+    private val preloader = ChartPreloader<JcefChartBridge>(
         create = {
-            val bridge = JavaFxChartBridge()
+            val bridge = JcefChartBridge()
             StartupTrace.mark("chart-warm-done")
             StartupTrace.logSummary()
             bridge
@@ -19,5 +19,5 @@ object ChartPreload {
     )
 
     fun warm() = preloader.warm()
-    fun take(): JavaFxChartBridge? = preloader.take()
+    fun take(): JcefChartBridge? = preloader.take()
 }

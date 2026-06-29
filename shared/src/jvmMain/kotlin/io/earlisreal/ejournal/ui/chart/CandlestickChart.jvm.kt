@@ -18,7 +18,7 @@ import kotlin.math.roundToInt
 
 @Composable
 actual fun CandlestickChart(state: AnalysisState, modifier: Modifier) {
-    val bridge = remember { ChartPreload.take() ?: JavaFxChartBridge() }
+    val bridge = remember { ChartPreload.take() ?: JcefChartBridge() }
     val density = LocalDensity.current.density
     var prevPosition by remember { mutableStateOf<ClosedPosition?>(null) }
     var prevChartData by remember { mutableStateOf<AggregatedChart?>(null) }

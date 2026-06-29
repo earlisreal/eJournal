@@ -164,6 +164,23 @@ tasks.withType<JavaExec>().configureEach {
     jvmArgs("-XX:+UseSerialGC")
     jvmArgs("-Xms128m")
     jvmArgs("-Xmx512m")
+    // JCEF (jcefmaven) needs deep reflection into AWT internals on JDK 16+.
+    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
+    // Suppress JBR's bundled `jcef` and `jogl.all` SYSTEM modules so jcefmaven's classpath
+    // org.cef / jogl jars take precedence — without this the JBR module shadows the classpath
+    // jars (mismatched natives → crash). Classpath jars are unaffected by --limit-modules.
+    // This curated set is copied verbatim from the `runJcefTest` task comment above.
+    jvmArgs(
+        "--limit-modules",
+        listOf(
+            "java.base", "java.desktop", "java.logging", "java.management", "java.naming",
+            "java.net.http", "java.prefs", "java.sql", "java.xml", "java.datatransfer",
+            "java.scripting", "java.instrument", "jdk.unsupported", "jdk.unsupported.desktop",
+            "jdk.jfr", "jdk.jsobject", "jdk.xml.dom",
+        ).joinToString(","),
+    )
 }
 
 // Dedicated launcher for the JCEF + Lightweight Charts v5 spike — kept separate from `run` so its

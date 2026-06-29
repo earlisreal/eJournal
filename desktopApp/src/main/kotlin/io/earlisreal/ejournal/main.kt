@@ -16,11 +16,14 @@ import io.earlisreal.ejournal.startup.AsyncInitializer
 import io.earlisreal.ejournal.startup.InitState
 import io.earlisreal.ejournal.startup.buildReadyApp
 import io.earlisreal.ejournal.ui.chart.ChartPreload
-import io.earlisreal.ejournal.ui.chart.JavaFxChartBridge
+import io.earlisreal.ejournal.ui.chart.JcefRuntime
+import io.earlisreal.ejournal.ui.platform.JavaFxToolkit
 import io.earlisreal.ejournal.ui.startup.StartupErrorWindow
 import java.awt.Dimension
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 fun main(args: Array<String>) {
     StartupTrace.mark("main")
@@ -64,10 +67,12 @@ fun main(args: Array<String>) {
                 val ready = s.value
                 val windowState = rememberWindowState(size = DpSize(1360.dp, 880.dp))
                 Window(
-                    // Shut down the JavaFX toolkit before exiting so the non-daemon FX thread
-                    // doesn't block JVM shutdown.
+                    // Dispose JCEF and shut down the JavaFX toolkit before exiting.
+                    // JCEF must be disposed to release CEF resources; JavaFX must be shut down so
+                    // its non-daemon FX thread (used by the file picker) doesn't block JVM shutdown.
                     onCloseRequest = {
-                        JavaFxChartBridge.shutdown()
+                        JcefRuntime.dispose()
+                        JavaFxToolkit.shutdown() // still needed: file picker
                         exitApplication()
                     },
                     state = windowState,
@@ -81,8 +86,9 @@ fun main(args: Array<String>) {
                         StartupTrace.logSummary()
                     }
                     LaunchedEffect(Unit) {
-                        delay(1500) // let the first frame paint and settle before warming JavaFX
-                        ChartPreload.warm()
+                        delay(1500) // let the first frame paint and settle before warming the chart
+                        withContext(Dispatchers.IO) { JcefRuntime.warmUp() } // off-EDT: 100MB CEF dl on first run
+                        ChartPreload.warm() // bridge ctor on EDT is now fast (warmUp already done)
                     }
                     App(
                         portfolioRepository = ready.deps.portfolioRepository,

@@ -75,9 +75,18 @@ dependencies {
     // JCEF via jcefmaven — backs the production chart (LWC v5 via Chromium Embedded Framework).
     // Brings org.cef + a matching CEF native bundle it downloads on first run.
     implementation(libs.jcefmaven)
-    // Bundle the CEF native payload (~129MB, macOS arm64) so jcefmaven extracts it from the jar
-    // instead of downloading at runtime (offline-capable). CI swaps this per-OS (Task 8).
-    runtimeOnly(libs.jcef.natives.macos.arm64)
+    // Bundle the CEF native payload (~129MB) for the build host's platform so jcefmaven extracts
+    // it from the jar instead of downloading at runtime (offline-capable, correct per-OS bundle).
+    // CI relies on this: the Windows GitHub runner auto-bundles windows-amd64 natives with no
+    // workflow change needed. providers.systemProperty is used (not raw System.getProperty) so
+    // Gradle's configuration cache can track the input safely.
+    val osName = providers.systemProperty("os.name").get().lowercase()
+    val jcefNatives = when {
+        osName.contains("win") -> libs.jcef.natives.windows.amd64
+        osName.contains("mac") -> libs.jcef.natives.macos.arm64
+        else                   -> libs.jcef.natives.linux.amd64
+    }
+    runtimeOnly(jcefNatives)
 }
 
 compose.desktop {

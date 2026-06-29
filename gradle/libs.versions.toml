@@ -20,6 +20,9 @@ kotlinx-serialization = "1.9.0"
 # internally version-matched CEF (Chromium 146) + libjcef, so no ABI-match dance with JBR's bundled
 # JCEF. 146.0.10 is the latest as of 2026-06. See docs/superpowers for the LWC-v5-on-JCEF experiment.
 jcefmaven = "146.0.10"
+# jcef BUILD string used by the per-platform jcef-natives-* artifacts on Maven Central.
+# Must NOT use version.ref = "jcefmaven" (that's 146.0.10, not the build string — it 404s).
+jcef-build = "jcef-d3de827+cef-146.0.10+g8219561+chromium-146.0.7680.179"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -44,6 +47,11 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 jcefmaven = { module = "me.friwi:jcefmaven", version.ref = "jcefmaven" }
+# Per-platform CEF native payloads — version is the jcef BUILD string (not the jcefmaven tag).
+# Only the host platform is wired via runtimeOnly; CI swaps per-OS (Task 8).
+jcef-natives-macos-arm64   = { module = "me.friwi:jcef-natives-macosx-arm64",  version.ref = "jcef-build" }
+jcef-natives-windows-amd64 = { module = "me.friwi:jcef-natives-windows-amd64", version.ref = "jcef-build" }
+jcef-natives-linux-amd64   = { module = "me.friwi:jcef-natives-linux-amd64",   version.ref = "jcef-build" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

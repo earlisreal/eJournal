@@ -75,6 +75,9 @@ dependencies {
     // JCEF via jcefmaven — backs the production chart (LWC v5 via Chromium Embedded Framework).
     // Brings org.cef + a matching CEF native bundle it downloads on first run.
     implementation(libs.jcefmaven)
+    // Bundle the CEF native payload (~129MB, macOS arm64) so jcefmaven extracts it from the jar
+    // instead of downloading at runtime (offline-capable). CI swaps this per-OS (Task 8).
+    runtimeOnly(libs.jcef.natives.macos.arm64)
 }
 
 compose.desktop {
@@ -100,6 +103,16 @@ compose.desktop {
         jvmArgs += "-XX:+UseSerialGC"
         jvmArgs += "-Xms128m"
         jvmArgs += "-Xmx512m"
+        // JCEF (jcefmaven) needs deep reflection into AWT internals on JDK 16+. Added here so the
+        // packaged app (jlink runtime) also has these opens — jcefmaven calls AWT internals at startup.
+        // NOTE: --limit-modules is intentionally NOT added here. The packaged app runs on a jlink
+        // runtime built from only the modules() list + jdeps detection — it does NOT contain JBR's
+        // jcef/jogl.all system modules (nothing `requires` them), so there is nothing to suppress.
+        // Adding --limit-modules here could hide a jdeps-detected module and break the packaged app.
+        // --limit-modules is only needed for dev `run`/`hotRun` (full JBR runtime), already set below.
+        jvmArgs += listOf("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
+        jvmArgs += listOf("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
+        jvmArgs += listOf("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -111,8 +124,11 @@ compose.desktop {
             // jpackage's default jlink runtime omits modules our deps need at startup — java.sql
             // (SQLDelight JDBC), jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) and
             // jdk.jsobject (JavaFX WebView's JS bridge) — which caused "Failed to launch JVM".
-            // This explicit set comes from `./gradlew :desktopApp:suggestRuntimeModules` (jdeps);
-            // re-run that and update this list if dependencies change. Far smaller than includeAllModules.
+            // This explicit set comes from `./gradlew :desktopApp:suggestRuntimeModules` (jdeps).
+            // Re-derived after adding JCEF (Task 7): suggestRuntimeModules also suggested "jcef" (a
+            // JBR system module) which is intentionally excluded — the jlink runtime doesn't contain
+            // JBR's jcef module (nothing `requires` it), and jcefmaven's classpath jars handle JCEF.
+            // All previously-present modules are retained; none removed. Far smaller than includeAllModules.
             modules(
                 "java.instrument", "java.management", "java.net.http", "java.prefs", "java.sql",
                 "jdk.jfr", "jdk.jsobject", "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",

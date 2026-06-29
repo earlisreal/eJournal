@@ -32,6 +32,7 @@ kotlin {
             implementation(libs.sqlite.jdbc)
             implementation(libs.ktor.client.cio)
             implementation(compose.desktop.currentOs)
+            implementation(libs.jcefmaven)
 
             // JavaFX WebView for chart rendering (replaces JCEF — far more reliable on macOS).
             // Full module list required: Maven won't resolve platform-classified transitive jars.

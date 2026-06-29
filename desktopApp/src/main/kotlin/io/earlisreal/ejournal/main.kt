@@ -33,14 +33,6 @@ fun main(args: Array<String>) {
         runCsvGenerator(args.drop(1).toTypedArray())
         return
     }
-    if (args.firstOrNull() == "chart-test") {
-        runChartTest(args.getOrElse(1) { "kandy" })
-        return
-    }
-    if (args.firstOrNull() == "jcef-test") {
-        runJcefChartTest()
-        return
-    }
     application {
         // The eJournal window icon (title bar + Windows taskbar). Without this the JetBrains Runtime
         // logo is used. Resolved from the classpath root; the build copies desktopApp/icons/icon.png

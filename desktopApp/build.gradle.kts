@@ -72,9 +72,8 @@ dependencies {
     // Version must match the slf4j-api forced onto the classpath (2.x) — see libs.versions.toml.
     runtimeOnly(libs.slf4j.nop)
 
-    // JCEF via jcefmaven — SPIKE ONLY (LWC-v5-on-Chromium experiment). Brings org.cef + a matching
-    // CEF native bundle it downloads on first run. Used by the `jcef-test` launch mode only; the
-    // production chart still renders on JavaFX WebView. Remove if the experiment is abandoned.
+    // JCEF via jcefmaven — backs the production chart (LWC v5 via Chromium Embedded Framework).
+    // Brings org.cef + a matching CEF native bundle it downloads on first run.
     implementation(libs.jcefmaven)
 }
 
@@ -171,7 +170,6 @@ tasks.withType<JavaExec>().configureEach {
     // Suppress JBR's bundled `jcef` and `jogl.all` SYSTEM modules so jcefmaven's classpath
     // org.cef / jogl jars take precedence — without this the JBR module shadows the classpath
     // jars (mismatched natives → crash). Classpath jars are unaffected by --limit-modules.
-    // This curated set is copied verbatim from the `runJcefTest` task comment above.
     jvmArgs(
         "--limit-modules",
         listOf(
@@ -183,33 +181,3 @@ tasks.withType<JavaExec>().configureEach {
     )
 }
 
-// Dedicated launcher for the JCEF + Lightweight Charts v5 spike — kept separate from `run` so its
-// JCEF-specific JVM flags never touch the production JavaFX path.
-//   ./gradlew :desktopApp:runJcefTest
-tasks.register<JavaExec>("runJcefTest") {
-    group = "application"
-    description = "Run the JCEF + Lightweight Charts v5 spike (jcef-test mode)"
-    dependsOn("jar", generateVersionedSplash)
-    mainClass.set("io.earlisreal.ejournal.MainKt")
-    args("jcef-test")
-    javaLauncher.set(jbrLauncher)
-    classpath = sourceSets["main"].runtimeClasspath
-    // jcefmaven needs deep reflection into AWT internals on JDK 16+.
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
-    // CRITICAL: suppress JBR's bundled `jcef` and `jogl.all` SYSTEM modules. They export org.cef /
-    // org.jogamp unqualified and auto-resolve as roots, shadowing jcefmaven's classpath jars — so
-    // org.cef.CefApp loads from the JBR module (no build_meta.json, mismatched natives → crash).
-    // Limiting the observable module set (classpath jars are unaffected) forces the classpath stack.
-    jvmArgs(
-        "--limit-modules",
-        listOf(
-            "java.base", "java.desktop", "java.logging", "java.management", "java.naming",
-            "java.net.http", "java.prefs", "java.sql", "java.xml", "java.datatransfer",
-            "java.scripting", "java.instrument", "jdk.unsupported", "jdk.unsupported.desktop",
-            "jdk.jfr", "jdk.jsobject", "jdk.xml.dom",
-        ).joinToString(","),
-    )
-}

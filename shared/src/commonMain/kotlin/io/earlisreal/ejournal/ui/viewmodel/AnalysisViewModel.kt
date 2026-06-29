@@ -126,7 +126,7 @@ class AnalysisViewModel(
             LocalDateTime(nextTradingDay(position.exitDatetime.date),      LocalTime(23, 59))
         } else {
             // Daily/weekly: load the symbol's full stored history. The chart frames the trade via
-            // its initial visible range (JavaFxChartBridge) and lets the user scroll/zoom out to all
+            // its initial visible range (the chart bridge) and lets the user scroll/zoom out to all
             // of it, so the query is intentionally unbounded rather than a window around the trade.
             ALL_HISTORY
         }

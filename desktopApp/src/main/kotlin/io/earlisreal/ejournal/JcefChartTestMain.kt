@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.earlisreal.ejournal.jcef.JbrJcefRuntime
 import io.earlisreal.ejournal.jcef.JcefChartBridge
 import io.earlisreal.ejournal.jcef.JcefRuntime
 import org.cef.CefClient
@@ -19,23 +18,16 @@ import java.io.File
 import kotlin.math.roundToInt
 
 /**
- * JCEF + Lightweight Charts v5 spike harness, with two interchangeable engines:
+ * JCEF + Lightweight Charts v5 spike harness (jcefmaven engine):
  *   ./gradlew :desktopApp:runJcefTest      -> jcefmaven (downloads its own CEF)         [jcef-test]
- *   ./gradlew :desktopApp:runJcefJbrTest   -> JBR's bundled jcef module (matched CEF)   [jcef-jbr-test]
  *
- * Both render the same v5 page (jcef-test-v5.html) — self-rendered sample candles/volume + exact-price
- * diamond markers (a stock-v5 series primitive) — in a real-Chromium browser inside a Compose SwingPanel.
+ * Renders jcef-test-v5.html — self-rendered sample candles/volume + exact-price diamond markers
+ * (a stock-v5 series primitive) — in a real-Chromium browser inside a Compose SwingPanel.
  */
 fun runJcefChartTest() = runChart(
     title = "JCEF spike — Lightweight Charts v5 (jcefmaven)",
     client = { JcefRuntime.warmUp(); JcefRuntime.client() },
     dispose = { JcefRuntime.dispose() },
-)
-
-fun runJbrJcefChartTest() = runChart(
-    title = "JCEF spike — Lightweight Charts v5 (JBR jcef module)",
-    client = { JbrJcefRuntime.warmUp(); JbrJcefRuntime.client() },
-    dispose = { JbrJcefRuntime.dispose() },
 )
 
 private fun runChart(title: String, client: () -> CefClient, dispose: () -> Unit) {

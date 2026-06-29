@@ -196,26 +196,3 @@ tasks.register<JavaExec>("runJcefTest") {
         ).joinToString(","),
     )
 }
-
-// Second spike engine: run on a full jbr_jcef runtime (build 475.60) that BUNDLES the matching CEF
-// payload, using JBR's OWN `jcef` module (the production-aligned alternative to jcefmaven). The
-// runtime is the matched b475.60 archive, stashed at ~/.ejournal/jbr-jcef-475 (override -PjbrJcefHome).
-//   ./gradlew :desktopApp:runJcefJbrTest
-tasks.register<JavaExec>("runJcefJbrTest") {
-    group = "application"
-    description = "Run the JCEF + Lightweight Charts v5 spike on JBR's bundled jcef module"
-    dependsOn("jar", generateVersionedSplash)
-    mainClass.set("io.earlisreal.ejournal.MainKt")
-    args("jcef-jbr-test")
-    val jbrJcefHome = (project.findProperty("jbrJcefHome") as String?)
-        ?: "${System.getProperty("user.home")}/.ejournal/jbr-jcef-475/Contents/Home"
-    executable("$jbrJcefHome/bin/java")
-    classpath = sourceSets["main"].runtimeClasspath
-    // Resolve JBR's bundled jcef module (brings org.cef + com.jetbrains.cef + jogl.all). NO
-    // --limit-modules here — unlike the jcefmaven path, we WANT the module to win over the classpath.
-    jvmArgs("--add-modules", "jcef")
-    jvmArgs("--enable-native-access=jcef")
-    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
-}

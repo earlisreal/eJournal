@@ -11,8 +11,7 @@ import java.awt.Component
  * windowed [CefBrowser] loading the v5 chart page, exposes its AWT [uiComponent] for a Compose
  * SwingPanel, and pushes data one-way via executeJavaScript (mirroring the JavaFX bridge's exec()).
  *
- * Engine-agnostic: the [client] comes from either [JcefRuntime] (jcefmaven) or [JbrJcefRuntime]
- * (JBR's bundled jcef module) — both expose the same org.cef API.
+ * The [client] comes from [JcefRuntime] (jcefmaven); exposes the standard org.cef API.
  *
  * JS sent before the page finishes loading is queued and flushed on main-frame onLoadEnd.
  */

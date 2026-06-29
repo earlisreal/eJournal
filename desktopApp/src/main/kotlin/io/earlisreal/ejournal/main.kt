@@ -38,11 +38,6 @@ fun main(args: Array<String>) {
         runJcefChartTest()
         return
     }
-    if (args.firstOrNull() == "jcef-jbr-test") {
-        runJbrJcefChartTest()
-        return
-    }
-
     application {
         // The eJournal window icon (title bar + Windows taskbar). Without this the JetBrains Runtime
         // logo is used. Resolved from the classpath root; the build copies desktopApp/icons/icon.png

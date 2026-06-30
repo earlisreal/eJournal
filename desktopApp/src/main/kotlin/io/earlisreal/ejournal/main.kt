@@ -59,12 +59,17 @@ fun main(args: Array<String>) {
                 val ready = s.value
                 val windowState = rememberWindowState(size = DpSize(1360.dp, 880.dp))
                 Window(
-                    // Dispose JCEF and shut down the JavaFX toolkit before exiting.
-                    // JCEF must be disposed to release CEF resources; JavaFX must be shut down so
-                    // its non-daemon FX thread (used by the file picker) doesn't block JVM shutdown.
+                    // Do NOT call JcefRuntime.dispose() (global CefApp.dispose()) here: it would run
+                    // BEFORE exitApplication() tears down the composition — i.e. before the chart's
+                    // DisposableEffect closes its CefBrowser — so CEF gets torn down while a browser is
+                    // still alive, and the AppKit thread later dereferences freed CEF memory in
+                    // +[NSEvent removeMonitor:] → SIGSEGV on close (exit 134). Per-browser teardown
+                    // (browser.close + client.dispose) stays in JcefChartBridge.dispose(); the global
+                    // CefApp is reclaimed by process exit / java-cef's own shutdown handling.
+                    // JavaFX still needs an explicit shutdown so its non-daemon FX thread (file picker)
+                    // doesn't block JVM exit.
                     onCloseRequest = {
-                        JcefRuntime.dispose()
-                        JavaFxToolkit.shutdown() // still needed: file picker
+                        JavaFxToolkit.shutdown()
                         exitApplication()
                     },
                     state = windowState,

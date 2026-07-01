@@ -24,9 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -40,19 +44,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
+import io.earlisreal.ejournal.data.repository.TagRepository
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
+import io.earlisreal.ejournal.domain.model.defaultTagColors
 import io.earlisreal.ejournal.ui.chart.CandlestickChart
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.PositionTransactionsTable
+import io.earlisreal.ejournal.ui.components.TagChip
+import io.earlisreal.ejournal.ui.components.TagEditorMenu
+import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
 import io.earlisreal.ejournal.ui.components.formatHold
 import io.earlisreal.ejournal.ui.components.signedMoney
+import kotlinx.coroutines.launch
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
@@ -64,6 +76,8 @@ fun AnalysisScreen(
     positions: List<ClosedPosition>,
     initialIndex: Int,
     marketDataRepository: MarketDataRepository,
+    positionTags: PositionTagService,
+    tagRepository: TagRepository,
     isDarkTheme: Boolean,
     symbol: String = "$",
     sourceDestination: Destination? = null,
@@ -74,6 +88,43 @@ fun AnalysisScreen(
 
     LaunchedEffect(positions, initialIndex) { vm.init(positions, initialIndex, isDarkTheme) }
     LaunchedEffect(isDarkTheme) { vm.updateTheme(isDarkTheme) }
+
+    // Tag editing. Positions arrive as a snapshot (already tag-hydrated by the source screen); edits
+    // update a per-opening-transaction override so chips refresh without reloading the whole list.
+    val tagScope = rememberCoroutineScope()
+    var allTags by remember { mutableStateOf<List<Tag>>(emptyList()) }
+    var tagOverrides by remember { mutableStateOf<Map<Long, List<Tag>>>(emptyMap()) }
+    var showTagManager by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { allTags = tagRepository.getAll() }
+
+    fun currentTagsFor(p: ClosedPosition): List<Tag> =
+        p.openingTransactionId?.let { tagOverrides[it] } ?: p.tags
+
+    fun toggleTag(p: ClosedPosition, tag: Tag) {
+        val txId = p.openingTransactionId ?: return
+        val current = currentTagsFor(p)
+        val has = current.any { it.id == tag.id }
+        tagOverrides = tagOverrides + (txId to if (has) current.filter { it.id != tag.id } else current + tag)
+        tagScope.launch { if (has) positionTags.removeTag(p, tag.id) else positionTags.addTag(p, tag.id) }
+    }
+
+    fun createAndAssignTag(p: ClosedPosition, name: String) {
+        val txId = p.openingTransactionId ?: return
+        tagScope.launch {
+            val color = defaultTagColors[allTags.size % defaultTagColors.size]
+            val id = try {
+                tagRepository.create(name, color)
+            } catch (e: Exception) {
+                tagRepository.getAll().firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+            } ?: return@launch
+            positionTags.addTag(p, id)
+            allTags = tagRepository.getAll()
+            val created = allTags.firstOrNull { it.id == id } ?: return@launch
+            if (created.id !in currentTagsFor(p).map { it.id }) {
+                tagOverrides = tagOverrides + (txId to (currentTagsFor(p) + created))
+            }
+        }
+    }
 
     if (positions.isEmpty()) {
         EmptyState(
@@ -176,6 +227,18 @@ fun AnalysisScreen(
                         )
                         NavButton("▶", enabled = total > 1) { vm.navigateNext() }
                     }
+                }
+
+                // ── Tags ─────────────────────────────────────────────────────
+                if (position != null && position.openingTransactionId != null) {
+                    TagEditRow(
+                        tags = currentTagsFor(position),
+                        allTags = allTags,
+                        onToggle = { toggleTag(position, it) },
+                        onCreate = { createAndAssignTag(position, it) },
+                        onManage = { showTagManager = true },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    )
                 }
 
                 // ── Control bar ──────────────────────────────────────────────
@@ -296,6 +359,61 @@ fun AnalysisScreen(
                 onSelect = { vm.navigateTo(it) },
                 symbol = symbol,
                 modifier = Modifier.width(280.dp).fillMaxHeight(),
+            )
+        }
+    }
+
+    if (showTagManager) {
+        TagManagerDialog(
+            tagRepository = tagRepository,
+            onChanged = { tagScope.launch { allTags = tagRepository.getAll() } },
+            onDismiss = { showTagManager = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagEditRow(
+    tags: List<Tag>,
+    allTags: List<Tag>,
+    onToggle: (Tag) -> Unit,
+    onCreate: (String) -> Unit,
+    onManage: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            "Tags",
+            color = AppTheme.colors.textMuted,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(end = 4.dp),
+        )
+        tags.forEach { TagChip(it, onRemove = { onToggle(it) }) }
+        Box {
+            Text(
+                "＋ Tag",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { expanded = true }
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                color = AppTheme.colors.accent,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            TagEditorMenu(
+                expanded = expanded,
+                allTags = allTags,
+                selectedIds = tags.mapTo(mutableSetOf()) { it.id },
+                onToggle = onToggle,
+                onCreate = onCreate,
+                onManage = { expanded = false; onManage() },
+                onDismiss = { expanded = false },
             )
         }
     }

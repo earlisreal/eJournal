@@ -1,8 +1,11 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.tx
@@ -64,8 +67,21 @@ class CalendarViewModelTest {
         return ClosedPositionService(repo, FakePortfolioRepository(), compute)
     }
 
+    private object NoopTagRepository : TagRepository {
+        override suspend fun getAll() = emptyList<Tag>()
+        override suspend fun create(name: String, color: String) = 0L
+        override suspend fun update(id: Long, name: String, color: String) {}
+        override suspend fun delete(id: Long) {}
+        override suspend fun getTagsForOpeningTxIds(openingTxIds: List<Long>) = emptyMap<Long, List<Tag>>()
+        override suspend fun addTag(openingTxId: Long, tagId: Long) {}
+        override suspend fun removeTag(openingTxId: Long, tagId: Long) {}
+    }
+
     private fun newVm(service: ClosedPositionService) =
-        CalendarViewModel(service, initialYear = 2026, initialMonth = 6, dispatcher = UnconfinedTestDispatcher())
+        CalendarViewModel(
+            PositionTagService(service, NoopTagRepository),
+            initialYear = 2026, initialMonth = 6, dispatcher = UnconfinedTestDispatcher(),
+        )
 
     @Test
     fun `first load snaps to the latest trade month and sets bounds`() = runTest {

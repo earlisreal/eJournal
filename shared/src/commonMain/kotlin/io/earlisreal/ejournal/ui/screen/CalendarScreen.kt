@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.AppTextButton
 import io.earlisreal.ejournal.ui.components.DayDetailPanel
@@ -56,16 +56,16 @@ import kotlinx.datetime.todayIn
 
 @Composable
 fun CalendarScreen(
-    closedPositions: ClosedPositionService,
+    positionTags: PositionTagService,
     filter: FilterState,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    val vm = viewModel { CalendarViewModel(closedPositions, today.year, today.monthNumber) }
+    val vm = viewModel { CalendarViewModel(positionTags, today.year, today.monthNumber) }
     val state by vm.state.collectAsState()
 
-    LaunchedEffect(filter.portfolio, filter.segment) {
-        vm.load(filter.portfolio?.id, filter.segment)
+    LaunchedEffect(filter.portfolio, filter.segment, filter.selectedTagIds, filter.tagMatch) {
+        vm.load(filter.portfolio?.id, filter.segment, filter.selectedTagIds, filter.tagMatch)
     }
 
     ScreenScaffold(title = "Calendar") {

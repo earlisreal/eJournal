@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.ColumnVerticalScrollbar
@@ -40,6 +40,7 @@ import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.RecentTradesList
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.components.StatCard
+import io.earlisreal.ejournal.ui.components.TagStatsCompactList
 import io.earlisreal.ejournal.ui.components.TopTradesList
 import io.earlisreal.ejournal.ui.components.formatDuration
 import io.earlisreal.ejournal.ui.components.signedMoney
@@ -52,16 +53,18 @@ import io.earlisreal.ejournal.ui.viewmodel.DashboardViewModel
 
 @Composable
 fun DashboardScreen(
-    closedPositions: ClosedPositionService,
+    positionTags: PositionTagService,
     filter: FilterState,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     onViewAllTrades: () -> Unit = {},
+    onOpenReports: () -> Unit = {},
+    onSelectTag: (Long) -> Unit = {},
 ) {
-    val vm = viewModel { DashboardViewModel(closedPositions) }
+    val vm = viewModel { DashboardViewModel(positionTags) }
     val state by vm.state.collectAsState()
 
     LaunchedEffect(filter) {
-        vm.load(filter.portfolio?.id, filter.dateRange, filter.segment)
+        vm.load(filter.portfolio?.id, filter.dateRange, filter.segment, filter.selectedTagIds, filter.tagMatch)
     }
 
     ScreenScaffold(title = "Dashboard") {
@@ -80,6 +83,8 @@ fun DashboardScreen(
                 symbol = filter.portfolio?.market?.symbol ?: "$",
                 onAnalyze = onAnalyze,
                 onViewAllTrades = onViewAllTrades,
+                onOpenReports = onOpenReports,
+                onSelectTag = onSelectTag,
             )
         }
     }
@@ -93,6 +98,8 @@ internal fun DashboardContent(
     symbol: String,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     onViewAllTrades: () -> Unit,
+    onOpenReports: () -> Unit = {},
+    onSelectTag: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val metrics = state.metrics
@@ -165,6 +172,28 @@ internal fun DashboardContent(
                         worstTrades = state.worstTrades,
                         symbol = symbol,
                         onSelect = { clicked, group -> onAnalyze(clicked, group) },
+                    )
+                }
+            }
+
+            if (state.tagStats.isNotEmpty()) {
+                AppCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        SectionLabel("Top tags")
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "View reports →",
+                            color = AppTheme.colors.accent,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable { onOpenReports() },
+                        )
+                    }
+                    TagStatsCompactList(
+                        stats = state.tagStats.take(6),
+                        symbol = symbol,
+                        onSelectTag = onSelectTag,
+                        modifier = Modifier.padding(top = Spacing.sm),
                     )
                 }
             }

@@ -1,0 +1,23 @@
+CREATE TABLE Tag (
+    id    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name  TEXT    NOT NULL,
+    color TEXT    NOT NULL            -- hex string, e.g. "#4CAF50"
+);
+
+-- Tag names are unique case-insensitively so "Breakout" and "breakout" can't both exist.
+CREATE UNIQUE INDEX Tag_name ON Tag(name COLLATE NOCASE);
+
+selectAllTags:
+SELECT * FROM Tag ORDER BY name COLLATE NOCASE ASC;
+
+insertTag:
+INSERT INTO Tag (name, color) VALUES (?, ?);
+
+updateTag:
+UPDATE Tag SET name = ?, color = ? WHERE id = ?;
+
+deleteTag:
+DELETE FROM Tag WHERE id = ?;
+
+lastInsertRowId:
+SELECT last_insert_rowid();

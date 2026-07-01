@@ -28,6 +28,14 @@ fun main(args: Array<String>) {
     StartupTrace.mark("main")
     FileLogging.init() // tee stdout/stderr to ~/.ejournal/logs so the packaged GUI app isn't silent
 
+    // The Analysis chart is a heavyweight/windowed JCEF surface (SwingPanel with windowless rendering
+    // off), which always paints above Compose's in-window layers — so any popup overlapping it (the
+    // portfolio dropdown, tag pickers, the Manage-tags dialog) renders *behind* the chart. Rendering
+    // Compose popups/dialogs as separate OS windows floats them above the heavyweight surface. Per the
+    // JetBrains Swing-interop docs this must be set before any Compose code runs (i.e. before
+    // application{}). See https://kotlinlang.org/docs/multiplatform/compose-desktop-swing-interoperability.html
+    System.setProperty("compose.layers.type", "WINDOW")
+
     if (args.firstOrNull() == "generate-csv") {
         runCsvGenerator(args.drop(1).toTypedArray())
         return
@@ -97,7 +105,8 @@ fun main(args: Array<String>) {
                         startupSyncCoordinator = ready.deps.startupSyncCoordinator,
                         startDestination = ready.startDestination,
                         initialPortfolios = ready.portfolios,
-                        closedPositions = ready.deps.closedPositionService,
+                        positionTags = ready.deps.positionTagService,
+                        tagRepository = ready.deps.tagRepository,
                     )
                 }
             }

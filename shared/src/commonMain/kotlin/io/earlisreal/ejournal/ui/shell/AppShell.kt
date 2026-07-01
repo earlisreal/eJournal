@@ -20,10 +20,12 @@ import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
+import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.analytics.resolveRange
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
@@ -44,6 +46,8 @@ data class ShellNav(
     val analysisIndex: Int,
     val onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     val onNavigate: (Destination) -> Unit,
+    /** Set the global tag filter to a single tag and jump to Trade Logs (Reports/Dashboard drill-down). */
+    val onSelectTag: (Long) -> Unit,
     val themeMode: ThemeMode,
     val onThemeChange: (ThemeMode) -> Unit,
     val analysisSource: Destination?,
@@ -56,6 +60,7 @@ fun AppShell(
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
     portfolioSettings: PortfolioSettingsRepository,
+    tagRepository: TagRepository,
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
     initialPortfolios: List<Portfolio>,
@@ -78,6 +83,8 @@ fun AppShell(
         mutableStateOf(savedFilter?.let { p -> p.customFrom?.let { f -> p.customTo?.let { t -> DateRange(f, t) } } })
     }
     var segment by remember { mutableStateOf(savedFilter?.segment ?: Segment.ALL) }
+    var selectedTagIds by remember { mutableStateOf(savedFilter?.selectedTagIds ?: emptySet<Long>()) }
+    var tagMatch by remember { mutableStateOf(savedFilter?.tagMatch ?: TagMatch.ANY) }
 
     var portfolios by remember { mutableStateOf(initialPortfolios) }
     var selectedPortfolio by remember {
@@ -97,6 +104,8 @@ fun AppShell(
                 customFrom = customRange?.from,
                 customTo = customRange?.to,
                 segment = segment,
+                selectedTagIds = selectedTagIds,
+                tagMatch = tagMatch,
             )
         )
     }
@@ -115,6 +124,8 @@ fun AppShell(
         portfolio = selectedPortfolio,
         dateRange = resolveRange(preset, today, customRange),
         segment = segment,
+        selectedTagIds = selectedTagIds,
+        tagMatch = tagMatch,
     )
 
     val systemDark = isSystemInDarkTheme()
@@ -149,6 +160,16 @@ fun AppShell(
                             onSegmentChange = { segment = it; persist() },
                             showDateFilter = current != Destination.CALENDAR,
                             onManagePortfolios = { showPortfolioManager = true },
+                            tagRepository = tagRepository,
+                            selectedTagIds = selectedTagIds,
+                            tagMatch = tagMatch,
+                            onToggleTagFilter = { id ->
+                                selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
+                                persist()
+                            },
+                            onSetTagMatch = { tagMatch = it; persist() },
+                            onClearTagFilter = { selectedTagIds = emptySet(); persist() },
+                            showTagFilter = current in setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.CALENDAR),
                         )
                         content(
                             current,
@@ -166,6 +187,13 @@ fun AppShell(
                                 },
                                 onNavigate = { dest ->
                                     if (dest.enabled) { analysisSource = null; current = dest }
+                                },
+                                onSelectTag = { id ->
+                                    selectedTagIds = setOf(id)
+                                    tagMatch = TagMatch.ANY
+                                    persist()
+                                    analysisSource = null
+                                    current = Destination.TRADE_LOGS
                                 },
                                 themeMode    = themeMode,
                                 onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },

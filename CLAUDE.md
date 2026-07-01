@@ -23,6 +23,11 @@ Run a single test class or method (tests use the JUnit platform):
 
 Requires JDK 25 (toolchain is resolved via foojay). Gradle config cache and build cache are enabled.
 
+## Development workflow
+
+- **Design, then usually implement directly — skip the separate written plan.** The user prefers: brainstorm/design spec → implement, *not* brainstorm → `writing-plans` → execute. Once a design spec in `docs/superpowers/specs/` is approved, go straight to implementation using TDD, working in the spec's phase order (tests are the checkpoints). Only write a formal plan in `docs/superpowers/plans/` when the work is large, handed off to a separate session, or the user asks. Keep the design step — that's the one that catches wrong assumptions cheaply; skipping *it* is where things go wrong, not skipping the plan.
+- **Never commit without an explicit request.** "Implement directly to main" authorizes editing files on `main` (no feature branch), not committing — ask before any `git commit`/`push`.
+
 ## Architecture
 
 Two Gradle modules: **`shared`** holds all UI and business logic; **`desktopApp`** is a thin launcher only (`main.kt` constructs `AppDependencies` and calls `App()`). This split deliberately keeps an Android target viable later without restructuring — keep new logic in `shared/commonMain`, not `desktopApp`.

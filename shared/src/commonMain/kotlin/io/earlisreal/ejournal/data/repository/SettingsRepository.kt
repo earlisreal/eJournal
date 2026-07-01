@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.data.repository
 
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import kotlinx.datetime.LocalDate
 
@@ -12,6 +13,8 @@ data class FilterPrefs(
     val customFrom: LocalDate?,
     val customTo: LocalDate?,
     val segment: Segment,
+    val selectedTagIds: Set<Long> = emptySet(),
+    val tagMatch: TagMatch = TagMatch.ANY,
 )
 
 interface SettingsRepository {

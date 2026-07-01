@@ -14,13 +14,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.components.DateRangeFilter
 import io.earlisreal.ejournal.ui.components.PortfolioSwitcher
 import io.earlisreal.ejournal.ui.components.SegmentToggle
+import io.earlisreal.ejournal.ui.components.TagFilterControl
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.Spacing
 
@@ -36,6 +39,13 @@ fun TopBar(
     onSegmentChange: (Segment) -> Unit,
     showDateFilter: Boolean,
     onManagePortfolios: () -> Unit,
+    tagRepository: TagRepository,
+    selectedTagIds: Set<Long>,
+    tagMatch: TagMatch,
+    onToggleTagFilter: (Long) -> Unit,
+    onSetTagMatch: (TagMatch) -> Unit,
+    onClearTagFilter: () -> Unit,
+    showTagFilter: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val surfaceColor = AppTheme.colors.surface
@@ -63,5 +73,16 @@ fun TopBar(
             Spacer(Modifier.width(Spacing.lg))
         }
         SegmentToggle(segment = segment, onSegmentChange = onSegmentChange)
+        if (showTagFilter) {
+            Spacer(Modifier.width(Spacing.md))
+            TagFilterControl(
+                tagRepository = tagRepository,
+                selectedTagIds = selectedTagIds,
+                tagMatch = tagMatch,
+                onToggleTag = onToggleTagFilter,
+                onSetMatch = onSetTagMatch,
+                onClear = onClearTagFilter,
+            )
+        }
     }
 }

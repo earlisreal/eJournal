@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.FileUpload
@@ -134,6 +135,7 @@ private val Destination.icon: ImageVector
         Destination.TRADE_LOGS -> Icons.AutoMirrored.Outlined.ReceiptLong
         Destination.IMPORT -> Icons.Outlined.FileUpload
         Destination.CALENDAR -> Icons.Outlined.CalendarMonth
+        Destination.REPORTS -> Icons.Outlined.Assessment
         Destination.ANALYSIS -> Icons.Outlined.Analytics
         Destination.SETTINGS -> Icons.Outlined.Settings
     }

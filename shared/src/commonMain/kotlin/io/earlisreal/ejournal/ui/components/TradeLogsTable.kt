@@ -26,6 +26,7 @@ import io.earlisreal.ejournal.domain.analytics.SortDirection
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
@@ -34,7 +35,8 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
-private data class Col(val column: SortColumn, val title: String, val weight: Float, val numeric: Boolean)
+// column == null → a non-sortable column (Tags).
+private data class Col(val column: SortColumn?, val title: String, val weight: Float, val numeric: Boolean)
 
 private val COLUMNS = listOf(
     Col(SortColumn.SYMBOL, "Symbol", 1.0f, false),
@@ -48,16 +50,21 @@ private val COLUMNS = listOf(
     Col(SortColumn.FEES, "Fees", 0.8f, true),
     Col(SortColumn.PNL, "P&L", 1.0f, true),
     Col(SortColumn.PNL_PCT, "P&L %", 0.8f, true),
+    Col(null, "Tags", 1.8f, false),
 )
 
 @Composable
 fun TradeLogsTable(
     positions: List<ClosedPosition>,
+    allTags: List<Tag>,
     sortColumn: SortColumn,
     sortDirection: SortDirection,
     onSort: (SortColumn) -> Unit,
     symbol: String,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
+    onToggleTag: (ClosedPosition, Tag) -> Unit = { _, _ -> },
+    onCreateTag: (ClosedPosition, String) -> Unit = { _, _ -> },
+    onManageTags: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -69,11 +76,13 @@ fun TradeLogsTable(
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
             COLUMNS.forEach { col ->
-                val active = col.column == sortColumn
+                val sortCol = col.column
+                val active = sortCol != null && sortCol == sortColumn
                 val arrow = if (!active) "" else if (sortDirection == SortDirection.ASC) " ↑" else " ↓"
                 Text(
                     text = col.title + arrow,
-                    modifier = Modifier.weight(col.weight).clickable { onSort(col.column) },
+                    modifier = Modifier.weight(col.weight)
+                        .then(if (sortCol != null) Modifier.clickable { onSort(sortCol) } else Modifier),
                     textAlign = if (col.numeric) TextAlign.End else TextAlign.Start,
                     fontWeight = FontWeight.SemiBold,
                     color = if (active) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
@@ -85,7 +94,15 @@ fun TradeLogsTable(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 itemsIndexed(positions) { index, p ->
-                    PositionRow(p, symbol, onClick = { onAnalyze(p, positions) })
+                    PositionRow(
+                        p = p,
+                        symbol = symbol,
+                        allTags = allTags,
+                        onToggleTag = onToggleTag,
+                        onCreateTag = onCreateTag,
+                        onManageTags = onManageTags,
+                        onClick = { onAnalyze(p, positions) },
+                    )
                     if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
                 }
             }
@@ -98,7 +115,15 @@ fun TradeLogsTable(
 }
 
 @Composable
-private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) {
+private fun PositionRow(
+    p: ClosedPosition,
+    symbol: String,
+    allTags: List<Tag>,
+    onToggleTag: (ClosedPosition, Tag) -> Unit,
+    onCreateTag: (ClosedPosition, String) -> Unit,
+    onManageTags: () -> Unit,
+    onClick: () -> Unit,
+) {
     val type = classifyTradeType(p)
     val pnlColor = if (p.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
     val cost = p.averageEntryPrice * p.shares
@@ -118,6 +143,7 @@ private fun PositionRow(p: ClosedPosition, symbol: String, onClick: () -> Unit) 
         NumCell("%.2f".format(p.fees), COLUMNS[8].weight)
         NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor, bold = true)
         NumCell("%+.1f%%".format(pct), COLUMNS[10].weight, color = pnlColor)
+        TagCell(p, COLUMNS[11].weight, allTags, onToggleTag, onCreateTag, onManageTags)
     }
 }
 

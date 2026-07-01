@@ -9,7 +9,7 @@ class DestinationTest {
     @Test
     fun destinationsAreInSidebarOrder() {
         assertEquals(
-            listOf("Dashboard", "Trade Logs", "Import", "Calendar", "Analysis", "Settings"),
+            listOf("Dashboard", "Trade Logs", "Import", "Calendar", "Reports", "Analysis", "Settings"),
             Destination.entries.map { it.label }
         )
     }

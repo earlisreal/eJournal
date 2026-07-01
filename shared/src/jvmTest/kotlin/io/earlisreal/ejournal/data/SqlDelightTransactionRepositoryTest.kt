@@ -18,9 +18,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SqlDelightTransactionRepositoryTest {
 
+    private lateinit var db: AppDatabase
     private lateinit var txRepo: SqlDelightTransactionRepository
     private lateinit var portfolioRepo: SqlDelightPortfolioRepository
 
@@ -43,7 +45,7 @@ class SqlDelightTransactionRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        val db = buildDb(JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY))
+        db = buildDb(JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY))
         portfolioRepo = SqlDelightPortfolioRepository(db)
         txRepo = SqlDelightTransactionRepository(db)
     }
@@ -172,5 +174,31 @@ class SqlDelightTransactionRepositoryTest {
         txRepo.deleteByPortfolio(p1)
         assertEquals(0, txRepo.getByPortfolio(p1).size)
         assertEquals(1, txRepo.getByPortfolio(p2).size)
+    }
+
+    @Test
+    fun deletingTransactionRemovesItsTagAssignments() = runTest {
+        val pId = seedPortfolio()
+        val txId = txRepo.insert(tx(pId))!!
+        val tagRepo = SqlDelightTagRepository(db)
+        val tagId = tagRepo.create("Breakout", "#4CAF50")
+        tagRepo.addTag(openingTxId = txId, tagId = tagId)
+
+        txRepo.delete(txId)
+
+        assertTrue(tagRepo.getTagsForOpeningTxIds(listOf(txId)).isEmpty())
+    }
+
+    @Test
+    fun deletingPortfolioRemovesItsTagAssignments() = runTest {
+        val pId = seedPortfolio()
+        val txId = txRepo.insert(tx(pId))!!
+        val tagRepo = SqlDelightTagRepository(db)
+        val tagId = tagRepo.create("Breakout", "#4CAF50")
+        tagRepo.addTag(openingTxId = txId, tagId = tagId)
+
+        txRepo.deleteByPortfolio(pId)
+
+        assertTrue(tagRepo.getTagsForOpeningTxIds(listOf(txId)).isEmpty())
     }
 }

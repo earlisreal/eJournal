@@ -43,14 +43,24 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
         }
 
     override suspend fun delete(id: Long) {
-        db.tradeTransactionQueries.deleteById(id)
+        // Also drop any tag assignments anchored to this transaction as an opener. Deleting a
+        // non-opener fill matches no PositionTag rows, so this is a no-op in that case.
+        db.tradeTransactionQueries.transaction {
+            db.positionTagQueries.deleteAssignmentsForOpeningTx(id)
+            db.tradeTransactionQueries.deleteById(id)
+        }
     }
 
     override suspend fun countByPortfolio(portfolioId: Long): Long =
         db.tradeTransactionQueries.countByPortfolio(portfolioId).executeAsOne()
 
     override suspend fun deleteByPortfolio(portfolioId: Long) {
-        db.tradeTransactionQueries.deleteByPortfolio(portfolioId)
+        // Clear tag assignments for this portfolio's positions before the transactions vanish (the
+        // cleanup query resolves openers via TradeTransaction, so it must run first).
+        db.tradeTransactionQueries.transaction {
+            db.positionTagQueries.deleteAssignmentsForPortfolio(portfolioId)
+            db.tradeTransactionQueries.deleteByPortfolio(portfolioId)
+        }
     }
 
     private fun io.earlisreal.ejournal.TradeTransaction.toDomain() = Transaction(

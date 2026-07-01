@@ -126,6 +126,7 @@ fun EmptyStatePreview() = PreviewBox {
 fun TradeLogsTablePreview() = PreviewBox {
     TradeLogsTable(
         positions = samplePositions,
+        allTags = emptyList(),
         sortColumn = SortColumn.EXIT,
         sortDirection = SortDirection.DESC,
         onSort = {},

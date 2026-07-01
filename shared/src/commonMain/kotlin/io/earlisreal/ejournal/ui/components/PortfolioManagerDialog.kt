@@ -3,16 +3,16 @@ package io.earlisreal.ejournal.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,18 +22,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.ui.theme.AppTheme
-import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.PortfolioManagerViewModel
 
+/**
+ * Manage portfolios (add / edit / delete). Shown in a real OS window ([AppModalWindow]) so it floats
+ * above the heavyweight JCEF chart on the Analysis screen instead of being occluded.
+ */
 @Composable
 fun PortfolioManagerDialog(
     portfolioRepository: PortfolioRepository,
@@ -53,10 +54,10 @@ fun PortfolioManagerDialog(
         editingId = null; name = ""; market = Market.US_STOCKS
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = CardShape, color = AppTheme.colors.surface) {
+    AppModalWindow(title = "Portfolios", onDismiss = onDismiss, widthDp = 460, heightDp = 640) {
+        Surface(modifier = Modifier.fillMaxSize(), color = AppTheme.colors.surface) {
             Column(
-                modifier = Modifier.width(440.dp).padding(Spacing.xl),
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 Text("Portfolios", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -122,17 +123,33 @@ fun PortfolioManagerDialog(
     }
 
     state.pendingDelete?.let { p ->
-        AlertDialog(
-            onDismissRequest = { vm.cancelDelete() },
-            title = { Text("Delete ${p.name}?") },
-            text = {
-                Text(
-                    if (state.pendingDeleteCount == 0L) "This portfolio has no transactions."
-                    else "This also deletes ${state.pendingDeleteCount} transaction(s). This can't be undone.",
-                )
-            },
-            confirmButton = { TextButton(onClick = { vm.confirmDelete() }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { vm.cancelDelete() }) { Text("Cancel") } },
-        )
+        AppModalWindow(title = "Delete portfolio", onDismiss = { vm.cancelDelete() }, widthDp = 420, heightDp = 220) {
+            Surface(modifier = Modifier.fillMaxSize(), color = AppTheme.colors.surface) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(Spacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    Text(
+                        "Delete ${p.name}?",
+                        color = AppTheme.colors.textPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        if (state.pendingDeleteCount == 0L) "This portfolio has no transactions."
+                        else "This also deletes ${state.pendingDeleteCount} transaction(s). This can't be undone.",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.End),
+                    ) {
+                        AppTextButton(text = "Cancel", onClick = { vm.cancelDelete() })
+                        AppTextButton(text = "Delete", onClick = { vm.confirmDelete() })
+                    }
+                }
+            }
+        }
     }
 }

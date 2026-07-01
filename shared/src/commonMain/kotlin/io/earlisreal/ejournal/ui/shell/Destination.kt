@@ -5,6 +5,7 @@ enum class Destination(val label: String, val enabled: Boolean, val pinnedBottom
     TRADE_LOGS("Trade Logs", enabled = true),
     IMPORT("Import", enabled = true),
     CALENDAR("Calendar", enabled = true),
+    REPORTS("Reports", enabled = true),
     ANALYSIS("Analysis", enabled = true),
     SETTINGS("Settings", enabled = true, pinnedBottom = true);
 

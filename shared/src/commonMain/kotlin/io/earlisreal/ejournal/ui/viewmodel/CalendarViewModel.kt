@@ -2,11 +2,13 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DaySummary
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.analytics.dailySummaries
+import io.earlisreal.ejournal.domain.analytics.filterByTags
 import io.earlisreal.ejournal.domain.analytics.filterPositions
 import io.earlisreal.ejournal.domain.analytics.monthGrid
 import io.earlisreal.ejournal.domain.model.ClosedPosition
@@ -40,11 +42,13 @@ data class CalendarState(
  * Month navigation just re-slices the loaded data — no reload — since daily summaries cover all dates.
  */
 class CalendarViewModel(
-    private val closedPositions: ClosedPositionService,
+    private val positionTags: PositionTagService,
     initialYear: Int,
     initialMonth: Int,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
+
+    private data class LoadKey(val portfolioId: Long?, val segment: Segment, val tagIds: Set<Long>, val tagMatch: TagMatch)
 
     private val _state = MutableStateFlow(
         CalendarState(year = initialYear, month = initialMonth, grid = monthGrid(initialYear, initialMonth))
@@ -57,9 +61,14 @@ class CalendarViewModel(
      * re-runs [load] with the same key — we then keep the browsed month instead of snapping to the
      * latest. A genuine change (portfolio/segment switch, first load) snaps to the latest month.
      */
-    private var loadedKey: Pair<Long?, Segment>? = null
+    private var loadedKey: LoadKey? = null
 
-    fun load(portfolioId: Long?, segment: Segment) {
+    fun load(
+        portfolioId: Long?,
+        segment: Segment,
+        selectedTagIds: Set<Long> = emptySet(),
+        tagMatch: TagMatch = TagMatch.ANY,
+    ) {
         loadJob?.cancel()
         if (portfolioId == null) {
             loadedKey = null
@@ -69,12 +78,16 @@ class CalendarViewModel(
             )
             return
         }
-        val key = portfolioId to segment
+        val key = LoadKey(portfolioId, segment, selectedTagIds, tagMatch)
         val snapToLatest = key != loadedKey
         loadedKey = key
         _state.value = _state.value.copy(loading = true)
         loadJob = viewModelScope.launch(dispatcher) {
-            val positions = filterPositions(closedPositions.forPortfolio(portfolioId), DateRange(null, null), segment)
+            val positions = filterByTags(
+                filterPositions(positionTags.forPortfolio(portfolioId), DateRange(null, null), segment),
+                selectedTagIds,
+                tagMatch,
+            )
             val summaries = dailySummaries(positions)
             val positionsByDay = positions.groupBy { it.exitDatetime.date }
             val availableYears = summaries.keys.map { it.year }.distinct().sorted()

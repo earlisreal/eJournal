@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.data.PreferencesSettingsRepository
 import io.earlisreal.ejournal.data.SqlDelightMarketDataRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioSettingsRepository
+import io.earlisreal.ejournal.data.SqlDelightTagRepository
 import io.earlisreal.ejournal.data.SqlDelightTransactionRepository
 import io.earlisreal.ejournal.data.database.JvmDatabaseFactory
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
@@ -12,6 +13,7 @@ import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
+import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.domain.marketdata.AlpacaCryptoProvider
@@ -21,6 +23,7 @@ import io.earlisreal.ejournal.domain.marketdata.YahooCryptoProvider
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.parser.EtoroXlsxParser
 import io.earlisreal.ejournal.domain.parser.EtradeCsvParser
@@ -58,6 +61,7 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
+    val tagRepository: TagRepository = SqlDelightTagRepository(db)
     // Broker-specific parsers first (distinctive header/format sniffs, no collisions); Generic last (manual-only fallback).
     val parsers: List<TransactionParser> = listOf(
         MoomooCsvParser(),
@@ -74,6 +78,7 @@ class AppDependencies {
     )
 
     val closedPositionService = ClosedPositionService(transactionRepository, portfolioRepository)
+    val positionTagService = PositionTagService(closedPositionService, tagRepository)
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
     val cryptoProvider = AlpacaCryptoProvider(httpClient, credentialsRepository)

@@ -53,7 +53,7 @@ import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.domain.model.defaultTagColors
-import io.earlisreal.ejournal.ui.chart.CandlestickChart
+import io.earlisreal.ejournal.ui.chart.canvas.CandlestickCanvasChart
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
@@ -138,8 +138,7 @@ fun AnalysisScreen(
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
 
     // Arrow-key navigation: Up/Left → previous trade, Down/Right → next (both wrap around).
-    // The root grabs focus on entry so keys work immediately; clicking the native JCEF/Chromium
-    // chart can take focus away, after which interacting with any Compose control restores it.
+    // The root grabs focus on entry so keys work immediately.
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -299,9 +298,8 @@ fun AnalysisScreen(
                 }
 
                 // ── Chart area ───────────────────────────────────────────────
-                // CandlestickChart stays mounted across navigations so the JCEF/Chromium
-                // chart isn't torn down and rebuilt on every position change. The loading
-                // indicator overlays it instead of replacing it.
+                // Native Compose-Canvas chart. The loading indicator overlays it instead of
+                // replacing it, so switching timeframes/positions doesn't flash an empty box.
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (state.noDataForTimeframe) {
                         EmptyState(
@@ -309,7 +307,7 @@ fun AnalysisScreen(
                             subtitle = "Go to Settings → Sync market data to fetch OHLCV bars for this trade.",
                         )
                     } else {
-                        CandlestickChart(state = state, modifier = Modifier.fillMaxSize())
+                        CandlestickCanvasChart(state = state, modifier = Modifier.fillMaxSize())
                         if (state.loading) LoadingIndicator()
                     }
                 }

@@ -71,22 +71,6 @@ dependencies {
     // Provides a no-op SLF4J binding so the SQLite JDBC driver's logging is discarded silently.
     // Version must match the slf4j-api forced onto the classpath (2.x) — see libs.versions.toml.
     runtimeOnly(libs.slf4j.nop)
-
-    // JCEF via jcefmaven — backs the production chart (LWC v5 via Chromium Embedded Framework).
-    // Brings org.cef + a matching CEF native bundle it downloads on first run.
-    implementation(libs.jcefmaven)
-    // Bundle the CEF native payload (~129MB) for the build host's platform so jcefmaven extracts
-    // it from the jar instead of downloading at runtime (offline-capable, correct per-OS bundle).
-    // CI relies on this: the Windows GitHub runner auto-bundles windows-amd64 natives with no
-    // workflow change needed. providers.systemProperty is used (not raw System.getProperty) so
-    // Gradle's configuration cache can track the input safely.
-    val osName = providers.systemProperty("os.name").get().lowercase()
-    val jcefNatives = when {
-        osName.contains("win") -> libs.jcef.natives.windows.amd64
-        osName.contains("mac") -> libs.jcef.natives.macos.arm64
-        else                   -> libs.jcef.natives.linux.amd64
-    }
-    runtimeOnly(jcefNatives)
 }
 
 compose.desktop {
@@ -94,8 +78,8 @@ compose.desktop {
         mainClass = "io.earlisreal.ejournal.MainKt"
         javaHome = jbrLauncher.get().metadata.installationPath.asFile.absolutePath
         // Silences the JDK 24+ restricted-native-access warning from native-lib loaders calling
-        // System::load from the unnamed module — now JCEF (jcefmaven) and JNA (FileKit's native file
-        // picker). Previously also covered JavaFX's NativeLibLoader, since removed.
+        // System::load from the unnamed module — Skiko (Compose rendering) and JNA (FileKit's native
+        // file picker).
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
         // Dropped --sun-misc-unsafe-memory-access=allow with JavaFX: its Marlin renderer was the only
         // caller of the deprecated sun.misc.Unsafe *memory-access* methods this flag gates (Skiko and
@@ -112,16 +96,6 @@ compose.desktop {
         jvmArgs += "-XX:+UseSerialGC"
         jvmArgs += "-Xms128m"
         jvmArgs += "-Xmx512m"
-        // JCEF (jcefmaven) needs deep reflection into AWT internals on JDK 16+. Added here so the
-        // packaged app (jlink runtime) also has these opens — jcefmaven calls AWT internals at startup.
-        // NOTE: --limit-modules is intentionally NOT added here. The packaged app runs on a jlink
-        // runtime built from only the modules() list + jdeps detection — it does NOT contain JBR's
-        // jcef/jogl.all system modules (nothing `requires` them), so there is nothing to suppress.
-        // Adding --limit-modules here could hide a jdeps-detected module and break the packaged app.
-        // --limit-modules is only needed for dev `run`/`hotRun` (full JBR runtime), already set below.
-        jvmArgs += listOf("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
-        jvmArgs += listOf("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
-        jvmArgs += listOf("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -131,13 +105,11 @@ compose.desktop {
             // -splash: target above) resolves to this common/splash.png.
             appResourcesRootDir.set(layout.dir(generateVersionedSplash.map { versionedAppResources.get().asFile }))
             // jpackage's default jlink runtime omits modules our deps need at startup — java.sql
-            // (SQLDelight JDBC), jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) and
-            // jdk.jsobject (JavaFX WebView's JS bridge) — which caused "Failed to launch JVM".
-            // This explicit set comes from `./gradlew :desktopApp:suggestRuntimeModules` (jdeps).
-            // Re-derived after adding JCEF (Task 7): suggestRuntimeModules also suggested "jcef" (a
-            // JBR system module) which is intentionally excluded — the jlink runtime doesn't contain
-            // JBR's jcef module (nothing `requires` it), and jcefmaven's classpath jars handle JCEF.
-            // All previously-present modules are retained; none removed. Far smaller than includeAllModules.
+            // (SQLDelight JDBC) and jdk.unsupported (sun.misc.Unsafe via coroutines/skiko) — without
+            // which the packaged app fails with "Failed to launch JVM". Derived from
+            // `./gradlew :desktopApp:suggestRuntimeModules` (jdeps). jdk.jsobject is a leftover from the
+            // now-removed JavaFX-WebView/JCEF charts and is likely droppable — re-run
+            // suggestRuntimeModules to confirm before removing it.
             modules(
                 "java.instrument", "java.management", "java.net.http", "java.prefs", "java.sql",
                 "jdk.jfr", "jdk.jsobject", "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",
@@ -187,20 +159,4 @@ tasks.withType<JavaExec>().configureEach {
     jvmArgs("-XX:+UseSerialGC")
     jvmArgs("-Xms128m")
     jvmArgs("-Xmx512m")
-    // JCEF (jcefmaven) needs deep reflection into AWT internals on JDK 16+.
-    jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
-    jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
-    // Suppress JBR's bundled `jcef` and `jogl.all` SYSTEM modules so jcefmaven's classpath
-    // org.cef / jogl jars take precedence — without this the JBR module shadows the classpath
-    // jars (mismatched natives → crash). Classpath jars are unaffected by --limit-modules.
-    jvmArgs(
-        "--limit-modules",
-        listOf(
-            "java.base", "java.desktop", "java.logging", "java.management", "java.naming",
-            "java.net.http", "java.prefs", "java.sql", "java.xml", "java.datatransfer",
-            "java.scripting", "java.instrument", "jdk.unsupported", "jdk.unsupported.desktop",
-            "jdk.jfr", "jdk.jsobject", "jdk.xml.dom",
-        ).joinToString(","),
-    )
 }

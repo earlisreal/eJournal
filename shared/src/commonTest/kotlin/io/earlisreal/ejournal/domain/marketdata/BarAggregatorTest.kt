@@ -80,10 +80,10 @@ class BarAggregatorTest {
 
     @Test
     fun dailyMergesMultipleBarsOnSameDate() {
-        // Real-world cause of a chart crash: the sync stored two DAILY bars for one date
+        // Real-world cause of a chart glitch: the sync stored two DAILY bars for one date
         // (a 09:30 bar and a 16:00:01 end-of-day bar). They normalise to the same chart time,
-        // so they must be merged into one bar — otherwise Lightweight Charts receives
-        // duplicate-timestamp candles and throws "Value is null" during rendering.
+        // so they must be merged into one bar — otherwise the chart receives duplicate-timestamp
+        // candles.
         val bars = listOf(
             bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-17T09:30",    open = 10.0, high = 11.0, low = 9.5,  close = 10.5, volume = 1000),
             bar(timeframe = Timeframe.DAILY, timestamp = "2026-06-18T09:30",    open = 10.5, high = 12.0, low = 10.0, close = 11.0, volume = 2000),

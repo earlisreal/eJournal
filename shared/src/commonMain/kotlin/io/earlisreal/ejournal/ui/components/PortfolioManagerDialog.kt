@@ -32,8 +32,8 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.PortfolioManagerViewModel
 
 /**
- * Manage portfolios (add / edit / delete). Shown in a real OS window ([AppModalWindow]) so it floats
- * above the heavyweight JCEF chart on the Analysis screen instead of being occluded.
+ * Manage portfolios (add / edit / delete). Shown in a real OS window ([AppModalWindow]) so it
+ * reliably floats above the main window.
  */
 @Composable
 fun PortfolioManagerDialog(

@@ -44,8 +44,7 @@ import kotlinx.coroutines.launch
  * Create, rename, recolor, and delete tags. Deleting a tag also removes it from every position (the
  * repository cascades the assignments). [onChanged] fires after any mutation so callers can refresh.
  *
- * Shown in a real OS window ([AppModalWindow]) so it floats above the heavyweight JCEF chart on the
- * Analysis screen instead of being occluded.
+ * Shown in a real OS window ([AppModalWindow]) so it reliably floats above the main window.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

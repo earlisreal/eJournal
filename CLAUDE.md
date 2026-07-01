@@ -39,6 +39,7 @@ Source layering inside `shared` (package `io.earlisreal.ejournal`):
 - `data/repository/` — repository interfaces (`TransactionRepository`, `PortfolioRepository`).
 - `data/` — SQLDelight-backed repository implementations that map generated rows to domain models via `toDomain()`.
 - `ui/` — Compose screens (`ui/screen/`), `ViewModel`s (`ui/viewmodel/`), navigation (`ui/navigation/Screen.kt`). Screens get repos/parsers passed in and create their own `ViewModel` via `viewModel { ... }`; ViewModels expose a single `StateFlow<XState>` of immutable state.
+- `ui/chart/canvas/` — the Trade Analysis candlestick chart, drawn natively on a Compose `Canvas` (no webview/JCEF). The pure pan/zoom/scale math (`BarWindow`, `ChartViewport`, `ChartInitialView`) is unit-tested; `CandlestickChartRenderer` is the single drawing source of truth (candles, volume, VWAP, trade diamonds, crosshair, axes); `CandlestickCanvasChart` is the composable and `CanvasChartAdapter` maps `AnalysisState` onto it. Replaced an earlier Lightweight-Charts-in-JCEF bridge (removed to drop ~130 MB/platform of native CEF payload).
 
 ### Dependency wiring
 

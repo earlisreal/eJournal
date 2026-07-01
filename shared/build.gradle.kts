@@ -32,7 +32,6 @@ kotlin {
             implementation(libs.sqlite.jdbc)
             implementation(libs.ktor.client.cio)
             implementation(compose.desktop.currentOs)
-            implementation(libs.jcefmaven)
 
             // Native file picker. FileKit opens the modern per-OS dialog (NSOpenPanel on macOS, the
             // Win32 COM IFileOpenDialog on Windows) via JNA — with the extension filter honored on

@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -74,6 +75,7 @@ fun TradeLogsTable(
         Row(
             modifier = Modifier.fillMaxWidth().background(AppTheme.colors.surfaceElevated)
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             COLUMNS.forEach { col ->
                 val sortCol = col.column
@@ -131,6 +133,7 @@ private fun PositionRow(
 
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         SymbolCell(p, COLUMNS[0].weight)
         Box(COLUMNS[1].weight) { TypeBadge(type) }
@@ -234,10 +237,22 @@ private fun formatDateTime(dt: kotlinx.datetime.LocalDateTime): String {
 
 private fun formatHeld(p: ClosedPosition): String {
     val seconds = p.exitDatetime.toInstant(TimeZone.UTC).epochSeconds - p.entryDatetime.toInstant(TimeZone.UTC).epochSeconds
-    return if (classifyTradeType(p) == TradeType.DAY) {
-        val h = seconds / 3600; val m = (seconds % 3600) / 60
-        "${h}h ${m}m"
-    } else {
-        "${seconds / 86400}d"
+    return formatHeldDuration(seconds, classifyTradeType(p) == TradeType.DAY)
+}
+
+/**
+ * Held-duration label. Swing trades show whole days; day trades show hours/minutes/seconds with any
+ * zero unit omitted (e.g. `34s`, `1m 5s`, `1h 30s`), falling back to `0s` for an instant fill.
+ */
+internal fun formatHeldDuration(seconds: Long, isDay: Boolean): String {
+    if (!isDay) return "${seconds / 86400}d"
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    val parts = buildList {
+        if (h > 0) add("${h}h")
+        if (m > 0) add("${m}m")
+        if (s > 0) add("${s}s")
     }
+    return if (parts.isEmpty()) "0s" else parts.joinToString(" ")
 }

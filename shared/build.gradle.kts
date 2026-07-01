@@ -34,21 +34,11 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.jcefmaven)
 
-            // JavaFX: JCEF/Chromium renders the chart; JavaFX remains only for the native file
-            // picker (Platform + FileChooser + JFXPanel/Swing interop). javafx-web and javafx-media
-            // are not needed and are intentionally excluded to keep the Windows bundle lean.
-            // Full module list required: Maven won't resolve platform-classified transitive jars.
-            val javafxOs = when {
-                System.getProperty("os.name").lowercase().startsWith("mac") ->
-                    if ("aarch64" in System.getProperty("os.arch")) "mac-aarch64" else "mac"
-                System.getProperty("os.name").lowercase().startsWith("win") -> "win"
-                else -> "linux"
-            }
-            val javafxVer = "21"
-            implementation("org.openjfx:javafx-base:$javafxVer:$javafxOs")
-            implementation("org.openjfx:javafx-graphics:$javafxVer:$javafxOs")
-            implementation("org.openjfx:javafx-controls:$javafxVer:$javafxOs")
-            implementation("org.openjfx:javafx-swing:$javafxVer:$javafxOs")
+            // Native file picker. FileKit opens the modern per-OS dialog (NSOpenPanel on macOS, the
+            // Win32 COM IFileOpenDialog on Windows) via JNA — with the extension filter honored on
+            // both. This replaced JavaFX FileChooser, letting the JavaFX dependency be dropped
+            // entirely (no more org.openjfx jars, native classifiers, or FX-toolkit lifecycle).
+            implementation(libs.filekit.dialogs)
         }
         jvmTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)

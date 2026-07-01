@@ -1,46 +1,28 @@
 package io.earlisreal.ejournal.ui.platform
 
-import javafx.application.Platform
-import javafx.stage.FileChooser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import java.io.File
-import kotlin.coroutines.resume
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.readBytes
 
 /**
- * JavaFX FileChooser gives the modern native dialog on Windows (java.awt.FileDialog falls back to
- * the legacy Win32 common dialog there) and stays native on macOS — with its extension filter
- * actually honored, unlike AWT's FilenameFilter on macOS.
+ * FileKit opens the modern native open-file dialog per OS — NSOpenPanel on macOS and the Win32 COM
+ * IFileOpenDialog on Windows — with the CSV/XLSX extension filter honored on both (unlike
+ * java.awt.FileDialog, whose FilenameFilter is ignored on macOS and which falls back to the legacy
+ * Win32 common dialog). There is no JavaFX toolkit to start or shut down: openFilePicker is a suspend
+ * call that dispatches the native dialog itself and returns once it's dismissed (null on cancel), so
+ * it's safe to call straight from a UI coroutine.
  */
 actual suspend fun pickImportFiles(): List<ByteArray> {
-    JavaFxToolkit.ensureStarted()
+    // openFilePicker has no title parameter; the native dialog uses its default ("Open"). Multiple()
+    // returns null on both cancel and empty selection (takeIfNotEmpty), so `?: emptyList()` preserves
+    // the empty-list-on-cancel contract the caller relies on.
+    val files = FileKit.openFilePicker(
+        type = FileKitType.File("csv", "xlsx"),
+        mode = FileKitMode.Multiple(),
+    ) ?: return emptyList()
 
-    // FileChooser must run on the JavaFX Application Thread; showOpenMultipleDialog blocks it until
-    // the dialog closes. Bridge that to the coroutine without blocking the caller's thread.
-    //
-    // Known limitation: the dialog is ownerless (no JavaFX Stage to parent to in this Compose/Swing
-    // app), so if the calling coroutine is cancelled while the dialog is open — e.g. the user
-    // navigates away from the Import screen mid-pick — the native dialog can't be force-closed and
-    // stays floating until dismissed manually. resume() after cancellation is a documented no-op on
-    // a CancellableContinuation, so no crash and no stale result is delivered; the only cost is the
-    // orphaned dialog. Dismissing it would require introducing a hidden owner Stage, which isn't
-    // worth the JavaFX-integration risk for this niche flow.
-    val files: List<File> = suspendCancellableCoroutine { cont ->
-        Platform.runLater {
-            val chooser = FileChooser().apply {
-                title = "Select CSV or XLSX files"
-                extensionFilters.add(
-                    FileChooser.ExtensionFilter("Broker exports (CSV, XLSX)", "*.csv", "*.xlsx"),
-                )
-            }
-            val selected = runCatching { chooser.showOpenMultipleDialog(null) }.getOrNull()
-            cont.resume(selected ?: emptyList())
-        }
-    }
-
-    // Read off the FX thread; skip files that fail to read rather than aborting the whole import.
-    return withContext(Dispatchers.IO) {
-        files.mapNotNull { runCatching { it.readBytes() }.getOrNull() }
-    }
+    // readBytes() is a suspend reader; skip files that fail to read rather than aborting the import.
+    return files.mapNotNull { file -> runCatching { file.readBytes() }.getOrNull() }
 }

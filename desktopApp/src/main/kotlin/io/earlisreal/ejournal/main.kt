@@ -17,7 +17,6 @@ import io.earlisreal.ejournal.startup.InitState
 import io.earlisreal.ejournal.startup.buildReadyApp
 import io.earlisreal.ejournal.ui.chart.ChartPreload
 import io.earlisreal.ejournal.ui.chart.JcefRuntime
-import io.earlisreal.ejournal.ui.platform.JavaFxToolkit
 import io.earlisreal.ejournal.ui.startup.StartupErrorWindow
 import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
@@ -66,12 +65,7 @@ fun main(args: Array<String>) {
                     // +[NSEvent removeMonitor:] → SIGSEGV on close (exit 134). Per-browser teardown
                     // (browser.close + client.dispose) stays in JcefChartBridge.dispose(); the global
                     // CefApp is reclaimed by process exit / java-cef's own shutdown handling.
-                    // JavaFX still needs an explicit shutdown so its non-daemon FX thread (file picker)
-                    // doesn't block JVM exit.
-                    onCloseRequest = {
-                        JavaFxToolkit.shutdown()
-                        exitApplication()
-                    },
+                    onCloseRequest = ::exitApplication,
                     state = windowState,
                     title = "eJournal",
                     icon = appIcon,

@@ -93,15 +93,15 @@ compose.desktop {
     application {
         mainClass = "io.earlisreal.ejournal.MainKt"
         javaHome = jbrLauncher.get().metadata.installationPath.asFile.absolutePath
-        // Silences the JDK 24+ restricted-native-access warning from JavaFX's NativeLibLoader
-        // (com.sun.glass.utils.NativeLibLoader calling System::load from the unnamed module).
+        // Silences the JDK 24+ restricted-native-access warning from native-lib loaders calling
+        // System::load from the unnamed module — now JCEF (jcefmaven) and JNA (FileKit's native file
+        // picker). Previously also covered JavaFX's NativeLibLoader, since removed.
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
-        // JavaFX 21's Marlin renderer calls the terminally-deprecated sun.misc.Unsafe memory methods;
-        // on JDK 25 that prints a 4-line warning on first paint. "allow" permits it without warning.
-        jvmArgs += "--sun-misc-unsafe-memory-access=allow"
-        // NOTE: no --add-exports for javafx.graphics — our JavaFX comes from org.openjfx jars on the
-        // classpath (the unnamed module), where no export is needed. With JavaFX off the module path
-        // that flag only printed "WARNING: Unknown module: javafx.graphics specified to --add-exports".
+        // Dropped --sun-misc-unsafe-memory-access=allow with JavaFX: its Marlin renderer was the only
+        // caller of the deprecated sun.misc.Unsafe *memory-access* methods this flag gates (Skiko and
+        // JNA are clean; coroutines' Unsafe use is objectFieldOffset, a different deprecation). On JDK
+        // 25 those methods still work in the default "warn" mode, so re-add this only if a
+        // "sun.misc.Unsafe::<memory method>" warning reappears in the logs.
         // Favor fast startup over peak JIT throughput — good for a desktop app. Validated on JBR 25.
         jvmArgs += "-XX:TieredStopAtLevel=2"
         // Paint a splash from JVM boot. $APPDIR is substituted by the jpackage launcher; splash.png
@@ -180,7 +180,6 @@ tasks.named<ProcessResources>("processResources") {
 tasks.withType<JavaExec>().configureEach {
     dependsOn(generateVersionedSplash)
     jvmArgs("--enable-native-access=ALL-UNNAMED")
-    jvmArgs("--sun-misc-unsafe-memory-access=allow")
     jvmArgs("-XX:TieredStopAtLevel=2")
     jvmArgs("-splash:${versionedAppResources.get().asFile}/common/splash.png")
     // Match packaged app heap/GC flags — serial GC avoids thread pool spin-up; pre-sized heap

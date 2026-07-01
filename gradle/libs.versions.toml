@@ -16,6 +16,10 @@ kotlinx-datetime = "0.7.1"
 slf4j = "2.0.17"
 ktor = "3.2.0"
 kotlinx-serialization = "1.9.0"
+# FileKit — native file picker (replaced JavaFX FileChooser). filekit-dialogs is Compose-free and
+# brings filekit-core + JNA transitively; opens NSOpenPanel (macOS) / Win32 COM IFileOpenDialog
+# (Windows). Pulls no kotlinx-datetime, so the 0.7.1 pin above is untouched.
+filekit = "0.14.2"
 # JCEF (Chromium Embedded Framework for Java) via jcefmaven — spike only (desktopApp). Ships its own
 # internally version-matched CEF (Chromium 146) + libjcef, so no ABI-match dance with JBR's bundled
 # JCEF. 146.0.10 is the latest as of 2026-06. See docs/superpowers for the LWC-v5-on-JCEF experiment.
@@ -46,6 +50,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }
 jcefmaven = { module = "me.friwi:jcefmaven", version.ref = "jcefmaven" }
 # Per-platform CEF native payloads — version is the jcef BUILD string (not the jcefmaven tag).
 # Only the host platform is wired via runtimeOnly; CI swaps per-OS (Task 8).

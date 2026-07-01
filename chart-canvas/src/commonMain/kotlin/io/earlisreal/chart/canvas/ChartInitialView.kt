@@ -1,35 +1,44 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
-import io.earlisreal.ejournal.domain.marketdata.Bar
-import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 /**
- * Computes the initial visible [BarWindow] that frames a trade — the Canvas equivalent of the JCEF
- * chart's `initialViewCommand`. Daily/weekly load full history, so bracket the trade with
- * [LEAD_DAYS]/[TAIL_DAYS] of context; intraday data is already a tight per-trade window, so frame the
- * held span with the entry set in from the left edge.
+ * How to frame a trade in the initial view.
+ * - [CALENDAR]: the series spans a long history (e.g. daily/weekly bars), so bracket the trade with
+ *   a fixed number of calendar days of lead/tail context.
+ * - [INTRADAY]: the series is already a tight per-trade window (e.g. one-minute bars), so frame the
+ *   held span by bar count with the entry set in from the left edge.
  */
-object ChartInitialView {
-    private const val LEAD_DAYS = 90
-    private const val TAIL_DAYS = 60
+enum class TradeFramingMode { CALENDAR, INTRADAY }
 
-    fun forTrade(bars: List<Bar>, entry: LocalDateTime, exit: LocalDateTime, tf: ChartTimeframe): BarWindow {
+/** Computes the initial visible [BarWindow] that frames a trade between [entry] and [exit]. */
+object ChartInitialView {
+    const val DEFAULT_LEAD_DAYS = 90
+    const val DEFAULT_TAIL_DAYS = 60
+
+    fun forTrade(
+        bars: List<Candle>,
+        entry: LocalDateTime,
+        exit: LocalDateTime,
+        mode: TradeFramingMode,
+        leadDays: Int = DEFAULT_LEAD_DAYS,
+        tailDays: Int = DEFAULT_TAIL_DAYS,
+    ): BarWindow {
         if (bars.isEmpty()) return BarWindow(0, 0)
         if (bars.size <= BarWindow.MIN_BARS) return BarWindow(0, bars.size)
 
-        return when (tf) {
-            ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> {
-                val leadDate = entry.date.minus(DatePeriod(days = LEAD_DAYS))
-                val tailDate = exit.date.plus(DatePeriod(days = TAIL_DAYS))
+        return when (mode) {
+            TradeFramingMode.CALENDAR -> {
+                val leadDate = entry.date.minus(DatePeriod(days = leadDays))
+                val tailDate = exit.date.plus(DatePeriod(days = tailDays))
                 val start = bars.indexOfFirst { it.timestamp.date >= leadDate }.let { if (it < 0) 0 else it }
                 val endExclusive = (bars.indexOfLast { it.timestamp.date <= tailDate } + 1).let { if (it <= start) bars.size else it }
                 windowOf(start, endExclusive - start, bars.size)
             }
-            else -> {
+            TradeFramingMode.INTRADAY -> {
                 val entryIdx = bars.indexOfLast { it.timestamp <= entry }.coerceAtLeast(0)
                 val exitIdx = bars.indexOfLast { it.timestamp <= exit }.coerceIn(entryIdx, bars.lastIndex)
                 val span = exitIdx - entryIdx + 1

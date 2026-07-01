@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -12,29 +12,26 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.rememberTextMeasurer
-import io.earlisreal.ejournal.domain.marketdata.Bar
-import io.earlisreal.ejournal.ui.theme.AppTheme
 import kotlin.math.roundToInt
 
 /**
- * Native Compose-[Canvas] candlestick chart — the spike alternative to the JCEF/Lightweight-Charts
- * bridge. Interaction: drag to pan, scroll to zoom (cursor-anchored), hover for the crosshair + OHLCV
- * legend. All drawing goes through [drawCandlestickChart]; state here is just the visible [BarWindow]
- * and the hovered bar. Interaction uses the common `awaitPointerEventScope` API (not the desktop-only
- * `onPointerEvent`) so the composable stays in commonMain.
+ * Native Compose-[Canvas] candlestick chart. Interaction: drag to pan, scroll to zoom
+ * (cursor-anchored), hover for the crosshair + OHLCV legend. All drawing goes through
+ * [drawCandlestickChart]; state here is just the visible [BarWindow] and the hovered bar. Interaction
+ * uses the common `awaitPointerEventScope` API (not the desktop-only `onPointerEvent`) so the
+ * composable stays in commonMain and works on every Compose Multiplatform target.
  */
 @Composable
 fun CandlestickCanvasChart(
-    bars: List<Bar>,
+    bars: List<Candle>,
     markers: List<PriceMarker>,
     title: String,
     modifier: Modifier = Modifier,
+    colors: ChartColors = ChartColors.Dark,
     vwap: List<LinePoint> = emptyList(),
     intraday: Boolean = false,
     initialWindow: BarWindow = BarWindow.initial(bars.size),
 ) {
-    val appColors = AppTheme.colors
-    val colors = remember(appColors) { ChartColors.from(appColors) }
     val textMeasurer = rememberTextMeasurer()
     var window by remember(bars) { mutableStateOf(initialWindow) }
     var crosshair by remember(bars) { mutableStateOf<Offset?>(null) }

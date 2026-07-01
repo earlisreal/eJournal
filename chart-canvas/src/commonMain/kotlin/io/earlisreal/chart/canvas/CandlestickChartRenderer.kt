@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -15,7 +15,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.earlisreal.ejournal.domain.marketdata.Bar
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.abs
 import kotlin.math.round
@@ -28,18 +27,18 @@ internal val TOP_PAD_DP = 8.dp
 // Target vertical gap between horizontal price gridlines; the actual line count adapts to plot height.
 private val PRICE_GRID_SPACING_DP = 56.dp
 
-// Trade-diamond fill opacity — matches the old Lightweight-Charts markers (rgba .8).
+// Trade-diamond fill opacity.
 private const val MARKER_ALPHA = 0.8f
 
 /**
  * Draws the whole candlestick chart (grid, volume, candles, axes, trade diamonds, crosshair, legend)
  * onto a [DrawScope]. This is the single source of truth for the visual: the live
- * [CandlestickCanvasChart] composable calls it inside a `Canvas {}`, and the screenshot harness calls
- * it against an offscreen Skia surface — so what you see in the sample PNG is exactly what the app
- * renders.
+ * [CandlestickCanvasChart] composable calls it inside a `Canvas {}`, and an offscreen Skia surface can
+ * call it directly for screenshot/export — so what a headless render produces is exactly what the app
+ * shows.
  */
 fun DrawScope.drawCandlestickChart(
-    bars: List<Bar>,
+    bars: List<Candle>,
     markers: List<PriceMarker>,
     viewport: ChartViewport,
     colors: ChartColors,
@@ -178,7 +177,7 @@ fun DrawScope.drawCandlestickChart(
     drawLegend(textMeasurer, colors, title, crosshairBar?.let { bars.getOrNull(it) }, vwapAtCrosshair)
 }
 
-private fun DrawScope.drawLegend(tm: TextMeasurer, colors: ChartColors, title: String, bar: Bar?, vwapValue: Double?) {
+private fun DrawScope.drawLegend(tm: TextMeasurer, colors: ChartColors, title: String, bar: Candle?, vwapValue: Double?) {
     val titleStyle = TextStyle(color = colors.legendText, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     val lineStyle = TextStyle(color = colors.legendText, fontSize = 11.sp)
     val lines = buildList {

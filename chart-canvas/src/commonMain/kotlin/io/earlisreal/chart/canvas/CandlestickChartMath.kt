@@ -1,6 +1,5 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
-import io.earlisreal.ejournal.domain.marketdata.Bar
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -11,8 +10,7 @@ import kotlin.math.roundToInt
 
 /**
  * Which bars are currently in view. Pure data + transforms — no Compose, no pixels — so pan/zoom
- * logic is unit-testable in isolation (mirrors how [io.earlisreal.ejournal.ui.chart.ChartSerialization]
- * is tested for the JCEF chart).
+ * logic is unit-testable in isolation.
  */
 data class BarWindow(val startIndex: Int, val visibleBars: Int) {
 
@@ -90,7 +88,7 @@ data class ChartViewport(
     }
 
     companion object {
-        fun fit(bars: List<Bar>, window: BarWindow, padFraction: Double = 0.06): ChartViewport {
+        fun fit(bars: List<Candle>, window: BarWindow, padFraction: Double = 0.06): ChartViewport {
             if (bars.isEmpty()) return ChartViewport(0, 0, 0.0, 1.0, 1.0)
             val start = window.startIndex.coerceIn(0, bars.lastIndex)
             val end = (start + window.visibleBars).coerceIn(start + 1, bars.size)

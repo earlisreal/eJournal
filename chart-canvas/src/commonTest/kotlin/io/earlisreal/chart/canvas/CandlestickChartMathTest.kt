@@ -1,7 +1,5 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
-import io.earlisreal.ejournal.domain.marketdata.Bar
-import io.earlisreal.ejournal.domain.marketdata.Timeframe
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,7 +7,7 @@ import kotlin.test.assertEquals
 class CandlestickChartMathTest {
 
     private fun bar(o: Double, h: Double, l: Double, c: Double, v: Long) =
-        Bar("T", Timeframe.DAILY, LocalDateTime(2026, 1, 1, 0, 0), o, h, l, c, v)
+        OhlcvCandle(LocalDateTime(2026, 1, 1, 0, 0), o, h, l, c, v)
 
     // ── BarWindow ────────────────────────────────────────────────────────────
 

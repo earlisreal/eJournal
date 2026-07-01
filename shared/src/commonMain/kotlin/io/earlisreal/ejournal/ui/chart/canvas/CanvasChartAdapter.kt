@@ -3,16 +3,24 @@ package io.earlisreal.ejournal.ui.chart.canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import io.earlisreal.chart.canvas.BarWindow
+import io.earlisreal.chart.canvas.CandlestickCanvasChart
+import io.earlisreal.chart.canvas.ChartInitialView
+import io.earlisreal.chart.canvas.LinePoint
+import io.earlisreal.chart.canvas.PriceMarker
+import io.earlisreal.chart.canvas.TradeFramingMode
 import io.earlisreal.ejournal.domain.marketdata.Bar
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.marketdata.VwapPoint
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisState
 
 /**
- * Maps [AnalysisState] onto the plain data the native [CandlestickCanvasChart] draws. This is the
- * production entry point for the Analysis screen's chart.
+ * Maps [AnalysisState] onto the plain data the native [CandlestickCanvasChart] draws, and bridges the
+ * app theme onto the chart's colours. This is the production entry point for the Analysis screen's
+ * chart — all eJournal-specific coupling lives here so the `:chart-canvas` library stays generic.
  */
 @Composable
 fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) {
@@ -21,15 +29,19 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
     val tf = state.activeTimeframe
     val intraday = tf in INTRADAY
 
+    val appColors = AppTheme.colors
+    val colors = remember(appColors) { chartColorsFrom(appColors) }
+
     // Precompute the derived overlays once per data load, not per frame.
     val markers = remember(bars, position) { if (position != null) markersFor(position, bars) else emptyList() }
     val vwapLine = remember(bars, state.vwapEnabled, state.chartData) {
         if (state.vwapEnabled) vwapFor(bars, state.chartData?.vwap ?: emptyList()) else emptyList()
     }
     val initialWindow = remember(bars, position, tf) {
-        if (position != null && bars.isNotEmpty())
-            ChartInitialView.forTrade(bars, position.entryDatetime, position.exitDatetime, tf)
-        else BarWindow.initial(bars.size)
+        if (position != null && bars.isNotEmpty()) {
+            val mode = if (intraday) TradeFramingMode.INTRADAY else TradeFramingMode.CALENDAR
+            ChartInitialView.forTrade(bars, position.entryDatetime, position.exitDatetime, mode)
+        } else BarWindow.initial(bars.size)
     }
 
     val title = "${position?.symbol ?: ""} · ${tf.label}"
@@ -38,6 +50,7 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
         markers = markers,
         title = title,
         modifier = modifier,
+        colors = colors,
         vwap = vwapLine,
         intraday = intraday,
         initialWindow = initialWindow,
@@ -49,7 +62,7 @@ private val INTRADAY = setOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, Ch
 /**
  * Place each trade fill on the bar that contains it — the last bar whose timestamp is at or before
  * the fill time (works for daily bars at midnight and intraday bars at the minute). Dedupes by
- * transaction id, matching the JCEF chart's marker handling.
+ * transaction id.
  */
 private fun markersFor(position: ClosedPosition, bars: List<Bar>): List<PriceMarker> {
     if (bars.isEmpty()) return emptyList()

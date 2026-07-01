@@ -1,4 +1,4 @@
-package io.earlisreal.ejournal.ui.chart.canvas
+package io.earlisreal.chart.canvas
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -9,8 +9,6 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import io.earlisreal.ejournal.domain.marketdata.Bar
-import io.earlisreal.ejournal.domain.marketdata.Timeframe
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -24,10 +22,10 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * Not a unit test in the strict sense — it's the screenshot harness for the Canvas-chart spike. It
- * renders the real [drawCandlestickChart] output (dark + light) to PNGs under docs/spikes/ so the
- * sample can be eyeballed without launching a JCEF-free headed run. Kept as a @Test so it runs via
- * `./gradlew :shared:jvmTest --tests "*CanvasChartSampleRenderTest"`.
+ * Not a unit test in the strict sense — it's the screenshot harness for the Canvas chart. It renders
+ * the real [drawCandlestickChart] output (dark + light) to PNGs under docs/spikes/ so the sample can
+ * be eyeballed without launching a headed run. Kept as a @Test so it runs via
+ * `./gradlew :chart-canvas:jvmTest --tests "*CanvasChartSampleRenderTest"`.
  */
 class CanvasChartSampleRenderTest {
 
@@ -74,9 +72,9 @@ class CanvasChartSampleRenderTest {
     }
 
     /** Deterministic random-walk daily OHLCV so the sample is stable across runs. */
-    private fun sampleBars(): List<Bar> {
+    private fun sampleBars(): List<OhlcvCandle> {
         val rnd = Random(42)
-        val bars = ArrayList<Bar>(160)
+        val bars = ArrayList<OhlcvCandle>(160)
         var price = 100.0
         var date = LocalDate(2025, 6, 2)
         repeat(160) {
@@ -85,7 +83,7 @@ class CanvasChartSampleRenderTest {
             val high = maxOf(open, close) + rnd.nextDouble() * 1.8
             val low = (minOf(open, close) - rnd.nextDouble() * 1.8).coerceAtLeast(1.0)
             val volume = (600_000 + rnd.nextInt(2_200_000)).toLong()
-            bars.add(Bar("ACME", Timeframe.DAILY, LocalDateTime(date, LocalTime(0, 0)), open, high, low, close, volume))
+            bars.add(OhlcvCandle(LocalDateTime(date, LocalTime(0, 0)), open, high, low, close, volume))
             price = close
             date = date.plus(DatePeriod(days = 1))
         }
@@ -93,9 +91,9 @@ class CanvasChartSampleRenderTest {
     }
 
     /** Deterministic one-minute bars starting 09:30, for the intraday sample. */
-    private fun minuteSampleBars(): List<Bar> {
+    private fun minuteSampleBars(): List<OhlcvCandle> {
         val rnd = Random(7)
-        val bars = ArrayList<Bar>(180)
+        val bars = ArrayList<OhlcvCandle>(180)
         var price = 50.0
         val day = LocalDate(2025, 6, 2)
         repeat(180) { i ->
@@ -105,14 +103,14 @@ class CanvasChartSampleRenderTest {
             val low = (minOf(open, close) - rnd.nextDouble() * 0.35).coerceAtLeast(0.5)
             val volume = (40_000 + rnd.nextInt(180_000)).toLong()
             val t = LocalTime(9 + (30 + i) / 60, (30 + i) % 60)
-            bars.add(Bar("ACME", Timeframe.ONE_MINUTE, LocalDateTime(day, t), open, high, low, close, volume))
+            bars.add(OhlcvCandle(LocalDateTime(day, t), open, high, low, close, volume))
             price = close
         }
         return bars
     }
 
     /** Cumulative typical-price VWAP, one point per bar. */
-    private fun vwapLineFor(bars: List<Bar>): List<LinePoint> {
+    private fun vwapLineFor(bars: List<OhlcvCandle>): List<LinePoint> {
         var tpv = 0.0
         var vol = 0.0
         return bars.mapIndexed { i, b ->

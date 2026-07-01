@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.chart.canvas
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asComposeCanvas
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
@@ -40,7 +41,8 @@ class CanvasChartSampleRenderTest {
             PriceMarker(barIndex = 72, price = bars[72].low, isBuy = true),
             PriceMarker(barIndex = 112, price = bars[112].high, isBuy = false),
         )
-        val crosshair = 96
+        // Free-floating crosshair: an arbitrary cursor pixel inside the plot (scaled DrawScope space).
+        val crosshair = Offset(1500f, 500f)
 
         val outDir = File("../docs/spikes/canvas-chart").apply { mkdirs() }
         val dark = renderPng(1100, 620, scale = 2f) {
@@ -62,7 +64,7 @@ class CanvasChartSampleRenderTest {
             PriceMarker(barIndex = 92, price = minuteBars[92].high, isBuy = false),
         )
         val intraday = renderPng(1100, 620, scale = 2f) {
-            drawCandlestickChart(minuteBars, ivMarkers, ivViewport, ChartColors.Dark, it, "ACME · 1m", 70, vwap, true)
+            drawCandlestickChart(minuteBars, ivMarkers, ivViewport, ChartColors.Dark, it, "ACME · 1m", Offset(1200f, 600f), vwap, true)
         }
         File(outDir, "sample-intraday-vwap.png").writeBytes(intraday)
 

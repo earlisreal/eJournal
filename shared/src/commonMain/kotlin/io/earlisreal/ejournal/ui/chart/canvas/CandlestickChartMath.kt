@@ -1,7 +1,12 @@
 package io.earlisreal.ejournal.ui.chart.canvas
 
 import io.earlisreal.ejournal.domain.marketdata.Bar
+import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
@@ -67,6 +72,13 @@ data class ChartViewport(
         return plotTop + ((priceHigh - price) / span).toFloat() * plotHeight
     }
 
+    /** Inverse of [priceToY]: the price at a pixel [y], so the free crosshair can label the cursor. */
+    fun yToPrice(y: Float, plotTop: Float, plotHeight: Float): Double {
+        if (plotHeight <= 0f) return priceHigh
+        val span = (priceHigh - priceLow).takeIf { it > 0.0 } ?: 1.0
+        return priceHigh - (y - plotTop).toDouble() / plotHeight * span
+    }
+
     fun volumeToHeight(volume: Long, bandHeight: Float): Float =
         if (maxVolume <= 0.0) 0f else (volume / maxVolume).toFloat() * bandHeight
 
@@ -95,4 +107,51 @@ data class ChartViewport(
             return ChartViewport(start, end - start, low - pad, high + pad, maxVolume)
         }
     }
+}
+
+/** A set of round price-grid levels plus the [step] between them (so labels can size their decimals). */
+data class PriceGrid(val step: Double, val values: List<Double>)
+
+/**
+ * Round [raw] up to a "nice" axis step — 1, 2, 2.5, or 5 times a power of ten. This is the classic
+ * nice-number rule financial charts (TradingView, Lightweight-Charts) use so gridlines land on
+ * human-friendly values like 0.05, 0.10, 0.50, 1, 2, 5, 10 rather than arbitrary fractions.
+ */
+fun niceAxisStep(raw: Double): Double {
+    if (raw <= 0.0 || raw.isNaN() || raw.isInfinite()) return 1.0
+    val base = 10.0.pow(floor(log10(raw)))
+    val mantissa = raw / base // in [1, 10)
+    val eps = 1e-9 // so a mantissa sitting on a boundary (e.g. 2.0000000000000018) snaps to the lower nice value
+    val nice = when {
+        mantissa <= 1.0 + eps -> 1.0
+        mantissa <= 2.0 + eps -> 2.0
+        mantissa <= 2.5 + eps -> 2.5
+        mantissa <= 5.0 + eps -> 5.0
+        else -> 10.0
+    }
+    return nice * base
+}
+
+/** Fractional digits needed to print [step] exactly: 0.05 → 2, 0.5 → 1, 2.5 → 1, 1 → 0, 10 → 0. */
+fun axisDecimals(step: Double): Int {
+    var d = 0
+    var s = step
+    while (d < 8 && abs(s - round(s)) > 1e-9) { s *= 10; d++ }
+    return d
+}
+
+/**
+ * Round price-grid levels spanning [low]..[high] at a nice [step][niceAxisStep], aiming for about
+ * [targetCount] lines. Levels are whole multiples of the step, so they read as round numbers strictly
+ * inside the range (the padded high/low themselves are not labelled) — TradingView's price-axis look.
+ */
+fun priceGrid(low: Double, high: Double, targetCount: Int): PriceGrid {
+    val range = high - low
+    if (range <= 0.0 || targetCount <= 0) return PriceGrid(1.0, listOf(low))
+    val step = niceAxisStep(range / targetCount)
+    val eps = step * 1e-6 // absorb FP drift so a level sitting exactly on low/high isn't dropped
+    val firstK = ceil((low - eps) / step).toLong()
+    val lastK = floor((high + eps) / step).toLong()
+    val values = if (lastK < firstK) listOf(low) else (firstK..lastK).map { it * step }
+    return PriceGrid(step, values)
 }

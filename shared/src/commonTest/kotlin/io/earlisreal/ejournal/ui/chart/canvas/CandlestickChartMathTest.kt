@@ -101,6 +101,17 @@ class CandlestickChartMathTest {
     }
 
     @Test
+    fun `yToPrice inverts priceToY so the crosshair reads the price under the cursor`() {
+        val vp = ChartViewport(startIndex = 0, visibleBars = 3, priceLow = 0.0, priceHigh = 100.0, maxVolume = 1.0)
+        assertEquals(100.0, vp.yToPrice(0f, plotTop = 0f, plotHeight = 200f), 1e-6)
+        assertEquals(0.0, vp.yToPrice(200f, plotTop = 0f, plotHeight = 200f), 1e-6)
+        assertEquals(50.0, vp.yToPrice(100f, plotTop = 0f, plotHeight = 200f), 1e-6)
+        // Round-trips against priceToY for an arbitrary price with a non-zero plotTop.
+        val y = vp.priceToY(42.0, plotTop = 8f, plotHeight = 200f)
+        assertEquals(42.0, vp.yToPrice(y, plotTop = 8f, plotHeight = 200f), 1e-4)
+    }
+
+    @Test
     fun `xCenter places the first visible bar half a slot from the left`() {
         val vp = ChartViewport(startIndex = 10, visibleBars = 10, priceLow = 0.0, priceHigh = 1.0, maxVolume = 1.0)
         assertEquals(5f, vp.xCenter(10, plotLeft = 0f, plotWidth = 100f), 1e-3f)
@@ -121,5 +132,53 @@ class CandlestickChartMathTest {
         assertEquals(10, vp.barIndexAt(5f, plotLeft = 0f, plotWidth = 100f))
         assertEquals(11, vp.barIndexAt(15f, plotLeft = 0f, plotWidth = 100f))
         assertEquals(19, vp.barIndexAt(999f, plotLeft = 0f, plotWidth = 100f)) // clamp to last visible
+    }
+
+    // ── Nice-number price axis (TradingView-style) ───────────────────────────
+
+    @Test
+    fun `niceAxisStep rounds up to 1, 2, 2_5, 5 times a power of ten`() {
+        assertEquals(0.05, niceAxisStep(0.03), 1e-9)   // 3 → 5  (×0.01)
+        assertEquals(0.10, niceAxisStep(0.06), 1e-9)   // 6 → 10 (×0.01)
+        assertEquals(0.20, niceAxisStep(0.20), 1e-9)   // 2 → 2
+        assertEquals(1.0, niceAxisStep(1.0), 1e-9)     // 1 → 1
+        assertEquals(5.0, niceAxisStep(3.0), 1e-9)     // 3 → 5
+        assertEquals(10.0, niceAxisStep(7.0), 1e-9)    // 7 → 10
+        assertEquals(25.0, niceAxisStep(21.0), 1e-9)   // 2.1 → 2.5 (×10)
+    }
+
+    @Test
+    fun `axisDecimals reports the digits needed to print a step exactly`() {
+        assertEquals(2, axisDecimals(0.05))
+        assertEquals(1, axisDecimals(0.5))
+        assertEquals(1, axisDecimals(2.5))
+        assertEquals(0, axisDecimals(1.0))
+        assertEquals(0, axisDecimals(10.0))
+    }
+
+    @Test
+    fun `priceGrid snaps levels to round multiples of a nice step`() {
+        val grid = priceGrid(107.87, 144.70, targetCount = 5)
+        assertEquals(10.0, grid.step, 1e-9)
+        // Round numbers strictly inside the range — not the padded high/low.
+        assertEquals(4, grid.values.size)
+        assertEquals(110.0, grid.values.first(), 1e-9)
+        assertEquals(140.0, grid.values.last(), 1e-9)
+    }
+
+    @Test
+    fun `priceGrid tightens the step for a narrow price range`() {
+        val grid = priceGrid(9.98, 10.06, targetCount = 4)
+        assertEquals(0.02, grid.step, 1e-9)
+        assertEquals(2, axisDecimals(grid.step))
+        assertEquals(9.98, grid.values.first(), 1e-9)
+        assertEquals(10.06, grid.values.last(), 1e-9)
+    }
+
+    @Test
+    fun `priceGrid is safe on a zero-width range`() {
+        val grid = priceGrid(5.0, 5.0, targetCount = 5)
+        assertEquals(1, grid.values.size)
+        assertEquals(5.0, grid.values.first(), 1e-9)
     }
 }

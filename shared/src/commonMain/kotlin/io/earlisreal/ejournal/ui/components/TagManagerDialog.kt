@@ -8,10 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -33,10 +34,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.defaultTagColors
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
@@ -44,7 +47,7 @@ import kotlinx.coroutines.launch
  * Create, rename, recolor, and delete tags. Deleting a tag also removes it from every position (the
  * repository cascades the assignments). [onChanged] fires after any mutation so callers can refresh.
  *
- * Shown in a real OS window ([AppModalWindow]) so it reliably floats above the main window.
+ * An in-window modal [Dialog] centered over the main window.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -67,10 +70,10 @@ fun TagManagerDialog(
         editingId = null; name = ""; color = defaultTagColors.first(); error = null
     }
 
-    AppModalWindow(title = "Tags", onDismiss = onDismiss, widthDp = 460, heightDp = 620) {
-        Surface(modifier = Modifier.fillMaxSize(), color = AppTheme.colors.surface) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = CardShape, color = AppTheme.colors.surface) {
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.xl),
+                modifier = Modifier.width(460.dp).heightIn(max = 620.dp).verticalScroll(rememberScrollState()).padding(Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 Text("Tags", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)

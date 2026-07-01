@@ -25,6 +25,9 @@ internal val RIGHT_AXIS_DP = 56.dp
 internal val BOTTOM_AXIS_DP = 22.dp
 internal val TOP_PAD_DP = 8.dp
 
+// Target vertical gap between horizontal price gridlines; the actual line count adapts to plot height.
+private val PRICE_GRID_SPACING_DP = 56.dp
+
 // Trade-diamond fill opacity — matches the old Lightweight-Charts markers (rgba .8).
 private const val MARKER_ALPHA = 0.8f
 
@@ -42,7 +45,7 @@ fun DrawScope.drawCandlestickChart(
     colors: ChartColors,
     textMeasurer: TextMeasurer,
     title: String,
-    crosshairBar: Int? = null,
+    crosshair: Offset? = null,
     vwap: List<LinePoint> = emptyList(),
     intraday: Boolean = false,
 ) {
@@ -61,13 +64,14 @@ fun DrawScope.drawCandlestickChart(
 
     val axisStyle = TextStyle(color = colors.axisText, fontSize = 10.sp)
 
-    // ── Price grid + right-axis labels ──
-    val levels = 4
-    for (i in 0..levels) {
-        val price = viewport.priceHigh - (viewport.priceHigh - viewport.priceLow) * i / levels
+    // ── Price grid + right-axis labels (TradingView-style "nice" round steps) ──
+    val priceTarget = (plotHeight / PRICE_GRID_SPACING_DP.toPx()).toInt().coerceIn(2, 8)
+    val grid = priceGrid(viewport.priceLow, viewport.priceHigh, priceTarget)
+    val priceDecimals = axisDecimals(grid.step)
+    for (price in grid.values) {
         val y = viewport.priceToY(price, plotTop, plotHeight)
         drawLine(colors.grid, Offset(plotLeft, y), Offset(plotLeft + plotWidth, y), strokeWidth = 1f)
-        val layout = textMeasurer.measure(fmt2(price), axisStyle)
+        val layout = textMeasurer.measure(fmt(price, priceDecimals), axisStyle)
         drawText(layout, topLeft = Offset(size.width - layout.size.width - 4.dp.toPx(), y - layout.size.height / 2f))
     }
     drawLine(colors.axisLine, Offset(plotLeft + plotWidth, plotTop), Offset(plotLeft + plotWidth, plotBottom), strokeWidth = 1f)
@@ -77,6 +81,17 @@ fun DrawScope.drawCandlestickChart(
     val slot = viewport.slotWidth(plotWidth)
     val bodyW = (slot * 0.7f).coerceAtLeast(1f)
     val wickW = (slot * 0.12f).coerceIn(1f, 3f)
+
+    // ── Vertical grid (background; bars shared with the time-axis labels below) ──
+    val timeTickCount = 4
+    val tickIndices = (0..timeTickCount)
+        .map { start + (end - 1 - start) * it / timeTickCount }
+        .filter { it in start until end }
+        .distinct()
+    for (idx in tickIndices) {
+        val x = viewport.xCenter(idx, plotLeft, plotWidth)
+        drawLine(colors.grid, Offset(x, plotTop), Offset(x, plotBottom), strokeWidth = 1f)
+    }
 
     // ── Volume (bottom band, semi-transparent, drawn under the candles) ──
     for (i in start until end) {
@@ -122,11 +137,8 @@ fun DrawScope.drawCandlestickChart(
         }
     }
 
-    // ── Time axis labels (HH:MM intraday, MM-DD daily/weekly) ──
-    val ticks = 4
-    for (i in 0..ticks) {
-        val idx = start + (end - 1 - start) * i / ticks
-        if (idx !in start until end) continue
+    // ── Time axis labels (aligned with the vertical grid; HH:MM intraday, MM-DD daily/weekly) ──
+    for (idx in tickIndices) {
         val x = viewport.xCenter(idx, plotLeft, plotWidth)
         val layout = textMeasurer.measure(timeLabel(bars[idx].timestamp, intraday), axisStyle)
         val lx = (x - layout.size.width / 2f).coerceIn(0f, plotWidth - layout.size.width)
@@ -146,16 +158,17 @@ fun DrawScope.drawCandlestickChart(
         drawPath(path, Color(0x8C000000), style = Stroke(width = 1f))
     }
 
-    // ── Crosshair + price tag ──
-    if (crosshairBar != null && crosshairBar in start until end) {
-        val b = bars[crosshairBar]
+    // ── Crosshair + price tag (vertical snaps to the nearest bar; the price line floats with the cursor) ──
+    val crosshairBar = crosshair?.let { viewport.barIndexAt(it.x, plotLeft, plotWidth) }
+    if (crosshair != null && crosshairBar != null) {
         val x = viewport.xCenter(crosshairBar, plotLeft, plotWidth)
-        val y = viewport.priceToY(b.close, plotTop, plotHeight)
+        val y = crosshair.y.coerceIn(plotTop, plotBottom)
+        val price = viewport.yToPrice(y, plotTop, plotHeight)
         val dash = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
         drawLine(colors.crosshair, Offset(x, plotTop), Offset(x, plotBottom), strokeWidth = 1f, pathEffect = dash)
         drawLine(colors.crosshair, Offset(plotLeft, y), Offset(plotLeft + plotWidth, y), strokeWidth = 1f, pathEffect = dash)
         val tagStyle = TextStyle(color = colors.background, fontSize = 10.sp)
-        val tag = textMeasurer.measure(fmt2(b.close), tagStyle)
+        val tag = textMeasurer.measure(fmt2(price), tagStyle)
         val tagH = tag.size.height + 4.dp.toPx()
         drawRect(colors.crosshair, topLeft = Offset(plotLeft + plotWidth, y - tagH / 2f), size = Size(rightAxis, tagH))
         drawText(tag, topLeft = Offset(plotLeft + plotWidth + 4.dp.toPx(), y - tag.size.height / 2f))
@@ -196,9 +209,16 @@ private fun pad2(n: Int): String = n.toString().padStart(2, '0')
 
 // ── kotlinx-common number formatting (no String.format in commonMain) ──
 
-private fun fmt2(v: Double): String {
-    val scaled = round(abs(v) * 100).toLong()
-    return (if (v < 0) "-" else "") + "${scaled / 100}." + (scaled % 100).toString().padStart(2, '0')
+private fun fmt2(v: Double): String = fmt(v, 2)
+
+/** Fixed-decimal formatting (no String.format in commonMain); [decimals] <= 0 rounds to a whole number. */
+private fun fmt(v: Double, decimals: Int): String {
+    if (decimals <= 0) return round(v).toLong().toString()
+    var factor = 1L
+    repeat(decimals) { factor *= 10 }
+    val scaled = round(abs(v) * factor).toLong()
+    val frac = (scaled % factor).toString().padStart(decimals, '0')
+    return (if (v < 0) "-" else "") + "${scaled / factor}.$frac"
 }
 
 private fun compactVol(v: Long): String = when {

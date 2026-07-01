@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -36,7 +37,7 @@ fun CandlestickCanvasChart(
     val colors = remember(appColors) { ChartColors.from(appColors) }
     val textMeasurer = rememberTextMeasurer()
     var window by remember(bars) { mutableStateOf(initialWindow) }
-    var crosshair by remember(bars) { mutableStateOf<Int?>(null) }
+    var crosshair by remember(bars) { mutableStateOf<Offset?>(null) }
 
     fun plotWidthOf(totalWidthPx: Int, rightAxisPx: Float) = (totalWidthPx - rightAxisPx).coerceAtLeast(1f)
 
@@ -66,9 +67,7 @@ fun CandlestickCanvasChart(
                             }
                             PointerEventType.Move -> {
                                 val pos = event.changes.first().position
-                                crosshair = if (bars.isNotEmpty() && pos.x in 0f..plotWidth) {
-                                    ChartViewport.fit(bars, window).barIndexAt(pos.x, 0f, plotWidth)
-                                } else null
+                                crosshair = if (bars.isNotEmpty() && pos.x in 0f..plotWidth) pos else null
                             }
                             PointerEventType.Exit -> crosshair = null
                         }

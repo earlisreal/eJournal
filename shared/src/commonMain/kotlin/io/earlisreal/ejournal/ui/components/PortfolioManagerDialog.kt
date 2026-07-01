@@ -3,9 +3,10 @@ package io.earlisreal.ejournal.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -22,18 +23,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.ui.theme.AppTheme
+import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.PortfolioManagerViewModel
 
 /**
- * Manage portfolios (add / edit / delete). Shown in a real OS window ([AppModalWindow]) so it
- * reliably floats above the main window.
+ * Manage portfolios (add / edit / delete). An in-window modal [Dialog] centered over the main window.
  */
 @Composable
 fun PortfolioManagerDialog(
@@ -54,10 +57,10 @@ fun PortfolioManagerDialog(
         editingId = null; name = ""; market = Market.US_STOCKS
     }
 
-    AppModalWindow(title = "Portfolios", onDismiss = onDismiss, widthDp = 460, heightDp = 640) {
-        Surface(modifier = Modifier.fillMaxSize(), color = AppTheme.colors.surface) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = CardShape, color = AppTheme.colors.surface) {
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.xl),
+                modifier = Modifier.width(460.dp).heightIn(max = 640.dp).verticalScroll(rememberScrollState()).padding(Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 Text("Portfolios", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -123,10 +126,10 @@ fun PortfolioManagerDialog(
     }
 
     state.pendingDelete?.let { p ->
-        AppModalWindow(title = "Delete portfolio", onDismiss = { vm.cancelDelete() }, widthDp = 420, heightDp = 220) {
-            Surface(modifier = Modifier.fillMaxSize(), color = AppTheme.colors.surface) {
+        Dialog(onDismissRequest = { vm.cancelDelete() }) {
+            Surface(shape = CardShape, color = AppTheme.colors.surface) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(Spacing.xl),
+                    modifier = Modifier.width(420.dp).padding(Spacing.xl),
                     verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
                     Text(

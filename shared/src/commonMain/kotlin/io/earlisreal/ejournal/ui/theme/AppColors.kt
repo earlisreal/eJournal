@@ -20,6 +20,13 @@ data class AppColors(
     val onAccent: Color,
     val profit: Color,
     val loss: Color,
+    /**
+     * Candle up/down for the trade chart. Deliberately more muted than [profit]/[loss]: candles
+     * flood the whole canvas, so full-chroma green/red vibrate; small P&L numbers need the punch and
+     * keep using [profit]/[loss]. See ChartColors.from.
+     */
+    val candleUp: Color,
+    val candleDown: Color,
 )
 
 val lightAppColors = AppColors(
@@ -35,6 +42,8 @@ val lightAppColors = AppColors(
     onAccent = Color(0xFFFFFFFF),
     profit = Color(0xFF16A34A),
     loss = Color(0xFFDC2626),
+    candleUp = Color(0xFF2E9E74),
+    candleDown = Color(0xFFD46A62),
 )
 
 val darkAppColors = AppColors(
@@ -50,6 +59,8 @@ val darkAppColors = AppColors(
     onAccent = Color(0xFF1B1300),
     profit = Color(0xFF3FB950),
     loss = Color(0xFFF85149),
+    candleUp = Color(0xFF4C9E82),
+    candleDown = Color(0xFFE0605E),
 )
 
 val LocalAppColors = staticCompositionLocalOf { lightAppColors }

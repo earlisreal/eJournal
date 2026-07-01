@@ -34,8 +34,8 @@ data class ChartColors(
         fun from(c: AppColors): ChartColors = ChartColors(
             background = c.contentBackground,
             grid = c.textMuted.copy(alpha = 0.12f),
-            up = c.profit,
-            down = c.loss,
+            up = c.candleUp,
+            down = c.candleDown,
             axisText = c.textMuted,
             axisLine = c.border,
             crosshair = c.textPrimary.copy(alpha = 0.55f),
@@ -45,7 +45,9 @@ data class ChartColors(
             // The 0.8 fill alpha + dark border are applied by the renderer (see MARKER_ALPHA).
             buyMarker = Color(0xFFA5D6A7),
             sellMarker = Color(0xFFF48FB1),
-            vwap = c.accent,
+            // Punchier profit-green (not the muted candleUp) so the overlay line reads distinctly
+            // over the up-candles rather than blending in.
+            vwap = c.profit,
         )
 
         val Dark = from(darkAppColors)

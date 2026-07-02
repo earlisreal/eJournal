@@ -26,7 +26,7 @@ Requires JDK 25 (toolchain is resolved via foojay). Gradle config cache and buil
 ## Development workflow
 
 - **Design, then usually implement directly — skip the separate written plan.** The user prefers: brainstorm/design spec → implement, *not* brainstorm → `writing-plans` → execute. Once a design spec in `docs/superpowers/specs/` is approved, go straight to implementation using TDD, working in the spec's phase order (tests are the checkpoints). Only write a formal plan in `docs/superpowers/plans/` when the work is large, handed off to a separate session, or the user asks. Keep the design step — that's the one that catches wrong assumptions cheaply; skipping *it* is where things go wrong, not skipping the plan.
-- **Never commit without an explicit request.** "Implement directly to main" authorizes editing files on `main` (no feature branch), not committing — ask before any `git commit`/`push`.
+- **Committing locally without asking is fine** (policy updated 2026-07-02) — commit at natural checkpoints (task done, tests green). **Never push** (or tag-push, or rewrite pushed history) without an explicit request. "Implement directly to main" means editing files on `main` (no feature branch).
 
 ## Architecture
 

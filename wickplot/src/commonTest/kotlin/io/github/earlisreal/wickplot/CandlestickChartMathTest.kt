@@ -117,7 +117,7 @@ class CandlestickChartMathTest {
     }
 
     @Test
-    fun `barIndexAt is safe on an empty viewport (no bars loaded yet)`() {
+    fun `barIndexAt is safe on an empty viewport with no bars loaded yet`() {
         // Reproduces the crash when the crosshair moves over the chart before data loads:
         // an empty fit() yields visibleBars=0, so the clamp range [0, -1] is invalid.
         val vp = ChartViewport(startIndex = 0, visibleBars = 0, priceLow = 0.0, priceHigh = 1.0, maxVolume = 1.0)
@@ -135,7 +135,7 @@ class CandlestickChartMathTest {
     // ── Nice-number price axis (TradingView-style) ───────────────────────────
 
     @Test
-    fun `niceAxisStep rounds up to 1, 2, 2_5, 5 times a power of ten`() {
+    fun `niceAxisStep rounds up to 1 or 2 or 2_5 or 5 times a power of ten`() {
         assertEquals(0.05, niceAxisStep(0.03), 1e-9)   // 3 → 5  (×0.01)
         assertEquals(0.10, niceAxisStep(0.06), 1e-9)   // 6 → 10 (×0.01)
         assertEquals(0.20, niceAxisStep(0.20), 1e-9)   // 2 → 2

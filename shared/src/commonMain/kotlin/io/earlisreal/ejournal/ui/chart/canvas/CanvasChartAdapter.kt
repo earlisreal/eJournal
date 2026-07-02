@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import io.github.earlisreal.wickplot.BarWindow
 import io.github.earlisreal.wickplot.CandlestickCanvasChart
 import io.github.earlisreal.wickplot.ChartInitialView
+import io.github.earlisreal.wickplot.LineOverlay
 import io.github.earlisreal.wickplot.LinePoint
 import io.github.earlisreal.wickplot.PriceMarker
 import io.github.earlisreal.wickplot.TradeFramingMode
@@ -34,8 +35,9 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
 
     // Precompute the derived overlays once per data load, not per frame.
     val markers = remember(bars, position) { if (position != null) markersFor(position, bars) else emptyList() }
-    val vwapLine = remember(bars, state.vwapEnabled, state.chartData) {
-        if (state.vwapEnabled) vwapFor(bars, state.chartData?.vwap ?: emptyList()) else emptyList()
+    val overlays = remember(bars, state.vwapEnabled, state.chartData) {
+        val points = if (state.vwapEnabled) vwapFor(bars, state.chartData?.vwap ?: emptyList()) else emptyList()
+        if (points.isEmpty()) emptyList() else listOf(LineOverlay(points = points, label = "VWAP"))
     }
     val initialWindow = remember(bars, position, tf) {
         if (position != null && bars.isNotEmpty()) {
@@ -51,7 +53,7 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
         title = title,
         modifier = modifier,
         colors = colors,
-        vwap = vwapLine,
+        overlays = overlays,
         intraday = intraday,
         initialWindow = initialWindow,
     )

@@ -24,5 +24,5 @@ fun chartColorsFrom(c: AppColors): ChartColors = ChartColors(
     sellMarker = Color(0xFFF48FB1),
     // Punchier profit-green (not the muted candleUp) so the overlay line reads distinctly over the
     // up-candles rather than blending in.
-    vwap = c.profit,
+    overlay = c.profit,
 )

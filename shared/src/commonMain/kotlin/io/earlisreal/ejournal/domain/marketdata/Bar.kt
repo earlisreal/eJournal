@@ -1,6 +1,6 @@
 package io.earlisreal.ejournal.domain.marketdata
 
-import io.earlisreal.wickplot.Candle
+import io.github.earlisreal.wickplot.Candle
 import kotlinx.datetime.LocalDateTime
 
 enum class Timeframe { DAILY, ONE_MINUTE }

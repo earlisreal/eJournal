@@ -1,4 +1,4 @@
-package io.earlisreal.wickplot
+package io.github.earlisreal.wickplot
 
 import kotlin.math.abs
 import kotlin.math.ceil

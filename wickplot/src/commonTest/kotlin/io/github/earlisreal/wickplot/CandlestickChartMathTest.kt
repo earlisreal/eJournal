@@ -1,4 +1,4 @@
-package io.earlisreal.wickplot
+package io.github.earlisreal.wickplot
 
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test

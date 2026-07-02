@@ -20,8 +20,11 @@ kotlinx-serialization = "1.9.0"
 # brings filekit-core + JNA transitively; opens NSOpenPanel (macOS) / Win32 COM IFileOpenDialog
 # (Windows). Pulls no kotlinx-datetime, so the 0.7.1 pin above is untouched.
 filekit = "0.14.2"
+# wickplot — the trade chart, extracted from this app into its own library (github.com/earlisreal/wickplot).
+wickplot = "0.1.0"
 
 [libraries]
+wickplot = { module = "io.github.earlisreal:wickplot", version.ref = "wickplot" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

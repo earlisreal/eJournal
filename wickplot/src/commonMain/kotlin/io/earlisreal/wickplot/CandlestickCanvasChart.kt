@@ -1,4 +1,4 @@
-package io.earlisreal.chart.canvas
+package io.earlisreal.wickplot
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures

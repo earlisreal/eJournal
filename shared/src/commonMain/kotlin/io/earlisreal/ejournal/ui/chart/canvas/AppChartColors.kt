@@ -1,7 +1,7 @@
 package io.earlisreal.ejournal.ui.chart.canvas
 
 import androidx.compose.ui.graphics.Color
-import io.earlisreal.chart.canvas.ChartColors
+import io.earlisreal.wickplot.ChartColors
 import io.earlisreal.ejournal.ui.theme.AppColors
 
 /**

@@ -1,4 +1,4 @@
-package io.earlisreal.chart.canvas
+package io.earlisreal.wickplot
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size

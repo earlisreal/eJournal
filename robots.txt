@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://earlisreal.github.io/eJournal/sitemap.xml

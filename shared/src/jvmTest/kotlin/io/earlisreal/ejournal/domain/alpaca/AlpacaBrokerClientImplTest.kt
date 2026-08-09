@@ -86,7 +86,7 @@ class AlpacaBrokerClientImplTest {
 
     @Test
     fun `maps fractional fills and converts utc to eastern time`() = runTest {
-        val (client, _) = client { request ->
+        val (client, engine) = client { request ->
             if (request.url.encodedPath == "/v2/account") json(account())
             else json("[${fill("fill-1")}]" )
         }
@@ -100,6 +100,9 @@ class AlpacaBrokerClientImplTest {
         assertEquals("2026-06-10T09:30", transaction.datetime.toString())
         assertEquals("alpaca:paper:acct-live:fill-1", transaction.externalId)
         assertEquals(0.0, transaction.fees)
+        val assetsRequest = engine.requestHistory.first { it.url.encodedPath == "/v2/assets" }
+        assertEquals("us_equity", assetsRequest.url.parameters["asset_class"])
+        assertEquals(null, assetsRequest.url.parameters["status"])
     }
 
     @Test

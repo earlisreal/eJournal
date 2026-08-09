@@ -29,4 +29,5 @@ data class BackgroundTask(
 interface TaskHandle {
     fun succeed(detail: String? = null)
     fun fail(detail: String? = null, retry: (() -> Unit)? = null)
+    fun cancel()
 }

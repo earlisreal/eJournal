@@ -13,6 +13,7 @@ import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.testutil.FakeCredentialsRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -40,6 +41,7 @@ private class FakeAlpacaClient(
     var lastUntil: Instant? = null
         private set
     var fetchGate: CompletableDeferred<Unit>? = null
+    var fetchException: Throwable? = null
 
     override suspend fun testConnection(): AlpacaConnectionResult = connection
 
@@ -48,6 +50,7 @@ private class FakeAlpacaClient(
         lastAfter = after
         lastUntil = until
         fetchGate?.await()
+        fetchException?.let { throw it }
         return result
     }
 }
@@ -333,5 +336,16 @@ class AlpacaSyncServiceTest {
 
         assertEquals(BrokerSyncOutcome.Imported(1), first.await())
         assertEquals(BrokerSyncOutcome.AccountAlreadyBound("Trading"), second.await())
+    }
+
+    @Test
+    fun `cancellation propagates and clears the background task`() = runTest {
+        val tracker = BackgroundTaskTracker()
+        val client = FakeAlpacaClient(success("cancelled"))
+        client.fetchException = CancellationException("cancelled")
+        val (service, _) = service(client, tracker = tracker)
+
+        assertFailsWith<CancellationException> { service.syncIncremental(1L) }
+        assertTrue(tracker.tasks.value.none { it.id == AlpacaSyncService.TASK_ID })
     }
 }

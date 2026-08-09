@@ -78,7 +78,6 @@ class AlpacaBrokerClientImpl(
 
         val usEquitySymbols = when (val result = requestWithRetry(credentials, "/v2/assets") {
             parameter("asset_class", "us_equity")
-            parameter("status", "all")
         }) {
             is RequestResult.Failure -> return AlpacaFetchResult.NetworkError(result.message)
             is RequestResult.Response -> when {

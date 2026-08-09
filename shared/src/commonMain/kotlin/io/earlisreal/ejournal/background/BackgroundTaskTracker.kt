@@ -35,6 +35,10 @@ class BackgroundTaskTracker {
             override fun fail(detail: String?, retry: (() -> Unit)?) {
                 update(BackgroundTask(id, label, TaskState.Failed, detail, retry))
             }
+
+            override fun cancel() {
+                _tasks.update { tasks -> tasks.filterNot { it.id == id } }
+            }
         }
     }
 }

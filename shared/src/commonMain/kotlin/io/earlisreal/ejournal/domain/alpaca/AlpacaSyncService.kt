@@ -104,6 +104,7 @@ class AlpacaSyncService(
                 }
             }
         } catch (e: CancellationException) {
+            handle.cancel()
             throw e
         } catch (e: Exception) {
             handle.fail("Alpaca import failed: ${e.message ?: "request failed"}")

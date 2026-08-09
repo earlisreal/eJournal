@@ -86,7 +86,14 @@ eJournal is a Kotlin Multiplatform project targeting Desktop (JVM only). Buildin
 ./gradlew build                      # full build
 ```
 
-Almost all code lives in [`shared/`](./shared/src) (UI + business logic); [`desktopApp/`](./desktopApp/src) is a thin launcher. See [`CLAUDE.md`](./CLAUDE.md) for architecture notes.
+Run a single JUnit test class or method with `--tests`:
+
+```bash
+./gradlew :shared:jvmTest --tests "io.earlisreal.ejournal.domain.FifoMatcherTest"
+./gradlew :shared:jvmTest --tests "io.earlisreal.ejournal.domain.FifoMatcherTest.partial fill across multiple lots"
+```
+
+Almost all code lives in [`shared/`](./shared/src) (UI + business logic); [`desktopApp/`](./desktopApp/src) is a thin launcher. Contributor architecture and repository conventions are in [`AGENTS.md`](./AGENTS.md).
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html) and [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/).
 

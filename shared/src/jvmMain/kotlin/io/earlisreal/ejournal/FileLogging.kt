@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
  * they always land in `ejournal.log` next to the database, regardless of how the app was launched.
  *
  * Uses `java.time` rather than kotlinx-datetime on purpose: this is JVM-only launcher infra, and it
- * sidesteps the kotlinx-datetime 0.7 `Clock` runtime pitfall noted in CLAUDE.md.
+ * sidesteps the kotlinx-datetime 0.7 `Clock` runtime pitfall.
  */
 object FileLogging {
 

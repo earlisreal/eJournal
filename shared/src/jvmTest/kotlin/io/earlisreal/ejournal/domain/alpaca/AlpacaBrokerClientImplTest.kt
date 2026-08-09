@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.domain.alpaca
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope

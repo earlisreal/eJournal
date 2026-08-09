@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.domain.alpaca
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction

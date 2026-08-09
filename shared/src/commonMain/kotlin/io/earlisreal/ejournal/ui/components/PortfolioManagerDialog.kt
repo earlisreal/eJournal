@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
 import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
@@ -187,13 +186,13 @@ fun PortfolioManagerDialog(
                     DropdownMenu(expanded = brokerMenuExpanded, onDismissRequest = { brokerMenuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text("None / Manual Import") },
-                            onClick = { broker = null; clearBrokerFields(); brokerMenuExpanded = false },
+                            onClick = { broker = null; vm.clearConnectionTest(); brokerMenuExpanded = false },
                         )
                         if (market == Market.US_STOCKS) {
                             Broker.entries.forEach { option ->
                                 DropdownMenuItem(
                                     text = { Text(option.label) },
-                                    onClick = { broker = option; clearBrokerFields(); brokerMenuExpanded = false },
+                                    onClick = { broker = option; vm.clearConnectionTest(); brokerMenuExpanded = false },
                                 )
                             }
                         }
@@ -212,7 +211,13 @@ fun PortfolioManagerDialog(
                             onSecretKey = { alpacaSecretKey = it; vm.clearConnectionTest() },
                             onEnvironment = { alpacaEnvironment = it; vm.clearConnectionTest() },
                             global = vm.globalAlpacaCredentials(),
-                            onCopyGlobal = { vm.globalAlpacaCredentials()?.let { alpacaKeyId = it.keyId; alpacaSecretKey = it.secretKey } },
+                            onCopyGlobal = {
+                                vm.globalAlpacaCredentials()?.let {
+                                    alpacaKeyId = it.keyId
+                                    alpacaSecretKey = it.secretKey
+                                    vm.clearConnectionTest()
+                                }
+                            },
                         )
                         Broker.TRADEZERO -> TradeZeroBrokerForm(
                             keyId = tradeZeroKeyId,

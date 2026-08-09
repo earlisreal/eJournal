@@ -1,11 +1,10 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials
 import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
-import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.model.Broker
 import java.nio.file.Files
 import java.nio.file.Path
@@ -48,12 +47,7 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
         val keyId = entry.string("keyId") ?: return null
         val secretKey = entry.string("secretKey") ?: return null
         return when (entry.string("broker")?.uppercase()) {
-            Broker.ALPACA.name, Broker.ALPACA.id.uppercase() -> {
-                val environment = entry.string("environment")
-                    ?.let { value -> runCatching { AlpacaEnvironment.valueOf(value.uppercase()) }.getOrNull() }
-                    ?: return null
-                AlpacaBrokerCredentials(keyId, secretKey, environment)
-            }
+            Broker.ALPACA.name, Broker.ALPACA.id.uppercase() -> AlpacaBrokerSecrets(keyId, secretKey)
             Broker.TRADEZERO.name, Broker.TRADEZERO.id.uppercase() ->
                 TradeZeroBrokerCredentials(keyId, secretKey)
             else -> null
@@ -72,7 +66,6 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
                 put("broker", credentials.broker.name)
                 put("keyId", credentials.keyId)
                 put("secretKey", credentials.secretKey)
-                if (credentials is AlpacaBrokerCredentials) put("environment", credentials.environment.name)
             }
         }
         val updated = replaceObject(root, "portfolioBrokers") {

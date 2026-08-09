@@ -8,6 +8,7 @@ import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Broker
+import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -69,6 +70,17 @@ class SqlDelightPortfolioRepositoryTest {
         assertEquals(Market.US_STOCKS, found.market)
         assertEquals(Broker.TRADEZERO, found.broker)
         assertEquals(portfolio.credentialRef, found.credentialRef)
+    }
+
+    @Test
+    fun alpacaEnvironmentRoundTripsIndependentlyOfCredentials() = runTest {
+        val portfolio = repo.insert("Alpaca", Market.US_STOCKS, Broker.ALPACA, AlpacaEnvironment.LIVE)
+
+        assertEquals(AlpacaEnvironment.LIVE, repo.getById(portfolio.id)!!.alpacaEnvironment)
+
+        repo.update(portfolio.id, "Alpaca", Market.US_STOCKS, Broker.ALPACA, AlpacaEnvironment.PAPER)
+
+        assertEquals(AlpacaEnvironment.PAPER, repo.getById(portfolio.id)!!.alpacaEnvironment)
     }
 
     @Test

@@ -88,7 +88,7 @@ class TradeZeroClientImpl(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun testConnection(credentials: TradeZeroBrokerCredentials): TradeZeroConnectionResult =
+    override suspend fun testConnection(credentials: TradeZeroBrokerCredentials): TradeZeroConnectionResult = try {
         when (val resolution = resolveAccountId(credentials)) {
             is AccountResolution.Found -> TradeZeroConnectionResult.Connected(TradeZeroAccount(resolution.accountId))
             AccountResolution.InvalidCredentials -> TradeZeroConnectionResult.InvalidCredentials
@@ -97,6 +97,11 @@ class TradeZeroClientImpl(
             )
             is AccountResolution.Error -> TradeZeroConnectionResult.NetworkError(resolution.message)
         }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        TradeZeroConnectionResult.NetworkError(error.message ?: "Network request failed")
+    }
 
     override suspend fun fetchOrders(
         credentials: TradeZeroBrokerCredentials,

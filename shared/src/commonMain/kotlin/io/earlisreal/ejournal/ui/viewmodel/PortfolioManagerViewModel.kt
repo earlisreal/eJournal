@@ -2,7 +2,7 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials
@@ -11,6 +11,7 @@ import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.model.Broker
@@ -18,6 +19,7 @@ import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroConnectionResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,9 +77,17 @@ class PortfolioManagerViewModel(
 
     fun draftFor(portfolio: Portfolio): BrokerCredentialDraft? =
         when (val credentials = credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef)) {
-            is AlpacaBrokerCredentials -> BrokerCredentialDraft.Alpaca(credentials.keyId, credentials.secretKey, credentials.environment)
+            is AlpacaBrokerSecrets -> BrokerCredentialDraft.Alpaca(
+                credentials.keyId,
+                credentials.secretKey,
+                portfolio.alpacaEnvironment ?: AlpacaEnvironment.PAPER,
+            )
             is TradeZeroBrokerCredentials -> BrokerCredentialDraft.TradeZero(credentials.keyId, credentials.secretKey)
-            null -> null
+            null -> if (portfolio.broker == Broker.ALPACA) {
+                BrokerCredentialDraft.Alpaca(environment = portfolio.alpacaEnvironment ?: AlpacaEnvironment.PAPER)
+            } else {
+                null
+            }
         }
 
     fun clearConnectionTest() {
@@ -85,20 +95,35 @@ class PortfolioManagerViewModel(
     }
 
     fun testConnection(draft: BrokerCredentialDraft?) {
-        val credentials = draft.toCredentialsOrNull().getOrNull() ?: return
+        val stored = draft.toStoredCredentialsOrNull().getOrNull() ?: return
         _state.value = _state.value.copy(testingConnection = true, connectionTest = null, error = null)
         viewModelScope.launch {
-            val result = when (credentials) {
-                is AlpacaBrokerCredentials -> BrokerConnectionTestResult.Alpaca(alpacaBrokerClient.testConnection(credentials))
-                is TradeZeroBrokerCredentials -> BrokerConnectionTestResult.TradeZero(tradeZeroClient.testConnection(credentials))
+            try {
+                val result = when (draft) {
+                    is BrokerCredentialDraft.Alpaca -> BrokerConnectionTestResult.Alpaca(
+                        alpacaBrokerClient.testConnection(
+                            AlpacaBrokerCredentials(stored.keyId, stored.secretKey, draft.environment),
+                        ),
+                    )
+                    is BrokerCredentialDraft.TradeZero -> BrokerConnectionTestResult.TradeZero(
+                        tradeZeroClient.testConnection(TradeZeroBrokerCredentials(stored.keyId, stored.secretKey)),
+                    )
+                    null -> return@launch
+                }
+                _state.value = _state.value.copy(connectionTest = result)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _state.value = _state.value.copy(error = error.message ?: "Connection test failed")
+            } finally {
+                _state.value = _state.value.copy(testingConnection = false)
             }
-            _state.value = _state.value.copy(testingConnection = false, connectionTest = result)
         }
     }
 
     fun create(name: String, market: Market, broker: Broker?, draft: BrokerCredentialDraft?) {
         if (!validateBrokerMarket(market, broker)) return
-        val credentials = draft.toCredentialsOrNull()
+        val credentials = draft.toStoredCredentialsOrNull()
         if (credentials.isFailure) {
             _state.value = _state.value.copy(error = credentials.exceptionOrNull()?.message)
             return
@@ -108,9 +133,10 @@ class PortfolioManagerViewModel(
             _state.value = _state.value.copy(error = "Broker credentials do not match the selected broker")
             return
         }
+        val alpacaEnvironment = draft.alpacaEnvironmentFor(broker)
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                val portfolio = portfolioRepository.insert(name.trim(), market, broker)
+                val portfolio = portfolioRepository.insert(name.trim(), market, broker, alpacaEnvironment)
                 try {
                     resolved?.let { credentialsRepository.setPortfolioBrokerCredentials(portfolio.credentialRef, it) }
                 } catch (error: Throwable) {
@@ -130,7 +156,7 @@ class PortfolioManagerViewModel(
 
     fun update(id: Long, name: String, market: Market, broker: Broker?, draft: BrokerCredentialDraft?) {
         if (!validateBrokerMarket(market, broker)) return
-        val credentials = draft.toCredentialsOrNull()
+        val credentials = draft.toStoredCredentialsOrNull()
         if (credentials.isFailure) {
             _state.value = _state.value.copy(error = credentials.exceptionOrNull()?.message)
             return
@@ -140,18 +166,27 @@ class PortfolioManagerViewModel(
             _state.value = _state.value.copy(error = "Broker credentials do not match the selected broker")
             return
         }
+        val alpacaEnvironment = draft.alpacaEnvironmentFor(broker)
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 val old = portfolioRepository.getById(id) ?: error("Portfolio no longer exists")
                 val oldCredentials = credentialsRepository.getPortfolioBrokerCredentials(old.credentialRef)
-                val changed = old.broker != broker || oldCredentials != resolved
+                val credentialsChanged = oldCredentials != resolved
+                val changed = old.broker != broker || old.alpacaEnvironment != alpacaEnvironment || credentialsChanged
+                try {
+                    if (credentialsChanged) replaceCredentials(old.credentialRef, resolved)
+                    portfolioRepository.update(id, name.trim(), market, broker, alpacaEnvironment)
+                } catch (error: Throwable) {
+                    if (credentialsChanged) {
+                        runCatching { replaceCredentials(old.credentialRef, oldCredentials) }
+                            .onFailure(error::addSuppressed)
+                    }
+                    throw error
+                }
                 if (changed) {
                     old.broker?.let { portfolioSettings.clearNamespace(id, "${it.id}.") }
                     broker?.let { portfolioSettings.clearNamespace(id, "${it.id}.") }
-                    credentialsRepository.deletePortfolioBrokerCredentials(old.credentialRef)
-                    resolved?.let { credentialsRepository.setPortfolioBrokerCredentials(old.credentialRef, it) }
                 }
-                portfolioRepository.update(id, name.trim(), market, broker)
             }.onSuccess {
                 _state.value = _state.value.copy(error = null)
                 reload()
@@ -204,15 +239,33 @@ class PortfolioManagerViewModel(
         }
         return true
     }
+
+    private fun replaceCredentials(
+        credentialRef: String,
+        credentials: PortfolioBrokerCredentials?,
+    ) {
+        if (credentials == null) {
+            credentialsRepository.deletePortfolioBrokerCredentials(credentialRef)
+        } else {
+            credentialsRepository.setPortfolioBrokerCredentials(credentialRef, credentials)
+        }
+    }
 }
 
-private fun BrokerCredentialDraft?.toCredentialsOrNull(): Result<PortfolioBrokerCredentials?> {
+private fun BrokerCredentialDraft?.toStoredCredentialsOrNull(): Result<PortfolioBrokerCredentials?> {
     if (this == null || (keyId.isBlank() && secretKey.isBlank())) return Result.success(null)
     if (keyId.isBlank() || secretKey.isBlank()) return Result.failure(IllegalArgumentException("Enter both broker credential fields or leave both blank"))
     return Result.success(
         when (this) {
-            is BrokerCredentialDraft.Alpaca -> AlpacaBrokerCredentials(keyId.trim(), secretKey.trim(), environment)
+            is BrokerCredentialDraft.Alpaca -> AlpacaBrokerSecrets(keyId.trim(), secretKey.trim())
             is BrokerCredentialDraft.TradeZero -> TradeZeroBrokerCredentials(keyId.trim(), secretKey.trim())
         },
     )
 }
+
+private fun BrokerCredentialDraft?.alpacaEnvironmentFor(broker: Broker?): AlpacaEnvironment? =
+    if (broker == Broker.ALPACA) {
+        (this as? BrokerCredentialDraft.Alpaca)?.environment ?: AlpacaEnvironment.PAPER
+    } else {
+        null
+    }

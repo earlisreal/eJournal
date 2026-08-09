@@ -1,9 +1,8 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
-import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermission
@@ -46,7 +45,7 @@ class JsonCredentialsRepositoryTest {
     @Test
     fun `portfolio credentials round trip independently`() {
         val (repo, _) = newRepo()
-        val alpaca = AlpacaBrokerCredentials("a-key", "a-secret", AlpacaEnvironment.LIVE)
+        val alpaca = AlpacaBrokerSecrets("a-key", "a-secret")
         val tradeZero = TradeZeroBrokerCredentials("t-key", "t-secret")
         repo.setPortfolioBrokerCredentials("ref-a", alpaca)
         repo.setPortfolioBrokerCredentials("ref-b", tradeZero)
@@ -59,18 +58,18 @@ class JsonCredentialsRepositoryTest {
     fun `portfolio changes do not affect global or other portfolios`() {
         val (repo, _) = newRepo()
         val global = AlpacaMarketDataCredentials("global", "global-secret")
-        val first = AlpacaBrokerCredentials("one", "one-secret", AlpacaEnvironment.PAPER)
+        val first = AlpacaBrokerSecrets("one", "one-secret")
         val second = TradeZeroBrokerCredentials("two", "two-secret")
         repo.setAlpacaMarketDataCredentials(global)
         repo.setPortfolioBrokerCredentials("one", first)
         repo.setPortfolioBrokerCredentials("two", second)
 
-        repo.setPortfolioBrokerCredentials("one", AlpacaBrokerCredentials("changed", "changed-secret", AlpacaEnvironment.LIVE))
+        repo.setPortfolioBrokerCredentials("one", AlpacaBrokerSecrets("changed", "changed-secret"))
         assertEquals(global, repo.getAlpacaMarketDataCredentials())
         assertEquals(second, repo.getPortfolioBrokerCredentials("two"))
 
         repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("new-global", "new-secret"))
-        assertEquals(AlpacaBrokerCredentials("changed", "changed-secret", AlpacaEnvironment.LIVE), repo.getPortfolioBrokerCredentials("one"))
+        assertEquals(AlpacaBrokerSecrets("changed", "changed-secret"), repo.getPortfolioBrokerCredentials("one"))
     }
 
     @Test

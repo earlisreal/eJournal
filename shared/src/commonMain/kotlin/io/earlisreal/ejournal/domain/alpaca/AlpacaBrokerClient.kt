@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.domain.alpaca
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import kotlin.time.Instant
@@ -9,6 +8,12 @@ data class AlpacaAccount(
     val id: String,
     val accountNumber: String?,
     val status: String?,
+)
+
+data class AlpacaBrokerCredentials(
+    val keyId: String,
+    val secretKey: String,
+    val environment: AlpacaEnvironment,
 )
 
 sealed interface AlpacaConnectionResult {

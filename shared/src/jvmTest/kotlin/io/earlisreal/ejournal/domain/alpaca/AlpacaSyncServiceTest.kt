@@ -2,7 +2,7 @@ package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.background.TaskState
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
@@ -125,10 +125,10 @@ class AlpacaSyncServiceTest {
         settings: FakePortfolioSettingsRepository = FakePortfolioSettingsRepository(),
         tracker: BackgroundTaskTracker = BackgroundTaskTracker(),
         credentials: FakeCredentialsRepository = FakeCredentialsRepository(
-            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.PAPER)),
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("key", "secret")),
         ),
         portfolioRepository: FakePortfolioRepository = FakePortfolioRepository(
-            listOf(Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1")),
+            listOf(Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER)),
         ),
     ): Pair<AlpacaSyncService, FakePortfolioSettingsRepository> {
         val service = AlpacaSyncService(
@@ -222,13 +222,20 @@ class AlpacaSyncServiceTest {
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
         val credentials = FakeCredentialsRepository(
-            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.LIVE)),
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("key", "secret")),
         )
         val client = FakeAlpacaClient(
             success("live-fill"),
             AlpacaConnectionResult.Connected(account, AlpacaEnvironment.LIVE),
         )
-        val (service, _) = service(client, settings = settings, credentials = credentials)
+        val (service, _) = service(
+            client,
+            settings = settings,
+            credentials = credentials,
+            portfolioRepository = FakePortfolioRepository(
+                listOf(Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.LIVE)),
+            ),
+        )
 
         service.syncIncremental(1L)
 
@@ -250,9 +257,16 @@ class AlpacaSyncServiceTest {
             ),
         )
         val credentials = FakeCredentialsRepository(
-            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.LIVE)),
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("key", "secret")),
         )
-        val (service, _) = service(client, settings = settings, credentials = credentials)
+        val (service, _) = service(
+            client,
+            settings = settings,
+            credentials = credentials,
+            portfolioRepository = FakePortfolioRepository(
+                listOf(Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.LIVE)),
+            ),
+        )
 
         service.syncIncremental(1L)
 
@@ -280,7 +294,7 @@ class AlpacaSyncServiceTest {
         val client = FakeAlpacaClient(success("never-fetched"))
         val portfolios = FakePortfolioRepository(
             listOf(
-                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1"),
+                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER),
                 Portfolio(2L, "Long Term", Market.US_STOCKS, null, "ref-2"),
             ),
         )
@@ -309,7 +323,7 @@ class AlpacaSyncServiceTest {
         val client = FakeAlpacaClient(success("never-fetched"))
         val portfolios = FakePortfolioRepository(
             listOf(
-                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1"),
+                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER),
                 Portfolio(2L, "Long Term", Market.US_STOCKS, null, "ref-2"),
             ),
         )
@@ -328,14 +342,14 @@ class AlpacaSyncServiceTest {
         client.fetchGate = CompletableDeferred()
         val portfolios = FakePortfolioRepository(
             listOf(
-                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1"),
-                Portfolio(2L, "Long Term", Market.US_STOCKS, Broker.ALPACA, "ref-2"),
+                Portfolio(1L, "Trading", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER),
+                Portfolio(2L, "Long Term", Market.US_STOCKS, Broker.ALPACA, "ref-2", AlpacaEnvironment.PAPER),
             ),
         )
         val credentials = FakeCredentialsRepository(
             portfolioBrokers = mapOf(
-                "ref-1" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.PAPER),
-                "ref-2" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.PAPER),
+                "ref-1" to AlpacaBrokerSecrets("key", "secret"),
+                "ref-2" to AlpacaBrokerSecrets("key", "secret"),
             ),
         )
         val (service, _) = service(client, settings = settings, credentials = credentials, portfolioRepository = portfolios)

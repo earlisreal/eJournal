@@ -25,9 +25,9 @@ private class StubTransactionRepository(var txs: List<Transaction>) : Transactio
 private class StubPortfolioRepository(private val portfolios: List<Portfolio> = emptyList()) : PortfolioRepository {
     override suspend fun getAll(): List<Portfolio> = portfolios
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
-    override suspend fun insert(name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?): Portfolio =
+    override suspend fun insert(name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?, alpacaEnvironment: io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment?): Portfolio =
         Portfolio(0, name, market, broker, "stub")
-    override suspend fun update(id: Long, name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?) {}
+    override suspend fun update(id: Long, name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?, alpacaEnvironment: io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment?) {}
     override suspend fun delete(id: Long) {}
 }
 

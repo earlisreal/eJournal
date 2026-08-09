@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.data.repository
 
-import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.model.Broker
 
 data class AlpacaMarketDataCredentials(
@@ -14,10 +13,10 @@ sealed interface PortfolioBrokerCredentials {
     val secretKey: String
 }
 
-data class AlpacaBrokerCredentials(
+/** Stored per-portfolio Alpaca secret material. Environment belongs to Portfolio. */
+data class AlpacaBrokerSecrets(
     override val keyId: String,
     override val secretKey: String,
-    val environment: AlpacaEnvironment,
 ) : PortfolioBrokerCredentials {
     override val broker: Broker = Broker.ALPACA
 }

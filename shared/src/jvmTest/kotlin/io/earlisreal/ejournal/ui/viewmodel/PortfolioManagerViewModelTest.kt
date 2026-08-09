@@ -1,9 +1,10 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaAccount
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.alpaca.AlpacaFetchResult
@@ -87,10 +88,37 @@ class PortfolioManagerViewModelTest {
 
         val saved = portfolioRepository.getAll().single { it.name == "With Keys" }
         assertEquals(Broker.ALPACA, saved.broker)
+        assertEquals(AlpacaEnvironment.LIVE, saved.alpacaEnvironment)
         assertEquals(
-            AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.LIVE),
+            AlpacaBrokerSecrets("key", "secret"),
             credentials.portfolioCredentials[saved.credentialRef],
         )
+    }
+
+    @Test
+    fun `persists live environment when Alpaca credentials are omitted`() = runTest {
+        val credentials = FakeCredentialsRepository()
+        val portfolioRepository = FakePortfolioRepository()
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository,
+            FakeTransactionRepository(),
+            FakePortfolioSettingsRepository(),
+            credentials,
+            RecordingAlpacaClient(account),
+            FakeTradeZeroClient(),
+        ) {}
+
+        viewModel.create(
+            "Live without keys",
+            Market.US_STOCKS,
+            Broker.ALPACA,
+            BrokerCredentialDraft.Alpaca(environment = AlpacaEnvironment.LIVE),
+        )
+        viewModel.state.first { it.portfolios.size == 1 }
+
+        val saved = portfolioRepository.getAll().single()
+        assertEquals(AlpacaEnvironment.LIVE, saved.alpacaEnvironment)
+        assertTrue(credentials.portfolioCredentials.isEmpty())
     }
 
     @Test
@@ -120,7 +148,7 @@ class PortfolioManagerViewModelTest {
         credentials.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("changed", "changed-secret"))
 
         assertEquals(
-            AlpacaBrokerCredentials("global", "global-secret", AlpacaEnvironment.PAPER),
+            AlpacaBrokerSecrets("global", "global-secret"),
             credentials.portfolioCredentials[portfolio.credentialRef],
         )
     }
@@ -178,9 +206,9 @@ class PortfolioManagerViewModelTest {
 
     @Test
     fun `changing credentials clears broker namespace and preserves credential reference`() = runTest {
-        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(1L, "Alpaca", Market.US_STOCKS, Broker.ALPACA, "ref-1")
+        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(1L, "Alpaca", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER)
         val credentials = FakeCredentialsRepository(
-            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerCredentials("old", "old-secret", AlpacaEnvironment.PAPER)),
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("old", "old-secret")),
         )
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, "alpaca.lastSyncedDate", "2026-01-01")
@@ -207,16 +235,17 @@ class PortfolioManagerViewModelTest {
         assertEquals("ref-1", portfolioRepository.getById(1L)!!.credentialRef)
         assertNull(settings.getString(1L, "alpaca.lastSyncedDate"))
         assertEquals(
-            AlpacaBrokerCredentials("new", "new-secret", AlpacaEnvironment.LIVE),
+            AlpacaBrokerSecrets("new", "new-secret"),
             credentials.portfolioCredentials["ref-1"],
         )
+        assertEquals(AlpacaEnvironment.LIVE, portfolioRepository.getById(1L)!!.alpacaEnvironment)
     }
 
     @Test
     fun `changing to manual removes broker credentials but preserves portfolio`() = runTest {
-        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(1L, "Alpaca", Market.US_STOCKS, Broker.ALPACA, "ref-1")
+        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(1L, "Alpaca", Market.US_STOCKS, Broker.ALPACA, "ref-1", AlpacaEnvironment.PAPER)
         val credentials = FakeCredentialsRepository(
-            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerCredentials("key", "secret", AlpacaEnvironment.PAPER)),
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("key", "secret")),
         )
         val portfolioRepository = FakePortfolioRepository(listOf(portfolio))
         val changed = CompletableDeferred<Unit>()
@@ -235,6 +264,84 @@ class PortfolioManagerViewModelTest {
         val updated = portfolioRepository.getById(1L)!!
         assertEquals("ref-1", updated.credentialRef)
         assertNull(credentials.portfolioCredentials["ref-1"])
+    }
+
+    @Test
+    fun `removing Alpaca credentials preserves the live environment`() = runTest {
+        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(
+            1L,
+            "Alpaca",
+            Market.US_STOCKS,
+            Broker.ALPACA,
+            "ref-1",
+            AlpacaEnvironment.LIVE,
+        )
+        val credentials = FakeCredentialsRepository(
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("key", "secret")),
+        )
+        val portfolioRepository = FakePortfolioRepository(listOf(portfolio))
+        val changed = CompletableDeferred<Unit>()
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository,
+            FakeTransactionRepository(),
+            FakePortfolioSettingsRepository(),
+            credentials,
+            RecordingAlpacaClient(account),
+            FakeTradeZeroClient(),
+        ) { changed.complete(Unit) }
+
+        viewModel.update(
+            1L,
+            "Alpaca",
+            Market.US_STOCKS,
+            Broker.ALPACA,
+            BrokerCredentialDraft.Alpaca(environment = AlpacaEnvironment.LIVE),
+        )
+        changed.await()
+
+        assertEquals(AlpacaEnvironment.LIVE, portfolioRepository.getById(1L)!!.alpacaEnvironment)
+        assertNull(credentials.portfolioCredentials["ref-1"])
+    }
+
+    @Test
+    fun `failed portfolio update restores old credentials and leaves sync state intact`() = runTest {
+        val portfolio = io.earlisreal.ejournal.domain.model.Portfolio(
+            1L,
+            "Alpaca",
+            Market.US_STOCKS,
+            Broker.ALPACA,
+            "ref-1",
+            AlpacaEnvironment.PAPER,
+        )
+        val credentials = FakeCredentialsRepository(
+            portfolioBrokers = mapOf("ref-1" to AlpacaBrokerSecrets("old", "old-secret")),
+        )
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(1L, "alpaca.lastSyncedDate", "2026-01-01")
+        val portfolioRepository = FakePortfolioRepository(listOf(portfolio)).apply {
+            updateFailure = IllegalStateException("database unavailable")
+        }
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository,
+            FakeTransactionRepository(),
+            settings,
+            credentials,
+            RecordingAlpacaClient(account),
+            FakeTradeZeroClient(),
+        ) {}
+
+        viewModel.update(
+            1L,
+            "Alpaca",
+            Market.US_STOCKS,
+            Broker.ALPACA,
+            BrokerCredentialDraft.Alpaca("new", "new-secret", AlpacaEnvironment.LIVE),
+        )
+        viewModel.state.first { it.error != null }
+
+        assertEquals(AlpacaBrokerSecrets("old", "old-secret"), credentials.portfolioCredentials["ref-1"])
+        assertEquals(AlpacaEnvironment.PAPER, portfolioRepository.getById(1L)!!.alpacaEnvironment)
+        assertEquals("2026-01-01", settings.getString(1L, "alpaca.lastSyncedDate"))
     }
 
     @Test
@@ -288,14 +395,37 @@ class PortfolioManagerViewModelTest {
         assertTrue(credentials.portfolioCredentials.isEmpty())
         assertTrue(portfolioRepository.getAll().isEmpty())
     }
+
+    @Test
+    fun `unexpected connection client errors reset testing state`() = runTest {
+        val alpaca = RecordingAlpacaClient(account).apply {
+            failure = IllegalStateException("unexpected client failure")
+        }
+        val viewModel = PortfolioManagerViewModel(
+            FakePortfolioRepository(),
+            FakeTransactionRepository(),
+            FakePortfolioSettingsRepository(),
+            FakeCredentialsRepository(),
+            alpaca,
+            FakeTradeZeroClient(),
+        ) {}
+
+        viewModel.testConnection(BrokerCredentialDraft.Alpaca("key", "secret", AlpacaEnvironment.LIVE))
+        val state = viewModel.state.first { !it.testingConnection && it.error != null }
+
+        assertEquals("unexpected client failure", state.error)
+        assertTrue(!state.testingConnection)
+    }
 }
 
 private class RecordingAlpacaClient(
     private val account: AlpacaAccount,
 ) : AlpacaBrokerClient {
     var lastCredentials: AlpacaBrokerCredentials? = null
+    var failure: Throwable? = null
 
     override suspend fun testConnection(credentials: AlpacaBrokerCredentials): AlpacaConnectionResult {
+        failure?.let { throw it }
         lastCredentials = credentials
         return AlpacaConnectionResult.Connected(account, credentials.environment)
     }

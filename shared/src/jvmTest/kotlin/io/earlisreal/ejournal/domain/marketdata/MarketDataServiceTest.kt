@@ -24,8 +24,8 @@ private val TODAY = LocalDate.parse("2026-06-12")
 private class FakePortfolios(private val portfolios: List<Portfolio>) : PortfolioRepository {
     override suspend fun getAll(): List<Portfolio> = portfolios
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
-    override suspend fun insert(name: String, market: Market, broker: Broker?): Portfolio = error("unused")
-    override suspend fun update(id: Long, name: String, market: Market, broker: Broker?) = error("unused")
+    override suspend fun insert(name: String, market: Market, broker: Broker?, alpacaEnvironment: io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment?): Portfolio = error("unused")
+    override suspend fun update(id: Long, name: String, market: Market, broker: Broker?, alpacaEnvironment: io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment?) = error("unused")
     override suspend fun delete(id: Long) = error("unused")
 }
 

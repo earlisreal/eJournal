@@ -1,7 +1,7 @@
 package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
-import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
@@ -35,7 +35,7 @@ class AlpacaSyncService(
 
     override fun isConfigured(portfolio: Portfolio): Boolean =
         portfolio.broker == Broker.ALPACA &&
-            credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef) is AlpacaBrokerCredentials
+            credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef) is AlpacaBrokerSecrets
 
     override fun supportsMarket(market: Market): Boolean = market == Market.US_STOCKS
 
@@ -45,9 +45,7 @@ class AlpacaSyncService(
     private suspend fun syncIncrementalLocked(portfolioId: Long): BrokerSyncOutcome {
         val portfolio = portfolioRepository.getById(portfolioId) ?: return BrokerSyncOutcome.NotConfigured
         if (portfolio.broker != Broker.ALPACA) return BrokerSyncOutcome.NotConfigured
-        val credentials = credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef)
-            as? AlpacaBrokerCredentials
-            ?: return BrokerSyncOutcome.NotConfigured
+        val credentials = credentialsFor(portfolio) ?: return BrokerSyncOutcome.NotConfigured
         val until = now()
         val handle = tracker.start(TASK_ID, TASK_LABEL, "Fetching Alpaca fills…")
 
@@ -129,6 +127,18 @@ class AlpacaSyncService(
                 transaction.externalId?.startsWith("alpaca:$source:") == true
             }
         }
+
+    private fun credentialsFor(portfolio: Portfolio): AlpacaBrokerCredentials? {
+        if (portfolio.broker != Broker.ALPACA) return null
+        val secrets = credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef)
+            as? AlpacaBrokerSecrets
+            ?: return null
+        return AlpacaBrokerCredentials(
+            keyId = secrets.keyId,
+            secretKey = secrets.secretKey,
+            environment = portfolio.alpacaEnvironment ?: AlpacaEnvironment.PAPER,
+        )
+    }
 
     companion object {
         const val TASK_ID = "alpaca-import"

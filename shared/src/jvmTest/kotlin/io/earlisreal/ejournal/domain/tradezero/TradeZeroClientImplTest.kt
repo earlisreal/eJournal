@@ -10,6 +10,7 @@ import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -72,6 +73,15 @@ class TradeZeroClientImplTest {
         val result = assertIs<TradeZeroConnectionResult.Connected>(client.testConnection(credentials))
 
         assertEquals("ACC1", result.account.id)
+    }
+
+    @Test
+    fun `connection turns transport exceptions into network errors`() = runTest {
+        val client = client { throw IOException("DNS unavailable") }
+
+        val result = assertIs<TradeZeroConnectionResult.NetworkError>(client.testConnection(credentials))
+
+        assertEquals("DNS unavailable", result.message)
     }
 
     @Test

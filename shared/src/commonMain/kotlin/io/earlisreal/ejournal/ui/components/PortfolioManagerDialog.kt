@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -202,30 +203,32 @@ fun PortfolioManagerDialog(
                 if (broker != null) {
                     HorizontalDivider(color = AppTheme.colors.border)
                     Text("Broker configuration", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.titleSmall)
-                    when (broker) {
-                        Broker.ALPACA -> AlpacaBrokerForm(
-                            keyId = alpacaKeyId,
-                            secretKey = alpacaSecretKey,
-                            environment = alpacaEnvironment,
-                            onKeyId = { alpacaKeyId = it; vm.clearConnectionTest() },
-                            onSecretKey = { alpacaSecretKey = it; vm.clearConnectionTest() },
-                            onEnvironment = { alpacaEnvironment = it; vm.clearConnectionTest() },
-                            global = vm.globalAlpacaCredentials(),
-                            onCopyGlobal = {
-                                vm.globalAlpacaCredentials()?.let {
-                                    alpacaKeyId = it.keyId
-                                    alpacaSecretKey = it.secretKey
-                                    vm.clearConnectionTest()
-                                }
-                            },
-                        )
-                        Broker.TRADEZERO -> TradeZeroBrokerForm(
-                            keyId = tradeZeroKeyId,
-                            secretKey = tradeZeroSecretKey,
-                            onKeyId = { tradeZeroKeyId = it; vm.clearConnectionTest() },
-                            onSecretKey = { tradeZeroSecretKey = it; vm.clearConnectionTest() },
-                        )
-                        null -> Unit
+                    key(editingId, broker) {
+                        when (broker) {
+                            Broker.ALPACA -> AlpacaBrokerForm(
+                                keyId = alpacaKeyId,
+                                secretKey = alpacaSecretKey,
+                                environment = alpacaEnvironment,
+                                onKeyId = { alpacaKeyId = it; vm.clearConnectionTest() },
+                                onSecretKey = { alpacaSecretKey = it; vm.clearConnectionTest() },
+                                onEnvironment = { alpacaEnvironment = it; vm.clearConnectionTest() },
+                                global = vm.globalAlpacaCredentials(),
+                                onCopyGlobal = {
+                                    vm.globalAlpacaCredentials()?.let {
+                                        alpacaKeyId = it.keyId
+                                        alpacaSecretKey = it.secretKey
+                                        vm.clearConnectionTest()
+                                    }
+                                },
+                            )
+                            Broker.TRADEZERO -> TradeZeroBrokerForm(
+                                keyId = tradeZeroKeyId,
+                                secretKey = tradeZeroSecretKey,
+                                onKeyId = { tradeZeroKeyId = it; vm.clearConnectionTest() },
+                                onSecretKey = { tradeZeroSecretKey = it; vm.clearConnectionTest() },
+                            )
+                            null -> Unit
+                        }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         AppSecondaryButton(

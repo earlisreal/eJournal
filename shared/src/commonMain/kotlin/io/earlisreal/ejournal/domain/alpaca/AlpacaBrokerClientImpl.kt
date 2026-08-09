@@ -12,6 +12,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -75,8 +76,9 @@ class AlpacaBrokerClientImpl(
             }
         }
 
-        val cryptoSymbols = when (val result = requestWithRetry(credentials, "/v2/assets") {
-            parameter("asset_class", "crypto")
+        val usEquitySymbols = when (val result = requestWithRetry(credentials, "/v2/assets") {
+            parameter("asset_class", "us_equity")
+            parameter("status", "all")
         }) {
             is RequestResult.Failure -> return AlpacaFetchResult.NetworkError(result.message)
             is RequestResult.Response -> when {
@@ -84,7 +86,7 @@ class AlpacaBrokerClientImpl(
                     return AlpacaFetchResult.InvalidCredentials
                 result.status.value >= 400 ->
                     return AlpacaFetchResult.NetworkError(result.errorMessage())
-                else -> parseCryptoSymbols(result.body).getOrElse {
+                else -> parseUsEquitySymbols(result.body).getOrElse {
                     return AlpacaFetchResult.NetworkError("Invalid Alpaca asset response")
                 }
             }
@@ -92,7 +94,7 @@ class AlpacaBrokerClientImpl(
 
         val transactions = mutableListOf<Transaction>()
         var skippedOptions = 0
-        var skippedCrypto = 0
+        var skippedNonEquity = 0
         var pageToken: String? = null
 
         try {
@@ -117,9 +119,9 @@ class AlpacaBrokerClientImpl(
                 }
 
                 for (fill in page.activities) {
-                    when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id, cryptoSymbols)) {
+                    when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id, usEquitySymbols)) {
                         is FillMapping.Accepted -> transactions += mapped.transaction
-                        FillMapping.SkipCrypto -> skippedCrypto++
+                        FillMapping.SkipNonEquity -> skippedNonEquity++
                         FillMapping.SkipOption -> skippedOptions++
                     }
                 }
@@ -129,6 +131,8 @@ class AlpacaBrokerClientImpl(
                 // accepted to keep the parser tolerant of broker-side API changes.
                 pageToken = page.nextPageToken
             } while (pageToken != null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             return AlpacaFetchResult.NetworkError(e.message ?: "Invalid Alpaca activity response")
         }
@@ -139,7 +143,7 @@ class AlpacaBrokerClientImpl(
             detail = BrokerSyncDetail(
                 skipped = mapOf(
                     "options" to skippedOptions,
-                    "crypto fills" to skippedCrypto,
+                    "non-US-equity fills" to skippedNonEquity,
                 ).filterValues { it > 0 },
             ),
         )
@@ -163,6 +167,8 @@ class AlpacaBrokerClientImpl(
                     body = httpResponse.bodyAsText(),
                     requestId = httpResponse.headers["X-Request-ID"],
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 return RequestResult.Failure(e.message ?: "Request failed")
             }
@@ -213,34 +219,34 @@ class AlpacaBrokerClientImpl(
         }
     }
 
-    private fun parseCryptoSymbols(body: String): Result<Set<String>> = runCatching {
+    private fun parseUsEquitySymbols(body: String): Result<Set<String>> = runCatching {
         val root = json.parseToJsonElement(body) as? JsonArray
             ?: error("asset response is not an array")
-        root.mapNotNull { element ->
-            val asset = element as? JsonObject ?: return@mapNotNull null
-            val symbol = (asset["symbol"] as? JsonPrimitive)?.content ?: return@mapNotNull null
-            val assetClass =
-                (asset["class"] as? JsonPrimitive)?.content
-                    ?: (asset["asset_class"] as? JsonPrimitive)?.content
-            if (assetClass == null || assetClass.startsWith("crypto", ignoreCase = true)) {
-                symbol.trim().uppercase()
-            } else {
-                null
+        buildSet {
+            root.forEach { element ->
+                val asset = element as? JsonObject ?: return@forEach
+                val symbol = (asset["symbol"] as? JsonPrimitive)?.content ?: return@forEach
+                val assetClass =
+                    (asset["class"] as? JsonPrimitive)?.content
+                        ?: (asset["asset_class"] as? JsonPrimitive)?.content
+                if (assetClass == null || assetClass.equals("us_equity", ignoreCase = true)) {
+                    val normalized = symbol.trim().uppercase()
+                    add(normalized)
+                    add(normalized.replace("/", ""))
+                }
             }
-        }.toSet()
+        }
     }
 
     private fun FillRow.toTransactionOrSkip(
         portfolioId: Long,
         environment: AlpacaEnvironment,
         accountId: String,
-        cryptoSymbols: Set<String>,
+        usEquitySymbols: Set<String>,
     ): FillMapping {
         val normalizedSymbol = symbol.trim()
-        if (normalizedSymbol.contains('/') || normalizedSymbol.uppercase() in cryptoSymbols) {
-            return FillMapping.SkipCrypto
-        }
         if (isOccOptionSymbol(normalizedSymbol)) return FillMapping.SkipOption
+        if (normalizedSymbol.uppercase() !in usEquitySymbols) return FillMapping.SkipNonEquity
 
         val action = when (side.lowercase()) {
             "buy" -> Action.BUY
@@ -273,7 +279,7 @@ class AlpacaBrokerClientImpl(
     private sealed interface FillMapping {
         data class Accepted(val transaction: Transaction) : FillMapping
         data object SkipOption : FillMapping
-        data object SkipCrypto : FillMapping
+        data object SkipNonEquity : FillMapping
     }
 
     private data class ActivitiesPage(

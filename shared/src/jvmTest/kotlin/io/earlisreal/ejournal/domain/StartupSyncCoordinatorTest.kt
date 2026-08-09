@@ -17,12 +17,14 @@ import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeTradeZeroClient
 import io.earlisreal.ejournal.testutil.FakeTransactionRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 private class FakeBrokerSyncService(
     override val brokerId: String,
@@ -30,12 +32,14 @@ private class FakeBrokerSyncService(
     private val configured: Boolean = true,
     private val supported: Boolean = true,
     private val fail: Boolean = false,
+    private val cancel: Boolean = false,
 ) : BrokerSyncService {
     override val displayName: String = brokerId
     override fun isConfigured(): Boolean = configured
     override fun supportsMarket(market: Market): Boolean = supported
     override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome {
         log += brokerId
+        if (cancel) throw CancellationException("cancelled")
         if (fail) error("$brokerId down")
         return BrokerSyncOutcome.Imported(1)
     }
@@ -255,5 +259,20 @@ class StartupSyncCoordinatorTest {
         ).run()
 
         assertEquals(listOf("md"), log)
+    }
+
+    @Test
+    fun `rethrows startup cancellation`() = runTest {
+        val portfolioSettings = FakePortfolioSettingsRepository()
+        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
+        val coordinator = StartupSyncCoordinator(
+            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
+            portfolioRepository = portfolios(5L),
+            portfolioSettings = portfolioSettings,
+            brokerSyncServices = listOf(FakeBrokerSyncService("alpaca", mutableListOf(), cancel = true)),
+            requestMarketDataSync = {},
+        )
+
+        assertFailsWith<CancellationException> { coordinator.run() }
     }
 }

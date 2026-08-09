@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
+import kotlinx.coroutines.CancellationException
 
 /**
  * Orchestrates broker imports before market data. Each configured broker owns its market support and
@@ -34,8 +35,13 @@ class StartupSyncCoordinator(
                 ) continue
 
                 // A failure in one broker must not suppress another broker or market data.
-                runCatching { service.syncIncremental(selectedPortfolio.id) }
-                    .onFailure { println("[${service.displayName}] startup sync failed: ${it.message}") }
+                try {
+                    service.syncIncremental(selectedPortfolio.id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    println("[${service.displayName}] startup sync failed: ${e.message}")
+                }
             }
         }
         requestMarketDataSync()

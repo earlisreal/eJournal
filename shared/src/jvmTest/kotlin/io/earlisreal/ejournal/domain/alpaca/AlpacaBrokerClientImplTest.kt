@@ -12,9 +12,11 @@ import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -34,12 +36,12 @@ class AlpacaBrokerClientImplTest {
 
     private fun client(
         credentials: AlpacaCredentials = AlpacaCredentials("key-id", "secret"),
-        cryptoAssets: String = "[]",
+        equityAssets: String = """[{"symbol":"AAPL","class":"us_equity"}]""",
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): Pair<AlpacaBrokerClientImpl, MockEngine> {
         val engine = MockEngine { request ->
             if (request.url.encodedPath == "/v2/assets") {
-                respond(cryptoAssets, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                respond(equityAssets, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             } else {
                 handler(request)
             }
@@ -126,8 +128,8 @@ class AlpacaBrokerClientImplTest {
     @Test
     fun `keeps sells and skips crypto and option symbols`() = runTest {
         val (client, _) = client(
-            cryptoAssets = """
-                [{"symbol":"BTCUSD","class":"crypto"},{"symbol":"ETHUSD","class":"crypto"}]
+            equityAssets = """
+                [{"symbol":"AAPL","class":"us_equity"}]
             """.trimIndent(),
         ) { request ->
             if (request.url.encodedPath == "/v2/account") json(account())
@@ -143,7 +145,7 @@ class AlpacaBrokerClientImplTest {
         val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
         assertEquals(1, result.transactions.size)
         assertEquals("SELL", result.transactions.single().action.name)
-        assertEquals(3, result.detail.skipped["crypto fills"])
+        assertEquals(3, result.detail.skipped["non-US-equity fills"])
         assertEquals(1, result.detail.skipped["options"])
     }
 
@@ -200,5 +202,12 @@ class AlpacaBrokerClientImplTest {
 
         val (network, _) = client { throw java.io.IOException("timeout") }
         assertIs<AlpacaConnectionResult.NetworkError>(network.testConnection())
+    }
+
+    @Test
+    fun `propagates coroutine cancellation from http requests`() = runTest {
+        val (client, _) = client { throw CancellationException("cancelled") }
+
+        assertFailsWith<CancellationException> { client.testConnection() }
     }
 }

@@ -13,7 +13,11 @@ import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.testutil.FakeCredentialsRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +39,7 @@ private class FakeAlpacaClient(
         private set
     var lastUntil: Instant? = null
         private set
+    var fetchGate: CompletableDeferred<Unit>? = null
 
     override suspend fun testConnection(): AlpacaConnectionResult = connection
 
@@ -42,6 +47,7 @@ private class FakeAlpacaClient(
         calls++
         lastAfter = after
         lastUntil = until
+        fetchGate?.await()
         return result
     }
 }
@@ -68,6 +74,7 @@ private class DeduplicatingTransactionRepository(
     override suspend fun deleteByPortfolio(portfolioId: Long) {}
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AlpacaSyncServiceTest {
 
     private val now = Instant.parse("2026-06-20T12:00:00Z")
@@ -76,7 +83,7 @@ class AlpacaSyncServiceTest {
     private fun success(
         vararg ids: String,
         skippedOptions: Int = 0,
-        skippedCrypto: Int = 0,
+        skippedNonEquity: Int = 0,
         resultAccount: AlpacaAccount = account,
     ) =
         AlpacaFetchResult.Success(
@@ -97,7 +104,7 @@ class AlpacaSyncServiceTest {
             detail = BrokerSyncDetail(
                 skipped = mapOf(
                     "options" to skippedOptions,
-                    "crypto fills" to skippedCrypto,
+                    "non-US-equity fills" to skippedNonEquity,
                 ).filterValues { it > 0 },
             ),
         )
@@ -187,14 +194,14 @@ class AlpacaSyncServiceTest {
 
     @Test
     fun `skipped counts are carried into generic outcome and only stocks are supported`() = runTest {
-        val client = FakeAlpacaClient(success("a", skippedOptions = 3, skippedCrypto = 2))
+        val client = FakeAlpacaClient(success("a", skippedOptions = 3, skippedNonEquity = 2))
         val (service, _) = service(client)
 
         val result = assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
 
         assertEquals(1, result.inserted)
         assertEquals(3, result.detail.skipped["options"])
-        assertEquals(2, result.detail.skipped["crypto fills"])
+        assertEquals(2, result.detail.skipped["non-US-equity fills"])
         assertTrue(service.supportsMarket(Market.US_STOCKS))
         assertTrue(!service.supportsMarket(Market.CRYPTO))
     }
@@ -302,5 +309,29 @@ class AlpacaSyncServiceTest {
 
         assertEquals(BrokerSyncOutcome.AccountAlreadyBound("Long Term"), result)
         assertEquals(0, client.calls)
+    }
+
+    @Test
+    fun `serializes concurrent syncs before binding the account`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        val client = FakeAlpacaClient(success("concurrent-fill"))
+        client.fetchGate = CompletableDeferred()
+        val portfolios = FakePortfolioRepository(
+            listOf(
+                Portfolio(1L, "Trading", Market.US_STOCKS),
+                Portfolio(2L, "Long Term", Market.US_STOCKS),
+            ),
+        )
+        val (service, _) = service(client, settings = settings, portfolioRepository = portfolios)
+
+        val first = async { service.syncIncremental(1L) }
+        runCurrent()
+        val second = async { service.syncIncremental(2L) }
+        runCurrent()
+
+        client.fetchGate?.complete(Unit)
+
+        assertEquals(BrokerSyncOutcome.Imported(1), first.await())
+        assertEquals(BrokerSyncOutcome.AccountAlreadyBound("Trading"), second.await())
     }
 }

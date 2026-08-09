@@ -8,6 +8,9 @@ import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Market
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
@@ -22,6 +25,8 @@ class AlpacaSyncService(
     private val now: () -> Instant = { Clock.System.now() },
 ) : BrokerSyncService {
 
+    private val syncMutex = Mutex()
+
     override val brokerId: String = "alpaca"
     override val displayName: String
         get() = credentialsRepository?.getAlpacaCredentials()?.environment?.let { "Alpaca · ${it.label}" }
@@ -32,7 +37,10 @@ class AlpacaSyncService(
 
     override fun supportsMarket(market: Market): Boolean = market == Market.US_STOCKS
 
-    override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome {
+    override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome =
+        syncMutex.withLock { syncIncrementalLocked(portfolioId) }
+
+    private suspend fun syncIncrementalLocked(portfolioId: Long): BrokerSyncOutcome {
         val until = now()
         val handle = tracker.start(TASK_ID, TASK_LABEL, "Fetching Alpaca fills…")
 
@@ -95,6 +103,8 @@ class AlpacaSyncService(
                     BrokerSyncOutcome.NetworkError(result.message)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             handle.fail("Alpaca import failed: ${e.message ?: "request failed"}")
             throw e

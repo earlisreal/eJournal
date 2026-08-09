@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.data
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
+import io.earlisreal.ejournal.data.database.BrokerAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
@@ -27,7 +28,7 @@ class SqlDelightTagRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter, brokerAdapter = BrokerAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
                 marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,

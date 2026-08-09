@@ -1,14 +1,14 @@
 package io.earlisreal.ejournal.domain.marketdata
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.BarCoverage
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.model.Transaction
@@ -24,8 +24,8 @@ private val TODAY = LocalDate.parse("2026-06-12")
 private class FakePortfolios(private val portfolios: List<Portfolio>) : PortfolioRepository {
     override suspend fun getAll(): List<Portfolio> = portfolios
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
-    override suspend fun insert(name: String, market: Market): Long = error("unused")
-    override suspend fun update(id: Long, name: String, market: Market) = error("unused")
+    override suspend fun insert(name: String, market: Market, broker: Broker?): Portfolio = error("unused")
+    override suspend fun update(id: Long, name: String, market: Market, broker: Broker?) = error("unused")
     override suspend fun delete(id: Long) = error("unused")
 }
 
@@ -65,16 +65,20 @@ private class FakeProvider : MarketDataProvider {
     private fun LocalDate.atTime9_30() = LocalDateTime.parse("${this}T09:30")
 }
 
-private class FakeCreds(var creds: AlpacaCredentials? = null) : CredentialsRepository {
-    override fun getAlpacaCredentials(): AlpacaCredentials? = creds
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) { creds = credentials }
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? = null
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
+private class FakeCreds(var creds: AlpacaMarketDataCredentials? = null) : CredentialsRepository {
+    private val portfolio = mutableMapOf<String, io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials>()
+    override fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials? = creds
+    override fun setAlpacaMarketDataCredentials(credentials: AlpacaMarketDataCredentials) { creds = credentials }
+    override fun getPortfolioBrokerCredentials(credentialRef: String) = portfolio[credentialRef]
+    override fun setPortfolioBrokerCredentials(credentialRef: String, credentials: io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials) {
+        portfolio[credentialRef] = credentials
+    }
+    override fun deletePortfolioBrokerCredentials(credentialRef: String) { portfolio.remove(credentialRef) }
 }
 
 class MarketDataServiceTest {
 
-    private fun usPortfolio(id: Long = 1L) = Portfolio(id = id, name = "US", market = Market.US_STOCKS)
+    private fun usPortfolio(id: Long = 1L) = Portfolio(id = id, name = "US", market = Market.US_STOCKS, broker = null, credentialRef = "ref-$id")
 
     private fun tx(portfolioId: Long, symbol: String, action: Action, datetime: String) = Transaction(
         id = 0L, portfolioId = portfolioId, symbol = symbol,
@@ -120,7 +124,7 @@ class MarketDataServiceTest {
         val bars = FakeBars()
         val yahoo = FakeProvider()
         val alpaca = FakeProvider()
-        val result = service(bars = bars, yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaCredentials("id", "secret"))).sync()
+        val result = service(bars = bars, yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaMarketDataCredentials("id", "secret"))).sync()
 
         assertTrue(alpaca.calls.any { it == BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-09"), LocalDate.parse("2026-06-11")) })
         assertTrue(yahoo.calls.any { it.symbol == "AAPL" && it.timeframe == Timeframe.DAILY })
@@ -158,7 +162,7 @@ class MarketDataServiceTest {
         val result = service(
             transactions = mapOf(1L to oldDayTrade()),
             alpaca = alpaca,
-            creds = FakeCreds(AlpacaCredentials("id", "secret")),
+            creds = FakeCreds(AlpacaMarketDataCredentials("id", "secret")),
         ).sync()
 
         assertEquals(1, alpaca.calls.size)
@@ -174,7 +178,7 @@ class MarketDataServiceTest {
             transactions = mapOf(1L to oldDayTrade(symbol = "AAPL") + oldDayTrade(symbol = "TSLA") + recentDayTrade(symbol = "NVDA")),
             yahoo = yahoo,
             alpaca = alpaca,
-            creds = FakeCreds(AlpacaCredentials("id", "secret")),
+            creds = FakeCreds(AlpacaMarketDataCredentials("id", "secret")),
         ).sync()
 
         assertTrue(result.keysRejected)
@@ -190,7 +194,7 @@ class MarketDataServiceTest {
     fun `transient failure retries once and succeeds`() = runTest {
         val yahoo = FakeProvider().apply { failures.addLast(TransientFetchException("blip")) }
         val alpaca = FakeProvider()
-        val result = service(yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaCredentials("id", "secret"))).sync()
+        val result = service(yahoo = yahoo, alpaca = alpaca, creds = FakeCreds(AlpacaMarketDataCredentials("id", "secret"))).sync()
 
         assertEquals(1, yahoo.calls.size)   // daily: retry succeeds
         assertEquals(1, alpaca.calls.size)  // 1-min: first try succeeds
@@ -254,7 +258,7 @@ class MarketDataServiceTest {
     fun `non-US non-crypto portfolios are not synced`() = runTest {
         val yahoo = FakeProvider()
         val result = service(
-            portfolios = listOf(Portfolio(id = 1L, name = "PH", market = Market.PH_STOCKS)),
+            portfolios = listOf(Portfolio(id = 1L, name = "PH", market = Market.PH_STOCKS, broker = null, credentialRef = "ref-1")),
             transactions = mapOf(1L to recentDayTrade()),
             yahoo = yahoo,
         ).sync()
@@ -276,10 +280,10 @@ class MarketDataServiceTest {
         val alpaca = FakeProvider()
         val crypto = FakeProvider()
         val result = service(
-            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO, broker = null, credentialRef = "ref-1")),
             transactions = mapOf(1L to recentDayTrade(symbol = "BTC")),
             yahoo = yahoo, yahooCrypto = yahooCrypto, alpaca = alpaca, crypto = crypto,
-            creds = FakeCreds(AlpacaCredentials("id", "secret")),
+            creds = FakeCreds(AlpacaMarketDataCredentials("id", "secret")),
         ).sync()
 
         assertTrue(yahooCrypto.calls.any { it.symbol == "BTC" && it.timeframe == Timeframe.DAILY })
@@ -296,7 +300,7 @@ class MarketDataServiceTest {
         // A swing trade needs only daily bars, which now come keyless from Yahoo — no needsKeys.
         val yahooCrypto = FakeProvider()
         val result = service(
-            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO, broker = null, credentialRef = "ref-1")),
             transactions = mapOf(1L to cryptoSwing(symbol = "ADA")),
             yahooCrypto = yahooCrypto,
         ).sync()
@@ -311,7 +315,7 @@ class MarketDataServiceTest {
         val yahooCrypto = FakeProvider()
         val crypto = FakeProvider()
         val result = service(
-            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO)),
+            portfolios = listOf(Portfolio(id = 1L, name = "Crypto", market = Market.CRYPTO, broker = null, credentialRef = "ref-1")),
             transactions = mapOf(1L to recentDayTrade(symbol = "BTC")),
             yahooCrypto = yahooCrypto, crypto = crypto,
         ).sync()

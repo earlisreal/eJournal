@@ -1,27 +1,18 @@
 package io.earlisreal.ejournal.domain
 
-import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.FilterPrefs
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
+import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSettings
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
-import io.earlisreal.ejournal.testutil.FakeCredentialsRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeSettingsRepository
-import io.earlisreal.ejournal.testutil.FakeTradeZeroClient
-import io.earlisreal.ejournal.testutil.FakeTransactionRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -35,7 +26,7 @@ private class FakeBrokerSyncService(
     private val cancel: Boolean = false,
 ) : BrokerSyncService {
     override val displayName: String = brokerId
-    override fun isConfigured(): Boolean = configured
+    override fun isConfigured(portfolio: Portfolio): Boolean = configured
     override fun supportsMarket(market: Market): Boolean = supported
     override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome {
         log += brokerId
@@ -47,232 +38,137 @@ private class FakeBrokerSyncService(
 
 class StartupSyncCoordinatorTest {
 
-    private val today = LocalDate(2026, 6, 7)
-
     private fun filter(portfolioId: Long?) =
         FilterPrefs(portfolioId, DateRangePreset.ALL_TIME, null, null, Segment.ALL)
 
-    private fun creds() = FakeCredentialsRepository(tradeZero = TradeZeroCredentials("k", "s"))
-
-    private fun portfolios(vararg ids: Long) =
-        FakePortfolioRepository(ids.map { Portfolio(it, "P$it", Market.US_STOCKS) })
+    private fun portfolio(id: Long = 5L, broker: Broker? = Broker.TRADEZERO) =
+        Portfolio(id, "P$id", Market.US_STOCKS, broker, "ref-$id")
 
     private fun coordinator(
         log: MutableList<String>,
-        client: FakeTradeZeroClient,
-        settings: FakeSettingsRepository,
-        credentials: FakeCredentialsRepository,
-        portfolios: FakePortfolioRepository,
-        portfolioSettings: FakePortfolioSettingsRepository,
-    ): StartupSyncCoordinator {
-        val service = TradeZeroSyncService(
-            client = client,
-            transactionRepository = FakeTransactionRepository(),
-            tracker = BackgroundTaskTracker(),
-            portfolioSettings = portfolioSettings,
-            today = { today },
-            credentialsRepository = credentials,
-        )
-        return StartupSyncCoordinator(
-            settingsRepository = settings,
-            portfolioRepository = portfolios,
-            portfolioSettings = portfolioSettings,
-            brokerSyncServices = listOf(service),
-            requestMarketDataSync = { log.add("md") },
-        )
-    }
+        selectedId: Long?,
+        portfolios: List<Portfolio> = listOf(portfolio()),
+        services: List<BrokerSyncService>,
+        settings: FakePortfolioSettingsRepository = FakePortfolioSettingsRepository(),
+    ) = StartupSyncCoordinator(
+        settingsRepository = FakeSettingsRepository(filterPrefs = filter(selectedId)),
+        portfolioRepository = FakePortfolioRepository(portfolios),
+        portfolioSettings = settings,
+        brokerSyncServices = services,
+        requestMarketDataSync = { log += "md" },
+    )
 
     @Test
-    fun syncsTradeZeroBeforeMarketDataWhenSelectedPortfolioOptedIn() = runTest {
+    fun selectedPortfolioBrokerRunsBeforeMarketData() = runTest {
         val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, true)
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = filter(5L)),
-            credentials = creds(),
-            portfolios = portfolios(5L),
-            portfolioSettings = portfolioSettings,
+            log,
+            selectedId = 5L,
+            services = listOf(FakeBrokerSyncService("tradezero", log)),
+            settings = settings,
         ).run()
 
-        assertEquals(listOf("tz", "md"), log)
-        assertEquals(1, client.fetchCount)
-        assertEquals(5L, client.lastPortfolioId)
-        // No prior sync recorded → first-run one-year backfill.
-        assertEquals(today.minus(365, DateTimeUnit.DAY), client.lastFrom)
-        assertEquals(today, client.lastTo)
+        assertEquals(listOf("tradezero", "md"), log)
     }
 
     @Test
-    fun skipsTradeZeroWhenAutoSyncDisabledForSelectedPortfolio() = runTest {
-        // Auto-sync is opt-in: a selected, existing portfolio that never enabled it is skipped (default off).
+    fun manualPortfolioRunsMarketDataOnly() = runTest {
         val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = filter(5L)),
-            credentials = creds(),
-            portfolios = portfolios(5L),
-            portfolioSettings = FakePortfolioSettingsRepository(),
-        ).run()
-
-        assertEquals(listOf("md"), log)
-        assertEquals(0, client.fetchCount)
-    }
-
-    @Test
-    fun skipsTradeZeroWhenNoPortfolioIsSelected() = runTest {
-        val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(7L, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, true)
-        coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = null),
-            credentials = creds(),
-            portfolios = portfolios(7L),
-            portfolioSettings = portfolioSettings,
-        ).run()
-
-        // Nothing selected — auto-import must not pick a portfolio on the user's behalf even if one opted in.
-        assertEquals(listOf("md"), log)
-        assertEquals(0, client.fetchCount)
-    }
-
-    @Test
-    fun skipsTradeZeroWhenSelectedPortfolioIsMissingFromDb() = runTest {
-        // Deleted ejournal.db, but credentials + the saved selection survived in OS prefs.
-        val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(99L, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, true)
-        coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = filter(99L)),
-            credentials = creds(),
-            portfolios = portfolios(7L),
-            portfolioSettings = portfolioSettings,
-        ).run()
-
-        assertEquals(listOf("md"), log)
-        assertEquals(0, client.fetchCount)
-    }
-
-    @Test
-    fun skipsTradeZeroWhenNoCredentials() = runTest {
-        val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, true)
-        coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = filter(5L)),
-            credentials = FakeCredentialsRepository(tradeZero = null),
-            portfolios = portfolios(5L),
-            portfolioSettings = portfolioSettings,
-        ).run()
-
-        assertEquals(listOf("md"), log)
-        assertEquals(0, client.fetchCount)
-    }
-
-    @Test
-    fun skipsTradeZeroWhenNoPortfolioAvailable() = runTest {
-        val log = mutableListOf<String>()
-        val client = FakeTradeZeroClient(log = log)
-        coordinator(
-            log = log,
-            client = client,
-            settings = FakeSettingsRepository(filterPrefs = null),
-            credentials = creds(),
-            portfolios = FakePortfolioRepository(emptyList()),
-            portfolioSettings = FakePortfolioSettingsRepository(),
-        ).run()
-
-        assertEquals(listOf("md"), log)
-        assertEquals(0, client.fetchCount)
-    }
-
-    @Test
-    fun `runs every enabled broker before market data`() = runTest {
-        val log = mutableListOf<String>()
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
-        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
-        val coordinator = StartupSyncCoordinator(
-            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
-            portfolioRepository = portfolios(5L),
-            portfolioSettings = portfolioSettings,
-            brokerSyncServices = listOf(
-                FakeBrokerSyncService("alpaca", log),
-                FakeBrokerSyncService("tradezero", log),
-            ),
-            requestMarketDataSync = { log += "md" },
-        )
-
-        coordinator.run()
-
-        assertEquals(listOf("alpaca", "tradezero", "md"), log)
-    }
-
-    @Test
-    fun `continues other brokers and market data after one broker fails`() = runTest {
-        val log = mutableListOf<String>()
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
-        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
-        StartupSyncCoordinator(
-            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
-            portfolioRepository = portfolios(5L),
-            portfolioSettings = portfolioSettings,
-            brokerSyncServices = listOf(
-                FakeBrokerSyncService("alpaca", log, fail = true),
-                FakeBrokerSyncService("tradezero", log),
-            ),
-            requestMarketDataSync = { log += "md" },
-        ).run()
-
-        assertEquals(listOf("alpaca", "tradezero", "md"), log)
-    }
-
-    @Test
-    fun `skips unconfigured and unsupported brokers`() = runTest {
-        val log = mutableListOf<String>()
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
-        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
-        StartupSyncCoordinator(
-            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
-            portfolioRepository = portfolios(5L),
-            portfolioSettings = portfolioSettings,
-            brokerSyncServices = listOf(
-                FakeBrokerSyncService("alpaca", log, configured = false),
-                FakeBrokerSyncService("tradezero", log, supported = false),
-            ),
-            requestMarketDataSync = { log += "md" },
+            log,
+            selectedId = 5L,
+            portfolios = listOf(portfolio(broker = null)),
+            services = listOf(FakeBrokerSyncService("tradezero", log)),
+            settings = settings,
         ).run()
 
         assertEquals(listOf("md"), log)
     }
 
     @Test
-    fun `rethrows startup cancellation`() = runTest {
-        val portfolioSettings = FakePortfolioSettingsRepository()
-        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
-        val coordinator = StartupSyncCoordinator(
-            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
-            portfolioRepository = portfolios(5L),
-            portfolioSettings = portfolioSettings,
-            brokerSyncServices = listOf(FakeBrokerSyncService("alpaca", mutableListOf(), cancel = true)),
-            requestMarketDataSync = {},
-        )
+    fun missingCredentialsRunsMarketDataOnly() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        coordinator(
+            log,
+            selectedId = 5L,
+            services = listOf(FakeBrokerSyncService("tradezero", log, configured = false)),
+            settings = settings,
+        ).run()
 
-        assertFailsWith<CancellationException> { coordinator.run() }
+        assertEquals(listOf("md"), log)
+    }
+
+    @Test
+    fun autoSyncDisabledRunsMarketDataOnly() = runTest {
+        val log = mutableListOf<String>()
+        coordinator(
+            log,
+            selectedId = 5L,
+            services = listOf(FakeBrokerSyncService("tradezero", log)),
+        ).run()
+
+        assertEquals(listOf("md"), log)
+    }
+
+    @Test
+    fun onlySelectedPortfolioBrokerRuns() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        settings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
+        coordinator(
+            log,
+            selectedId = 5L,
+            services = listOf(FakeBrokerSyncService("alpaca", log), FakeBrokerSyncService("tradezero", log)),
+            settings = settings,
+        ).run()
+
+        assertEquals(listOf("tradezero", "md"), log)
+    }
+
+    @Test
+    fun brokerFailureStillRunsMarketData() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        coordinator(
+            log,
+            selectedId = 5L,
+            services = listOf(FakeBrokerSyncService("tradezero", log, fail = true)),
+            settings = settings,
+        ).run()
+
+        assertEquals(listOf("tradezero", "md"), log)
+    }
+
+    @Test
+    fun noOrStaleSelectionRunsMarketDataOnly() = runTest {
+        val log = mutableListOf<String>()
+        val service = FakeBrokerSyncService("tradezero", log)
+        coordinator(log, selectedId = null, services = listOf(service)).run()
+        coordinator(log, selectedId = 99L, portfolios = listOf(portfolio()), services = listOf(service)).run()
+
+        assertEquals(listOf("md", "md"), log)
+    }
+
+    @Test
+    fun cancellationIsRethrown() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        assertFailsWith<CancellationException> {
+            coordinator(
+                log,
+                selectedId = 5L,
+                services = listOf(FakeBrokerSyncService("tradezero", log, cancel = true)),
+                settings = settings,
+            ).run()
+        }
     }
 }

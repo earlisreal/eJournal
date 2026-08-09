@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.domain.alpaca
 
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import kotlin.time.Instant
@@ -32,9 +33,10 @@ sealed interface AlpacaFetchResult {
 }
 
 interface AlpacaBrokerClient {
-    suspend fun testConnection(): AlpacaConnectionResult
+    suspend fun testConnection(credentials: AlpacaBrokerCredentials): AlpacaConnectionResult
 
     suspend fun fetchFills(
+        credentials: AlpacaBrokerCredentials,
         portfolioId: Long,
         after: Instant?,
         until: Instant?,

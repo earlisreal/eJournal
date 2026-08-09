@@ -4,4 +4,6 @@ data class Portfolio(
     val id: Long,
     val name: String,
     val market: Market,
+    val broker: Broker?,
+    val credentialRef: String,
 )

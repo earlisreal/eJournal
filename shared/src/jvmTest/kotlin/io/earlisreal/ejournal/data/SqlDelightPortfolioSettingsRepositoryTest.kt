@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.data
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
+import io.earlisreal.ejournal.data.database.BrokerAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
@@ -28,7 +29,7 @@ class SqlDelightPortfolioSettingsRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter,
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter, brokerAdapter = BrokerAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
                 marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
@@ -84,5 +85,18 @@ class SqlDelightPortfolioSettingsRepositoryTest {
         assertNull(repo.getString(1L, "a"))
         assertNull(repo.getString(1L, "b"))
         assertEquals("z", repo.getString(2L, "a"))
+    }
+
+    @Test
+    fun clearNamespaceRemovesOnlyMatchingKeys() = runTest {
+        repo.putString(1L, "alpaca.lastSyncedSource", "old")
+        repo.putString(1L, "alpaca.lastSyncedAt", "yesterday")
+        repo.putString(1L, "tradezero.lastSyncedSource", "other")
+
+        repo.clearNamespace(1L, "alpaca.")
+
+        assertNull(repo.getString(1L, "alpaca.lastSyncedSource"))
+        assertNull(repo.getString(1L, "alpaca.lastSyncedAt"))
+        assertEquals("other", repo.getString(1L, "tradezero.lastSyncedSource"))
     }
 }

@@ -1,8 +1,6 @@
 package io.earlisreal.ejournal.domain.alpaca
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
-import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -20,22 +18,13 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-private class AlpacaTestCredentials(
-    var credentials: AlpacaCredentials? = AlpacaCredentials("key-id", "secret"),
-) : CredentialsRepository {
-    override fun getAlpacaCredentials(): AlpacaCredentials? = credentials
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) { this.credentials = credentials }
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? = null
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
-}
-
 class AlpacaBrokerClientImplTest {
 
     private fun MockRequestHandleScope.json(body: String, status: HttpStatusCode = HttpStatusCode.OK): HttpResponseData =
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
     private fun client(
-        credentials: AlpacaCredentials = AlpacaCredentials("key-id", "secret"),
+        credentials: AlpacaBrokerCredentials = AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER),
         equityAssets: String = """[{"symbol":"AAPL","class":"us_equity"}]""",
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): Pair<AlpacaBrokerClientImpl, MockEngine> {
@@ -46,7 +35,7 @@ class AlpacaBrokerClientImplTest {
                 handler(request)
             }
         }
-        return AlpacaBrokerClientImpl(HttpClient(engine), AlpacaTestCredentials(credentials)) to engine
+        return AlpacaBrokerClientImpl(HttpClient(engine)) to engine
     }
 
     private fun fill(
@@ -63,11 +52,12 @@ class AlpacaBrokerClientImplTest {
 
     @Test
     fun `connection sends auth headers and selects paper host`() = runTest {
-        val (client, engine) = client(AlpacaCredentials("key-id", "secret", AlpacaEnvironment.PAPER)) {
+        val credentials = AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER)
+        val (client, engine) = client(credentials) {
             json(account())
         }
 
-        val result = assertIs<AlpacaConnectionResult.Connected>(client.testConnection())
+        val result = assertIs<AlpacaConnectionResult.Connected>(client.testConnection(credentials))
         assertEquals("acct-live", result.account.id)
         val request = engine.requestHistory.single()
         assertTrue(request.url.toString().startsWith("https://paper-api.alpaca.markets/v2/account"))
@@ -77,10 +67,11 @@ class AlpacaBrokerClientImplTest {
 
     @Test
     fun `live credentials use live trading host`() = runTest {
-        val (client, engine) = client(AlpacaCredentials("key-id", "secret", AlpacaEnvironment.LIVE)) {
+        val credentials = AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.LIVE)
+        val (client, engine) = client(credentials) {
             if (it.url.encodedPath == "/v2/account") json(account()) else json("[]")
         }
-        client.fetchFills(7L, after = null, until = null)
+        client.fetchFills(credentials, 7L, after = null, until = null)
         assertTrue(engine.requestHistory.all { it.url.toString().startsWith("https://api.alpaca.markets/") })
     }
 
@@ -91,7 +82,7 @@ class AlpacaBrokerClientImplTest {
             else json("[${fill("fill-1")}]" )
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         val transaction = result.transactions.single()
         assertEquals(7L, transaction.portfolioId)
         assertEquals("AAPL", transaction.symbol)
@@ -112,7 +103,7 @@ class AlpacaBrokerClientImplTest {
             else json("[${fill("winter", timestamp = "2026-01-15T14:30:00Z")}]" )
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals("2026-01-15T09:30", result.transactions.single().datetime.toString())
     }
 
@@ -123,7 +114,7 @@ class AlpacaBrokerClientImplTest {
             else json("[${fill("fill-a", qty = "100", price = "10.00")},${fill("fill-b", qty = "200", price = "10.03")}]" )
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals(2, result.transactions.size)
         assertEquals(setOf("alpaca:paper:acct-live:fill-a", "alpaca:paper:acct-live:fill-b"), result.transactions.map { it.externalId }.toSet())
     }
@@ -145,7 +136,7 @@ class AlpacaBrokerClientImplTest {
                 )
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals(1, result.transactions.size)
         assertEquals("SELL", result.transactions.single().action.name)
         assertEquals(3, result.detail.skipped["non-US-equity fills"])
@@ -169,7 +160,7 @@ class AlpacaBrokerClientImplTest {
             json((start until start + count).joinToString(prefix = "[", postfix = "]") { fill("fill-$it") })
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals(217, result.transactions.size)
         assertEquals(listOf(null, "fill-99", "fill-199"), requests)
     }
@@ -183,7 +174,7 @@ class AlpacaBrokerClientImplTest {
             else json("[${fill("fill-1")}]" )
         }
 
-        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
+        val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals(1, result.transactions.size)
         assertEquals(3, activityAttempts)
     }
@@ -194,23 +185,23 @@ class AlpacaBrokerClientImplTest {
             if (request.url.encodedPath == "/v2/account") json("{}", HttpStatusCode.Unauthorized)
             else json("[]")
         }
-        assertEquals(AlpacaConnectionResult.InvalidCredentials, unauthorized.testConnection())
+        assertEquals(AlpacaConnectionResult.InvalidCredentials, unauthorized.testConnection(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER)))
 
         val (malformed, _) = client { request ->
             if (request.url.encodedPath == "/v2/account") json(account())
             else json("not-json")
         }
-        val error = assertIs<AlpacaFetchResult.NetworkError>(malformed.fetchFills(7L, null, null))
+        val error = assertIs<AlpacaFetchResult.NetworkError>(malformed.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals("Invalid Alpaca activity response", error.message)
 
         val (network, _) = client { throw java.io.IOException("timeout") }
-        assertIs<AlpacaConnectionResult.NetworkError>(network.testConnection())
+        assertIs<AlpacaConnectionResult.NetworkError>(network.testConnection(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER)))
     }
 
     @Test
     fun `propagates coroutine cancellation from http requests`() = runTest {
         val (client, _) = client { throw CancellationException("cancelled") }
 
-        assertFailsWith<CancellationException> { client.testConnection() }
+        assertFailsWith<CancellationException> { client.testConnection(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER)) }
     }
 }

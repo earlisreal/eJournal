@@ -6,6 +6,8 @@ data class BrokerSyncDetail(
 )
 
 sealed interface BrokerSyncOutcome {
+    data object NotConfigured : BrokerSyncOutcome
+
     data class Imported(
         val inserted: Int,
         val detail: BrokerSyncDetail = BrokerSyncDetail(),

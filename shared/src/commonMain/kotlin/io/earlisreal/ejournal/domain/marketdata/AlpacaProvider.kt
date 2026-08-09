@@ -1,6 +1,6 @@
 package io.earlisreal.ejournal.domain.marketdata
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -42,7 +42,7 @@ class AlpacaProvider(
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun getBars(symbol: String, timeframe: Timeframe, from: LocalDate, to: LocalDate): List<Bar> {
-        val credentials = credentialsRepository.getAlpacaCredentials()
+        val credentials = credentialsRepository.getAlpacaMarketDataCredentials()
             ?: throw InvalidKeysException("Alpaca keys are not configured")
         val timeframeParam = when (timeframe) {
             Timeframe.DAILY -> "1Day"
@@ -83,7 +83,7 @@ class AlpacaProvider(
 
     /** Lightest authenticated data call — validates keys against the exact API we fetch from. */
     suspend fun testConnection(): ConnectionResult {
-        val credentials = credentialsRepository.getAlpacaCredentials() ?: return ConnectionResult.InvalidKeys
+        val credentials = credentialsRepository.getAlpacaMarketDataCredentials() ?: return ConnectionResult.InvalidKeys
         val response = runCatching {
             request(credentials, "$BASE_URL/v2/stocks/AAPL/trades/latest") {
                 parameter("feed", "iex")
@@ -99,7 +99,7 @@ class AlpacaProvider(
     }
 
     private suspend fun request(
-        credentials: AlpacaCredentials,
+        credentials: AlpacaMarketDataCredentials,
         url: String,
         configure: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {},
     ): HttpResponse = client.get(url) {

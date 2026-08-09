@@ -43,13 +43,9 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
-import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
-import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
@@ -67,18 +63,15 @@ fun SettingsScreen(
     onThemeChange: (ThemeMode) -> Unit,
     credentialsRepository: CredentialsRepository,
     alpacaProvider: AlpacaProvider,
-    alpacaBrokerClient: AlpacaBrokerClient,
     marketDataService: MarketDataService,
-    tradeZeroClient: TradeZeroClient,
 ) {
-    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient, alpacaBrokerClient) }
+    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
 
     ScreenScaffold(title = "Settings") {
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.lg),
-            // Cap the form width so all cards share one width and lines stay readable on wide windows.
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).widthIn(max = 720.dp),
         ) {
             AppCard(modifier = Modifier.fillMaxWidth()) {
@@ -90,11 +83,10 @@ fun SettingsScreen(
             }
 
             AppCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Alpaca")
+                SectionTitle("Alpaca Market Data")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
-                        "The same Alpaca keys provide market data and read-only trading-account access. " +
-                            "Choose the matching Paper or Live environment.",
+                        "These credentials are used only for Alpaca market data. Broker accounts are configured per portfolio in Manage Portfolios.",
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -106,16 +98,9 @@ fun SettingsScreen(
                             withLink(
                                 LinkAnnotation.Url(
                                     alpacaGuideUrl,
-                                    TextLinkStyles(
-                                        style = SpanStyle(
-                                            color = linkColor,
-                                            textDecoration = TextDecoration.Underline,
-                                        ),
-                                    ),
+                                    TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)),
                                 ),
-                            ) {
-                                append(alpacaGuideUrl)
-                            }
+                            ) { append(alpacaGuideUrl) }
                         },
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
@@ -125,7 +110,6 @@ fun SettingsScreen(
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
-
                     OutlinedTextField(
                         value = state.keyId,
                         onValueChange = vm::updateKeyId,
@@ -139,12 +123,6 @@ fun SettingsScreen(
                         label = "Alpaca Secret Key",
                         modifier = Modifier.width(420.dp),
                     )
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        Text("Trading account", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
-                        AlpacaEnvironmentToggle(state.environment, vm::updateEnvironment)
-                    }
-
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         AppPrimaryButton(
                             text = "Save",
@@ -156,61 +134,8 @@ fun SettingsScreen(
                             onClick = vm::testConnection,
                             enabled = !state.testing && state.hasSavedKeys,
                         )
-                        AppSecondaryButton(
-                            text = if (state.tradingTesting) "Testing…" else "Test Trading Account",
-                            onClick = vm::testTradingConnection,
-                            enabled = !state.tradingTesting && state.hasSavedKeys,
-                        )
-                        if (state.justSaved) {
-                            Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
-                        }
+                        if (state.justSaved) Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
                         state.connectionResult?.let { ConnectionResultText(it) }
-                        state.tradingConnectionResult?.let { AlpacaConnectionResultText(it) }
-                    }
-                }
-            }
-
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Trade Zero API")
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Text(
-                        "Connect your Trade Zero account to import historical orders directly from the broker.",
-                        color = AppTheme.colors.textMuted,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        "Keys are stored only on this machine, in ~/.ejournal/credentials.json.",
-                        color = AppTheme.colors.textMuted,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    OutlinedTextField(
-                        value = state.tradeZeroKeyId,
-                        onValueChange = vm::updateTradeZeroKeyId,
-                        label = { Text("API Key ID") },
-                        singleLine = true,
-                        modifier = Modifier.width(420.dp),
-                    )
-                    SecretKeyTextField(
-                        value = state.tradeZeroSecretKey,
-                        onValueChange = vm::updateTradeZeroSecretKey,
-                        label = "API Secret Key",
-                        modifier = Modifier.width(420.dp),
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        AppPrimaryButton(
-                            text = "Save",
-                            onClick = vm::saveTradeZero,
-                            enabled = state.tradeZeroKeyId.isNotBlank() && state.tradeZeroSecretKey.isNotBlank(),
-                        )
-                        AppSecondaryButton(
-                            text = if (state.tradeZeroTesting) "Testing…" else "Test Connection",
-                            onClick = vm::testTradeZeroConnection,
-                            enabled = !state.tradeZeroTesting && state.hasSavedTradeZeroCredentials,
-                        )
-                        if (state.tradeZeroJustSaved && state.tradeZeroConnectionResult == null) {
-                            Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
-                        }
-                        state.tradeZeroConnectionResult?.let { ConnectionResultText(it) }
                     }
                 }
             }
@@ -219,16 +144,12 @@ fun SettingsScreen(
                 SectionTitle("Sync")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
-                        "Market data syncs automatically after imports and on startup. " +
-                            "Run it manually after adding keys to backfill older trades.",
+                        "Market data syncs automatically after imports and on startup. Run it manually after adding keys to backfill older trades.",
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        AppSecondaryButton(
-                            text = "Sync market data",
-                            onClick = { marketDataService.requestSync() },
-                        )
+                        AppSecondaryButton(text = "Sync market data", onClick = { marketDataService.requestSync() })
                         MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })
                     }
                 }
@@ -248,7 +169,6 @@ private fun SectionTitle(text: String) {
     )
 }
 
-/** Masked secret-key field with a trailing eye toggle to reveal/hide the value. */
 @Composable
 private fun SecretKeyTextField(
     value: String,
@@ -286,47 +206,7 @@ private fun ConnectionResultText(result: ConnectionResult) {
 }
 
 @Composable
-private fun AlpacaConnectionResultText(result: AlpacaConnectionResult) {
-    val (text, color) = when (result) {
-        is AlpacaConnectionResult.Connected -> {
-            val suffix = result.account.accountNumber?.takeLast(4)?.let { " ••••$it" }.orEmpty()
-            "✓ Connected · ${result.environment.label} account$suffix" to AppTheme.colors.profit
-        }
-        AlpacaConnectionResult.InvalidCredentials -> "✗ Invalid keys" to AppTheme.colors.loss
-        is AlpacaConnectionResult.NetworkError -> "✗ Network error" to AppTheme.colors.loss
-    }
-    Text(text, color = color, style = MaterialTheme.typography.bodySmall)
-}
-
-@Composable
-private fun AlpacaEnvironmentToggle(
-    environment: AlpacaEnvironment,
-    onEnvironmentChange: (AlpacaEnvironment) -> Unit,
-) {
-    Row(modifier = Modifier.clip(PillShape).background(AppTheme.colors.surfaceElevated)) {
-        AlpacaEnvironment.entries.forEach { option ->
-            val active = option == environment
-            Text(
-                text = option.label,
-                color = if (active) AppTheme.colors.onAccent else AppTheme.colors.textMuted,
-                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (active) AppTheme.colors.accent else Color.Transparent)
-                    .clickable { onEnvironmentChange(option) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            )
-        }
-    }
-}
-
-/** System / Light / Dark segmented control, same pattern as [io.earlisreal.ejournal.ui.components.SegmentToggle]. */
-@Composable
-private fun ThemeModeToggle(
-    mode: ThemeMode,
-    onModeChange: (ThemeMode) -> Unit,
-) {
+private fun ThemeModeToggle(mode: ThemeMode, onModeChange: (ThemeMode) -> Unit) {
     Row(modifier = Modifier.clip(PillShape).background(AppTheme.colors.surfaceElevated)) {
         ThemeMode.entries.forEach { option ->
             val active = option == mode

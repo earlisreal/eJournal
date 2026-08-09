@@ -8,6 +8,7 @@ package io.earlisreal.ejournal.domain.tradezero
 object TradeZeroSettings {
     /** ISO date through which this portfolio has been synced; absent means "never synced". */
     const val LAST_SYNCED_DATE = "tradezero.lastSyncedDate"
+    const val LAST_SYNCED_SOURCE = "tradezero.lastSyncedSource"
 
     /** Whether this portfolio auto-pulls TradeZero on startup. */
     const val AUTO_SYNC_ON_STARTUP = "tradezero.autoSyncOnStartup"

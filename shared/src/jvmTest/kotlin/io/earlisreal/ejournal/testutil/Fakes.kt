@@ -1,19 +1,23 @@
 package io.earlisreal.ejournal.testutil
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroAccount
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroConnectionResult
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroFetchResult
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import kotlinx.datetime.LocalDate
@@ -32,11 +36,13 @@ fun tx(externalId: String?, symbol: String = "AAPL"): Transaction = Transaction(
 )
 
 class FakeTradeZeroClient(
-    var result: TradeZeroFetchResult = TradeZeroFetchResult.Success(emptyList()),
+    var result: TradeZeroFetchResult = TradeZeroFetchResult.Success(emptyList(), TradeZeroAccount("tz-account")),
     private val log: MutableList<String>? = null,
-    private val connection: ConnectionResult = ConnectionResult.Connected,
+    private val connection: TradeZeroConnectionResult = TradeZeroConnectionResult.Connected(TradeZeroAccount("tz-account")),
 ) : TradeZeroClient {
     var fetchCount = 0
+        private set
+    var lastCredentials: TradeZeroBrokerCredentials? = null
         private set
     var lastPortfolioId: Long? = null
         private set
@@ -45,10 +51,19 @@ class FakeTradeZeroClient(
     var lastTo: LocalDate? = null
         private set
 
-    override suspend fun testConnection(): ConnectionResult = connection
+    override suspend fun testConnection(credentials: TradeZeroBrokerCredentials): TradeZeroConnectionResult {
+        lastCredentials = credentials
+        return connection
+    }
 
-    override suspend fun fetchOrders(portfolioId: Long, from: LocalDate, to: LocalDate): TradeZeroFetchResult {
+    override suspend fun fetchOrders(
+        credentials: TradeZeroBrokerCredentials,
+        portfolioId: Long,
+        from: LocalDate,
+        to: LocalDate,
+    ): TradeZeroFetchResult {
         fetchCount++
+        lastCredentials = credentials
         lastPortfolioId = portfolioId
         lastFrom = from
         lastTo = to
@@ -96,25 +111,42 @@ class FakePortfolioSettingsRepository : PortfolioSettingsRepository {
     override suspend fun getBoolean(portfolioId: Long, key: String, default: Boolean): Boolean =
         store[portfolioId to key]?.toBooleanStrictOrNull() ?: default
     override suspend fun putBoolean(portfolioId: Long, key: String, value: Boolean) { store[portfolioId to key] = value.toString() }
+    override suspend fun clearNamespace(portfolioId: Long, namespace: String) {
+        store.keys.removeAll { it.first == portfolioId && it.second.startsWith(namespace) }
+    }
     override suspend fun clear(portfolioId: Long) { store.keys.removeAll { it.first == portfolioId } }
 }
 
 class FakeCredentialsRepository(
-    var tradeZero: TradeZeroCredentials? = null,
-    private var alpaca: AlpacaCredentials? = null,
+    private var alpaca: AlpacaMarketDataCredentials? = null,
+    portfolioBrokers: Map<String, PortfolioBrokerCredentials> = emptyMap(),
 ) : CredentialsRepository {
-    override fun getAlpacaCredentials(): AlpacaCredentials? = alpaca
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) { alpaca = credentials }
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? = tradeZero
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) { tradeZero = credentials }
+    val portfolioCredentials = portfolioBrokers.toMutableMap()
+
+    override fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials? = alpaca
+    override fun setAlpacaMarketDataCredentials(credentials: AlpacaMarketDataCredentials) { alpaca = credentials }
+    override fun getPortfolioBrokerCredentials(credentialRef: String): PortfolioBrokerCredentials? = portfolioCredentials[credentialRef]
+    override fun setPortfolioBrokerCredentials(credentialRef: String, credentials: PortfolioBrokerCredentials) {
+        portfolioCredentials[credentialRef] = credentials
+    }
+    override fun deletePortfolioBrokerCredentials(credentialRef: String) { portfolioCredentials.remove(credentialRef) }
 }
 
 class FakePortfolioRepository(
-    private val portfolios: List<Portfolio> = emptyList(),
+    initialPortfolios: List<Portfolio> = emptyList(),
 ) : PortfolioRepository {
-    override suspend fun getAll(): List<Portfolio> = portfolios
+    private val portfolios = initialPortfolios.toMutableList()
+    override suspend fun getAll(): List<Portfolio> = portfolios.toList()
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
-    override suspend fun insert(name: String, market: Market): Long = 0
-    override suspend fun update(id: Long, name: String, market: Market) {}
-    override suspend fun delete(id: Long) {}
+    override suspend fun insert(name: String, market: Market, broker: Broker?): Portfolio {
+        val id = (portfolios.maxOfOrNull { it.id } ?: 0L) + 1
+        val portfolio = Portfolio(id, name, market, broker, "fake-ref-$id")
+        portfolios += portfolio
+        return portfolio
+    }
+    override suspend fun update(id: Long, name: String, market: Market, broker: Broker?) {
+        val index = portfolios.indexOfFirst { it.id == id }
+        if (index >= 0) portfolios[index] = portfolios[index].copy(name = name, market = market, broker = broker)
+    }
+    override suspend fun delete(id: Long) { portfolios.removeAll { it.id == id } }
 }

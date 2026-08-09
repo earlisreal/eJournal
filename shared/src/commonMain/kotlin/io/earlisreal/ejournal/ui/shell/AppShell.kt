@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
@@ -29,6 +30,8 @@ import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.analytics.resolveRange
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
 import io.earlisreal.ejournal.ui.components.StatusBar
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -60,6 +63,9 @@ fun AppShell(
     transactionRepository: TransactionRepository,
     settingsRepository: SettingsRepository,
     portfolioSettings: PortfolioSettingsRepository,
+    credentialsRepository: CredentialsRepository,
+    alpacaBrokerClient: AlpacaBrokerClient,
+    tradeZeroClient: TradeZeroClient,
     tagRepository: TagRepository,
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
@@ -214,6 +220,9 @@ fun AppShell(
                 portfolioRepository = portfolioRepository,
                 transactionRepository = transactionRepository,
                 portfolioSettings = portfolioSettings,
+                credentialsRepository = credentialsRepository,
+                alpacaBrokerClient = alpacaBrokerClient,
+                tradeZeroClient = tradeZeroClient,
                 onChanged = { reloadPortfolios() },
                 onDismiss = { showPortfolioManager = false },
             )

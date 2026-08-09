@@ -68,7 +68,7 @@ fun ImportScreen(
             return@ScreenScaffold
         }
         val visibleBrokers = brokerSyncServices.filter {
-            it.isConfigured() && it.supportsMarket(portfolio.market)
+            it.isConfigured(portfolio) && it.supportsMarket(portfolio.market)
         }
         LaunchedEffect(portfolio.id, visibleBrokers.map { it.brokerId }) {
             vm.loadAutoSync(portfolio.id, visibleBrokers)
@@ -384,8 +384,10 @@ private fun BrokerSyncSection(
                                     }
                                     is BrokerSyncOutcome.AccountAlreadyBound ->
                                         result = "This account is already linked to portfolio \"${outcome.portfolioName}\""
+                                    BrokerSyncOutcome.NotConfigured ->
+                                        result = "Broker credentials are not configured for this portfolio"
                                     BrokerSyncOutcome.InvalidCredentials ->
-                                        result = "Invalid credentials — update them in Settings"
+                                        result = "Invalid ${service.displayName} credentials — update this portfolio's broker configuration"
                                     is BrokerSyncOutcome.NetworkError ->
                                         result = "Network error: ${outcome.message}"
                                 }

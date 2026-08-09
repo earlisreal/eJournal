@@ -20,3 +20,6 @@ INSERT OR REPLACE INTO PortfolioSetting (portfolioId, key, value) VALUES (?, ?, 
 
 deleteByPortfolio:
 DELETE FROM PortfolioSetting WHERE portfolioId = ?;
+
+clearNamespace:
+DELETE FROM PortfolioSetting WHERE portfolioId = ? AND key LIKE ? || '%';

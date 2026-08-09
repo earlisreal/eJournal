@@ -19,6 +19,10 @@ class SqlDelightPortfolioSettingsRepository(private val db: AppDatabase) : Portf
         putString(portfolioId, key, value.toString())
     }
 
+    override suspend fun clearNamespace(portfolioId: Long, namespace: String) {
+        db.portfolioSettingQueries.clearNamespace(portfolioId, namespace)
+    }
+
     override suspend fun clear(portfolioId: Long) {
         db.portfolioSettingQueries.deleteByPortfolio(portfolioId)
     }

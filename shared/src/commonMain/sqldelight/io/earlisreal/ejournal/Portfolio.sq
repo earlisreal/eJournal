@@ -1,11 +1,13 @@
 CREATE TABLE Portfolio (
-    id     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    name   TEXT    NOT NULL,
-    market TEXT    AS io.earlisreal.ejournal.domain.model.Market NOT NULL
+    id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name          TEXT    NOT NULL,
+    market        TEXT    AS io.earlisreal.ejournal.domain.model.Market NOT NULL,
+    broker        TEXT    AS io.earlisreal.ejournal.domain.model.Broker,
+    credentialRef TEXT    NOT NULL UNIQUE
 );
 
 insertPortfolio:
-INSERT INTO Portfolio (name, market) VALUES (?, ?);
+INSERT INTO Portfolio (name, market, broker, credentialRef) VALUES (?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM Portfolio;
@@ -13,8 +15,11 @@ SELECT * FROM Portfolio;
 selectById:
 SELECT * FROM Portfolio WHERE id = ?;
 
+selectByCredentialRef:
+SELECT * FROM Portfolio WHERE credentialRef = ?;
+
 updatePortfolio:
-UPDATE Portfolio SET name = ?, market = ? WHERE id = ?;
+UPDATE Portfolio SET name = ?, market = ?, broker = ? WHERE id = ?;
 
 deleteById:
 DELETE FROM Portfolio WHERE id = ?;

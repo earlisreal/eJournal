@@ -25,16 +25,18 @@ class StartupSyncCoordinator(
             ?.let { id -> portfolioRepository.getAll().firstOrNull { it.id == id } }
 
         if (selectedPortfolio != null) {
-            for (service in brokerSyncServices) {
-                if (!service.isConfigured() || !service.supportsMarket(selectedPortfolio.market)) continue
-                if (!portfolioSettings.getBoolean(
-                        selectedPortfolio.id,
-                        service.autoSyncSettingKey,
-                        service.autoSyncDefault,
-                    )
-                ) continue
-
-                // A failure in one broker must not suppress another broker or market data.
+            val service = selectedPortfolio.broker?.let { broker ->
+                brokerSyncServices.firstOrNull { it.brokerId == broker.id }
+            }
+            if (service != null &&
+                service.isConfigured(selectedPortfolio) &&
+                service.supportsMarket(selectedPortfolio.market) &&
+                portfolioSettings.getBoolean(
+                    selectedPortfolio.id,
+                    service.autoSyncSettingKey,
+                    service.autoSyncDefault,
+                )
+            ) {
                 try {
                     service.syncIncremental(selectedPortfolio.id)
                 } catch (e: CancellationException) {

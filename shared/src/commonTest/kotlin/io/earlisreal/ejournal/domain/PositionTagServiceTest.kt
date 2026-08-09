@@ -45,8 +45,9 @@ class PositionTagServiceTest {
     private class StubPortfolio : PortfolioRepository {
         override suspend fun getAll() = emptyList<Portfolio>()
         override suspend fun getById(id: Long): Portfolio? = null
-        override suspend fun insert(name: String, market: Market) = 0L
-        override suspend fun update(id: Long, name: String, market: Market) {}
+        override suspend fun insert(name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?) =
+            Portfolio(0, name, market, broker, "stub")
+        override suspend fun update(id: Long, name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?) {}
         override suspend fun delete(id: Long) {}
     }
 

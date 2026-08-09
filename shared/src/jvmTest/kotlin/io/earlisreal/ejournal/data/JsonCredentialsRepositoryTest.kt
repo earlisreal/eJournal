@@ -1,7 +1,8 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
+import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,116 +21,99 @@ class JsonCredentialsRepositoryTest {
         JsonCredentialsRepository(dir) to dir.resolve("credentials.json")
 
     @Test
-    fun `set then get round-trips credentials`() {
+    fun `global Alpaca market-data credentials round trip`() {
         val (repo, _) = newRepo()
-        repo.setAlpacaCredentials(AlpacaCredentials(keyId = "PKTEST123", secretKey = "secret456"))
-        assertEquals(AlpacaCredentials("PKTEST123", "secret456"), repo.getAlpacaCredentials())
+        repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("PKTEST123", "secret456"))
+        assertEquals(AlpacaMarketDataCredentials("PKTEST123", "secret456"), repo.getAlpacaMarketDataCredentials())
     }
 
     @Test
-    fun `get returns null when file is missing`() {
+    fun `old global environment property is ignored`() {
         val (repo, file) = newRepo()
-        assertTrue(!file.exists())
-        assertNull(repo.getAlpacaCredentials())
+        file.writeText("""{"alpaca":{"keyId":"id","secretKey":"secret","environment":"LIVE"}}""")
+        assertEquals(AlpacaMarketDataCredentials("id", "secret"), repo.getAlpacaMarketDataCredentials())
     }
 
     @Test
-    fun `get returns null on malformed json`() {
+    fun `malformed or incomplete global JSON returns null`() {
         val (repo, file) = newRepo()
         file.writeText("{not json!!")
-        assertNull(repo.getAlpacaCredentials())
-    }
-
-    @Test
-    fun `get returns null when fields are blank`() {
-        val (repo, file) = newRepo()
+        assertNull(repo.getAlpacaMarketDataCredentials())
         file.writeText("""{"alpaca":{"keyId":"","secretKey":""}}""")
-        assertNull(repo.getAlpacaCredentials())
+        assertNull(repo.getAlpacaMarketDataCredentials())
     }
 
     @Test
-    fun `get returns null when alpaca section is absent`() {
-        val (repo, file) = newRepo()
-        file.writeText("""{"someOtherProvider":{"apiKey":"x"}}""")
-        assertNull(repo.getAlpacaCredentials())
+    fun `portfolio credentials round trip independently`() {
+        val (repo, _) = newRepo()
+        val alpaca = AlpacaBrokerCredentials("a-key", "a-secret", AlpacaEnvironment.LIVE)
+        val tradeZero = TradeZeroBrokerCredentials("t-key", "t-secret")
+        repo.setPortfolioBrokerCredentials("ref-a", alpaca)
+        repo.setPortfolioBrokerCredentials("ref-b", tradeZero)
+
+        assertEquals(alpaca, repo.getPortfolioBrokerCredentials("ref-a"))
+        assertEquals(tradeZero, repo.getPortfolioBrokerCredentials("ref-b"))
     }
 
     @Test
-    fun `old alpaca credentials default to paper`() {
-        val (repo, file) = newRepo()
-        file.writeText("""{"alpaca":{"keyId":"id","secretKey":"secret"}}""")
-        assertEquals(AlpacaCredentials("id", "secret", AlpacaEnvironment.PAPER), repo.getAlpacaCredentials())
+    fun `portfolio changes do not affect global or other portfolios`() {
+        val (repo, _) = newRepo()
+        val global = AlpacaMarketDataCredentials("global", "global-secret")
+        val first = AlpacaBrokerCredentials("one", "one-secret", AlpacaEnvironment.PAPER)
+        val second = TradeZeroBrokerCredentials("two", "two-secret")
+        repo.setAlpacaMarketDataCredentials(global)
+        repo.setPortfolioBrokerCredentials("one", first)
+        repo.setPortfolioBrokerCredentials("two", second)
+
+        repo.setPortfolioBrokerCredentials("one", AlpacaBrokerCredentials("changed", "changed-secret", AlpacaEnvironment.LIVE))
+        assertEquals(global, repo.getAlpacaMarketDataCredentials())
+        assertEquals(second, repo.getPortfolioBrokerCredentials("two"))
+
+        repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("new-global", "new-secret"))
+        assertEquals(AlpacaBrokerCredentials("changed", "changed-secret", AlpacaEnvironment.LIVE), repo.getPortfolioBrokerCredentials("one"))
     }
 
     @Test
-    fun `new alpaca credentials round-trip the live environment`() {
+    fun `deleting one portfolio credential preserves the rest`() {
         val (repo, file) = newRepo()
-        repo.setAlpacaCredentials(AlpacaCredentials("id", "secret", AlpacaEnvironment.LIVE))
-        assertEquals(AlpacaCredentials("id", "secret", AlpacaEnvironment.LIVE), repo.getAlpacaCredentials())
-        assertTrue(file.readText().contains("\"environment\""))
+        repo.setPortfolioBrokerCredentials("one", TradeZeroBrokerCredentials("one", "secret"))
+        repo.setPortfolioBrokerCredentials("two", TradeZeroBrokerCredentials("two", "secret"))
+        repo.deletePortfolioBrokerCredentials("one")
+
+        assertNull(repo.getPortfolioBrokerCredentials("one"))
+        assertEquals(TradeZeroBrokerCredentials("two", "secret"), repo.getPortfolioBrokerCredentials("two"))
+        assertTrue(file.readText().contains("two"))
     }
 
     @Test
-    fun `set preserves unknown sections from other providers`() {
+    fun `unknown sections survive writes`() {
         val (repo, file) = newRepo()
-        file.writeText("""{"other":{"apiKey":"keep-me"}}""")
-        repo.setAlpacaCredentials(AlpacaCredentials("id", "secret"))
-        assertTrue(file.readText().contains("keep-me"))
-        assertEquals(AlpacaCredentials("id", "secret"), repo.getAlpacaCredentials())
+        file.writeText("""{"other":{"apiKey":"keep-me"},"tradeZero":{"keyId":"legacy"}}""")
+        repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("id", "secret"))
+        repo.setPortfolioBrokerCredentials("ref", TradeZeroBrokerCredentials("tz", "secret"))
+        val contents = file.readText()
+        assertTrue(contents.contains("keep-me"))
+        assertTrue(contents.contains("legacy"))
     }
 
     @Test
-    fun `set writes file with owner-only permissions`() {
+    fun `writes owner-only permissions on POSIX filesystems`() {
         val (repo, file) = newRepo()
-        repo.setAlpacaCredentials(AlpacaCredentials("id", "secret"))
+        repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("id", "secret"))
         runCatching { Files.getPosixFilePermissions(file) }
             .getOrNull()
             ?.let { perms ->
-                assertEquals(
-                    setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
-                    perms,
-                )
+                assertEquals(setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE), perms)
             }
     }
 
     @Test
-    fun `set creates the directory if missing`() {
+    fun `creates missing directory and reads missing file safely`() {
         val parent = Files.createTempDirectory("ejournal-test")
         val dir = parent.resolve("nested")
         val repo = JsonCredentialsRepository(dir)
-        repo.setAlpacaCredentials(AlpacaCredentials("id", "secret"))
-        assertEquals(AlpacaCredentials("id", "secret"), repo.getAlpacaCredentials())
-    }
-
-    // ── Trade Zero ──────────────────────────────────────────────────────────────
-
-    @Test
-    fun `set then get round-trips tradeZero credentials`() {
-        val (repo, _) = newRepo()
-        repo.setTradeZeroCredentials(TradeZeroCredentials(keyId = "tzk_123", secretKey = "tzsec_abc"))
-        assertEquals(TradeZeroCredentials("tzk_123", "tzsec_abc"), repo.getTradeZeroCredentials())
-    }
-
-    @Test
-    fun `get returns null when tradeZero section is absent`() {
-        val (repo, file) = newRepo()
-        file.writeText("""{"alpaca":{"keyId":"x","secretKey":"y"}}""")
-        assertNull(repo.getTradeZeroCredentials())
-    }
-
-    @Test
-    fun `get returns null when tradeZero fields are blank`() {
-        val (repo, file) = newRepo()
-        file.writeText("""{"tradeZero":{"keyId":"","secretKey":""}}""")
-        assertNull(repo.getTradeZeroCredentials())
-    }
-
-    @Test
-    fun `set tradeZero preserves existing alpaca section`() {
-        val (repo, _) = newRepo()
-        repo.setAlpacaCredentials(AlpacaCredentials("ak", "sk"))
-        repo.setTradeZeroCredentials(TradeZeroCredentials("tzk", "tzs"))
-        assertEquals(AlpacaCredentials("ak", "sk"), repo.getAlpacaCredentials())
-        assertEquals(TradeZeroCredentials("tzk", "tzs"), repo.getTradeZeroCredentials())
+        assertNull(repo.getAlpacaMarketDataCredentials())
+        repo.setAlpacaMarketDataCredentials(AlpacaMarketDataCredentials("id", "secret"))
+        assertTrue(dir.resolve("credentials.json").exists())
     }
 }

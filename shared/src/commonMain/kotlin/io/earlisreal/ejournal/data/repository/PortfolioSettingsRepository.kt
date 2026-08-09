@@ -14,6 +14,8 @@ interface PortfolioSettingsRepository {
     suspend fun getBoolean(portfolioId: Long, key: String, default: Boolean): Boolean
     suspend fun putBoolean(portfolioId: Long, key: String, value: Boolean)
 
+    suspend fun clearNamespace(portfolioId: Long, namespace: String)
+
     /** Removes every setting for the portfolio (used when the portfolio is deleted). */
     suspend fun clear(portfolioId: Long)
 }

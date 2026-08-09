@@ -1,8 +1,6 @@
 package io.earlisreal.ejournal.domain.tradezero
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
-import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -22,16 +20,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-private class FakeCredentials(
-    private val tradeZero: TradeZeroCredentials? = TradeZeroCredentials("key-id", "secret"),
-) : CredentialsRepository {
-    override fun getAlpacaCredentials(): AlpacaCredentials? = null
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) {}
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? = tradeZero
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
-}
-
 class TradeZeroClientImplTest {
+
+    private val credentials = TradeZeroBrokerCredentials("key-id", "secret")
 
     /** A single fill row as the orders-with-pagination endpoint returns it. */
     private fun fill(
@@ -64,10 +55,24 @@ class TradeZeroClientImplTest {
     private fun client(
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): TradeZeroClientImpl =
-        TradeZeroClientImpl(HttpClient(MockEngine { request -> handler(request) }), FakeCredentials())
+        TradeZeroClientImpl(HttpClient(MockEngine { request -> handler(request) }))
 
     private fun HttpRequestData.isOrders() =
         url.encodedPath.contains("/orders-with-pagination/start-date/")
+
+    @Test
+    fun `connection returns the resolved account identity`() = runTest {
+        val client = client { request ->
+            when {
+                request.url.encodedPath.endsWith("/accounts") -> json("""{"accounts":[{"account":"ACC1"}]}""")
+                else -> json(page(0, emptyList()))
+            }
+        }
+
+        val result = assertIs<TradeZeroConnectionResult.Connected>(client.testConnection(credentials))
+
+        assertEquals("ACC1", result.account.id)
+    }
 
     @Test
     fun `builds a natural-key externalId independent of tradeId`() = runTest {
@@ -80,7 +85,7 @@ class TradeZeroClientImplTest {
         }
 
         val date = LocalDate.parse("2026-06-16")
-        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+        val result = client.fetchOrders(credentials, portfolioId = 7L, from = date, to = date)
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(1, success.transactions.size)
@@ -97,7 +102,7 @@ class TradeZeroClientImplTest {
             }
         }
         val date = LocalDate.parse("2026-06-16")
-        val apiTx = assertIs<TradeZeroFetchResult.Success>(client.fetchOrders(7L, date, date)).transactions.single()
+        val apiTx = assertIs<TradeZeroFetchResult.Success>(client.fetchOrders(credentials, 7L, date, date)).transactions.single()
 
         // The equivalent fill as a TradeHistory CSV row.
         val csv = (
@@ -121,7 +126,7 @@ class TradeZeroClientImplTest {
         }
 
         val date = LocalDate.parse("2026-06-17")
-        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+        val result = client.fetchOrders(credentials, portfolioId = 7L, from = date, to = date)
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(LocalDateTime.parse("2026-06-17T06:11:33"), success.transactions[0].datetime)
@@ -145,7 +150,7 @@ class TradeZeroClientImplTest {
         }
 
         val date = LocalDate.parse("2026-06-16")
-        val result = client.fetchOrders(portfolioId = 7L, from = date.minus(30), to = date)
+        val result = client.fetchOrders(credentials, portfolioId = 7L, from = date.minus(30), to = date)
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(setOf("AAPL", "MSFT"), success.transactions.map { it.symbol }.toSet())
@@ -168,7 +173,7 @@ class TradeZeroClientImplTest {
             }
         }
 
-        client.fetchOrders(7L, from = LocalDate.parse("2025-06-23"), to = LocalDate.parse("2026-06-23"))
+        client.fetchOrders(credentials, 7L, from = LocalDate.parse("2025-06-23"), to = LocalDate.parse("2026-06-23"))
 
         assertEquals("2025-06-23", startDateSeg)
         assertEquals("365", numberOfDays)
@@ -191,7 +196,7 @@ class TradeZeroClientImplTest {
         }
 
         // from is well over a year before to: window must start at to-365, not at from.
-        client.fetchOrders(7L, from = LocalDate.parse("2024-01-01"), to = LocalDate.parse("2026-06-23"))
+        client.fetchOrders(credentials, 7L, from = LocalDate.parse("2024-01-01"), to = LocalDate.parse("2026-06-23"))
 
         assertEquals("2025-06-23", startDateSeg)
         assertEquals("365", numberOfDays)
@@ -207,7 +212,7 @@ class TradeZeroClientImplTest {
         }
 
         val date = LocalDate.parse("2026-06-16")
-        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+        val result = client.fetchOrders(credentials, portfolioId = 7L, from = date, to = date)
 
         val error = assertIs<TradeZeroFetchResult.NetworkError>(result)
         assertTrue(error.message.contains("no accounts", ignoreCase = true), "was: ${error.message}")
@@ -230,7 +235,7 @@ class TradeZeroClientImplTest {
         }
 
         val date = LocalDate.parse("2026-06-16")
-        val result = client.fetchOrders(portfolioId = 7L, from = date, to = date)
+        val result = client.fetchOrders(credentials, portfolioId = 7L, from = date, to = date)
 
         val success = assertIs<TradeZeroFetchResult.Success>(result)
         assertEquals(1, success.transactions.size)

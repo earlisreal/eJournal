@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 
 class StartDestinationTest {
 
-    private val portfolios = listOf(Portfolio(1L, "Main", Market.US_STOCKS))
+    private val portfolios = listOf(Portfolio(1L, "Main", Market.US_STOCKS, null, "ref-1"))
 
     @Test
     fun dashboardWhenSelectedPortfolioHasTransactions() = runTest {

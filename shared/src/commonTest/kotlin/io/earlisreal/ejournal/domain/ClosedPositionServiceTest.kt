@@ -25,8 +25,9 @@ private class StubTransactionRepository(var txs: List<Transaction>) : Transactio
 private class StubPortfolioRepository(private val portfolios: List<Portfolio> = emptyList()) : PortfolioRepository {
     override suspend fun getAll(): List<Portfolio> = portfolios
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
-    override suspend fun insert(name: String, market: Market): Long = 0
-    override suspend fun update(id: Long, name: String, market: Market) {}
+    override suspend fun insert(name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?): Portfolio =
+        Portfolio(0, name, market, broker, "stub")
+    override suspend fun update(id: Long, name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?) {}
     override suspend fun delete(id: Long) {}
 }
 
@@ -77,7 +78,7 @@ class ClosedPositionServiceTest {
 
     @Test
     fun stampsEachPositionWithItsPortfolioMarket() = runTest {
-        val portfolios = StubPortfolioRepository(listOf(Portfolio(id = 7L, name = "Crypto", market = Market.CRYPTO)))
+        val portfolios = StubPortfolioRepository(listOf(Portfolio(id = 7L, name = "Crypto", market = Market.CRYPTO, broker = null, credentialRef = "ref-7")))
         val service = ClosedPositionService(StubTransactionRepository(listOf(txn(1))), portfolios) { listOf(position()) }
         val positions = service.forPortfolio(7L)
         assertEquals(Market.CRYPTO, positions.single().market)

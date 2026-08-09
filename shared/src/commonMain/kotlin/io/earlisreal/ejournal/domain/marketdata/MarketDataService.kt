@@ -72,7 +72,7 @@ class MarketDataService(
 
     suspend fun sync(): SyncResult {
         val today = todayProvider()
-        val hasKeys = credentialsRepository.getAlpacaCredentials() != null
+        val hasKeys = credentialsRepository.getAlpacaMarketDataCredentials() != null
 
         val positions = portfolioRepository.getAll()
             .filter { it.market == Market.US_STOCKS || it.market == Market.CRYPTO }

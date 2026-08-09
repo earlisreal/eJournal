@@ -1,9 +1,12 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials
+import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
+import io.earlisreal.ejournal.domain.model.Broker
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -21,51 +24,89 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
     private val file: Path = dir.resolve("credentials.json")
     private val json = Json { prettyPrint = true }
 
-    override fun getAlpacaCredentials(): AlpacaCredentials? {
+    override fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials? {
         val alpaca = readRoot()["alpaca"] as? JsonObject ?: return null
-        val keyId = (alpaca["keyId"] as? JsonPrimitive)?.contentOrNull ?: return null
-        val secretKey = (alpaca["secretKey"] as? JsonPrimitive)?.contentOrNull ?: return null
-        if (keyId.isBlank() || secretKey.isBlank()) return null
-        val environment = (alpaca["environment"] as? JsonPrimitive)?.contentOrNull
-            ?.let { value -> runCatching { AlpacaEnvironment.valueOf(value.uppercase()) }.getOrNull() }
-            ?: AlpacaEnvironment.PAPER
-        return AlpacaCredentials(keyId, secretKey, environment)
+        val keyId = alpaca.string("keyId") ?: return null
+        val secretKey = alpaca.string("secretKey") ?: return null
+        return AlpacaMarketDataCredentials(keyId, secretKey)
     }
 
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) {
-        val updated = buildJsonObject {
-            readRoot().forEach { (key, value) -> if (key != "alpaca") put(key, value) }
-            putJsonObject("alpaca") {
+    override fun setAlpacaMarketDataCredentials(credentials: AlpacaMarketDataCredentials) {
+        val root = readRoot()
+        val existing = root["alpaca"] as? JsonObject
+        val updated = replaceObject(root, "alpaca") {
+            existing?.forEach { (key, value) -> if (key != "keyId" && key != "secretKey") put(key, value) }
+            put("keyId", credentials.keyId)
+            put("secretKey", credentials.secretKey)
+        }
+        writeAtomically(json.encodeToString(JsonObject.serializer(), updated))
+    }
+
+    override fun getPortfolioBrokerCredentials(credentialRef: String): PortfolioBrokerCredentials? {
+        val entry = (readRoot()["portfolioBrokers"] as? JsonObject)?.get(credentialRef) as? JsonObject
+            ?: return null
+        val keyId = entry.string("keyId") ?: return null
+        val secretKey = entry.string("secretKey") ?: return null
+        return when (entry.string("broker")?.uppercase()) {
+            Broker.ALPACA.name, Broker.ALPACA.id.uppercase() -> {
+                val environment = entry.string("environment")
+                    ?.let { value -> runCatching { AlpacaEnvironment.valueOf(value.uppercase()) }.getOrNull() }
+                    ?: return null
+                AlpacaBrokerCredentials(keyId, secretKey, environment)
+            }
+            Broker.TRADEZERO.name, Broker.TRADEZERO.id.uppercase() ->
+                TradeZeroBrokerCredentials(keyId, secretKey)
+            else -> null
+        }
+    }
+
+    override fun setPortfolioBrokerCredentials(
+        credentialRef: String,
+        credentials: PortfolioBrokerCredentials,
+    ) {
+        val root = readRoot()
+        val existingEntries = root["portfolioBrokers"] as? JsonObject
+        val updatedEntries = buildJsonObject {
+            existingEntries?.forEach { (key, value) -> if (key != credentialRef) put(key, value) }
+            putJsonObject(credentialRef) {
+                put("broker", credentials.broker.name)
                 put("keyId", credentials.keyId)
                 put("secretKey", credentials.secretKey)
-                put("environment", credentials.environment.name)
+                if (credentials is AlpacaBrokerCredentials) put("environment", credentials.environment.name)
             }
+        }
+        val updated = replaceObject(root, "portfolioBrokers") {
+            updatedEntries.forEach { (key, value) -> put(key, value) }
         }
         writeAtomically(json.encodeToString(JsonObject.serializer(), updated))
     }
 
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? {
-        val tz = readRoot()["tradeZero"] as? JsonObject ?: return null
-        val keyId     = (tz["keyId"]     as? JsonPrimitive)?.contentOrNull ?: return null
-        val secretKey = (tz["secretKey"] as? JsonPrimitive)?.contentOrNull ?: return null
-        if (keyId.isBlank() || secretKey.isBlank()) return null
-        return TradeZeroCredentials(keyId, secretKey)
-    }
-
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {
-        val updated = buildJsonObject {
-            readRoot().forEach { (key, value) -> if (key != "tradeZero") put(key, value) }
-            putJsonObject("tradeZero") {
-                put("keyId",     credentials.keyId)
-                put("secretKey", credentials.secretKey)
-            }
+    override fun deletePortfolioBrokerCredentials(credentialRef: String) {
+        val root = readRoot()
+        val existingEntries = root["portfolioBrokers"] as? JsonObject ?: return
+        if (credentialRef !in existingEntries) return
+        val updated = replaceObject(root, "portfolioBrokers") {
+            existingEntries.forEach { (key, value) -> if (key != credentialRef) put(key, value) }
         }
         writeAtomically(json.encodeToString(JsonObject.serializer(), updated))
+    }
+
+    private fun JsonObject.string(key: String): String? =
+        (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+
+    private fun replaceObject(
+        root: JsonObject,
+        key: String,
+        content: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit,
+    ): JsonObject = buildJsonObject {
+        root.forEach { (existingKey, value) -> if (existingKey != key) put(existingKey, value) }
+        putJsonObject(key, content)
     }
 
     private fun readRoot(): JsonObject =
-        runCatching { json.parseToJsonElement(Files.readString(file)) as JsonObject }
-            .getOrDefault(JsonObject(emptyMap()))
+        runCatching { json.parseToJsonElement(Files.readString(file)) as? JsonObject }
+            .getOrNull()
+            ?: JsonObject(emptyMap())
 
     private fun writeAtomically(content: String) {
         Files.createDirectories(dir)
@@ -78,6 +119,6 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
     private fun restrictToOwner(path: Path) {
         runCatching {
             Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"))
-        } // non-POSIX filesystems (Windows): temp files are already user-scoped
+        }
     }
 }

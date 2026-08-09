@@ -2,10 +2,12 @@ package io.earlisreal.ejournal.data
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
+import io.earlisreal.ejournal.data.database.BrokerAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
 import io.earlisreal.ejournal.domain.model.Market
+import io.earlisreal.ejournal.domain.model.Broker
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -27,7 +29,7 @@ class SqlDelightPortfolioRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter, brokerAdapter = BrokerAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
                 marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
@@ -39,21 +41,34 @@ class SqlDelightPortfolioRepositoryTest {
 
     @Test
     fun insertAndRetrievePortfolioRoundTripsMarket() = runTest {
-        val id = repo.insert("COL Financial", Market.PH_STOCKS)
+        val portfolio = repo.insert("COL Financial", Market.PH_STOCKS)
         val all = repo.getAll()
         assertEquals(1, all.size)
         assertEquals("COL Financial", all[0].name)
         assertEquals(Market.PH_STOCKS, all[0].market)
-        assertEquals(id, all[0].id)
+        assertEquals(portfolio.id, all[0].id)
+        assertTrue(portfolio.credentialRef.isNotBlank())
+    }
+
+    @Test
+    fun eachPortfolioGetsAUniqueCredentialReference() = runTest {
+        val first = repo.insert("First", Market.US_STOCKS)
+        val second = repo.insert("Second", Market.US_STOCKS)
+
+        assertTrue(first.credentialRef.isNotBlank())
+        assertTrue(second.credentialRef.isNotBlank())
+        kotlin.test.assertNotEquals(first.credentialRef, second.credentialRef)
     }
 
     @Test
     fun updateChangesNameAndMarket() = runTest {
-        val id = repo.insert("COL", Market.PH_STOCKS)
-        repo.update(id, "COL Financial", Market.US_STOCKS)
-        val found = repo.getById(id)!!
+        val portfolio = repo.insert("COL", Market.PH_STOCKS, Broker.ALPACA)
+        repo.update(portfolio.id, "COL Financial", Market.US_STOCKS, Broker.TRADEZERO)
+        val found = repo.getById(portfolio.id)!!
         assertEquals("COL Financial", found.name)
         assertEquals(Market.US_STOCKS, found.market)
+        assertEquals(Broker.TRADEZERO, found.broker)
+        assertEquals(portfolio.credentialRef, found.credentialRef)
     }
 
     @Test
@@ -63,7 +78,7 @@ class SqlDelightPortfolioRepositoryTest {
 
     @Test
     fun deleteRemovesPortfolio() = runTest {
-        val id = repo.insert("Moomoo", Market.CRYPTO)
+        val id = repo.insert("Moomoo", Market.CRYPTO).id
         repo.delete(id)
         assertTrue(repo.getAll().isEmpty())
     }

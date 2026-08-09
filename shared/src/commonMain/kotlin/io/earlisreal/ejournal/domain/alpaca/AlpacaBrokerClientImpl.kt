@@ -1,7 +1,6 @@
 package io.earlisreal.ejournal.domain.alpaca
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
-import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
@@ -33,14 +32,11 @@ private val EASTERN = TimeZone.of("America/New_York")
 
 class AlpacaBrokerClientImpl(
     private val httpClient: HttpClient,
-    private val credentialsRepository: CredentialsRepository,
 ) : AlpacaBrokerClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun testConnection(): AlpacaConnectionResult {
-        val credentials = credentialsRepository.getAlpacaCredentials()
-            ?: return AlpacaConnectionResult.InvalidCredentials
+    override suspend fun testConnection(credentials: AlpacaBrokerCredentials): AlpacaConnectionResult {
         return when (val result = requestWithRetry(credentials, "/v2/account")) {
             is RequestResult.Failure -> AlpacaConnectionResult.NetworkError(result.message)
             is RequestResult.Response -> when {
@@ -54,13 +50,11 @@ class AlpacaBrokerClientImpl(
     }
 
     override suspend fun fetchFills(
+        credentials: AlpacaBrokerCredentials,
         portfolioId: Long,
         after: Instant?,
         until: Instant?,
     ): AlpacaFetchResult {
-        val credentials = credentialsRepository.getAlpacaCredentials()
-            ?: return AlpacaFetchResult.InvalidCredentials
-
         val account = when (val result = requestWithRetry(credentials, "/v2/account")) {
             is RequestResult.Failure -> return AlpacaFetchResult.NetworkError(result.message)
             is RequestResult.Response -> when {
@@ -149,7 +143,7 @@ class AlpacaBrokerClientImpl(
     }
 
     private suspend fun requestWithRetry(
-        credentials: AlpacaCredentials,
+        credentials: AlpacaBrokerCredentials,
         path: String,
         configure: HttpRequestBuilder.() -> Unit = {},
     ): RequestResult {

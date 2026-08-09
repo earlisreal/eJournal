@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
+import io.earlisreal.ejournal.data.repository.AlpacaBrokerCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
@@ -8,6 +9,8 @@ import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Market
+import io.earlisreal.ejournal.domain.model.Broker
+import io.earlisreal.ejournal.domain.model.Portfolio
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -21,19 +24,18 @@ class AlpacaSyncService(
     private val tracker: BackgroundTaskTracker,
     private val portfolioRepository: PortfolioRepository,
     private val portfolioSettings: PortfolioSettingsRepository,
-    private val credentialsRepository: CredentialsRepository? = null,
+    private val credentialsRepository: CredentialsRepository,
     private val now: () -> Instant = { Clock.System.now() },
 ) : BrokerSyncService {
 
     private val syncMutex = Mutex()
 
     override val brokerId: String = "alpaca"
-    override val displayName: String
-        get() = credentialsRepository?.getAlpacaCredentials()?.environment?.let { "Alpaca · ${it.label}" }
-            ?: "Alpaca"
+    override val displayName: String = "Alpaca"
 
-    override fun isConfigured(): Boolean =
-        credentialsRepository == null || credentialsRepository.getAlpacaCredentials() != null
+    override fun isConfigured(portfolio: Portfolio): Boolean =
+        portfolio.broker == Broker.ALPACA &&
+            credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef) is AlpacaBrokerCredentials
 
     override fun supportsMarket(market: Market): Boolean = market == Market.US_STOCKS
 
@@ -41,14 +43,19 @@ class AlpacaSyncService(
         syncMutex.withLock { syncIncrementalLocked(portfolioId) }
 
     private suspend fun syncIncrementalLocked(portfolioId: Long): BrokerSyncOutcome {
+        val portfolio = portfolioRepository.getById(portfolioId) ?: return BrokerSyncOutcome.NotConfigured
+        if (portfolio.broker != Broker.ALPACA) return BrokerSyncOutcome.NotConfigured
+        val credentials = credentialsRepository.getPortfolioBrokerCredentials(portfolio.credentialRef)
+            as? AlpacaBrokerCredentials
+            ?: return BrokerSyncOutcome.NotConfigured
         val until = now()
         val handle = tracker.start(TASK_ID, TASK_LABEL, "Fetching Alpaca fills…")
 
         return try {
-            val connection = when (val result = client.testConnection()) {
+            val connection = when (val result = client.testConnection(credentials)) {
                 is AlpacaConnectionResult.Connected -> result
                 AlpacaConnectionResult.InvalidCredentials -> {
-                    handle.fail("Invalid Alpaca credentials — update them in Settings")
+                    handle.fail("Invalid Alpaca credentials — update this portfolio's broker configuration")
                     return BrokerSyncOutcome.InvalidCredentials
                 }
                 is AlpacaConnectionResult.NetworkError -> {
@@ -73,7 +80,7 @@ class AlpacaSyncService(
             }
             val after = lastSyncedAt?.minus(OVERLAP)
 
-            when (val result = client.fetchFills(portfolioId, after, until)) {
+            when (val result = client.fetchFills(credentials, portfolioId, after, until)) {
                 is AlpacaFetchResult.Success -> {
                     check(result.account.id == connection.account.id) {
                         "Alpaca account changed during synchronization"
@@ -95,7 +102,7 @@ class AlpacaSyncService(
                     BrokerSyncOutcome.Imported(inserted, result.detail)
                 }
                 AlpacaFetchResult.InvalidCredentials -> {
-                    handle.fail("Invalid Alpaca credentials — update them in Settings")
+                    handle.fail("Invalid Alpaca credentials — update this portfolio's broker configuration")
                     BrokerSyncOutcome.InvalidCredentials
                 }
                 is AlpacaFetchResult.NetworkError -> {

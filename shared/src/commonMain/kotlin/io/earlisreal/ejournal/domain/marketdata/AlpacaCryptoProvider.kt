@@ -1,6 +1,6 @@
 package io.earlisreal.ejournal.domain.marketdata
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -41,7 +41,7 @@ class AlpacaCryptoProvider(
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun getBars(symbol: String, timeframe: Timeframe, from: LocalDate, to: LocalDate): List<Bar> {
-        val credentials = credentialsRepository.getAlpacaCredentials()
+        val credentials = credentialsRepository.getAlpacaMarketDataCredentials()
             ?: throw InvalidKeysException("Alpaca keys are not configured")
         val timeframeParam = when (timeframe) {
             Timeframe.DAILY -> "1Day"
@@ -75,7 +75,7 @@ class AlpacaCryptoProvider(
     private fun toPair(symbol: String): String = if ("/" in symbol) symbol else "${symbol.uppercase()}/USD"
 
     private suspend fun request(
-        credentials: AlpacaCredentials,
+        credentials: AlpacaMarketDataCredentials,
         url: String,
         configure: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {},
     ): HttpResponse = client.get(url) {

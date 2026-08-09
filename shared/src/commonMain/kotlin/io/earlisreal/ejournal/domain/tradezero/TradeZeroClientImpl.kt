@@ -1,8 +1,6 @@
 package io.earlisreal.ejournal.domain.tradezero
 
-import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
-import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
+import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.ktor.client.HttpClient
@@ -13,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -78,37 +77,37 @@ private data class FillRow(
 // (a transient TradeZero hiccup) isn't reported to the user as a parse/network failure.
 private sealed interface AccountResolution {
     data class Found(val accountId: String) : AccountResolution
+    data object InvalidCredentials : AccountResolution
     data object NoAccounts : AccountResolution
     data class Error(val message: String) : AccountResolution
 }
 
 class TradeZeroClientImpl(
     private val httpClient: HttpClient,
-    private val credentialsRepository: CredentialsRepository,
 ) : TradeZeroClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun testConnection(): ConnectionResult {
-        val creds = credentialsRepository.getTradeZeroCredentials()
-            ?: return ConnectionResult.InvalidKeys
-        return runCatching {
-            val response = httpClient.get("$BASE_URL/v1/api/accounts") {
-                addAuthHeaders(creds)
-            }
-            if (response.status == HttpStatusCode.NotFound)
-                ConnectionResult.InvalidKeys
-            else
-                ConnectionResult.Connected
-        }.getOrElse { ConnectionResult.NetworkError(it.message ?: "Request failed") }
-    }
+    override suspend fun testConnection(credentials: TradeZeroBrokerCredentials): TradeZeroConnectionResult =
+        when (val resolution = resolveAccountId(credentials)) {
+            is AccountResolution.Found -> TradeZeroConnectionResult.Connected(TradeZeroAccount(resolution.accountId))
+            AccountResolution.InvalidCredentials -> TradeZeroConnectionResult.InvalidCredentials
+            AccountResolution.NoAccounts -> TradeZeroConnectionResult.NetworkError(
+                "TradeZero returned no accounts — likely a temporary broker issue, try again shortly",
+            )
+            is AccountResolution.Error -> TradeZeroConnectionResult.NetworkError(resolution.message)
+        }
 
-    override suspend fun fetchOrders(portfolioId: Long, from: LocalDate, to: LocalDate): TradeZeroFetchResult {
-        val creds = credentialsRepository.getTradeZeroCredentials()
-            ?: return TradeZeroFetchResult.InvalidCredentials
+    override suspend fun fetchOrders(
+        credentials: TradeZeroBrokerCredentials,
+        portfolioId: Long,
+        from: LocalDate,
+        to: LocalDate,
+    ): TradeZeroFetchResult {
         return try {
-            val accountId = when (val resolution = resolveAccountId(creds)) {
+            val accountId = when (val resolution = resolveAccountId(credentials)) {
                 is AccountResolution.Found -> resolution.accountId
+                AccountResolution.InvalidCredentials -> return TradeZeroFetchResult.InvalidCredentials
                 AccountResolution.NoAccounts -> {
                     println("[TradeZero] no accounts returned")
                     return TradeZeroFetchResult.NetworkError(
@@ -129,7 +128,7 @@ class TradeZeroClientImpl(
 
             // First page reports the total; the remaining offsets are independent, so fetch them
             // concurrently (bounded) rather than walking the weeks one-by-one.
-            val firstBody = fetchPageWithRetry(creds, accountId, startDate, numberOfDays, offset = 0)
+            val firstBody = fetchPageWithRetry(credentials, accountId, startDate, numberOfDays, offset = 0)
                 ?: return TradeZeroFetchResult.InvalidCredentials
             val firstPage = parsePage(firstBody)
                 ?: return TradeZeroFetchResult.NetworkError("orders parse error: ${firstBody.take(400)}")
@@ -140,7 +139,7 @@ class TradeZeroClientImpl(
                 val gate = Semaphore(MAX_CONCURRENCY)
                 val bodies = coroutineScope {
                     remainingOffsets.map { offset ->
-                        async { gate.withPermit { fetchPageWithRetry(creds, accountId, startDate, numberOfDays, offset) } }
+                        async { gate.withPermit { fetchPageWithRetry(credentials, accountId, startDate, numberOfDays, offset) } }
                     }.awaitAll()
                 }
                 for (body in bodies) {
@@ -157,7 +156,9 @@ class TradeZeroClientImpl(
                 .filter { !it.canceled && it.securityType == "Stock" }
                 .map { it.toTransaction(portfolioId, externalIds) }
 
-            TradeZeroFetchResult.Success(transactions)
+            TradeZeroFetchResult.Success(transactions, TradeZeroAccount(accountId))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             println("[TradeZero] EXCEPTION ${e::class.simpleName}: ${e.message}")
             e.printStackTrace()
@@ -175,7 +176,7 @@ class TradeZeroClientImpl(
 
     // Returns one page's response body, or null on 404 (auth failure). Retries up to 3 times on 429.
     private suspend fun fetchPageWithRetry(
-        creds: TradeZeroCredentials,
+        creds: TradeZeroBrokerCredentials,
         accountId: String,
         startDate: LocalDate,
         numberOfDays: Int,
@@ -212,7 +213,7 @@ class TradeZeroClientImpl(
     // Resolves the trading account id. TradeZero intermittently returns 200 with an empty
     // accounts list (a transient broker hiccup), so we retry that case with backoff — mirroring
     // fetchWeekWithRetry — before giving up. A real HTTP error or unparseable body fails fast.
-    private suspend fun resolveAccountId(creds: TradeZeroCredentials): AccountResolution {
+    private suspend fun resolveAccountId(creds: TradeZeroBrokerCredentials): AccountResolution {
         var delayMs = 1_000L
         var lastBody = ""
         repeat(3) { attempt ->
@@ -221,6 +222,10 @@ class TradeZeroClientImpl(
             lastBody = body
             println("[TradeZero] accounts status=${response.status} body=${body.take(400)}")
             if (response.status != HttpStatusCode.OK) {
+                if (response.status == HttpStatusCode.Unauthorized ||
+                    response.status == HttpStatusCode.Forbidden ||
+                    response.status == HttpStatusCode.NotFound
+                ) return AccountResolution.InvalidCredentials
                 return AccountResolution.Error("HTTP ${response.status}: ${body.take(400)}")
             }
             val accountId = try {
@@ -240,7 +245,7 @@ class TradeZeroClientImpl(
         return AccountResolution.NoAccounts
     }
 
-    private fun io.ktor.client.request.HttpRequestBuilder.addAuthHeaders(creds: TradeZeroCredentials) {
+    private fun io.ktor.client.request.HttpRequestBuilder.addAuthHeaders(creds: TradeZeroBrokerCredentials) {
         header("TZ-API-KEY-ID", creds.keyId)
         header("TZ-API-SECRET-KEY", creds.secretKey)
     }

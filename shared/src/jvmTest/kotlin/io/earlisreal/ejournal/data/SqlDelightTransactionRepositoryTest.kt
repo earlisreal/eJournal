@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.data
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
+import io.earlisreal.ejournal.data.database.BrokerAdapter
 import io.earlisreal.ejournal.data.database.AppDatabase
 import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
@@ -34,7 +35,7 @@ class SqlDelightTransactionRepositoryTest {
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
-            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter),
+            PortfolioAdapter = io.earlisreal.ejournal.Portfolio.Adapter(marketAdapter = MarketAdapter, brokerAdapter = BrokerAdapter),
             OhlcvBarAdapter = io.earlisreal.ejournal.OhlcvBar.Adapter(
                 marketAdapter = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,
@@ -50,7 +51,7 @@ class SqlDelightTransactionRepositoryTest {
         txRepo = SqlDelightTransactionRepository(db)
     }
 
-    private suspend fun seedPortfolio(): Long = portfolioRepo.insert("Moomoo Day Trading", Market.US_STOCKS)
+    private suspend fun seedPortfolio(): Long = portfolioRepo.insert("Moomoo Day Trading", Market.US_STOCKS).id
 
     private fun tx(
         portfolioId: Long,
@@ -93,6 +94,18 @@ class SqlDelightTransactionRepositoryTest {
     }
 
     @Test
+    fun sameExternalIdMayBeUsedByDifferentPortfolios() = runTest {
+        val firstPortfolio = seedPortfolio()
+        val secondPortfolio = portfolioRepo.insert("Other", Market.US_STOCKS).id
+
+        assertNotNull(txRepo.insert(tx(firstPortfolio, externalId = "same")))
+        assertNotNull(txRepo.insert(tx(secondPortfolio, externalId = "same")))
+
+        assertEquals(1, txRepo.getByPortfolio(firstPortfolio).size)
+        assertEquals(1, txRepo.getByPortfolio(secondPortfolio).size)
+    }
+
+    @Test
     fun insertReturnsRowIdThenNullWhenDuplicateSkipped() = runTest {
         val pId = seedPortfolio()
         val firstId = txRepo.insert(tx(pId, externalId = "tz:1"))
@@ -109,7 +122,7 @@ class SqlDelightTransactionRepositoryTest {
         val db = buildDb(JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}"))
         val fileTxRepo = SqlDelightTransactionRepository(db)
         val filerPortfolioRepo = SqlDelightPortfolioRepository(db)
-        val pId = filerPortfolioRepo.insert("File Portfolio", Market.US_STOCKS)
+        val pId = filerPortfolioRepo.insert("File Portfolio", Market.US_STOCKS).id
 
         val firstId = fileTxRepo.insert(tx(pId, externalId = "tz:1"))
         assertNotNull(firstId)                                       // new row must report its id, not null
@@ -128,7 +141,7 @@ class SqlDelightTransactionRepositoryTest {
     @Test
     fun getByPortfolioReturnsOnlyMatchingPortfolio() = runTest {
         val p1 = seedPortfolio()
-        val p2 = portfolioRepo.insert("Moomoo", Market.US_STOCKS)
+        val p2 = portfolioRepo.insert("Moomoo", Market.US_STOCKS).id
         txRepo.insert(tx(p1, symbol = "BDO"))
         txRepo.insert(tx(p2, symbol = "TSLA"))
         assertEquals(1, txRepo.getByPortfolio(p1).size)
@@ -159,7 +172,7 @@ class SqlDelightTransactionRepositoryTest {
     @Test
     fun countByPortfolioCountsOnlyThatPortfolio() = runTest {
         val p1 = seedPortfolio()
-        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS)
+        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS).id
         txRepo.insert(tx(p1)); txRepo.insert(tx(p1)); txRepo.insert(tx(p2))
         assertEquals(2L, txRepo.countByPortfolio(p1))
         assertEquals(1L, txRepo.countByPortfolio(p2))
@@ -168,7 +181,7 @@ class SqlDelightTransactionRepositoryTest {
     @Test
     fun deleteByPortfolioRemovesOnlyThatPortfoliosTransactions() = runTest {
         val p1 = seedPortfolio()
-        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS)
+        val p2 = portfolioRepo.insert("Other", Market.US_STOCKS).id
         txRepo.insert(tx(p1, symbol = "BDO"))
         txRepo.insert(tx(p2, symbol = "TSLA"))
         txRepo.deleteByPortfolio(p1)

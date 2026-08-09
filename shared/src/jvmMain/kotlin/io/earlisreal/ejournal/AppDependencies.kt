@@ -85,10 +85,10 @@ class AppDependencies {
     val positionTagService = PositionTagService(closedPositionService, tagRepository)
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
-    val alpacaBrokerClient: AlpacaBrokerClient = AlpacaBrokerClientImpl(httpClient, credentialsRepository)
+    val alpacaBrokerClient: AlpacaBrokerClient = AlpacaBrokerClientImpl(httpClient)
     val cryptoProvider = AlpacaCryptoProvider(httpClient, credentialsRepository)
     private val yahooProvider = YahooFinanceProvider(httpClient)
-    val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)
+    val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient)
     val marketDataService = MarketDataService(
         portfolioRepository = portfolioRepository,
         closedPositions = closedPositionService,
@@ -108,6 +108,7 @@ class AppDependencies {
             client = tradeZeroClient,
             transactionRepository = transactionRepository,
             tracker = backgroundTaskTracker,
+            portfolioRepository = portfolioRepository,
             portfolioSettings = portfolioSettingsRepository,
             credentialsRepository = credentialsRepository,
         )

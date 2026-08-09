@@ -63,6 +63,9 @@ fun App(
         transactionRepository = transactionRepository,
         settingsRepository = settingsRepository,
         portfolioSettings = portfolioSettings,
+        credentialsRepository = credentialsRepository,
+        alpacaBrokerClient = alpacaBrokerClient,
+        tradeZeroClient = tradeZeroClient,
         tagRepository = tagRepository,
         backgroundTaskTracker = backgroundTaskTracker,
         initialDestination = startDestination,
@@ -118,9 +121,7 @@ fun App(
                 onThemeChange = nav.onThemeChange,
                 credentialsRepository = credentialsRepository,
                 alpacaProvider = alpacaProvider,
-                alpacaBrokerClient = alpacaBrokerClient,
                 marketDataService = marketDataService,
-                tradeZeroClient = tradeZeroClient,
             )
         }
     }

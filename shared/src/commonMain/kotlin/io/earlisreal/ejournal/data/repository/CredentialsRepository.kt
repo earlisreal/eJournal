@@ -1,19 +1,40 @@
 package io.earlisreal.ejournal.data.repository
 
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
+import io.earlisreal.ejournal.domain.model.Broker
 
-data class AlpacaCredentials(
+data class AlpacaMarketDataCredentials(
     val keyId: String,
     val secretKey: String,
-    val environment: AlpacaEnvironment = AlpacaEnvironment.PAPER,
 )
 
-data class TradeZeroCredentials(val keyId: String, val secretKey: String)
+sealed interface PortfolioBrokerCredentials {
+    val broker: Broker
+    val keyId: String
+    val secretKey: String
+}
 
-/** API keys only — kept separate from SettingsRepository so secret handling stays in one place. */
+data class AlpacaBrokerCredentials(
+    override val keyId: String,
+    override val secretKey: String,
+    val environment: AlpacaEnvironment,
+) : PortfolioBrokerCredentials {
+    override val broker: Broker = Broker.ALPACA
+}
+
+data class TradeZeroBrokerCredentials(
+    override val keyId: String,
+    override val secretKey: String,
+) : PortfolioBrokerCredentials {
+    override val broker: Broker = Broker.TRADEZERO
+}
+
+/** Global market-data keys and per-portfolio broker keys share one local secret store. */
 interface CredentialsRepository {
-    fun getAlpacaCredentials(): AlpacaCredentials?
-    fun setAlpacaCredentials(credentials: AlpacaCredentials)
-    fun getTradeZeroCredentials(): TradeZeroCredentials?
-    fun setTradeZeroCredentials(credentials: TradeZeroCredentials)
+    fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials?
+    fun setAlpacaMarketDataCredentials(credentials: AlpacaMarketDataCredentials)
+
+    fun getPortfolioBrokerCredentials(credentialRef: String): PortfolioBrokerCredentials?
+    fun setPortfolioBrokerCredentials(credentialRef: String, credentials: PortfolioBrokerCredentials)
+    fun deletePortfolioBrokerCredentials(credentialRef: String)
 }

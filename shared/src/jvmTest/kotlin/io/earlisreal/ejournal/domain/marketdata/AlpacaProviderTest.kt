@@ -1,8 +1,7 @@
 package io.earlisreal.ejournal.domain.marketdata
 
-import io.earlisreal.ejournal.data.repository.AlpacaCredentials
+import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -24,11 +23,13 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private class FakeCredentials(var credentials: AlpacaCredentials? = AlpacaCredentials("key-id", "secret")) : CredentialsRepository {
-    override fun getAlpacaCredentials(): AlpacaCredentials? = credentials
-    override fun setAlpacaCredentials(credentials: AlpacaCredentials) { this.credentials = credentials }
-    override fun getTradeZeroCredentials(): TradeZeroCredentials? = null
-    override fun setTradeZeroCredentials(credentials: TradeZeroCredentials) {}
+private class FakeCredentials(var credentials: AlpacaMarketDataCredentials? = AlpacaMarketDataCredentials("key-id", "secret")) : CredentialsRepository {
+    private val portfolio = mutableMapOf<String, io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials>()
+    override fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials? = credentials
+    override fun setAlpacaMarketDataCredentials(credentials: AlpacaMarketDataCredentials) { this.credentials = credentials }
+    override fun getPortfolioBrokerCredentials(credentialRef: String) = portfolio[credentialRef]
+    override fun setPortfolioBrokerCredentials(credentialRef: String, credentials: io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials) { portfolio[credentialRef] = credentials }
+    override fun deletePortfolioBrokerCredentials(credentialRef: String) { portfolio.remove(credentialRef) }
 }
 
 class AlpacaProviderTest {

@@ -15,7 +15,7 @@ CREATE TABLE TradeTransaction (
 -- distinct, so manual rows (externalId = NULL) are never deduped, while stable ids
 -- (e.g. the shared TradeZero natural key "tz:AAPL:2026-06-16T00:00:00:BUY:100.0#0",
 -- used by both the API sync and the CSV import) collapse duplicates across sources.
-CREATE UNIQUE INDEX TradeTransaction_externalId ON TradeTransaction(externalId);
+CREATE UNIQUE INDEX TradeTransaction_portfolio_externalId ON TradeTransaction(portfolioId, externalId);
 
 insertTransaction:
 INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId)

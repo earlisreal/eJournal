@@ -43,7 +43,7 @@ object JvmDatabaseFactory {
                 datetimeAdapter  = DateTimeAdapter,
                 actionAdapter    = ActionAdapter
             ),
-            PortfolioAdapter = Portfolio.Adapter(marketAdapter = MarketAdapter),
+            PortfolioAdapter = Portfolio.Adapter(marketAdapter = MarketAdapter, brokerAdapter = BrokerAdapter),
             OhlcvBarAdapter = OhlcvBar.Adapter(
                 marketAdapter    = MarketAdapter,
                 timestampAdapter = DateTimeAdapter,

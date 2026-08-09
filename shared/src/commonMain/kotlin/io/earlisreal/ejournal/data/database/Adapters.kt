@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.data.database
 import app.cash.sqldelight.ColumnAdapter
 import io.earlisreal.ejournal.domain.marketdata.Timeframe
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.datetime.LocalDateTime
 
@@ -19,6 +20,11 @@ object ActionAdapter : ColumnAdapter<Action, String> {
 object MarketAdapter : ColumnAdapter<Market, String> {
     override fun decode(databaseValue: String): Market = Market.valueOf(databaseValue)
     override fun encode(value: Market): String = value.name
+}
+
+object BrokerAdapter : ColumnAdapter<Broker, String> {
+    override fun decode(databaseValue: String): Broker = Broker.entries.first { it.id == databaseValue || it.name == databaseValue }
+    override fun encode(value: Broker): String = value.id
 }
 
 object TimeframeAdapter : ColumnAdapter<Timeframe, String> {

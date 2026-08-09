@@ -4,11 +4,14 @@ import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.background.TaskState
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Market
+import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.testutil.FakeCredentialsRepository
+import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
@@ -21,6 +24,10 @@ import kotlin.time.Instant
 
 private class FakeAlpacaClient(
     var result: AlpacaFetchResult,
+    var connection: AlpacaConnectionResult = AlpacaConnectionResult.Connected(
+        AlpacaAccount("acct-1", "PA1234", "ACTIVE"),
+        AlpacaEnvironment.PAPER,
+    ),
 ) : AlpacaBrokerClient {
     var calls = 0
         private set
@@ -29,7 +36,7 @@ private class FakeAlpacaClient(
     var lastUntil: Instant? = null
         private set
 
-    override suspend fun testConnection(): AlpacaConnectionResult = AlpacaConnectionResult.InvalidCredentials
+    override suspend fun testConnection(): AlpacaConnectionResult = connection
 
     override suspend fun fetchFills(portfolioId: Long, after: Instant?, until: Instant?): AlpacaFetchResult {
         calls++
@@ -41,12 +48,14 @@ private class FakeAlpacaClient(
 
 private class DeduplicatingTransactionRepository(
     private val failOnInsert: Boolean = false,
+    initialTransactions: List<Transaction> = emptyList(),
 ) : TransactionRepository {
-    val inserted = mutableListOf<Transaction>()
-    private val ids = mutableSetOf<String>()
+    val inserted = initialTransactions.toMutableList()
+    private val ids = initialTransactions.mapNotNull { it.externalId }.toMutableSet()
 
-    override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = inserted
-    override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> = inserted
+    override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = inserted.filter { it.portfolioId == portfolioId }
+    override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> =
+        getByPortfolio(portfolioId)
     override suspend fun insert(transaction: Transaction): Long? {
         if (failOnInsert) error("database unavailable")
         val id = transaction.externalId
@@ -64,7 +73,12 @@ class AlpacaSyncServiceTest {
     private val now = Instant.parse("2026-06-20T12:00:00Z")
     private val account = AlpacaAccount("acct-1", "PA1234", "ACTIVE")
 
-    private fun success(vararg ids: String, skippedOptions: Int = 0, skippedCrypto: Int = 0) =
+    private fun success(
+        vararg ids: String,
+        skippedOptions: Int = 0,
+        skippedCrypto: Int = 0,
+        resultAccount: AlpacaAccount = account,
+    ) =
         AlpacaFetchResult.Success(
             transactions = ids.map { id ->
                 Transaction(
@@ -79,9 +93,13 @@ class AlpacaSyncServiceTest {
                     externalId = id,
                 )
             },
-            account = account,
-            skippedOptions = skippedOptions,
-            skippedCrypto = skippedCrypto,
+            account = resultAccount,
+            detail = BrokerSyncDetail(
+                skipped = mapOf(
+                    "options" to skippedOptions,
+                    "crypto fills" to skippedCrypto,
+                ).filterValues { it > 0 },
+            ),
         )
 
     private fun service(
@@ -89,15 +107,20 @@ class AlpacaSyncServiceTest {
         repo: TransactionRepository = DeduplicatingTransactionRepository(),
         settings: FakePortfolioSettingsRepository = FakePortfolioSettingsRepository(),
         tracker: BackgroundTaskTracker = BackgroundTaskTracker(),
+        credentials: FakeCredentialsRepository = FakeCredentialsRepository(
+            alpaca = AlpacaCredentials("key", "secret", AlpacaEnvironment.PAPER),
+        ),
+        portfolioRepository: FakePortfolioRepository = FakePortfolioRepository(
+            listOf(Portfolio(1L, "Trading", Market.US_STOCKS)),
+        ),
     ): Pair<AlpacaSyncService, FakePortfolioSettingsRepository> {
         val service = AlpacaSyncService(
             client = client,
             transactionRepository = repo,
             tracker = tracker,
+            portfolioRepository = portfolioRepository,
             portfolioSettings = settings,
-            credentialsRepository = FakeCredentialsRepository(
-                alpaca = AlpacaCredentials("key", "secret", AlpacaEnvironment.PAPER),
-            ),
+            credentialsRepository = credentials,
             now = { now },
         )
         return service to settings
@@ -112,9 +135,10 @@ class AlpacaSyncServiceTest {
 
         assertEquals(BrokerSyncOutcome.Imported(2), result)
         assertEquals(1, client.calls)
-        // Account resolution is client-owned in production; the fake only records the fill call.
         assertEquals(now, client.lastUntil)
+        assertEquals(null, client.lastAfter)
         assertEquals(now.toString(), settings.getString(1L, AlpacaSettings.LAST_SYNCED_AT))
+        assertEquals("paper:acct-1", settings.getString(1L, AlpacaSettings.LAST_SYNCED_SOURCE))
     }
 
     @Test
@@ -122,6 +146,7 @@ class AlpacaSyncServiceTest {
         val repo = DeduplicatingTransactionRepository()
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
         val client = FakeAlpacaClient(success("a", "a", "b"))
         val tracker = BackgroundTaskTracker()
         val (service, _) = service(client, repo, settings, tracker)
@@ -138,6 +163,7 @@ class AlpacaSyncServiceTest {
     fun `client errors do not advance cursor`() = runTest {
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
         val client = FakeAlpacaClient(AlpacaFetchResult.NetworkError("timeout"))
         val (service, _) = service(client, settings = settings)
 
@@ -167,9 +193,114 @@ class AlpacaSyncServiceTest {
         val result = assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
 
         assertEquals(1, result.inserted)
-        assertEquals(3, result.skippedOptions)
-        assertEquals(2, result.skippedCrypto)
+        assertEquals(3, result.detail.skipped["options"])
+        assertEquals(2, result.detail.skipped["crypto fills"])
         assertTrue(service.supportsMarket(Market.US_STOCKS))
         assertTrue(!service.supportsMarket(Market.CRYPTO))
+    }
+
+    @Test
+    fun `changing environment resets cursor and replaces source`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        val credentials = FakeCredentialsRepository(
+            alpaca = AlpacaCredentials("key", "secret", AlpacaEnvironment.LIVE),
+        )
+        val client = FakeAlpacaClient(
+            success("live-fill"),
+            AlpacaConnectionResult.Connected(account, AlpacaEnvironment.LIVE),
+        )
+        val (service, _) = service(client, settings = settings, credentials = credentials)
+
+        service.syncIncremental(1L)
+
+        assertEquals(null, client.lastAfter)
+        assertEquals("live:acct-1", settings.getString(1L, AlpacaSettings.LAST_SYNCED_SOURCE))
+    }
+
+    @Test
+    fun `changing live account resets cursor`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "live:acct-a")
+        val accountB = AlpacaAccount("acct-b", "PA5678", "ACTIVE")
+        val client = FakeAlpacaClient(
+            success("account-b-fill", resultAccount = accountB),
+            AlpacaConnectionResult.Connected(
+                accountB,
+                AlpacaEnvironment.LIVE,
+            ),
+        )
+        val credentials = FakeCredentialsRepository(
+            alpaca = AlpacaCredentials("key", "secret", AlpacaEnvironment.LIVE),
+        )
+        val (service, _) = service(client, settings = settings, credentials = credentials)
+
+        service.syncIncremental(1L)
+
+        assertEquals(null, client.lastAfter)
+        assertEquals("live:acct-b", settings.getString(1L, AlpacaSettings.LAST_SYNCED_SOURCE))
+    }
+
+    @Test
+    fun `same account keeps the three day overlap`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        val client = FakeAlpacaClient(success("same-account-fill"))
+        val (service, _) = service(client, settings = settings)
+
+        service.syncIncremental(1L)
+
+        assertEquals(Instant.parse("2026-06-14T12:00:00Z"), client.lastAfter)
+    }
+
+    @Test
+    fun `blocks an account already bound to another portfolio`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(2L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        val client = FakeAlpacaClient(success("never-fetched"))
+        val portfolios = FakePortfolioRepository(
+            listOf(
+                Portfolio(1L, "Trading", Market.US_STOCKS),
+                Portfolio(2L, "Long Term", Market.US_STOCKS),
+            ),
+        )
+        val (service, _) = service(client, settings = settings, portfolioRepository = portfolios)
+
+        val result = service.syncIncremental(1L)
+
+        assertEquals(BrokerSyncOutcome.AccountAlreadyBound("Long Term"), result)
+        assertEquals(0, client.calls)
+    }
+
+    @Test
+    fun `blocks legacy account data in another portfolio even without binding metadata`() = runTest {
+        val existing = Transaction(
+            id = 1L,
+            portfolioId = 2L,
+            symbol = "AAPL",
+            datetime = LocalDateTime(2026, 6, 1, 9, 30),
+            action = Action.BUY,
+            price = 10.0,
+            shares = 1.0,
+            fees = 0.0,
+            externalId = "alpaca:paper:acct-1:old-fill",
+        )
+        val repo = DeduplicatingTransactionRepository(initialTransactions = listOf(existing))
+        val client = FakeAlpacaClient(success("never-fetched"))
+        val portfolios = FakePortfolioRepository(
+            listOf(
+                Portfolio(1L, "Trading", Market.US_STOCKS),
+                Portfolio(2L, "Long Term", Market.US_STOCKS),
+            ),
+        )
+        val (service, _) = service(client, repo, portfolioRepository = portfolios)
+
+        val result = service.syncIncremental(1L)
+
+        assertEquals(BrokerSyncOutcome.AccountAlreadyBound("Long Term"), result)
+        assertEquals(0, client.calls)
     }
 }

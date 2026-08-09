@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.ktor.client.HttpClient
@@ -74,6 +75,21 @@ class AlpacaBrokerClientImpl(
             }
         }
 
+        val cryptoSymbols = when (val result = requestWithRetry(credentials, "/v2/assets") {
+            parameter("asset_class", "crypto")
+        }) {
+            is RequestResult.Failure -> return AlpacaFetchResult.NetworkError(result.message)
+            is RequestResult.Response -> when {
+                result.status == HttpStatusCode.Unauthorized || result.status == HttpStatusCode.Forbidden ->
+                    return AlpacaFetchResult.InvalidCredentials
+                result.status.value >= 400 ->
+                    return AlpacaFetchResult.NetworkError(result.errorMessage())
+                else -> parseCryptoSymbols(result.body).getOrElse {
+                    return AlpacaFetchResult.NetworkError("Invalid Alpaca asset response")
+                }
+            }
+        }
+
         val transactions = mutableListOf<Transaction>()
         var skippedOptions = 0
         var skippedCrypto = 0
@@ -101,7 +117,7 @@ class AlpacaBrokerClientImpl(
                 }
 
                 for (fill in page.activities) {
-                    when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id)) {
+                    when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id, cryptoSymbols)) {
                         is FillMapping.Accepted -> transactions += mapped.transaction
                         FillMapping.SkipCrypto -> skippedCrypto++
                         FillMapping.SkipOption -> skippedOptions++
@@ -120,8 +136,12 @@ class AlpacaBrokerClientImpl(
         return AlpacaFetchResult.Success(
             transactions = transactions,
             account = account,
-            skippedOptions = skippedOptions,
-            skippedCrypto = skippedCrypto,
+            detail = BrokerSyncDetail(
+                skipped = mapOf(
+                    "options" to skippedOptions,
+                    "crypto fills" to skippedCrypto,
+                ).filterValues { it > 0 },
+            ),
         )
     }
 
@@ -193,13 +213,33 @@ class AlpacaBrokerClientImpl(
         }
     }
 
+    private fun parseCryptoSymbols(body: String): Result<Set<String>> = runCatching {
+        val root = json.parseToJsonElement(body) as? JsonArray
+            ?: error("asset response is not an array")
+        root.mapNotNull { element ->
+            val asset = element as? JsonObject ?: return@mapNotNull null
+            val symbol = (asset["symbol"] as? JsonPrimitive)?.content ?: return@mapNotNull null
+            val assetClass =
+                (asset["class"] as? JsonPrimitive)?.content
+                    ?: (asset["asset_class"] as? JsonPrimitive)?.content
+            if (assetClass == null || assetClass.startsWith("crypto", ignoreCase = true)) {
+                symbol.trim().uppercase()
+            } else {
+                null
+            }
+        }.toSet()
+    }
+
     private fun FillRow.toTransactionOrSkip(
         portfolioId: Long,
         environment: AlpacaEnvironment,
         accountId: String,
+        cryptoSymbols: Set<String>,
     ): FillMapping {
         val normalizedSymbol = symbol.trim()
-        if (normalizedSymbol.contains('/')) return FillMapping.SkipCrypto
+        if (normalizedSymbol.contains('/') || normalizedSymbol.uppercase() in cryptoSymbols) {
+            return FillMapping.SkipCrypto
+        }
         if (isOccOptionSymbol(normalizedSymbol)) return FillMapping.SkipOption
 
         val action = when (side.lowercase()) {

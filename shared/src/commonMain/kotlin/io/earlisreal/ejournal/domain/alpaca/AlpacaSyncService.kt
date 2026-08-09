@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
@@ -15,6 +16,7 @@ class AlpacaSyncService(
     private val client: AlpacaBrokerClient,
     private val transactionRepository: TransactionRepository,
     private val tracker: BackgroundTaskTracker,
+    private val portfolioRepository: PortfolioRepository,
     private val portfolioSettings: PortfolioSettingsRepository,
     private val credentialsRepository: CredentialsRepository? = null,
     private val now: () -> Instant = { Clock.System.now() },
@@ -32,25 +34,57 @@ class AlpacaSyncService(
 
     override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome {
         val until = now()
-        val lastSyncedAt = portfolioSettings.getString(portfolioId, AlpacaSettings.LAST_SYNCED_AT)
-            ?.let { runCatching { Instant.parse(it) }.getOrNull() }
-        val after = lastSyncedAt?.minus(OVERLAP)
         val handle = tracker.start(TASK_ID, TASK_LABEL, "Fetching Alpaca fills…")
 
         return try {
+            val connection = when (val result = client.testConnection()) {
+                is AlpacaConnectionResult.Connected -> result
+                AlpacaConnectionResult.InvalidCredentials -> {
+                    handle.fail("Invalid Alpaca credentials — update them in Settings")
+                    return BrokerSyncOutcome.InvalidCredentials
+                }
+                is AlpacaConnectionResult.NetworkError -> {
+                    handle.fail("Alpaca network error: ${result.message}")
+                    return BrokerSyncOutcome.NetworkError(result.message)
+                }
+            }
+            val source = AlpacaSettings.source(connection.environment, connection.account.id)
+            findBindingConflict(portfolioId, source)?.let { portfolio ->
+                val message =
+                    "This Alpaca ${connection.environment.label} account is already linked to portfolio \"${portfolio.name}\""
+                handle.fail(message)
+                return BrokerSyncOutcome.AccountAlreadyBound(portfolio.name)
+            }
+
+            val lastSyncedSource = portfolioSettings.getString(portfolioId, AlpacaSettings.LAST_SYNCED_SOURCE)
+            val lastSyncedAt = if (lastSyncedSource == source) {
+                portfolioSettings.getString(portfolioId, AlpacaSettings.LAST_SYNCED_AT)
+                    ?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            } else {
+                null
+            }
+            val after = lastSyncedAt?.minus(OVERLAP)
+
             when (val result = client.fetchFills(portfolioId, after, until)) {
                 is AlpacaFetchResult.Success -> {
+                    check(result.account.id == connection.account.id) {
+                        "Alpaca account changed during synchronization"
+                    }
                     val inserted = result.transactions.count { transactionRepository.insert(it) != null }
                     // Cursor advancement is deliberately last: a failed insert leaves the old
-                    // cursor in place, so the next attempt safely re-fetches the overlap.
+                    // source and cursor in place, so the next attempt safely re-fetches the overlap.
                     portfolioSettings.putString(portfolioId, AlpacaSettings.LAST_SYNCED_AT, until.toString())
+                    // Write the cursor before its identity. If the second write fails, the old
+                    // source makes the next run discard this cursor and perform a safe backfill.
+                    portfolioSettings.putString(portfolioId, AlpacaSettings.LAST_SYNCED_SOURCE, source)
                     val detail = buildString {
                         append("Imported $inserted new transaction(s)")
-                        if (result.skippedOptions > 0) append(" · ${result.skippedOptions} options skipped")
-                        if (result.skippedCrypto > 0) append(" · ${result.skippedCrypto} crypto fills skipped")
+                        result.detail.skipped.forEach { (reason, count) ->
+                            if (count > 0) append(" · $count $reason skipped")
+                        }
                     }
                     handle.succeed(detail)
-                    BrokerSyncOutcome.Imported(inserted, result.skippedOptions, result.skippedCrypto)
+                    BrokerSyncOutcome.Imported(inserted, result.detail)
                 }
                 AlpacaFetchResult.InvalidCredentials -> {
                     handle.fail("Invalid Alpaca credentials — update them in Settings")
@@ -66,6 +100,17 @@ class AlpacaSyncService(
             throw e
         }
     }
+
+    private suspend fun findBindingConflict(portfolioId: Long, source: String) =
+        portfolioRepository.getAll().firstOrNull { portfolio ->
+            if (portfolio.id == portfolioId) return@firstOrNull false
+            if (portfolioSettings.getString(portfolio.id, AlpacaSettings.LAST_SYNCED_SOURCE) == source) {
+                return@firstOrNull true
+            }
+            transactionRepository.getByPortfolio(portfolio.id).any { transaction ->
+                transaction.externalId?.startsWith("alpaca:$source:") == true
+            }
+        }
 
     companion object {
         const val TASK_ID = "alpaca-import"

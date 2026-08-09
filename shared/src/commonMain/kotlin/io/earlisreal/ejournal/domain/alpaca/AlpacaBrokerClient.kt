@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.alpaca
 
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import kotlin.time.Instant
 
 data class AlpacaAccount(
@@ -23,8 +24,7 @@ sealed interface AlpacaFetchResult {
     data class Success(
         val transactions: List<Transaction>,
         val account: AlpacaAccount,
-        val skippedOptions: Int = 0,
-        val skippedCrypto: Int = 0,
+        val detail: BrokerSyncDetail = BrokerSyncDetail(),
     ) : AlpacaFetchResult
 
     data object InvalidCredentials : AlpacaFetchResult

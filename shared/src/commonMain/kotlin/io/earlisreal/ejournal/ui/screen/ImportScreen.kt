@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CancellationException
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
@@ -370,21 +371,31 @@ private fun BrokerSyncSection(
                         syncing = true
                         result = null
                         scope.launch {
-                            when (val outcome = service.syncIncremental(portfolioId)) {
-                                is BrokerSyncOutcome.Imported -> {
-                                    result = buildString {
-                                        append("Imported ${outcome.inserted} new transaction(s)")
-                                        if (outcome.skippedOptions > 0) append(" · ${outcome.skippedOptions} options skipped")
-                                        if (outcome.skippedCrypto > 0) append(" · ${outcome.skippedCrypto} crypto fills skipped")
+                            try {
+                                when (val outcome = service.syncIncremental(portfolioId)) {
+                                    is BrokerSyncOutcome.Imported -> {
+                                        result = buildString {
+                                            append("Imported ${outcome.inserted} new transaction(s)")
+                                            outcome.detail.skipped.forEach { (reason, count) ->
+                                                if (count > 0) append(" · $count $reason skipped")
+                                            }
+                                        }
+                                        if (outcome.inserted > 0) onImportSuccess()
                                     }
-                                    if (outcome.inserted > 0) onImportSuccess()
+                                    is BrokerSyncOutcome.AccountAlreadyBound ->
+                                        result = "This account is already linked to portfolio \"${outcome.portfolioName}\""
+                                    BrokerSyncOutcome.InvalidCredentials ->
+                                        result = "Invalid credentials — update them in Settings"
+                                    is BrokerSyncOutcome.NetworkError ->
+                                        result = "Network error: ${outcome.message}"
                                 }
-                                BrokerSyncOutcome.InvalidCredentials ->
-                                    result = "Invalid credentials — update them in Settings"
-                                is BrokerSyncOutcome.NetworkError ->
-                                    result = "Network error: ${outcome.message}"
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                result = "Import failed: ${e.message ?: "unexpected error"}"
+                            } finally {
+                                syncing = false
                             }
-                            syncing = false
                         }
                     },
                 )

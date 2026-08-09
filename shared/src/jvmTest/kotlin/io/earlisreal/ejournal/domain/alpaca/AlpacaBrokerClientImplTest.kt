@@ -34,9 +34,16 @@ class AlpacaBrokerClientImplTest {
 
     private fun client(
         credentials: AlpacaCredentials = AlpacaCredentials("key-id", "secret"),
+        cryptoAssets: String = "[]",
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): Pair<AlpacaBrokerClientImpl, MockEngine> {
-        val engine = MockEngine { request -> handler(request) }
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath == "/v2/assets") {
+                respond(cryptoAssets, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            } else {
+                handler(request)
+            }
+        }
         return AlpacaBrokerClientImpl(HttpClient(engine), AlpacaTestCredentials(credentials)) to engine
     }
 
@@ -118,20 +125,26 @@ class AlpacaBrokerClientImplTest {
 
     @Test
     fun `keeps sells and skips crypto and option symbols`() = runTest {
-        val (client, _) = client { request ->
+        val (client, _) = client(
+            cryptoAssets = """
+                [{"symbol":"BTCUSD","class":"crypto"},{"symbol":"ETHUSD","class":"crypto"}]
+            """.trimIndent(),
+        ) { request ->
             if (request.url.encodedPath == "/v2/account") json(account())
-            else json(
-                "[${fill("stock", side = "sell")}," +
-                    fill("crypto", symbol = "BTC/USD") + "," +
-                    fill("option", symbol = "AAPL  260619C00150000") + "]",
-            )
+                else json(
+                    "[${fill("stock", side = "sell")}," +
+                        fill("crypto", symbol = "BTC/USD") + "," +
+                        fill("legacy-btc", symbol = "BTCUSD") + "," +
+                        fill("legacy-eth", symbol = "ETHUSD") + "," +
+                        fill("option", symbol = "AAPL  260619C00150000") + "]",
+                )
         }
 
         val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(7L, null, null))
         assertEquals(1, result.transactions.size)
         assertEquals("SELL", result.transactions.single().action.name)
-        assertEquals(1, result.skippedCrypto)
-        assertEquals(1, result.skippedOptions)
+        assertEquals(3, result.detail.skipped["crypto fills"])
+        assertEquals(1, result.detail.skipped["options"])
     }
 
     @Test

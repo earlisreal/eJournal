@@ -116,6 +116,7 @@ class AppDependencies {
             client = alpacaBrokerClient,
             transactionRepository = transactionRepository,
             tracker = backgroundTaskTracker,
+            portfolioRepository = portfolioRepository,
             portfolioSettings = portfolioSettingsRepository,
             credentialsRepository = credentialsRepository,
         )

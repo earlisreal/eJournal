@@ -13,20 +13,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,8 +28,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
@@ -51,6 +41,7 @@ import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.MarketDataSyncStatus
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
+import io.earlisreal.ejournal.ui.components.SecretKeyTextField
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.PillShape
 import io.earlisreal.ejournal.ui.theme.Spacing
@@ -166,32 +157,6 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(bottom = Spacing.md),
-    )
-}
-
-@Composable
-private fun SecretKeyTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    var visible by remember { mutableStateOf(false) }
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        singleLine = true,
-        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-        trailingIcon = {
-            IconButton(onClick = { visible = !visible }) {
-                Icon(
-                    imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = if (visible) "Hide secret key" else "Show secret key",
-                )
-            }
-        },
-        modifier = modifier,
     )
 }
 

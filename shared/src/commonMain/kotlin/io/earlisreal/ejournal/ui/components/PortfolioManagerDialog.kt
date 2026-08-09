@@ -301,8 +301,8 @@ private fun AlpacaBrokerForm(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         EnvironmentToggle(environment, onEnvironment)
-        SecretKeyTextField(value = keyId, onValueChange = onKeyId, label = "API Key ID")
-        SecretKeyTextField(value = secretKey, onValueChange = onSecretKey, label = "Secret Key")
+        OutlinedTextField(value = keyId, onValueChange = onKeyId, label = { Text("API Key ID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        SecretKeyTextField(value = secretKey, onValueChange = onSecretKey, label = "Secret Key", modifier = Modifier.fillMaxWidth())
         AppSecondaryButton(text = "Copy global Alpaca keys", onClick = onCopyGlobal, enabled = global != null)
         if (global == null) Text("Configure global Alpaca market-data keys in Settings to enable copy.", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
         Text("Credentials are optional. Paper/Live belongs to this portfolio.", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
@@ -317,8 +317,8 @@ private fun TradeZeroBrokerForm(
     onSecretKey: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        SecretKeyTextField(value = keyId, onValueChange = onKeyId, label = "API Key ID")
-        SecretKeyTextField(value = secretKey, onValueChange = onSecretKey, label = "Secret Key")
+        OutlinedTextField(value = keyId, onValueChange = onKeyId, label = { Text("API Key ID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        SecretKeyTextField(value = secretKey, onValueChange = onSecretKey, label = "Secret Key", modifier = Modifier.fillMaxWidth())
         Text("Credentials are optional and stored only for this portfolio.", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
     }
 }
@@ -353,9 +353,4 @@ private fun EnvironmentToggle(
             AppTextButton(text = if (option == environment) "✓ ${option.label}" else option.label, onClick = { onChange(option) })
         }
     }
-}
-
-@Composable
-private fun SecretKeyTextField(value: String, onValueChange: (String) -> Unit, label: String) {
-    OutlinedTextField(value = value, onValueChange = onValueChange, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 }

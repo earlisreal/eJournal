@@ -5,5 +5,6 @@ enum class Broker(
     val label: String,
 ) {
     ALPACA("alpaca", "Alpaca"),
+    MOOMOO("moomoo", "Moomoo"),
     TRADEZERO("tradezero", "TradeZero"),
 }

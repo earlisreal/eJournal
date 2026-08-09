@@ -74,6 +74,23 @@ class StartupSyncCoordinatorTest {
     }
 
     @Test
+    fun selectedMoomooPortfolioRunsOnlyWhenOptedIn() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "moomoo.autoSyncOnStartup", true)
+
+        coordinator(
+            log,
+            selectedId = 5L,
+            portfolios = listOf(portfolio(broker = Broker.MOOMOO)),
+            services = listOf(FakeBrokerSyncService("moomoo", log)),
+            settings = settings,
+        ).run()
+
+        assertEquals(listOf("moomoo", "md"), log)
+    }
+
+    @Test
     fun manualPortfolioRunsMarketDataOnly() = runTest {
         val log = mutableListOf<String>()
         val settings = FakePortfolioSettingsRepository()

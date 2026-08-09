@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.parser
 
 import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.moomoo.MoomooExternalIdFactory
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -104,5 +105,20 @@ class MoomooCsvParserTest {
     fun buildsDeterministicExternalIdFromOrderTime() {
         val tx = parser.parse(csv(suneBuy), portfolioId).transactions.single()
         assertEquals("moomoo:SUNE:2026-06-08T06:51:04:BUY:172.0", tx.externalId)
+    }
+
+    @Test
+    fun directSyncIdExactlyMatchesCsvAndStripsUsPrefix() {
+        val prefixed = suneBuy.replace("\"SUNE\"", "\"US.SUNE\"")
+        val csvTransaction = parser.parse(csv(prefixed), portfolioId).transactions.single()
+        val directId = MoomooExternalIdFactory.create(
+            symbol = "US.SUNE",
+            orderCreatedAt = LocalDateTime.parse("2026-06-08T06:51:04.999"),
+            action = Action.BUY,
+            filledQuantity = 172.0,
+        )
+
+        assertEquals("SUNE", csvTransaction.symbol)
+        assertEquals(csvTransaction.externalId, directId)
     }
 }

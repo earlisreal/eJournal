@@ -10,6 +10,18 @@ import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.alpaca.AlpacaFetchResult
 import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
+import io.earlisreal.ejournal.domain.moomoo.MoomooAccount
+import io.earlisreal.ejournal.domain.moomoo.MoomooAccountEnvironment
+import io.earlisreal.ejournal.domain.moomoo.MoomooAccountRole
+import io.earlisreal.ejournal.domain.moomoo.MoomooClient
+import io.earlisreal.ejournal.domain.moomoo.MoomooConnectionResult
+import io.earlisreal.ejournal.domain.moomoo.MoomooExecution
+import io.earlisreal.ejournal.domain.moomoo.MoomooMarket
+import io.earlisreal.ejournal.domain.moomoo.MoomooOrder
+import io.earlisreal.ejournal.domain.moomoo.MoomooOrderFee
+import io.earlisreal.ejournal.domain.moomoo.MoomooResult
+import io.earlisreal.ejournal.domain.moomoo.MoomooSession
+import io.earlisreal.ejournal.domain.moomoo.MoomooSettings
 import io.earlisreal.ejournal.testutil.FakeCredentialsRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
@@ -416,7 +428,173 @@ class PortfolioManagerViewModelTest {
         assertEquals("unexpected client failure", state.error)
         assertTrue(!state.testingConnection)
     }
+
+    @Test
+    fun `discovers only eligible Moomoo accounts on selected localhost port`() = runTest {
+        val eligible = testMoomooAccount("1001")
+        val client = RecordingMoomooClient(
+            listOf(
+                eligible,
+                testMoomooAccount("sim", environment = MoomooAccountEnvironment.SIMULATE),
+                testMoomooAccount("master", role = MoomooAccountRole.MASTER),
+            ),
+        )
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository = FakePortfolioRepository(),
+            transactionRepository = FakeTransactionRepository(),
+            portfolioSettings = FakePortfolioSettingsRepository(),
+            credentialsRepository = FakeCredentialsRepository(),
+            alpacaBrokerClient = RecordingAlpacaClient(account),
+            tradeZeroClient = FakeTradeZeroClient(),
+            moomooClient = client,
+            onChanged = {},
+        )
+
+        viewModel.testConnection(BrokerCredentialDraft.Moomoo("12345"))
+        val state = viewModel.state.first { it.connectionTest != null }
+
+        assertEquals(12345, client.lastPort)
+        assertEquals(listOf(eligible), state.moomooAccounts)
+        assertIs<BrokerConnectionTestResult.Moomoo>(state.connectionTest)
+        assertIs<MoomooConnectionResult.Connected>(state.connectionTest.result)
+    }
+
+    @Test
+    fun `rediscovery replaces unavailable Moomoo accounts`() = runTest {
+        val client = RecordingMoomooClient(listOf(testMoomooAccount("1001")))
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository = FakePortfolioRepository(),
+            transactionRepository = FakeTransactionRepository(),
+            portfolioSettings = FakePortfolioSettingsRepository(),
+            credentialsRepository = FakeCredentialsRepository(),
+            alpacaBrokerClient = RecordingAlpacaClient(account),
+            tradeZeroClient = FakeTradeZeroClient(),
+            moomooClient = client,
+            onChanged = {},
+        )
+
+        viewModel.testConnection(BrokerCredentialDraft.Moomoo("11111"))
+        assertEquals(listOf(testMoomooAccount("1001")), viewModel.state.value.moomooAccounts)
+
+        client.accounts = emptyList()
+        viewModel.testConnection(BrokerCredentialDraft.Moomoo("11111"))
+        val state = viewModel.state.first {
+            val result = (it.connectionTest as? BrokerConnectionTestResult.Moomoo)?.result
+            result is MoomooConnectionResult.Connected && result.accounts.isEmpty()
+        }
+
+        assertTrue(state.moomooAccounts.isEmpty())
+    }
+
+    @Test
+    fun `creates Moomoo portfolio with settings and never credentials`() = runTest {
+        val account = testMoomooAccount("1001")
+        val portfolios = FakePortfolioRepository()
+        val settings = FakePortfolioSettingsRepository()
+        val credentials = FakeCredentialsRepository()
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository = portfolios,
+            transactionRepository = FakeTransactionRepository(),
+            portfolioSettings = settings,
+            credentialsRepository = credentials,
+            alpacaBrokerClient = RecordingAlpacaClient(this@PortfolioManagerViewModelTest.account),
+            tradeZeroClient = FakeTradeZeroClient(),
+            moomooClient = RecordingMoomooClient(listOf(account)),
+            onChanged = {},
+        )
+
+        viewModel.create(
+            "Moomoo",
+            Market.US_STOCKS,
+            Broker.MOOMOO,
+            BrokerCredentialDraft.Moomoo("12345", account),
+        )
+        val state = viewModel.state.first { it.portfolios.size == 1 && it.moomooConfigs.isNotEmpty() }
+        val portfolio = state.portfolios.single()
+
+        assertEquals(Broker.MOOMOO, portfolio.broker)
+        assertEquals("12345", settings.getString(portfolio.id, MoomooSettings.PORT))
+        assertEquals("1001", settings.getString(portfolio.id, MoomooSettings.ACCOUNT_ID))
+        assertEquals("Account 1001", settings.getString(portfolio.id, MoomooSettings.ACCOUNT_LABEL))
+        assertEquals("Moomoo Financial", settings.getString(portfolio.id, MoomooSettings.SECURITY_FIRM))
+        assertEquals("moomoo:REAL:1001", settings.getString(portfolio.id, MoomooSettings.ACCOUNT_SOURCE))
+        assertTrue(credentials.portfolioCredentials.isEmpty())
+        assertEquals(account, (viewModel.draftFor(portfolio) as BrokerCredentialDraft.Moomoo).account)
+    }
+
+    @Test
+    fun `rejects duplicate Moomoo portfolio binding`() = runTest {
+        val existing = io.earlisreal.ejournal.domain.model.Portfolio(
+            1L,
+            "Existing",
+            Market.US_STOCKS,
+            Broker.MOOMOO,
+            "unused",
+        )
+        val settings = FakePortfolioSettingsRepository().apply {
+            putString(1L, MoomooSettings.ACCOUNT_SOURCE, "moomoo:REAL:1001")
+        }
+        val portfolios = FakePortfolioRepository(listOf(existing))
+        val viewModel = PortfolioManagerViewModel(
+            portfolioRepository = portfolios,
+            transactionRepository = FakeTransactionRepository(),
+            portfolioSettings = settings,
+            credentialsRepository = FakeCredentialsRepository(),
+            alpacaBrokerClient = RecordingAlpacaClient(account),
+            tradeZeroClient = FakeTradeZeroClient(),
+            moomooClient = RecordingMoomooClient(listOf(testMoomooAccount("1001"))),
+            onChanged = {},
+        )
+
+        viewModel.create(
+            "Duplicate",
+            Market.US_STOCKS,
+            Broker.MOOMOO,
+            BrokerCredentialDraft.Moomoo("11111", testMoomooAccount("1001")),
+        )
+        val state = viewModel.state.first { it.error != null }
+
+        assertTrue(state.error!!.contains("already linked"))
+        assertEquals(1, portfolios.getAll().size)
+    }
 }
+
+private class RecordingMoomooClient(var accounts: List<MoomooAccount>) : MoomooClient {
+    var lastPort: Int? = null
+    override suspend fun open(port: Int): MoomooResult<MoomooSession> {
+        lastPort = port
+        return MoomooResult.Success(object : MoomooSession {
+            override suspend fun getAccounts() = MoomooResult.Success(accounts)
+            override suspend fun getHistoricalOrders(
+                accountId: String,
+                from: kotlinx.datetime.LocalDate,
+                to: kotlinx.datetime.LocalDate,
+            ): MoomooResult<List<MoomooOrder>> = MoomooResult.Success(emptyList())
+            override suspend fun getHistoricalExecutions(
+                accountId: String,
+                from: kotlinx.datetime.LocalDate,
+                to: kotlinx.datetime.LocalDate,
+            ): MoomooResult<List<MoomooExecution>> = MoomooResult.Success(emptyList())
+            override suspend fun getOrderFees(accountId: String, orderIds: List<String>): MoomooResult<List<MoomooOrderFee>> =
+                MoomooResult.Success(emptyList())
+            override fun close() = Unit
+        })
+    }
+}
+
+private fun testMoomooAccount(
+    id: String,
+    environment: MoomooAccountEnvironment = MoomooAccountEnvironment.REAL,
+    role: MoomooAccountRole = MoomooAccountRole.NORMAL,
+) = MoomooAccount(
+    id,
+    "Account $id",
+    "Moomoo Financial",
+    environment,
+    role,
+    setOf(MoomooMarket.US),
+    true,
+)
 
 private class RecordingAlpacaClient(
     private val account: AlpacaAccount,

@@ -22,6 +22,9 @@ import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.marketdata.YahooCryptoProvider
 import io.earlisreal.ejournal.domain.marketdata.YahooFinanceProvider
 import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
+import io.earlisreal.ejournal.domain.moomoo.MoomooClient
+import io.earlisreal.ejournal.domain.moomoo.MoomooOpenDClient
+import io.earlisreal.ejournal.domain.moomoo.MoomooSyncService
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
@@ -89,6 +92,7 @@ class AppDependencies {
     val cryptoProvider = AlpacaCryptoProvider(httpClient, credentialsRepository)
     private val yahooProvider = YahooFinanceProvider(httpClient)
     val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient)
+    val moomooClient: MoomooClient = MoomooOpenDClient()
     val marketDataService = MarketDataService(
         portfolioRepository = portfolioRepository,
         closedPositions = closedPositionService,
@@ -121,7 +125,16 @@ class AppDependencies {
             portfolioSettings = portfolioSettingsRepository,
             credentialsRepository = credentialsRepository,
         )
-    val brokerSyncServices: List<BrokerSyncService> = listOf(alpacaSyncService, tradeZeroSyncService)
+    val moomooSyncService =
+        MoomooSyncService(
+            client = moomooClient,
+            transactionRepository = transactionRepository,
+            tracker = backgroundTaskTracker,
+            portfolioRepository = portfolioRepository,
+            portfolioSettings = portfolioSettingsRepository,
+        )
+    val brokerSyncServices: List<BrokerSyncService> =
+        listOf(alpacaSyncService, tradeZeroSyncService, moomooSyncService)
 
     val startupSyncCoordinator = StartupSyncCoordinator(
         settingsRepository = settingsRepository,

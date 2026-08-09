@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.parser
 
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.earlisreal.ejournal.domain.moomoo.MoomooExternalIdFactory
 import kotlinx.datetime.LocalDateTime
 
 /**
@@ -48,7 +49,7 @@ class MoomooCsvParser : TransactionParser {
         if (shares <= 0.0) return null // cancelled/failed order ("0@0.00")
         val price = pricePart.toNumber()
 
-        val symbol = c[SYMBOL].trim()
+        val symbol = MoomooExternalIdFactory.normalizeSymbol(c[SYMBOL])
         val action = if (side.equals("Buy", ignoreCase = true)) Action.BUY else Action.SELL
         val orderTime = parseEasternDateTime(c[ORDER_TIME])
         val fillTime = c[FILL_TIME].trim()
@@ -65,7 +66,7 @@ class MoomooCsvParser : TransactionParser {
             shares = shares,
             fees = fees,
             // Order Time uniquely identifies an order placement, so it makes re-imports idempotent.
-            externalId = "moomoo:$symbol:$orderTime:${action.name}:$shares",
+            externalId = MoomooExternalIdFactory.create(symbol, orderTime, action, shares),
         )
     }
 

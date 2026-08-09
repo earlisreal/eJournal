@@ -5,6 +5,7 @@ junit = "4.13.2"
 kotlin = "2.4.0"
 kotlinx-coroutines = "1.11.0"
 material3 = "1.11.0-alpha07"
+moomoo-api = "10.8.6808"
 sqldelight = "2.0.2"
 # Pinned to the version sqldelight 2.0.2 forces transitively; declared explicitly so org.sqlite.*
 # (SQLiteConfig, used to open the DB in WAL mode) is on the jvmMain compile classpath.
@@ -47,6 +48,7 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }
+moomoo-api = { module = "com.moomoo.openapi:moomoo-api", version.ref = "moomoo-api" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

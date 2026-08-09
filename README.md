@@ -32,6 +32,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 - **Drag-and-drop import** — drop a CSV, let eJournal auto-detect the broker, and preview parsed transactions before committing.
 - **Free market data** — Yahoo Finance daily bars work out of the box; add free Alpaca keys for 1-minute intraday bars on day trades.
 - **Direct Alpaca synchronization** — read-only import of executed US stock fills from a Paper or Live trading account, including partial fills.
+- **Direct Moomoo OpenD synchronization** — read-only, localhost-only import of live US stock orders, executions, and exact order fees.
 - **Local-first & private** — everything lives in a single SQLite file under `~/.ejournal`; API keys are stored with owner-only permissions on your machine.
 - **Light / dark / system themes.**
 
@@ -41,7 +42,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 | --- | --- | --- |
 | **Alpaca** | Trading API direct sync | ✅ Supported |
 | **TradeZero** | TradeHistory CSV export (plus optional API sync) | ✅ Supported |
-| **moomoo** | Order history CSV export | ✅ Supported |
+| **Moomoo** | OpenD direct sync or order history CSV export | ✅ Supported |
 | **Charles Schwab** | Transaction history CSV (web "History" export) | ✅ Supported |
 | **E\*TRADE** | Transaction history CSV (classic `DownloadTxnHistory.csv`) | ✅ Supported |
 | **Robinhood** | Account activity report CSV | ✅ Supported |
@@ -57,6 +58,8 @@ Every file is auto-detected on drop (eToro by its workbook sheets, the rest by t
 Don't see your broker? Use the **Generic CSV** importer with any file that has the columns above, or open an issue/PR to add a parser.
 
 ## Download
+
+> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The Windows release workflow fails before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed, then include every required notice in the distribution. Local packaging remains available for verification and does not imply redistribution approval. Do **not** publish an installer, portable archive, or other public binary containing the SDK before that confirmation. No license terms are inferred here.
 
 Grab the latest build from the [**Releases page**](https://github.com/earlisreal/eJournal/releases/latest):
 
@@ -74,6 +77,19 @@ Charts and unrealized P&L use OHLCV data fetched per imported trade — daily ba
 Alpaca synchronization only reads `/v2/account` and executed `/v2/account/activities/FILL` data. It never places, modifies, or cancels orders. Phase 1 imports US stock fills only; options and crypto fills are skipped. Each execution, including partial fills, remains a separate eJournal transaction. Legacy FILL activities do not provide per-fill fees, so Alpaca-imported fees are currently zero; fee reconciliation is reserved for a future Activity API phase. Startup synchronization is opt-in per portfolio and runs before market-data synchronization.
 
 Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Market data syncs automatically after each import and on app startup; use **Settings → Sync market data** to backfill manually after adding keys.
+
+## Moomoo OpenD setup
+
+Direct Moomoo import requires the separately installed **Moomoo OpenD** application. eJournal uses Moomoo OpenAPI SDK `10.8.6808`; it does not bundle OpenD, OpenD native libraries, or SDK source.
+
+1. Install and start OpenD using Moomoo's official instructions, sign in, and authorize the live trading account you want to journal.
+2. Keep OpenD on the same computer as eJournal. eJournal always connects to `127.0.0.1`; remote hosts are not accepted.
+3. In eJournal, add or edit a US Stocks portfolio, choose **Moomoo**, enter OpenD's listening port (`11111` by default), and select **Discover accounts**.
+4. Select an eligible account, save the portfolio, then use **Import Transactions → Sync Moomoo OpenD**. Startup synchronization is available but is opt-in for each portfolio.
+
+Only active **REAL**, normal/non-master accounts authorized for the US market are selectable. The integration is read-only: it requests the account list, historical orders, historical deals, and exact order fees; it contains no order placement, modification, cancellation, or trade-unlock flow. OpenD credentials and passwords are never requested or stored. The selected account label, account ID, security firm, port, binding, and resumable sync cursor live in the portfolio settings database.
+
+The first sync reads live US stock history from `2018-01-01` in oldest-first 90-day windows. Later syncs resume from the completed checkpoint with a three-day overlap. Filled and partially-filled-cancelled orders are aggregated to one transaction per order using the earliest execution time and exact total fee. Options, combos, prediction contracts, other markets, unsupported sides, zero fills, and malformed rows are skipped and reported.
 
 ## Building from source
 

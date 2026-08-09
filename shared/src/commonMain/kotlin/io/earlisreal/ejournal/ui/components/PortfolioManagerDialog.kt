@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
 import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
+import io.earlisreal.ejournal.domain.moomoo.MoomooAccount
+import io.earlisreal.ejournal.domain.moomoo.MoomooConnectionResult
+import io.earlisreal.ejournal.domain.moomoo.MoomooSettings
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroConnectionResult
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
@@ -47,18 +51,20 @@ fun PortfolioManagerDialog(
     credentialsRepository: io.earlisreal.ejournal.data.repository.CredentialsRepository,
     alpacaBrokerClient: io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient,
     tradeZeroClient: io.earlisreal.ejournal.domain.tradezero.TradeZeroClient,
+    moomooClient: io.earlisreal.ejournal.domain.moomoo.MoomooClient,
     onChanged: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val vm = viewModel {
         PortfolioManagerViewModel(
-            portfolioRepository,
-            transactionRepository,
-            portfolioSettings,
-            credentialsRepository,
-            alpacaBrokerClient,
-            tradeZeroClient,
-            onChanged,
+            portfolioRepository = portfolioRepository,
+            transactionRepository = transactionRepository,
+            portfolioSettings = portfolioSettings,
+            credentialsRepository = credentialsRepository,
+            alpacaBrokerClient = alpacaBrokerClient,
+            tradeZeroClient = tradeZeroClient,
+            moomooClient = moomooClient,
+            onChanged = onChanged,
         )
     }
     val state by vm.state.collectAsState()
@@ -72,6 +78,8 @@ fun PortfolioManagerDialog(
     var alpacaEnvironment by remember { mutableStateOf(io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment.PAPER) }
     var tradeZeroKeyId by remember { mutableStateOf("") }
     var tradeZeroSecretKey by remember { mutableStateOf("") }
+    var moomooPort by remember { mutableStateOf(MoomooSettings.DEFAULT_PORT.toString()) }
+    var moomooAccount by remember { mutableStateOf<MoomooAccount?>(null) }
     var brokerMenuExpanded by remember { mutableStateOf(false) }
 
     fun clearBrokerFields() {
@@ -79,6 +87,8 @@ fun PortfolioManagerDialog(
         alpacaSecretKey = ""
         tradeZeroKeyId = ""
         tradeZeroSecretKey = ""
+        moomooPort = MoomooSettings.DEFAULT_PORT.toString()
+        moomooAccount = null
         alpacaEnvironment = io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment.PAPER
         vm.clearConnectionTest()
     }
@@ -107,18 +117,26 @@ fun PortfolioManagerDialog(
                 tradeZeroKeyId = draft.keyId
                 tradeZeroSecretKey = draft.secretKey
             }
+            is BrokerCredentialDraft.Moomoo -> {
+                moomooPort = draft.port
+                moomooAccount = draft.account
+            }
             null -> Unit
         }
     }
 
     fun currentDraft(): BrokerCredentialDraft? = when (broker) {
         Broker.ALPACA -> BrokerCredentialDraft.Alpaca(alpacaKeyId, alpacaSecretKey, alpacaEnvironment)
+        Broker.MOOMOO -> BrokerCredentialDraft.Moomoo(moomooPort, moomooAccount)
         Broker.TRADEZERO -> BrokerCredentialDraft.TradeZero(tradeZeroKeyId, tradeZeroSecretKey)
         null -> null
     }
 
     fun draftIsValid(): Boolean {
         val draft = currentDraft() ?: return true
+        if (draft is BrokerCredentialDraft.Moomoo) {
+            return draft.port.toIntOrNull() in 1..65535 && draft.account != null
+        }
         return (draft.keyId.isBlank() && draft.secretKey.isBlank()) ||
             (draft.keyId.isNotBlank() && draft.secretKey.isNotBlank())
     }
@@ -221,6 +239,27 @@ fun PortfolioManagerDialog(
                                     }
                                 },
                             )
+                            Broker.MOOMOO -> MoomooBrokerForm(
+                                port = moomooPort,
+                                onPort = {
+                                    moomooPort = it
+                                    moomooAccount = null
+                                    vm.clearConnectionTest()
+                                },
+                                accounts = if (state.connectionTest is BrokerConnectionTestResult.Moomoo) {
+                                    state.moomooAccounts
+                                } else {
+                                    (state.moomooAccounts + listOfNotNull(moomooAccount)).distinctBy { it.id }
+                                },
+                                selected = moomooAccount,
+                                onSelected = { moomooAccount = it; vm.clearConnectionTest() },
+                                testing = state.testingConnection,
+                                onDiscover = {
+                                    moomooAccount = null
+                                    vm.testConnection(BrokerCredentialDraft.Moomoo(moomooPort))
+                                },
+                                connectionTest = state.connectionTest,
+                            )
                             Broker.TRADEZERO -> TradeZeroBrokerForm(
                                 keyId = tradeZeroKeyId,
                                 secretKey = tradeZeroSecretKey,
@@ -230,7 +269,7 @@ fun PortfolioManagerDialog(
                             null -> Unit
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    if (broker != Broker.MOOMOO) Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         AppSecondaryButton(
                             text = if (state.testingConnection) "Testing…" else "Test Connection",
                             onClick = { vm.testConnection(currentDraft()) },
@@ -327,6 +366,66 @@ private fun TradeZeroBrokerForm(
 }
 
 @Composable
+private fun MoomooBrokerForm(
+    port: String,
+    onPort: (String) -> Unit,
+    accounts: List<MoomooAccount>,
+    selected: MoomooAccount?,
+    onSelected: (MoomooAccount) -> Unit,
+    testing: Boolean,
+    onDiscover: () -> Unit,
+    connectionTest: BrokerConnectionTestResult?,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Text(
+            "Start OpenD locally first. eJournal connects read-only to 127.0.0.1 and never stores an OpenD password.",
+            color = AppTheme.colors.textMuted,
+            style = MaterialTheme.typography.labelSmall,
+        )
+        OutlinedTextField(
+            value = port,
+            onValueChange = onPort,
+            label = { Text("OpenD port") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+            AppSecondaryButton(
+                text = if (testing) "Connecting…" else "Discover accounts",
+                onClick = onDiscover,
+                enabled = !testing && port.toIntOrNull() in 1..65535,
+            )
+            (connectionTest as? BrokerConnectionTestResult.Moomoo)?.let { BrokerConnectionResultText(it) }
+        }
+        if (accounts.isNotEmpty()) {
+            Box {
+                AppSecondaryButton(
+                    text = selected?.let { "${it.label} · ${it.securityFirm}" } ?: "Select live US account",
+                    onClick = { expanded = true },
+                )
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    accounts.forEach { account ->
+                        DropdownMenuItem(
+                            text = { Text("${account.label} · ${account.securityFirm}") },
+                            onClick = { onSelected(account); expanded = false },
+                        )
+                    }
+                }
+            }
+        } else if (connectionTest is BrokerConnectionTestResult.Moomoo &&
+            connectionTest.result is MoomooConnectionResult.Connected
+        ) {
+            Text(
+                "No eligible active REAL, normal US account was returned by OpenD.",
+                color = AppTheme.colors.loss,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    }
+}
+
+@Composable
 private fun BrokerConnectionResultText(result: BrokerConnectionTestResult) {
     val (text, color) = when (result) {
         is BrokerConnectionTestResult.Alpaca -> when (val value = result.result) {
@@ -341,6 +440,11 @@ private fun BrokerConnectionResultText(result: BrokerConnectionTestResult) {
             is TradeZeroConnectionResult.Connected -> "✓ Connected · account ${value.account.id}" to AppTheme.colors.profit
             TradeZeroConnectionResult.InvalidCredentials -> "✗ Invalid credentials" to AppTheme.colors.loss
             is TradeZeroConnectionResult.NetworkError -> "✗ Network error" to AppTheme.colors.loss
+        }
+        is BrokerConnectionTestResult.Moomoo -> when (val value = result.result) {
+            is MoomooConnectionResult.Connected ->
+                "✓ Connected · ${value.accounts.size} eligible account(s)" to AppTheme.colors.profit
+            is MoomooConnectionResult.NetworkError -> "✗ ${value.message}" to AppTheme.colors.loss
         }
     }
     Text(text, color = color, style = MaterialTheme.typography.bodySmall)

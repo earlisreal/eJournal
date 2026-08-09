@@ -76,6 +76,7 @@ fun main(args: Array<String>) {
                         alpacaBrokerClient = ready.deps.alpacaBrokerClient,
                         marketDataService = ready.deps.marketDataService,
                         tradeZeroClient = ready.deps.tradeZeroClient,
+                        moomooClient = ready.deps.moomooClient,
                         backgroundTaskTracker = ready.deps.backgroundTaskTracker,
                         brokerSyncServices = ready.deps.brokerSyncServices,
                         startupSyncCoordinator = ready.deps.startupSyncCoordinator,

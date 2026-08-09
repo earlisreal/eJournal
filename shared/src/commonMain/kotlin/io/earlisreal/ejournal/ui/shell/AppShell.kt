@@ -30,6 +30,7 @@ import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.analytics.resolveRange
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Portfolio
+import io.earlisreal.ejournal.domain.moomoo.MoomooClient
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
@@ -66,6 +67,7 @@ fun AppShell(
     credentialsRepository: CredentialsRepository,
     alpacaBrokerClient: AlpacaBrokerClient,
     tradeZeroClient: TradeZeroClient,
+    moomooClient: MoomooClient,
     tagRepository: TagRepository,
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
@@ -223,6 +225,7 @@ fun AppShell(
                 credentialsRepository = credentialsRepository,
                 alpacaBrokerClient = alpacaBrokerClient,
                 tradeZeroClient = tradeZeroClient,
+                moomooClient = moomooClient,
                 onChanged = { reloadPortfolios() },
                 onDismiss = { showPortfolioManager = false },
             )

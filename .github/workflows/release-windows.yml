@@ -25,6 +25,15 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
+      - name: Enforce Moomoo SDK redistribution gate
+        shell: pwsh
+        env:
+          MOOMOO_SDK_REDISTRIBUTION_CONFIRMED: ${{ vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED }}
+        run: |
+          if ($env:MOOMOO_SDK_REDISTRIBUTION_CONFIRMED -ne "true") {
+            throw "Public binaries are blocked until repository variable MOOMOO_SDK_REDISTRIBUTION_CONFIRMED is set to true after Moomoo SDK redistribution terms and notices are confirmed."
+          }
+
       - name: Checkout
         uses: actions/checkout@v4
 

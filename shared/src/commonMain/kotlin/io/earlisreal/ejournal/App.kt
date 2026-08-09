@@ -18,6 +18,7 @@ import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.model.Portfolio
+import io.earlisreal.ejournal.domain.moomoo.MoomooClient
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.ui.screen.AnalysisScreen
@@ -46,6 +47,7 @@ fun App(
     alpacaBrokerClient: AlpacaBrokerClient,
     marketDataService: MarketDataService,
     tradeZeroClient: TradeZeroClient,
+    moomooClient: MoomooClient,
     backgroundTaskTracker: BackgroundTaskTracker,
     brokerSyncServices: List<BrokerSyncService>,
     startupSyncCoordinator: StartupSyncCoordinator,
@@ -66,6 +68,7 @@ fun App(
         credentialsRepository = credentialsRepository,
         alpacaBrokerClient = alpacaBrokerClient,
         tradeZeroClient = tradeZeroClient,
+        moomooClient = moomooClient,
         tagRepository = tagRepository,
         backgroundTaskTracker = backgroundTaskTracker,
         initialDestination = startDestination,

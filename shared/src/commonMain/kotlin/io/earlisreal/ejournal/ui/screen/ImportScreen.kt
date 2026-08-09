@@ -385,7 +385,7 @@ private fun BrokerSyncSection(
                                     is BrokerSyncOutcome.AccountAlreadyBound ->
                                         result = "This account is already linked to portfolio \"${outcome.portfolioName}\""
                                     BrokerSyncOutcome.NotConfigured ->
-                                        result = "Broker credentials are not configured for this portfolio"
+                                        result = "Broker account is not configured for this portfolio"
                                     BrokerSyncOutcome.InvalidCredentials ->
                                         result = "Invalid ${service.displayName} credentials — update this portfolio's broker configuration"
                                     is BrokerSyncOutcome.NetworkError ->

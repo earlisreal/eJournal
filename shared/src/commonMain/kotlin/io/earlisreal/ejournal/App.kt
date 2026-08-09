@@ -13,12 +13,13 @@ import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
 import io.earlisreal.ejournal.ui.screen.AnalysisScreen
 import io.earlisreal.ejournal.ui.screen.CalendarScreen
 import io.earlisreal.ejournal.ui.screen.DashboardScreen
@@ -42,10 +43,11 @@ fun App(
     marketDataRepository: MarketDataRepository,
     parsers: List<TransactionParser>,
     alpacaProvider: AlpacaProvider,
+    alpacaBrokerClient: AlpacaBrokerClient,
     marketDataService: MarketDataService,
     tradeZeroClient: TradeZeroClient,
     backgroundTaskTracker: BackgroundTaskTracker,
-    tradeZeroSyncService: TradeZeroSyncService,
+    brokerSyncServices: List<BrokerSyncService>,
     startupSyncCoordinator: StartupSyncCoordinator,
     startDestination: Destination,
     initialPortfolios: List<Portfolio>,
@@ -88,8 +90,7 @@ fun App(
                 portfolioSettings = portfolioSettings,
                 filter = filter,
                 onImportSuccess = { marketDataService.requestSync() },
-                tradeZeroSyncService = tradeZeroSyncService,
-                tradeZeroConfigured = credentialsRepository.getTradeZeroCredentials() != null,
+                brokerSyncServices = brokerSyncServices,
             )
             Destination.CALENDAR -> CalendarScreen(
                 positionTags = positionTags,
@@ -117,6 +118,7 @@ fun App(
                 onThemeChange = nav.onThemeChange,
                 credentialsRepository = credentialsRepository,
                 alpacaProvider = alpacaProvider,
+                alpacaBrokerClient = alpacaBrokerClient,
                 marketDataService = marketDataService,
                 tradeZeroClient = tradeZeroClient,
             )

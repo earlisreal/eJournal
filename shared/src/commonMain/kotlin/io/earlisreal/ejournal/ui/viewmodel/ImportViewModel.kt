@@ -4,14 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.parser.TransactionParser
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSettings
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 sealed class ImportStatus {
@@ -28,9 +28,13 @@ data class ImportState(
     /** Human-readable breakdown of the last parse (per-broker counts / unrecognized files). */
     val detectionSummary: String? = null,
     val status: ImportStatus = ImportStatus.Idle,
-    /** Whether the currently-shown portfolio auto-pulls TradeZero on startup. */
-    val autoSyncOnStartup: Boolean = false,
-)
+    /** Per-broker startup flags for the currently-shown portfolio. */
+    val autoSyncByBroker: Map<String, Boolean> = emptyMap(),
+) {
+    /** Compatibility accessor for callers that only know about the legacy TradeZero flag. */
+    val autoSyncOnStartup: Boolean
+        get() = autoSyncByBroker["tradezero"] ?: false
+}
 
 /** Import targets the globally-selected portfolio (passed to [parseFiles]); it does not own portfolio state. */
 class ImportViewModel(
@@ -43,22 +47,41 @@ class ImportViewModel(
     private val _state = MutableStateFlow(ImportState())
     val state: StateFlow<ImportState> = _state.asStateFlow()
 
-    /** Loads the per-portfolio auto-sync flag; call when the shown portfolio changes. */
+    /** Loads each broker's per-portfolio auto-sync flag; call when the shown portfolio changes. */
+    fun loadAutoSync(portfolioId: Long, brokers: List<BrokerSyncService>) {
+        val settings = brokers.map { Triple(it.brokerId, it.autoSyncSettingKey, it.autoSyncDefault) }
+        loadAutoSyncSettings(portfolioId, settings)
+    }
+
+    /** Legacy overload retained for callers that only render TradeZero. */
     fun loadAutoSync(portfolioId: Long) {
+        loadAutoSyncSettings(portfolioId, listOf(Triple("tradezero", "tradezero.autoSyncOnStartup", false)))
+    }
+
+    private fun loadAutoSyncSettings(portfolioId: Long, brokers: List<Triple<String, String, Boolean>>) {
         viewModelScope.launch {
-            val enabled = portfolioSettings.getBoolean(
-                portfolioId, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, TradeZeroSettings.AUTO_SYNC_DEFAULT,
-            )
-            _state.value = _state.value.copy(autoSyncOnStartup = enabled)
+            val values = brokers.associate { (id, key, default) ->
+                id to portfolioSettings.getBoolean(portfolioId, key, default)
+            }
+            _state.value = _state.value.copy(autoSyncByBroker = values)
         }
     }
 
-    fun setAutoSyncOnStartup(portfolioId: Long, enabled: Boolean) {
-        _state.value = _state.value.copy(autoSyncOnStartup = enabled)
+    fun setAutoSyncOnStartup(portfolioId: Long, brokerId: String, settingKey: String, enabled: Boolean) {
+        _state.value = _state.value.copy(
+            autoSyncByBroker = _state.value.autoSyncByBroker + (brokerId to enabled),
+        )
         viewModelScope.launch {
-            portfolioSettings.putBoolean(portfolioId, TradeZeroSettings.AUTO_SYNC_ON_STARTUP, enabled)
+            portfolioSettings.putBoolean(portfolioId, settingKey, enabled)
         }
     }
+
+    fun setAutoSyncOnStartup(portfolioId: Long, brokerId: String, enabled: Boolean) =
+        setAutoSyncOnStartup(portfolioId, brokerId, "$brokerId.autoSyncOnStartup", enabled)
+
+    /** Legacy overload retained for callers that only render TradeZero. */
+    fun setAutoSyncOnStartup(portfolioId: Long, enabled: Boolean) =
+        setAutoSyncOnStartup(portfolioId, "tradezero", enabled)
 
     fun selectParser(parser: TransactionParser?) {
         _state.value = _state.value.copy(

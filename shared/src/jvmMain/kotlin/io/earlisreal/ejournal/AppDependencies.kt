@@ -25,6 +25,10 @@ import io.earlisreal.ejournal.domain.marketdata.toBackgroundTask
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClientImpl
+import io.earlisreal.ejournal.domain.alpaca.AlpacaSyncService
+import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.parser.EtoroXlsxParser
 import io.earlisreal.ejournal.domain.parser.EtradeCsvParser
 import io.earlisreal.ejournal.domain.parser.FidelityCsvParser
@@ -81,6 +85,7 @@ class AppDependencies {
     val positionTagService = PositionTagService(closedPositionService, tagRepository)
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)
+    val alpacaBrokerClient: AlpacaBrokerClient = AlpacaBrokerClientImpl(httpClient, credentialsRepository)
     val cryptoProvider = AlpacaCryptoProvider(httpClient, credentialsRepository)
     private val yahooProvider = YahooFinanceProvider(httpClient)
     val tradeZeroClient: TradeZeroClient = TradeZeroClientImpl(httpClient, credentialsRepository)
@@ -99,14 +104,28 @@ class AppDependencies {
     val backgroundTaskTracker = BackgroundTaskTracker()
 
     val tradeZeroSyncService =
-        TradeZeroSyncService(tradeZeroClient, transactionRepository, backgroundTaskTracker, portfolioSettingsRepository)
+        TradeZeroSyncService(
+            client = tradeZeroClient,
+            transactionRepository = transactionRepository,
+            tracker = backgroundTaskTracker,
+            portfolioSettings = portfolioSettingsRepository,
+            credentialsRepository = credentialsRepository,
+        )
+    val alpacaSyncService =
+        AlpacaSyncService(
+            client = alpacaBrokerClient,
+            transactionRepository = transactionRepository,
+            tracker = backgroundTaskTracker,
+            portfolioSettings = portfolioSettingsRepository,
+            credentialsRepository = credentialsRepository,
+        )
+    val brokerSyncServices: List<BrokerSyncService> = listOf(alpacaSyncService, tradeZeroSyncService)
 
     val startupSyncCoordinator = StartupSyncCoordinator(
         settingsRepository = settingsRepository,
-        credentialsRepository = credentialsRepository,
         portfolioRepository = portfolioRepository,
         portfolioSettings = portfolioSettingsRepository,
-        tradeZeroSyncService = tradeZeroSyncService,
+        brokerSyncServices = brokerSyncServices,
         requestMarketDataSync = { marketDataService.requestSync() },
     )
 

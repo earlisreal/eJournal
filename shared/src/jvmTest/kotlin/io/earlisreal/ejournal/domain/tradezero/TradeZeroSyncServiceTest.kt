@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.tradezero
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.background.TaskState
+import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
 import io.earlisreal.ejournal.testutil.FakeTradeZeroClient
 import io.earlisreal.ejournal.testutil.FakeTransactionRepository
@@ -32,7 +33,7 @@ class TradeZeroSyncServiceTest {
 
         val outcome = service.sync(portfolioId = 1, from = from, to = to)
 
-        assertEquals(TradeZeroSyncOutcome.Imported(3), outcome)
+        assertEquals(BrokerSyncOutcome.Imported(3), outcome)
         assertEquals(3, repo.inserted.size)
         assertEquals(1L, client.lastPortfolioId)
         val task = tracker.tasks.value.single()
@@ -49,7 +50,7 @@ class TradeZeroSyncServiceTest {
 
         val outcome = service.sync(portfolioId = 1, from = from, to = to)
 
-        assertEquals(TradeZeroSyncOutcome.Imported(1), outcome)
+        assertEquals(BrokerSyncOutcome.Imported(1), outcome)
         assertEquals(1, repo.inserted.size)
     }
 
@@ -61,7 +62,7 @@ class TradeZeroSyncServiceTest {
 
         val outcome = service.sync(portfolioId = 1, from = from, to = to)
 
-        assertEquals(TradeZeroSyncOutcome.InvalidCredentials, outcome)
+        assertEquals(BrokerSyncOutcome.InvalidCredentials, outcome)
         assertEquals(TaskState.Failed, tracker.tasks.value.single().state)
     }
 
@@ -73,7 +74,7 @@ class TradeZeroSyncServiceTest {
 
         val outcome = service.sync(portfolioId = 1, from = from, to = to)
 
-        assertIs<TradeZeroSyncOutcome.NetworkError>(outcome)
+        assertIs<BrokerSyncOutcome.NetworkError>(outcome)
         assertEquals("timeout", outcome.message)
         val task = tracker.tasks.value.single()
         assertEquals(TaskState.Failed, task.state)
@@ -88,7 +89,7 @@ class TradeZeroSyncServiceTest {
 
         val outcome = service.syncIncremental(portfolioId = 1)
 
-        assertEquals(TradeZeroSyncOutcome.Imported(1), outcome)
+        assertEquals(BrokerSyncOutcome.Imported(1), outcome)
         assertEquals(today.minus(365, DateTimeUnit.DAY), client.lastFrom)
         assertEquals(today, client.lastTo)
         assertEquals(today.toString(), portfolioSettings.cursor(1))

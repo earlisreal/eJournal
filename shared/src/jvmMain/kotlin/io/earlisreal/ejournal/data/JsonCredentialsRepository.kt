@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.data
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -25,7 +26,10 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
         val keyId = (alpaca["keyId"] as? JsonPrimitive)?.contentOrNull ?: return null
         val secretKey = (alpaca["secretKey"] as? JsonPrimitive)?.contentOrNull ?: return null
         if (keyId.isBlank() || secretKey.isBlank()) return null
-        return AlpacaCredentials(keyId, secretKey)
+        val environment = (alpaca["environment"] as? JsonPrimitive)?.contentOrNull
+            ?.let { value -> runCatching { AlpacaEnvironment.valueOf(value.uppercase()) }.getOrNull() }
+            ?: AlpacaEnvironment.PAPER
+        return AlpacaCredentials(keyId, secretKey, environment)
     }
 
     override fun setAlpacaCredentials(credentials: AlpacaCredentials) {
@@ -34,6 +38,7 @@ class JsonCredentialsRepository(private val dir: Path) : CredentialsRepository {
             putJsonObject("alpaca") {
                 put("keyId", credentials.keyId)
                 put("secretKey", credentials.secretKey)
+                put("environment", credentials.environment.name)
             }
         }
         writeAtomically(json.encodeToString(JsonObject.serializer(), updated))

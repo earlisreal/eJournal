@@ -5,6 +5,8 @@ import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
+import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSettings
@@ -21,6 +23,23 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
+private class FakeBrokerSyncService(
+    override val brokerId: String,
+    private val log: MutableList<String>,
+    private val configured: Boolean = true,
+    private val supported: Boolean = true,
+    private val fail: Boolean = false,
+) : BrokerSyncService {
+    override val displayName: String = brokerId
+    override fun isConfigured(): Boolean = configured
+    override fun supportsMarket(market: Market): Boolean = supported
+    override suspend fun syncIncremental(portfolioId: Long): BrokerSyncOutcome {
+        log += brokerId
+        if (fail) error("$brokerId down")
+        return BrokerSyncOutcome.Imported(1)
+    }
+}
 
 class StartupSyncCoordinatorTest {
 
@@ -42,13 +61,19 @@ class StartupSyncCoordinatorTest {
         portfolios: FakePortfolioRepository,
         portfolioSettings: FakePortfolioSettingsRepository,
     ): StartupSyncCoordinator {
-        val service = TradeZeroSyncService(client, FakeTransactionRepository(), BackgroundTaskTracker(), portfolioSettings, today = { today })
+        val service = TradeZeroSyncService(
+            client = client,
+            transactionRepository = FakeTransactionRepository(),
+            tracker = BackgroundTaskTracker(),
+            portfolioSettings = portfolioSettings,
+            today = { today },
+            credentialsRepository = credentials,
+        )
         return StartupSyncCoordinator(
             settingsRepository = settings,
-            credentialsRepository = credentials,
             portfolioRepository = portfolios,
             portfolioSettings = portfolioSettings,
-            tradeZeroSyncService = service,
+            brokerSyncServices = listOf(service),
             requestMarketDataSync = { log.add("md") },
         )
     }
@@ -168,5 +193,67 @@ class StartupSyncCoordinatorTest {
 
         assertEquals(listOf("md"), log)
         assertEquals(0, client.fetchCount)
+    }
+
+    @Test
+    fun `runs every enabled broker before market data`() = runTest {
+        val log = mutableListOf<String>()
+        val portfolioSettings = FakePortfolioSettingsRepository()
+        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
+        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        val coordinator = StartupSyncCoordinator(
+            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
+            portfolioRepository = portfolios(5L),
+            portfolioSettings = portfolioSettings,
+            brokerSyncServices = listOf(
+                FakeBrokerSyncService("alpaca", log),
+                FakeBrokerSyncService("tradezero", log),
+            ),
+            requestMarketDataSync = { log += "md" },
+        )
+
+        coordinator.run()
+
+        assertEquals(listOf("alpaca", "tradezero", "md"), log)
+    }
+
+    @Test
+    fun `continues other brokers and market data after one broker fails`() = runTest {
+        val log = mutableListOf<String>()
+        val portfolioSettings = FakePortfolioSettingsRepository()
+        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
+        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        StartupSyncCoordinator(
+            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
+            portfolioRepository = portfolios(5L),
+            portfolioSettings = portfolioSettings,
+            brokerSyncServices = listOf(
+                FakeBrokerSyncService("alpaca", log, fail = true),
+                FakeBrokerSyncService("tradezero", log),
+            ),
+            requestMarketDataSync = { log += "md" },
+        ).run()
+
+        assertEquals(listOf("alpaca", "tradezero", "md"), log)
+    }
+
+    @Test
+    fun `skips unconfigured and unsupported brokers`() = runTest {
+        val log = mutableListOf<String>()
+        val portfolioSettings = FakePortfolioSettingsRepository()
+        portfolioSettings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
+        portfolioSettings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        StartupSyncCoordinator(
+            settingsRepository = FakeSettingsRepository(filterPrefs = filter(5L)),
+            portfolioRepository = portfolios(5L),
+            portfolioSettings = portfolioSettings,
+            brokerSyncServices = listOf(
+                FakeBrokerSyncService("alpaca", log, configured = false),
+                FakeBrokerSyncService("tradezero", log, supported = false),
+            ),
+            requestMarketDataSync = { log += "md" },
+        ).run()
+
+        assertEquals(listOf("md"), log)
     }
 }

@@ -1,6 +1,12 @@
 package io.earlisreal.ejournal.data.repository
 
-data class AlpacaCredentials(val keyId: String, val secretKey: String)
+import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
+
+data class AlpacaCredentials(
+    val keyId: String,
+    val secretKey: String,
+    val environment: AlpacaEnvironment = AlpacaEnvironment.PAPER,
+)
 
 data class TradeZeroCredentials(val keyId: String, val secretKey: String)
 

@@ -21,9 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
+import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.parser.TransactionParser
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncOutcome
-import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
@@ -50,8 +50,7 @@ fun ImportScreen(
     portfolioSettings: PortfolioSettingsRepository,
     filter: FilterState,
     onImportSuccess: () -> Unit,
-    tradeZeroSyncService: TradeZeroSyncService,
-    tradeZeroConfigured: Boolean,
+    brokerSyncServices: List<BrokerSyncService>,
 ) {
     val vm = viewModel { ImportViewModel(transactionRepository, parsers, portfolioSettings) }
     val state by vm.state.collectAsState()
@@ -67,7 +66,12 @@ fun ImportScreen(
             )
             return@ScreenScaffold
         }
-        LaunchedEffect(portfolio.id) { vm.loadAutoSync(portfolio.id) }
+        val visibleBrokers = brokerSyncServices.filter {
+            it.isConfigured() && it.supportsMarket(portfolio.market)
+        }
+        LaunchedEffect(portfolio.id, visibleBrokers.map { it.brokerId }) {
+            vm.loadAutoSync(portfolio.id, visibleBrokers)
+        }
 
         val hasPreview = state.parsedTransactions.isNotEmpty()
         // One drop target shared by the empty-state drop zone and the preview table, so dropping a
@@ -143,7 +147,7 @@ fun ImportScreen(
                 )
             } else {
                 // Empty state: drop zone + browse, plus the optional broker-sync card.
-                if (tradeZeroConfigured) SectionLabel("From CSV file")
+                if (visibleBrokers.isNotEmpty()) SectionLabel("From CSV file")
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                     verticalAlignment = Alignment.CenterVertically,
@@ -168,12 +172,19 @@ fun ImportScreen(
                     )
                 }
 
-                if (tradeZeroConfigured) {
-                    TradeZeroSection(
+                if (visibleBrokers.isNotEmpty()) {
+                    BrokerSyncSections(
                         portfolioId = portfolio.id,
-                        autoSyncOnStartup = state.autoSyncOnStartup,
-                        onToggleAutoSync = { vm.setAutoSyncOnStartup(portfolio.id, it) },
-                        syncService = tradeZeroSyncService,
+                        services = visibleBrokers,
+                        autoSyncByBroker = state.autoSyncByBroker,
+                        onToggleAutoSync = { service, enabled ->
+                            vm.setAutoSyncOnStartup(
+                                portfolio.id,
+                                service.brokerId,
+                                service.autoSyncSettingKey,
+                                enabled,
+                            )
+                        },
                         onImportSuccess = onImportSuccess,
                     )
                 }
@@ -302,30 +313,49 @@ private fun DropZone(
     }
 }
 
-/** The "From broker" Trade Zero sync card (only shown when Trade Zero credentials are configured). */
+/** Generic manual/startup sync cards; each broker decides its own outcome and market support. */
 @Composable
-private fun TradeZeroSection(
+private fun BrokerSyncSections(
     portfolioId: Long,
+    services: List<BrokerSyncService>,
+    autoSyncByBroker: Map<String, Boolean>,
+    onToggleAutoSync: (BrokerSyncService, Boolean) -> Unit,
+    onImportSuccess: () -> Unit,
+) {
+    SectionLabel("From broker")
+    services.forEach { service ->
+        BrokerSyncSection(
+            portfolioId = portfolioId,
+            service = service,
+            autoSyncOnStartup = autoSyncByBroker[service.brokerId] ?: service.autoSyncDefault,
+            onToggleAutoSync = { onToggleAutoSync(service, it) },
+            onImportSuccess = onImportSuccess,
+        )
+    }
+}
+
+@Composable
+private fun BrokerSyncSection(
+    portfolioId: Long,
+    service: BrokerSyncService,
     autoSyncOnStartup: Boolean,
     onToggleAutoSync: (Boolean) -> Unit,
-    syncService: TradeZeroSyncService,
     onImportSuccess: () -> Unit,
 ) {
     var syncing by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    SectionLabel("From broker")
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Text(
-                "Trade Zero",
+                service.displayName,
                 color = AppTheme.colors.textPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                "Fetch all historical orders directly from your Trade Zero account.",
+                "Import executed US stock fills directly from this account.",
                 color = AppTheme.colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -334,20 +364,24 @@ private fun TradeZeroSection(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 AppSecondaryButton(
-                    text = if (syncing) "Syncing…" else "Sync TradeZero",
+                    text = if (syncing) "Syncing…" else "Sync ${service.displayName}",
                     enabled = !syncing,
                     onClick = {
                         syncing = true
                         result = null
                         scope.launch {
-                            when (val outcome = syncService.syncIncremental(portfolioId)) {
-                                is TradeZeroSyncOutcome.Imported -> {
-                                    result = "Imported ${outcome.inserted} new transaction(s)"
+                            when (val outcome = service.syncIncremental(portfolioId)) {
+                                is BrokerSyncOutcome.Imported -> {
+                                    result = buildString {
+                                        append("Imported ${outcome.inserted} new transaction(s)")
+                                        if (outcome.skippedOptions > 0) append(" · ${outcome.skippedOptions} options skipped")
+                                        if (outcome.skippedCrypto > 0) append(" · ${outcome.skippedCrypto} crypto fills skipped")
+                                    }
                                     if (outcome.inserted > 0) onImportSuccess()
                                 }
-                                TradeZeroSyncOutcome.InvalidCredentials ->
+                                BrokerSyncOutcome.InvalidCredentials ->
                                     result = "Invalid credentials — update them in Settings"
-                                is TradeZeroSyncOutcome.NetworkError ->
+                                is BrokerSyncOutcome.NetworkError ->
                                     result = "Network error: ${outcome.message}"
                             }
                             syncing = false

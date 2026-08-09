@@ -43,6 +43,9 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
+import io.earlisreal.ejournal.domain.alpaca.AlpacaConnectionResult
+import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
@@ -64,10 +67,11 @@ fun SettingsScreen(
     onThemeChange: (ThemeMode) -> Unit,
     credentialsRepository: CredentialsRepository,
     alpacaProvider: AlpacaProvider,
+    alpacaBrokerClient: AlpacaBrokerClient,
     marketDataService: MarketDataService,
     tradeZeroClient: TradeZeroClient,
 ) {
-    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient) }
+    val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider, tradeZeroClient, alpacaBrokerClient) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
 
@@ -86,11 +90,11 @@ fun SettingsScreen(
             }
 
             AppCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Market Data")
+                SectionTitle("Alpaca")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
-                        "Daily prices come from Yahoo Finance — no setup needed. " +
-                            "Add free Alpaca API keys to fetch 1-minute (intraday) bars.",
+                        "The same Alpaca keys provide market data and read-only trading-account access. " +
+                            "Choose the matching Paper or Live environment.",
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -125,7 +129,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = state.keyId,
                         onValueChange = vm::updateKeyId,
-                        label = { Text("Alpaca API Key ID") },
+                        label = { Text("API Key ID") },
                         singleLine = true,
                         modifier = Modifier.width(420.dp),
                     )
@@ -137,20 +141,31 @@ fun SettingsScreen(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        Text("Trading account", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                        AlpacaEnvironmentToggle(state.environment, vm::updateEnvironment)
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         AppPrimaryButton(
                             text = "Save",
                             onClick = vm::save,
                             enabled = state.keyId.isNotBlank() && state.secretKey.isNotBlank(),
                         )
                         AppSecondaryButton(
-                            text = if (state.testing) "Testing…" else "Test Connection",
+                            text = if (state.testing) "Testing…" else "Test Market Data",
                             onClick = vm::testConnection,
                             enabled = !state.testing && state.hasSavedKeys,
+                        )
+                        AppSecondaryButton(
+                            text = if (state.tradingTesting) "Testing…" else "Test Trading Account",
+                            onClick = vm::testTradingConnection,
+                            enabled = !state.tradingTesting && state.hasSavedKeys,
                         )
                         if (state.justSaved) {
                             Text("Saved", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
                         }
                         state.connectionResult?.let { ConnectionResultText(it) }
+                        state.tradingConnectionResult?.let { AlpacaConnectionResultText(it) }
                     }
                 }
             }
@@ -268,6 +283,42 @@ private fun ConnectionResultText(result: ConnectionResult) {
         is ConnectionResult.NetworkError -> "✗ Network error" to AppTheme.colors.loss
     }
     Text(text, color = color, style = MaterialTheme.typography.bodySmall)
+}
+
+@Composable
+private fun AlpacaConnectionResultText(result: AlpacaConnectionResult) {
+    val (text, color) = when (result) {
+        is AlpacaConnectionResult.Connected -> {
+            val suffix = result.account.accountNumber?.takeLast(4)?.let { " ••••$it" }.orEmpty()
+            "✓ Connected · ${result.environment.label} account$suffix" to AppTheme.colors.profit
+        }
+        AlpacaConnectionResult.InvalidCredentials -> "✗ Invalid keys" to AppTheme.colors.loss
+        is AlpacaConnectionResult.NetworkError -> "✗ Network error" to AppTheme.colors.loss
+    }
+    Text(text, color = color, style = MaterialTheme.typography.bodySmall)
+}
+
+@Composable
+private fun AlpacaEnvironmentToggle(
+    environment: AlpacaEnvironment,
+    onEnvironmentChange: (AlpacaEnvironment) -> Unit,
+) {
+    Row(modifier = Modifier.clip(PillShape).background(AppTheme.colors.surfaceElevated)) {
+        AlpacaEnvironment.entries.forEach { option ->
+            val active = option == environment
+            Text(
+                text = option.label,
+                color = if (active) AppTheme.colors.onAccent else AppTheme.colors.textMuted,
+                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (active) AppTheme.colors.accent else Color.Transparent)
+                    .clickable { onEnvironmentChange(option) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
+    }
 }
 
 /** System / Light / Dark segmented control, same pattern as [io.earlisreal.ejournal.ui.components.SegmentToggle]. */

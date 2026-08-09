@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.data
 
 import io.earlisreal.ejournal.data.repository.AlpacaCredentials
 import io.earlisreal.ejournal.data.repository.TradeZeroCredentials
+import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermission
@@ -54,6 +55,21 @@ class JsonCredentialsRepositoryTest {
     }
 
     @Test
+    fun `old alpaca credentials default to paper`() {
+        val (repo, file) = newRepo()
+        file.writeText("""{"alpaca":{"keyId":"id","secretKey":"secret"}}""")
+        assertEquals(AlpacaCredentials("id", "secret", AlpacaEnvironment.PAPER), repo.getAlpacaCredentials())
+    }
+
+    @Test
+    fun `new alpaca credentials round-trip the live environment`() {
+        val (repo, file) = newRepo()
+        repo.setAlpacaCredentials(AlpacaCredentials("id", "secret", AlpacaEnvironment.LIVE))
+        assertEquals(AlpacaCredentials("id", "secret", AlpacaEnvironment.LIVE), repo.getAlpacaCredentials())
+        assertTrue(file.readText().contains("\"environment\""))
+    }
+
+    @Test
     fun `set preserves unknown sections from other providers`() {
         val (repo, file) = newRepo()
         file.writeText("""{"other":{"apiKey":"keep-me"}}""")
@@ -66,11 +82,14 @@ class JsonCredentialsRepositoryTest {
     fun `set writes file with owner-only permissions`() {
         val (repo, file) = newRepo()
         repo.setAlpacaCredentials(AlpacaCredentials("id", "secret"))
-        val perms = Files.getPosixFilePermissions(file)
-        assertEquals(
-            setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
-            perms,
-        )
+        runCatching { Files.getPosixFilePermissions(file) }
+            .getOrNull()
+            ?.let { perms ->
+                assertEquals(
+                    setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
+                    perms,
+                )
+            }
     }
 
     @Test

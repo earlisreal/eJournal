@@ -31,6 +31,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 - **Sortable, filterable trade log** — every closed position with entry/exit times & prices, shares, P&L, fees, and hold duration. Click through to the chart.
 - **Drag-and-drop import** — drop a CSV, let eJournal auto-detect the broker, and preview parsed transactions before committing.
 - **Free market data** — Yahoo Finance daily bars work out of the box; add free Alpaca keys for 1-minute intraday bars on day trades.
+- **Direct Alpaca synchronization** — read-only import of executed US stock fills from a Paper or Live trading account, including partial fills.
 - **Local-first & private** — everything lives in a single SQLite file under `~/.ejournal`; API keys are stored with owner-only permissions on your machine.
 - **Light / dark / system themes.**
 
@@ -38,6 +39,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 
 | Broker | Import format | Status |
 | --- | --- | --- |
+| **Alpaca** | Trading API direct sync | ✅ Supported |
 | **TradeZero** | TradeHistory CSV export (plus optional API sync) | ✅ Supported |
 | **moomoo** | Order history CSV export | ✅ Supported |
 | **Charles Schwab** | Transaction history CSV (web "History" export) | ✅ Supported |
@@ -62,12 +64,14 @@ Grab the latest build from the [**Releases page**](https://github.com/earlisreal
 
 On **macOS / Linux**, build and run from source — see [Building from source](#building-from-source) below.
 
-## Market data setup
+## Alpaca and market data setup
 
 Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades. Two sources:
 
 - **Yahoo Finance (default, no setup).** Full daily history for daily bars. Works out of the box.
-- **Alpaca (optional, free).** Unlocks 1-minute history for day trades analysis. Create a free account at [alpaca.markets](https://alpaca.markets) (the paper/data API keys need no funding), then paste the Key ID and Secret Key into **Settings → Market Data** in the app. Follow the step 1 and step 2 on this guide for more details https://alpaca.markets/learn/connect-to-alpaca-api
+- **Alpaca (optional, free).** The same Key ID and Secret Key unlock 1-minute market-data history and read-only trading-account synchronization. In **Settings → Alpaca**, select the matching **Paper** or **Live** trading environment; Paper and Live credentials are different. Create a free account at [alpaca.markets](https://alpaca.markets) (Paper/data keys need no funding), then follow steps 1 and 2 of [Alpaca's guide](https://alpaca.markets/learn/connect-to-alpaca-api).
+
+Alpaca synchronization only reads `/v2/account` and executed `/v2/account/activities/FILL` data. It never places, modifies, or cancels orders. Phase 1 imports US stock fills only; options and crypto fills are skipped. Each execution, including partial fills, remains a separate eJournal transaction. Legacy FILL activities do not provide per-fill fees, so Alpaca-imported fees are currently zero; fee reconciliation is reserved for a future Activity API phase. Startup synchronization is opt-in per portfolio and runs before market-data synchronization.
 
 Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Market data syncs automatically after each import and on app startup; use **Settings → Sync market data** to backfill manually after adding keys.
 

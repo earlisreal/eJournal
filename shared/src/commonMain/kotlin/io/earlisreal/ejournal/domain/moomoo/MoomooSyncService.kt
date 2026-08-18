@@ -65,6 +65,11 @@ fun moomooWindows(from: LocalDate, to: LocalDate): List<MoomooWindow> {
     return result
 }
 
+internal fun moomooSyncStart(today: LocalDate, checkpoint: LocalDate?): LocalDate {
+    val backfillStart = today.minus(MoomooSyncService.BACKFILL_DAYS, DateTimeUnit.DAY)
+    return maxOf(backfillStart, checkpoint?.minus(MoomooSyncService.OVERLAP_DAYS, DateTimeUnit.DAY) ?: backfillStart)
+}
+
 class MoomooSyncService(
     private val client: MoomooClient,
     private val transactionRepository: TransactionRepository,
@@ -122,11 +127,8 @@ class MoomooSyncService(
             } else {
                 null
             }
-            val start = maxOf(
-                INITIAL_DATE,
-                checkpoint?.minus(OVERLAP_DAYS, DateTimeUnit.DAY) ?: INITIAL_DATE,
-            )
             val end = today()
+            val start = moomooSyncStart(end, checkpoint)
             var inserted = 0
             val skipped = mutableMapOf<String, Int>()
 
@@ -197,8 +199,8 @@ class MoomooSyncService(
         const val TASK_ID = "moomoo-import"
         const val TASK_LABEL = "Moomoo OpenD import"
         const val MAX_FEE_IDS = 400
+        const val BACKFILL_DAYS = 365
         const val OVERLAP_DAYS = 3
-        val INITIAL_DATE = LocalDate(2018, 1, 1)
 
         private val OPTION_SYMBOL = Regex("^[A-Z][A-Z0-9.-]{0,9}\\d{6}[CP]\\d{6,}$")
 

@@ -41,12 +41,16 @@ private class FakeMoomooSession : MoomooSession {
         orderCall++
         orderWindows += MoomooWindow(from, to)
         if (orderCall == failOrderCall) return MoomooResult.Failure("window failed")
-        return MoomooResult.Success(orders)
+        return MoomooResult.Success(orders.filter { order ->
+            order.createdAt?.date?.let { it in from..to } == true
+        })
     }
 
     override suspend fun getHistoricalExecutions(accountId: String, from: LocalDate, to: LocalDate): MoomooResult<List<MoomooExecution>> {
         executionFailure?.let { throw it }
-        return MoomooResult.Success(executions)
+        return MoomooResult.Success(executions.filter { execution ->
+            execution.executedAt?.date?.let { it in from..to } == true
+        })
     }
 
     override suspend fun getOrderFees(accountId: String, orderIds: List<String>): MoomooResult<List<MoomooOrderFee>> {
@@ -202,7 +206,7 @@ class MoomooSyncServiceTest {
     }
 
     @Test
-    fun missingRequiredFeeFailsWindowWithoutInsertOrCheckpoint() = runTest {
+    fun missingRequiredFeeFailsWindowWithoutAdvancingPastFailedWindow() = runTest {
         val session = FakeMoomooSession().apply {
             orders = listOf(order())
             executions = listOf(execution())
@@ -215,7 +219,7 @@ class MoomooSyncServiceTest {
 
         assertIs<BrokerSyncOutcome.NetworkError>(result)
         assertTrue(repo.inserted.isEmpty())
-        assertNull(settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
+        assertEquals("2017-12-27", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
     }
 
     @Test
@@ -229,14 +233,14 @@ class MoomooSyncServiceTest {
         )
 
         assertIs<BrokerSyncOutcome.NetworkError>(service.syncIncremental(1L))
-        assertEquals("2018-03-31", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
+        assertEquals("2017-09-28", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
         assertEquals(MoomooSettings.source("1001"), settings.getString(1L, MoomooSettings.LAST_SYNCED_SOURCE))
 
         session.failOrderCall = null
         session.orderCall = 0
         session.orderWindows.clear()
         assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
-        assertEquals(LocalDate(2018, 3, 28), session.orderWindows.first().from)
+        assertEquals(LocalDate(2017, 9, 25), session.orderWindows.first().from)
         assertEquals(LocalDate(2018, 7, 1), session.orderWindows.last().to)
     }
 

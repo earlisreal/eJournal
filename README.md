@@ -89,7 +89,7 @@ Direct Moomoo import requires the separately installed **Moomoo OpenD** applicat
 
 Only active **REAL**, normal/non-master accounts authorized for the US market are selectable. The integration is read-only: it requests the account list, historical orders, historical deals, and exact order fees; it contains no order placement, modification, cancellation, or trade-unlock flow. OpenD credentials and passwords are never requested or stored. The selected account label, account ID, security firm, port, binding, and resumable sync cursor live in the portfolio settings database.
 
-The first sync reads live US stock history from `2018-01-01` in oldest-first 90-day windows. Later syncs resume from the completed checkpoint with a three-day overlap. Filled and partially-filled-cancelled orders are aggregated to one transaction per order using the earliest execution time and exact total fee. Options, combos, prediction contracts, other markets, unsupported sides, zero fills, and malformed rows are skipped and reported.
+The first sync reads the last 365 days of live US stock history in oldest-first 90-day windows. Later syncs resume from the completed checkpoint with a three-day overlap, clamped to that same one-year boundary. Filled and partially-filled-cancelled orders are aggregated to one transaction per order using the earliest execution time and exact total fee. Options, combos, prediction contracts, other markets, unsupported sides, zero fills, and malformed rows are skipped and reported.
 
 ## Building from source
 

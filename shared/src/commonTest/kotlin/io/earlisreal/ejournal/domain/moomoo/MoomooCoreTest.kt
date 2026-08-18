@@ -40,6 +40,15 @@ class MoomooCoreTest {
     }
 
     @Test
+    fun initialSyncStartsAtOneYearAndClampsOldCheckpoints() {
+        val today = LocalDate(2026, 8, 9)
+
+        assertEquals(LocalDate(2025, 8, 9), moomooSyncStart(today, null))
+        assertEquals(LocalDate(2025, 8, 9), moomooSyncStart(today, LocalDate(2018, 1, 1)))
+        assertEquals(LocalDate(2026, 8, 6), moomooSyncStart(today, today))
+    }
+
+    @Test
     fun rateLimiterSpacesRequestsByThreeSeconds() = runTest {
         var clock = 0L
         val waits = mutableListOf<Long>()

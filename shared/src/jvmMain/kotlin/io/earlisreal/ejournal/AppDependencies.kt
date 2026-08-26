@@ -5,6 +5,7 @@ import io.earlisreal.ejournal.data.PreferencesSettingsRepository
 import io.earlisreal.ejournal.data.SqlDelightMarketDataRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioSettingsRepository
+import io.earlisreal.ejournal.data.SqlDelightPositionNoteRepository
 import io.earlisreal.ejournal.data.SqlDelightTagRepository
 import io.earlisreal.ejournal.data.SqlDelightTransactionRepository
 import io.earlisreal.ejournal.data.database.JvmDatabaseFactory
@@ -12,6 +13,7 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
+import io.earlisreal.ejournal.data.repository.PositionNoteRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
@@ -26,6 +28,7 @@ import io.earlisreal.ejournal.domain.moomoo.MoomooClient
 import io.earlisreal.ejournal.domain.moomoo.MoomooOpenDClient
 import io.earlisreal.ejournal.domain.moomoo.MoomooSyncService
 import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.PositionNoteService
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
@@ -68,6 +71,7 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
+    val positionNoteRepository: PositionNoteRepository = SqlDelightPositionNoteRepository(db)
     val tagRepository: TagRepository = SqlDelightTagRepository(db)
     // Broker-specific parsers first (distinctive header/format sniffs, no collisions); Generic last (manual-only fallback).
     val parsers: List<TransactionParser> = listOf(
@@ -85,6 +89,7 @@ class AppDependencies {
     )
 
     val closedPositionService = ClosedPositionService(transactionRepository, portfolioRepository)
+    val positionNoteService = PositionNoteService(positionNoteRepository)
     val positionTagService = PositionTagService(closedPositionService, tagRepository)
 
     val alpacaProvider = AlpacaProvider(httpClient, credentialsRepository)

@@ -44,9 +44,10 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
 
     override suspend fun delete(id: Long) {
         // Also drop any tag assignments anchored to this transaction as an opener. Deleting a
-        // non-opener fill matches no PositionTag rows, so this is a no-op in that case.
+        // non-opener fill matches no PositionTag/PositionNote rows, so this is a no-op in that case.
         db.tradeTransactionQueries.transaction {
             db.positionTagQueries.deleteAssignmentsForOpeningTx(id)
+            db.positionNoteQueries.deleteNote(id)
             db.tradeTransactionQueries.deleteById(id)
         }
     }
@@ -59,6 +60,7 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
         // cleanup query resolves openers via TradeTransaction, so it must run first).
         db.tradeTransactionQueries.transaction {
             db.positionTagQueries.deleteAssignmentsForPortfolio(portfolioId)
+            db.positionNoteQueries.deleteNotesForPortfolio(portfolioId)
             db.tradeTransactionQueries.deleteByPortfolio(portfolioId)
         }
     }

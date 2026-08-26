@@ -51,19 +51,43 @@ class JvmDatabaseFactoryMigrationTest {
     }
 
     @Test
+    fun `fresh install includes the PositionNote table`() {
+        val dir = tempDir()
+        JvmDatabaseFactory.create(dir)
+        assertTrue("PositionNote" in tableNames(File(dir, "ejournal.db")))
+    }
+
+    @Test
     fun `migrating a v1 database adds the PortfolioSetting table`() {
         val dir = tempDir()
         val dbFile = File(dir, "ejournal.db")
-        // Simulate a v1 database: the full current schema minus the v2 table, stamped as version 1.
+        // Simulate a v1 database: the full current schema minus the v2 and v3 tables, stamped as version 1.
         val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
         AppDatabase.Schema.create(seed)
         seed.execute(null, "DROP TABLE PortfolioSetting", 0)
+        seed.execute(null, "DROP TABLE PositionNote", 0)
         seed.execute(null, "PRAGMA user_version = 1", 0)
         seed.close()
         assertTrue("PortfolioSetting" !in tableNames(dbFile)) // precondition
 
-        JvmDatabaseFactory.create(dir) // detects v1 < v2 and runs the migration
+        JvmDatabaseFactory.create(dir) // detects v1 < v3 and runs both migrations
 
         assertTrue("PortfolioSetting" in tableNames(dbFile))
+    }
+
+    @Test
+    fun `migrating a v2 database adds the PositionNote table`() {
+        val dir = tempDir()
+        val dbFile = File(dir, "ejournal.db")
+        val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+        AppDatabase.Schema.create(seed)
+        seed.execute(null, "DROP TABLE PositionNote", 0)
+        seed.execute(null, "PRAGMA user_version = 2", 0)
+        seed.close()
+        assertTrue("PositionNote" !in tableNames(dbFile))
+
+        JvmDatabaseFactory.create(dir)
+
+        assertTrue("PositionNote" in tableNames(dbFile))
     }
 }

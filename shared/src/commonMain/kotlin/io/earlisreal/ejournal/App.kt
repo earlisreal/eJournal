@@ -12,6 +12,7 @@ import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.PositionTagService
+import io.earlisreal.ejournal.domain.PositionNoteService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
@@ -53,6 +54,7 @@ fun App(
     startupSyncCoordinator: StartupSyncCoordinator,
     startDestination: Destination,
     initialPortfolios: List<Portfolio>,
+    positionNotes: PositionNoteService,
     positionTags: PositionTagService,
     tagRepository: TagRepository,
 ) {
@@ -112,6 +114,7 @@ fun App(
                 positions = nav.analysisPositions,
                 initialIndex = nav.analysisIndex,
                 marketDataRepository = marketDataRepository,
+                positionNotes = positionNotes,
                 positionTags = positionTags,
                 tagRepository = tagRepository,
                 isDarkTheme = isDarkTheme,

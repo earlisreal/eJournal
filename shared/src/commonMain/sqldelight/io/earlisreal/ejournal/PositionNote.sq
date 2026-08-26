@@ -1,0 +1,21 @@
+-- One user-authored note for a derived position, anchored to its opening fill.
+-- Cleanup is explicit because SQLite foreign-key enforcement is disabled by the app driver.
+CREATE TABLE PositionNote (
+    openingTxId INTEGER NOT NULL PRIMARY KEY,
+    note       TEXT    NOT NULL
+);
+
+selectNotesForOpeningTxIds:
+SELECT openingTxId, note
+FROM PositionNote
+WHERE openingTxId IN ?;
+
+upsertNote:
+INSERT OR REPLACE INTO PositionNote (openingTxId, note) VALUES (?, ?);
+
+deleteNote:
+DELETE FROM PositionNote WHERE openingTxId = ?;
+
+deleteNotesForPortfolio:
+DELETE FROM PositionNote
+WHERE openingTxId IN (SELECT id FROM TradeTransaction WHERE portfolioId = ?);

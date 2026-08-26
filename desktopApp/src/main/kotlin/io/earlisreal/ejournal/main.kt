@@ -82,6 +82,7 @@ fun main(args: Array<String>) {
                         startupSyncCoordinator = ready.deps.startupSyncCoordinator,
                         startDestination = ready.startDestination,
                         initialPortfolios = ready.portfolios,
+                        positionNotes = ready.deps.positionNoteService,
                         positionTags = ready.deps.positionTagService,
                         tagRepository = ready.deps.tagRepository,
                     )

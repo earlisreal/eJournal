@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -37,7 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
+import io.earlisreal.ejournal.domain.PositionNoteService
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
@@ -64,6 +66,9 @@ import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
 import io.earlisreal.ejournal.ui.components.formatHold
 import io.earlisreal.ejournal.ui.components.signedMoney
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
@@ -76,6 +81,7 @@ fun AnalysisScreen(
     positions: List<ClosedPosition>,
     initialIndex: Int,
     marketDataRepository: MarketDataRepository,
+    positionNotes: PositionNoteService,
     positionTags: PositionTagService,
     tagRepository: TagRepository,
     isDarkTheme: Boolean,
@@ -137,6 +143,53 @@ fun AnalysisScreen(
     val position = state.position
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
 
+    var noteText by remember { mutableStateOf("") }
+    var noteLoadedForId by remember { mutableStateOf<Long?>(null) }
+    var noteDirty by remember { mutableStateOf(false) }
+    var noteSaveJob by remember { mutableStateOf<Job?>(null) }
+    val positionId = position?.openingTransactionId
+
+    LaunchedEffect(positionId) {
+        noteSaveJob?.cancelAndJoin()
+        noteSaveJob = null
+        noteLoadedForId = null
+        noteDirty = false
+        noteText = ""
+        val current = position
+        if (current != null && positionId != null) {
+            noteText = positionNotes.forPosition(current).orEmpty()
+        }
+        noteLoadedForId = positionId
+    }
+
+    fun scheduleNoteSave(value: String) {
+        val current = position ?: return
+        val id = current.openingTransactionId ?: return
+        if (noteLoadedForId != id) return
+        noteText = value
+        noteDirty = true
+        noteSaveJob?.cancel()
+        noteSaveJob = tagScope.launch {
+            delay(500)
+            positionNotes.setNote(current, value)
+            noteDirty = false
+        }
+    }
+
+    fun navigateWithNote(action: () -> Unit) {
+        tagScope.launch {
+            noteSaveJob?.cancelAndJoin()
+            noteSaveJob = null
+            val current = position
+            val id = current?.openingTransactionId
+            if (noteDirty && current != null && id != null && noteLoadedForId == id) {
+                positionNotes.setNote(current, noteText)
+                noteDirty = false
+            }
+            action()
+        }
+    }
+
     // Arrow-key navigation: Up/Left → previous trade, Down/Right → next (both wrap around).
     // The root grabs focus on entry so keys work immediately.
     val focusRequester = remember { FocusRequester() }
@@ -147,11 +200,11 @@ fun AnalysisScreen(
             .fillMaxSize()
             .focusRequester(focusRequester)
             .focusable()
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when (event.key) {
-                    Key.DirectionUp, Key.DirectionLeft -> { vm.navigatePrev(); true }
-                    Key.DirectionDown, Key.DirectionRight -> { vm.navigateNext(); true }
+                    Key.DirectionUp, Key.DirectionLeft -> { navigateWithNote(vm::navigatePrev); true }
+                    Key.DirectionDown, Key.DirectionRight -> { navigateWithNote(vm::navigateNext); true }
                     else -> false
                 }
             },
@@ -169,7 +222,7 @@ fun AnalysisScreen(
                     "← ${sourceDestination.label}",
                     color = AppTheme.colors.accent,
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.clickable { onBack() },
+                    modifier = Modifier.clickable { navigateWithNote(onBack) },
                 )
             }
         }
@@ -217,14 +270,14 @@ fun AnalysisScreen(
                     val total = state.totalCount
                     val idx   = state.currentIndex
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        NavButton("◀", enabled = total > 1) { vm.navigatePrev() }
+                        NavButton("◀", enabled = total > 1) { navigateWithNote(vm::navigatePrev) }
                         Text(
                             "${idx + 1} / $total",
                             color = AppTheme.colors.textMuted,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 4.dp),
                         )
-                        NavButton("▶", enabled = total > 1) { vm.navigateNext() }
+                        NavButton("▶", enabled = total > 1) { navigateWithNote(vm::navigateNext) }
                     }
                 }
 
@@ -237,6 +290,17 @@ fun AnalysisScreen(
                         onCreate = { createAndAssignTag(position, it) },
                         onManage = { showTagManager = true },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    )
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = ::scheduleNoteSave,
+                        label = { Text("Notes") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                        minLines = 4,
+                        maxLines = 4,
+                        enabled = noteLoadedForId == position.openingTransactionId,
                     )
                 }
 
@@ -354,7 +418,7 @@ fun AnalysisScreen(
             TradesNavList(
                 positions = positions,
                 currentIndex = state.currentIndex,
-                onSelect = { vm.navigateTo(it) },
+                onSelect = { navigateWithNote { vm.navigateTo(it) } },
                 symbol = symbol,
                 modifier = Modifier.width(280.dp).fillMaxHeight(),
             )

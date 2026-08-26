@@ -1,0 +1,5 @@
+-- Migrate schema v2 -> v3: add position-level user notes.
+CREATE TABLE PositionNote (
+    openingTxId INTEGER NOT NULL PRIMARY KEY,
+    note       TEXT    NOT NULL
+);

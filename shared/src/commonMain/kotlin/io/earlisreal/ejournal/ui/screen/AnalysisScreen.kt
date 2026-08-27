@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.screen
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +17,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +48,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,8 +65,8 @@ import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.domain.model.defaultTagColors
 import io.earlisreal.ejournal.ui.chart.canvas.CandlestickCanvasChart
-import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.components.EmptyState
+import io.earlisreal.ejournal.ui.components.ColumnVerticalScrollbar
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.PositionTransactionsTable
 import io.earlisreal.ejournal.ui.components.TagChip
@@ -66,9 +75,11 @@ import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
 import io.earlisreal.ejournal.ui.components.formatHold
 import io.earlisreal.ejournal.ui.components.signedMoney
+import io.earlisreal.ejournal.ui.shell.Destination
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
@@ -147,12 +158,16 @@ fun AnalysisScreen(
     var noteLoadedForId by remember { mutableStateOf<Long?>(null) }
     var noteDirty by remember { mutableStateOf(false) }
     var noteSaveJob by remember { mutableStateOf<Job?>(null) }
+    var noteEditorReadyForId by remember { mutableStateOf<Long?>(null) }
+    val noteEditorState = rememberTextFieldState()
+    val noteScrollState = rememberScrollState()
     val positionId = position?.openingTransactionId
 
     LaunchedEffect(positionId) {
         noteSaveJob?.cancelAndJoin()
         noteSaveJob = null
         noteLoadedForId = null
+        noteEditorReadyForId = null
         noteDirty = false
         noteText = ""
         val current = position
@@ -182,8 +197,12 @@ fun AnalysisScreen(
             noteSaveJob = null
             val current = position
             val id = current?.openingTransactionId
-            if (noteDirty && current != null && id != null && noteLoadedForId == id) {
-                positionNotes.setNote(current, noteText)
+            val latestNoteText = noteEditorState.text.toString()
+            val textToSave =
+                if (noteDirty || noteEditorReadyForId == id) latestNoteText else noteText
+            if (textToSave != noteText && current != null && id != null && noteLoadedForId == id) {
+                positionNotes.setNote(current, textToSave)
+                noteText = textToSave
                 noteDirty = false
             }
             action()
@@ -227,7 +246,7 @@ fun AnalysisScreen(
             }
         }
 
-        // ── Main area: analysis column + trades navigation list ─────────────
+        // ── Main area: analysis column + right-side navigation and notes ────
         Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
 
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -290,17 +309,6 @@ fun AnalysisScreen(
                         onCreate = { createAndAssignTag(position, it) },
                         onManage = { showTagManager = true },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs),
-                    )
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = ::scheduleNoteSave,
-                        label = { Text("Notes") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-                        minLines = 4,
-                        maxLines = 4,
-                        enabled = noteLoadedForId == position.openingTransactionId,
                     )
                 }
 
@@ -415,13 +423,32 @@ fun AnalysisScreen(
 
             VerticalDivider(color = AppTheme.colors.border)
 
-            TradesNavList(
-                positions = positions,
-                currentIndex = state.currentIndex,
-                onSelect = { navigateWithNote { vm.navigateTo(it) } },
-                symbol = symbol,
-                modifier = Modifier.width(280.dp).fillMaxHeight(),
-            )
+            Column(modifier = Modifier.width(280.dp).fillMaxHeight()) {
+                TradesNavList(
+                    positions = positions,
+                    currentIndex = state.currentIndex,
+                    onSelect = { navigateWithNote { vm.navigateTo(it) } },
+                    symbol = symbol,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+                HorizontalDivider(color = AppTheme.colors.border)
+                if (positionId != null) {
+                    PositionNoteEditor(
+                        positionId = positionId,
+                        loadedForId = noteLoadedForId,
+                        value = noteText,
+                        dirty = noteDirty,
+                        textFieldState = noteEditorState,
+                        scrollState = noteScrollState,
+                        onReadyForId = { noteEditorReadyForId = it },
+                        onValueChange = ::scheduleNoteSave,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    )
+                }
+            }
         }
     }
 
@@ -431,6 +458,81 @@ fun AnalysisScreen(
             onChanged = { tagScope.launch { allTags = tagRepository.getAll() } },
             onDismiss = { showTagManager = false },
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PositionNoteEditor(
+    positionId: Long?,
+    loadedForId: Long?,
+    value: String,
+    dirty: Boolean,
+    textFieldState: TextFieldState,
+    scrollState: ScrollState,
+    onReadyForId: (Long?) -> Unit,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var syncedValue by remember(positionId) { mutableStateOf<String?>(null) }
+    var ready by remember(positionId) { mutableStateOf(false) }
+    val loaded = positionId != null && loadedForId == positionId
+
+    LaunchedEffect(positionId, loadedForId, value, dirty) {
+        if (!loaded) {
+            ready = false
+            onReadyForId(null)
+            syncedValue = null
+            if (textFieldState.text.isNotEmpty()) {
+                textFieldState.edit {
+                    replace(0, length, "")
+                    selection = TextRange.Zero
+                }
+            }
+            scrollState.scrollTo(0)
+        } else if (!dirty && syncedValue != value) {
+            ready = false
+            onReadyForId(null)
+            syncedValue = value
+            textFieldState.edit {
+                replace(0, length, value)
+                selection = TextRange.Zero
+            }
+            scrollState.scrollTo(0)
+            ready = true
+            onReadyForId(positionId)
+        }
+    }
+
+    LaunchedEffect(textFieldState, positionId, loadedForId, ready) {
+        snapshotFlow { textFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { current ->
+                if (loaded && ready && current != syncedValue) {
+                    syncedValue = current
+                    onValueChange(current)
+                }
+            }
+    }
+
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            state = textFieldState,
+            label = { Text("Notes") },
+            modifier = Modifier.fillMaxSize(),
+            enabled = loaded && ready,
+            lineLimits = TextFieldLineLimits.MultiLine(),
+            scrollState = scrollState,
+        )
+        if (scrollState.maxValue > 0) {
+            ColumnVerticalScrollbar(
+                scrollState = scrollState,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .padding(vertical = 8.dp),
+            )
+        }
     }
 }
 

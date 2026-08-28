@@ -8,12 +8,21 @@ const val MARKET_DATA_TASK_ID = "market-data"
 private const val MARKET_DATA_LABEL = "Market data"
 
 /** Human-readable summary of a finished sync; shared by the status bar and the inline import/settings line. */
-fun SyncResult.describe(): String = when {
-    keysRejected -> "Alpaca keys rejected — check Settings"
-    failedSymbols.isNotEmpty() -> "Market data failed for ${failedSymbols.size} symbol(s)"
-    needsKeys -> "Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars"
-    fetchedSymbols > 0 -> "Market data fetched for $fetchedSymbols symbol(s)"
-    else -> "Market data up to date"
+fun SyncResult.describe(): String {
+    val summary = when {
+        keysRejected -> "Alpaca keys rejected — check Settings"
+        failedSymbols.isNotEmpty() -> "Market data failed for ${failedSymbols.size} symbol(s)"
+        needsKeys -> "Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars"
+        fetchedSymbols > 0 -> "Market data fetched for $fetchedSymbols symbol(s)"
+        else -> "Market data up to date"
+    }
+    val etape = when {
+        etapeWarning != null -> "eTape: $etapeWarning"
+        etapeImportedBars > 0 -> "eTape imported $etapeImportedBars 10s bar(s)"
+        etapeSkippedBars > 0 -> "eTape skipped $etapeSkippedBars invalid 10s bar(s)"
+        else -> null
+    }
+    return etape?.let { "$summary · $it" } ?: summary
 }
 
 /** True when a finished run needs the user's attention (failed fetches or rejected keys). */

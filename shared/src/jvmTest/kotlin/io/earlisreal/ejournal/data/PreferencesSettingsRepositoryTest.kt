@@ -5,6 +5,7 @@ import java.util.prefs.Preferences
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class PreferencesSettingsRepositoryTest {
 
@@ -34,5 +35,22 @@ class PreferencesSettingsRepositoryTest {
     fun fallsBackToSystemOnCorruptValue() {
         node.put("theme_mode", "not-a-real-mode")
         assertEquals(ThemeMode.SYSTEM, PreferencesSettingsRepository(node).getThemeMode())
+    }
+
+    @Test
+    fun persistsAndReadsBackEtapeDatabasePath() {
+        val repo = PreferencesSettingsRepository(node)
+        repo.setEtapeDbPath("C:/data/etape.db")
+
+        assertEquals("C:/data/etape.db", PreferencesSettingsRepository(node).getEtapeDbPath())
+    }
+
+    @Test
+    fun clearingEtapeDatabasePathRestoresUnsetState() {
+        val repo = PreferencesSettingsRepository(node)
+        repo.setEtapeDbPath("C:/data/etape.db")
+        repo.setEtapeDbPath(null)
+
+        assertNull(PreferencesSettingsRepository(node).getEtapeDbPath())
     }
 }

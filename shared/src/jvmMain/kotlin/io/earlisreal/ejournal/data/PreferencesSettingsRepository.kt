@@ -44,6 +44,13 @@ class PreferencesSettingsRepository(
         prefs.put(KEY_TAG_MATCH, prefs0.tagMatch.name)
     }
 
+    override fun getEtapeDbPath(): String? = prefs.get(KEY_ETAPE_DB_PATH, "").takeIf { it.isNotBlank() }
+
+    override fun setEtapeDbPath(path: String?) {
+        if (path.isNullOrBlank()) prefs.remove(KEY_ETAPE_DB_PATH)
+        else prefs.put(KEY_ETAPE_DB_PATH, path.trim())
+    }
+
     private companion object {
         const val KEY_THEME = "theme_mode"
         const val KEY_PORTFOLIO = "filter_portfolio_id"
@@ -53,5 +60,6 @@ class PreferencesSettingsRepository(
         const val KEY_TO = "filter_custom_to"
         const val KEY_TAG_IDS = "filter_tag_ids"
         const val KEY_TAG_MATCH = "filter_tag_match"
+        const val KEY_ETAPE_DB_PATH = "etape_db_path"
     }
 }

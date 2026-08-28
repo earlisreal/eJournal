@@ -47,6 +47,7 @@ class AlpacaProvider(
         val timeframeParam = when (timeframe) {
             Timeframe.DAILY -> "1Day"
             Timeframe.ONE_MINUTE -> "1Min"
+            Timeframe.TEN_SECONDS -> throw IllegalArgumentException("Alpaca does not provide 10-second bars")
         }
 
         val start = from.atStartOfDayIn(EASTERN)

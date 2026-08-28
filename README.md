@@ -27,10 +27,10 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 - **Automatic FIFO trade matching** — groups individual fills into round-trip trades; handles longs, shorts, scale-ins/outs, and position flips. Closed positions are recomputed from your transactions (never stored), so editing or deleting a transaction just works — no sync to manage.
 - **Performance dashboard** — net & gross P&L, win rate, profit factor, expectancy, reward:risk, average win/loss, streaks, average hold time, top/worst trades, and an equity curve — all filterable by date range.
 - **P&L calendar** — a month grid color-coded by daily profit/loss; click any day to see the trades you closed.
-- **Per-trade analysis** — candlestick chart (1/5/15-min intraday, or daily/weekly for swing trades) with your entries and exits plotted, a VWAP toggle, a transaction breakdown, and arrow-key navigation between trades.
+- **Per-trade analysis** — candlestick chart (10-second eTape bars when available, 1/5/15-minute intraday, or daily/weekly for swing trades) with your entries and exits plotted, a VWAP toggle, a transaction breakdown, and arrow-key navigation between trades.
 - **Sortable, filterable trade log** — every closed position with entry/exit times & prices, shares, P&L, fees, and hold duration. Click through to the chart.
 - **Drag-and-drop import** — drop a CSV, let eJournal auto-detect the broker, and preview parsed transactions before committing.
-- **Free market data** — Yahoo Finance daily bars work out of the box; add free Alpaca keys for 1-minute intraday bars on day trades.
+- **Free market data** — Yahoo Finance daily bars work out of the box; add free Alpaca keys for 1-minute intraday bars on day trades. Optional local eTape data supplies exact 10-second bars for US stock day Positions.
 - **Direct Alpaca synchronization** — read-only import of executed US stock fills from a Paper or Live trading account, including partial fills.
 - **Direct Moomoo OpenD synchronization** — read-only, localhost-only import of live US stock orders, executions, and exact order fees.
 - **Local-first & private** — everything lives in a single SQLite file under `~/.ejournal`; API keys are stored with owner-only permissions on your machine.
@@ -69,10 +69,11 @@ On **macOS / Linux**, build and run from source — see [Building from source](#
 
 ## Alpaca and market data setup
 
-Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades. Two sources:
+Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades, and optional native 10-second bars for US stock day trades. Three sources:
 
 - **Yahoo Finance (default, no setup).** Full daily history for daily bars. Works out of the box.
 - **Alpaca (optional, free).** The same Key ID and Secret Key unlock 1-minute market-data history and read-only trading-account synchronization. In **Settings → Alpaca**, select the matching **Paper** or **Live** trading environment; Paper and Live credentials are different. Create a free account at [alpaca.markets](https://alpaca.markets) (Paper/data keys need no funding), then follow steps 1 and 2 of [Alpaca's guide](https://alpaca.markets/learn/connect-to-alpaca-api).
+- **eTape (optional, local).** When `~/.eTape/etape.db` exists, eJournal copies the complete available Position date of native `bars_10s` rows into its own database during market-data sync. Use **Settings → Sync → Choose eTape database…** for another file; the selected path is remembered. Imports are read-only, idempotent, and never synthesize bars from 1-minute data.
 
 Alpaca synchronization only reads `/v2/account` and executed `/v2/account/activities/FILL` data. It never places, modifies, or cancels orders. Phase 1 imports US stock fills only; options and crypto fills are skipped. Each execution, including partial fills, remains a separate eJournal transaction. Legacy FILL activities do not provide per-fill fees, so Alpaca-imported fees are currently zero; fee reconciliation is reserved for a future Activity API phase. Startup synchronization is opt-in per portfolio and runs before market-data synchronization.
 

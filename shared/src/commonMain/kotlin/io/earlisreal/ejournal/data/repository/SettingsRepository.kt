@@ -22,4 +22,6 @@ interface SettingsRepository {
     fun setThemeMode(mode: ThemeMode)
     fun getFilterPrefs(): FilterPrefs?   // null when nothing has been stored yet
     fun setFilterPrefs(prefs: FilterPrefs)
+    fun getEtapeDbPath(): String? = null
+    fun setEtapeDbPath(path: String?) = Unit
 }

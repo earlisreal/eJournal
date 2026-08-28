@@ -46,6 +46,7 @@ class AlpacaCryptoProvider(
         val timeframeParam = when (timeframe) {
             Timeframe.DAILY -> "1Day"
             Timeframe.ONE_MINUTE -> "1Min"
+            Timeframe.TEN_SECONDS -> throw IllegalArgumentException("Alpaca does not provide 10-second bars")
         }
         val pair = toPair(symbol)
         val start = from.atStartOfDayIn(UTC)

@@ -61,6 +61,7 @@ import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.marketdata.ChartTimeframe
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.domain.model.defaultTagColors
@@ -153,6 +154,7 @@ fun AnalysisScreen(
 
     val position = state.position
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
+    val showTenSec = position != null && isDay && position.market == Market.US_STOCKS
 
     var noteText by remember { mutableStateOf("") }
     var noteLoadedForId by remember { mutableStateOf<Long?>(null) }
@@ -320,13 +322,15 @@ fun AnalysisScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val timeframes = if (isDay)
-                        listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN, ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
+                        (if (showTenSec) listOf(ChartTimeframe.TEN_SEC) else emptyList()) +
+                            listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN, ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
                     else
                         listOf(ChartTimeframe.DAILY, ChartTimeframe.WEEKLY)
 
                     timeframes.forEach { tf ->
-                        val isIntraday = tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
-                        val unavailable = isIntraday && !state.has1MinData
+                        val isTenSec = tf == ChartTimeframe.TEN_SEC
+                        val isIntraday = isTenSec || tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
+                        val unavailable = (isTenSec && !state.hasTenSecData) || (!isTenSec && isIntraday && !state.has1MinData)
                         val active = state.activeTimeframe == tf
                         Text(
                             tf.label,
@@ -348,9 +352,17 @@ fun AnalysisScreen(
                         )
                     }
 
+                    if (showTenSec && !state.hasTenSecData) {
+                        Text(
+                            "10s unavailable — import the Position date from eTape",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+
                     Box(modifier = Modifier.weight(1f))
 
-                    if (state.activeTimeframe in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
+                    if (state.activeTimeframe in listOf(ChartTimeframe.TEN_SEC, ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
                         val vwapOn = state.vwapEnabled
                         Text(
                             "⬤ VWAP",

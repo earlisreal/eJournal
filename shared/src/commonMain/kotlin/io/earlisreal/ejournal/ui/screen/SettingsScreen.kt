@@ -19,6 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +37,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
+import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
@@ -42,11 +47,13 @@ import io.earlisreal.ejournal.ui.components.AppSecondaryButton
 import io.earlisreal.ejournal.ui.components.MarketDataSyncStatus
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.components.SecretKeyTextField
+import io.earlisreal.ejournal.ui.platform.pickEtapeDatabaseFile
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.PillShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import io.earlisreal.ejournal.ui.viewmodel.SettingsViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -55,10 +62,13 @@ fun SettingsScreen(
     credentialsRepository: CredentialsRepository,
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
+    settingsRepository: SettingsRepository,
 ) {
     val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
+    val scope = rememberCoroutineScope()
+    var etapePath by remember { mutableStateOf(settingsRepository.getEtapeDbPath().orEmpty()) }
 
     ScreenScaffold(title = "Settings") {
         Column(
@@ -143,6 +153,40 @@ fun SettingsScreen(
                         AppSecondaryButton(text = "Sync market data", onClick = { marketDataService.requestSync() })
                         MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })
                     }
+                    Text(
+                        "eTape 10-second bars are copied for US stock day Positions. The default database is ~/.eTape/etape.db.",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        AppSecondaryButton(
+                            text = "Choose eTape database…",
+                            onClick = {
+                                scope.launch {
+                                    pickEtapeDatabaseFile()?.let { path ->
+                                        etapePath = path
+                                        settingsRepository.setEtapeDbPath(path)
+                                        marketDataService.requestSync()
+                                    }
+                                }
+                            },
+                        )
+                        if (etapePath.isNotBlank()) {
+                            AppSecondaryButton(
+                                text = "Use default",
+                                onClick = {
+                                    etapePath = ""
+                                    settingsRepository.setEtapeDbPath(null)
+                                    marketDataService.requestSync()
+                                },
+                            )
+                        }
+                    }
+                    Text(
+                        if (etapePath.isBlank()) "Using default eTape path" else "Using ${etapePath}",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
         }

@@ -127,6 +127,21 @@ class SqlDelightMarketDataRepositoryTest {
     }
 
     @Test
+    fun `ten-second bars persist independently`() = runTest {
+        repo.upsertBars(
+            Market.US_STOCKS,
+            listOf(bar(timeframe = Timeframe.TEN_SECONDS, timestamp = "2026-06-01T09:30:00")),
+        )
+        val bars = repo.getBars(
+            "AAPL", Timeframe.TEN_SECONDS, Market.US_STOCKS,
+            from = LocalDateTime.parse("2026-06-01T00:00"),
+            to = LocalDateTime.parse("2026-06-01T23:59"),
+        )
+        assertEquals(1, bars.size)
+        assertEquals(Timeframe.TEN_SECONDS, bars.single().timeframe)
+    }
+
+    @Test
     fun `bars are isolated by market so the same symbol in two markets is two rows`() = runTest {
         // A crypto "BTC" and a (hypothetical) stock "BTC" share symbol+timeframe+timestamp but must
         // never collide — the market is part of the primary key.

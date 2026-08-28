@@ -79,4 +79,14 @@ class MarketDataTaskTest {
         assertEquals(TaskState.Success, task.state)
         assertEquals("Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars", task.detail)
     }
+
+    @Test
+    fun finishedEtapeWarningStaysNonFatalAndIsShown() {
+        val task = SyncStatus.Finished(
+            SyncResult(0, emptyList(), keysRejected = false, needsKeys = false, etapeWarning = "database busy"),
+        ).toBackgroundTask(noRetry)!!
+        assertEquals(TaskState.Success, task.state)
+        assertEquals("Market data up to date · eTape: database busy", task.detail)
+        assertNull(task.retry)
+    }
 }

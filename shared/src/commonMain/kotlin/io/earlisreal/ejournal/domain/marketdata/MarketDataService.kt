@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Market
 import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -30,6 +31,9 @@ data class SyncResult(
     val keysRejected: Boolean,
     /** 1-min bars were needed but no Alpaca keys are configured — 1-min always requires Alpaca. */
     val needsKeys: Boolean,
+    val etapeImportedBars: Int = 0,
+    val etapeSkippedBars: Int = 0,
+    val etapeWarning: String? = null,
 )
 
 sealed class SyncStatus {
@@ -55,6 +59,7 @@ class MarketDataService(
     private val credentialsRepository: CredentialsRepository,
     private val scope: CoroutineScope? = null,
     private val todayProvider: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
+    private val etapeImporter: EtapeMarketDataImporter? = null,
 ) {
     private val yahooSemaphore = Semaphore(MAX_YAHOO_CONCURRENT)
     private val alpacaSemaphore = Semaphore(MAX_ALPACA_CONCURRENT)
@@ -101,11 +106,27 @@ class MarketDataService(
             }.awaitAll()
         }
 
+        val etapeResult = if (etapeImporter == null) {
+            EtapeImportResult()
+        } else {
+            try {
+                etapeImporter.importFor(positions)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                println("[eTape] import failed: ${e::class.simpleName}: ${e.message}")
+                EtapeImportResult(warning = "eTape import failed: ${e.message ?: "unexpected error"}")
+            }
+        }
+
         val result = SyncResult(
             fetchedSymbols = symbolResults.count { it.fetched },
             failedSymbols = symbolResults.filter { it.failed }.map { it.symbol },
             keysRejected = symbolResults.any { it.keysRejected },
             needsKeys = symbolResults.any { it.needsKeys },
+            etapeImportedBars = etapeResult.importedBars,
+            etapeSkippedBars = etapeResult.skippedBars,
+            etapeWarning = etapeResult.warning,
         )
         _status.value = SyncStatus.Finished(result)
         return result

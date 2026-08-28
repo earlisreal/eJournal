@@ -11,3 +11,6 @@ package io.earlisreal.ejournal.ui.platform
  * coroutine.
  */
 expect suspend fun pickImportFiles(): List<ByteArray>
+
+/** Opens a native file dialog for the eTape SQLite database. Returns the chosen path or null. */
+expect suspend fun pickEtapeDatabaseFile(): String?

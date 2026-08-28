@@ -3,7 +3,7 @@ package io.earlisreal.ejournal.domain.marketdata
 import io.github.earlisreal.wickplot.Candle
 import kotlinx.datetime.LocalDateTime
 
-enum class Timeframe { DAILY, ONE_MINUTE }
+enum class Timeframe { DAILY, ONE_MINUTE, TEN_SECONDS }
 
 /**
  * One OHLCV candle. Timestamps are exchange-local (America/New_York for US stocks). Implements the

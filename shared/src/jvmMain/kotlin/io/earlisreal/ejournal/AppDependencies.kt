@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal
 
 import io.earlisreal.ejournal.data.JsonCredentialsRepository
+import io.earlisreal.ejournal.data.EtapeMarketDataImporterImpl
 import io.earlisreal.ejournal.data.PreferencesSettingsRepository
 import io.earlisreal.ejournal.data.SqlDelightMarketDataRepository
 import io.earlisreal.ejournal.data.SqlDelightPortfolioRepository
@@ -71,6 +72,10 @@ class AppDependencies {
     val credentialsRepository: CredentialsRepository =
         JsonCredentialsRepository(File(System.getProperty("user.home"), ".ejournal").toPath())
     val marketDataRepository: MarketDataRepository = SqlDelightMarketDataRepository(db)
+    private val etapeMarketDataImporter = EtapeMarketDataImporterImpl(
+        marketDataRepository = marketDataRepository,
+        configuredPath = { settingsRepository.getEtapeDbPath() },
+    )
     val positionNoteRepository: PositionNoteRepository = SqlDelightPositionNoteRepository(db)
     val tagRepository: TagRepository = SqlDelightTagRepository(db)
     // Broker-specific parsers first (distinctive header/format sniffs, no collisions); Generic last (manual-only fallback).
@@ -108,6 +113,7 @@ class AppDependencies {
         cryptoProvider = cryptoProvider,
         credentialsRepository = credentialsRepository,
         scope = backgroundScope,
+        etapeImporter = etapeMarketDataImporter,
     )
 
     val backgroundTaskTracker = BackgroundTaskTracker()

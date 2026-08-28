@@ -16,14 +16,15 @@ data class AggregatedChart(
 object BarAggregator {
 
     fun aggregate(bars: List<Bar>, targetTimeframe: ChartTimeframe): AggregatedChart = when (targetTimeframe) {
-        ChartTimeframe.ONE_MIN     -> fromMinute(bars)
+        ChartTimeframe.TEN_SEC     -> fromBars(bars)
+        ChartTimeframe.ONE_MIN     -> fromBars(bars)
         ChartTimeframe.FIVE_MIN    -> aggregateMinutes(bars, 5)
         ChartTimeframe.FIFTEEN_MIN -> aggregateMinutes(bars, 15)
         ChartTimeframe.DAILY       -> AggregatedChart(aggregateDaily(bars), emptyList())
         ChartTimeframe.WEEKLY      -> AggregatedChart(aggregateWeekly(bars), emptyList())
     }
 
-    private fun fromMinute(bars: List<Bar>): AggregatedChart {
+    private fun fromBars(bars: List<Bar>): AggregatedChart {
         val vwap = mutableListOf<VwapPoint>()
         var runningTpv = 0.0
         var runningVol = 0.0

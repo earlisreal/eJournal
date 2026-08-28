@@ -11,6 +11,7 @@ import io.earlisreal.ejournal.domain.marketdata.Timeframe
 import io.earlisreal.ejournal.domain.marketdata.nextTradingDay
 import io.earlisreal.ejournal.domain.marketdata.previousTradingDay
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Market
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,9 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.seconds
 
 class AnalysisViewModel(
     private val marketDataRepo: MarketDataRepository,
@@ -30,6 +34,8 @@ class AnalysisViewModel(
 
     private var positions: List<ClosedPosition> = emptyList()
     private var loadJob: Job? = null
+    private var availabilityJob: Job? = null
+    private var availabilityGeneration = 0L
 
     fun init(positions: List<ClosedPosition>, index: Int, isDarkTheme: Boolean) {
         this.positions = positions
@@ -44,9 +50,7 @@ class AnalysisViewModel(
             isDarkTheme     = isDarkTheme,
             loading         = true,
         )
-        viewModelScope.launch(Dispatchers.Default) {
-            _state.value = _state.value.copy(has1MinData = check1MinAvailability(position))
-        }
+        refreshAvailability(position, index)
         loadBars(position, defaultTf)
     }
 
@@ -56,6 +60,8 @@ class AnalysisViewModel(
 
     fun selectTimeframe(tf: ChartTimeframe) {
         val position = _state.value.position ?: return
+        if (tf == ChartTimeframe.TEN_SEC && !_state.value.hasTenSecData) return
+        if (tf in INTRADAY_MINUTE && !_state.value.has1MinData) return
         _state.value = _state.value.copy(
             activeTimeframe = tf, loading = true, chartData = null, noDataForTimeframe = false,
         )
@@ -88,9 +94,7 @@ class AnalysisViewModel(
             position = position, currentIndex = index,
             activeTimeframe = tf, loading = true, chartData = null, noDataForTimeframe = false,
         )
-        viewModelScope.launch(Dispatchers.Default) {
-            _state.value = _state.value.copy(has1MinData = check1MinAvailability(position))
-        }
+        refreshAvailability(position, index)
         loadBars(position, tf)
     }
 
@@ -100,6 +104,7 @@ class AnalysisViewModel(
             _state.value = _state.value.copy(loading = true)
             try {
                 val sourceTimeframe = when (tf) {
+                    ChartTimeframe.TEN_SEC -> Timeframe.TEN_SECONDS
                     ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN -> Timeframe.ONE_MINUTE
                     ChartTimeframe.DAILY, ChartTimeframe.WEEKLY -> Timeframe.DAILY
                 }
@@ -119,7 +124,10 @@ class AnalysisViewModel(
     }
 
     private fun queryWindow(position: ClosedPosition, tf: Timeframe): Pair<LocalDateTime, LocalDateTime> {
-        return if (tf == Timeframe.ONE_MINUTE) {
+        return if (tf == Timeframe.TEN_SECONDS) {
+            LocalDateTime(position.entryDatetime.date, LocalTime(0, 0)) to
+            LocalDateTime(position.exitDatetime.date, LocalTime(23, 59, 59))
+        } else if (tf == Timeframe.ONE_MINUTE) {
             // Trade day plus the adjacent trading sessions — must match the 1-min storage window
             // in requiredRanges so the stored previous/next-day bars are actually loaded.
             LocalDateTime(previousTradingDay(position.entryDatetime.date), LocalTime(0, 0)) to
@@ -141,7 +149,47 @@ class AnalysisViewModel(
         return tradeDate >= coverage.first.date && tradeDate <= coverage.last.date
     }
 
+    private suspend fun checkTenSecAvailability(position: ClosedPosition): Boolean {
+        if (position.market != Market.US_STOCKS || classifyTradeType(position) != TradeType.DAY) return false
+        val date = position.entryDatetime.date
+        val bars = marketDataRepo.getBars(
+            position.symbol,
+            Timeframe.TEN_SECONDS,
+            position.market,
+            LocalDateTime(date, LocalTime(0, 0)),
+            LocalDateTime(date, LocalTime(23, 59, 59)),
+        )
+        if (bars.isEmpty()) return false
+        val transactionTimes = position.transactions.map { it.datetime }.ifEmpty {
+            listOf(position.entryDatetime, position.exitDatetime)
+        }
+        return transactionTimes.all { time ->
+            bars.any { bar ->
+                time.toInstant(UTC) >= bar.timestamp.toInstant(UTC) &&
+                    time.toInstant(UTC) < bar.timestamp.toInstant(UTC) + 10.seconds
+            }
+        }
+    }
+
+    private fun refreshAvailability(position: ClosedPosition, index: Int) {
+        availabilityJob?.cancel()
+        val generation = ++availabilityGeneration
+        availabilityJob = viewModelScope.launch(Dispatchers.Default) {
+            val has1Min = check1MinAvailability(position)
+            val hasTenSec = checkTenSecAvailability(position)
+            if (generation == availabilityGeneration && _state.value.currentIndex == index) {
+                _state.value = _state.value.copy(has1MinData = has1Min, hasTenSecData = hasTenSec)
+            }
+        }
+    }
+
     private companion object {
+        private val UTC = TimeZone.UTC
+        private val INTRADAY_MINUTE = setOf(
+            ChartTimeframe.ONE_MIN,
+            ChartTimeframe.FIVE_MIN,
+            ChartTimeframe.FIFTEEN_MIN,
+        )
         // Wide bounds that select every stored daily bar for a symbol (storage starts at 1970).
         private val ALL_HISTORY =
             LocalDateTime(LocalDate.parse("1900-01-01"), LocalTime(0, 0)) to

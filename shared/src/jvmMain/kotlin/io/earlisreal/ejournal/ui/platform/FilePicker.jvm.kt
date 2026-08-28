@@ -4,6 +4,7 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.path
 import io.github.vinceglb.filekit.readBytes
 
 /**
@@ -26,3 +27,9 @@ actual suspend fun pickImportFiles(): List<ByteArray> {
     // readBytes() is a suspend reader; skip files that fail to read rather than aborting the import.
     return files.mapNotNull { file -> runCatching { file.readBytes() }.getOrNull() }
 }
+
+actual suspend fun pickEtapeDatabaseFile(): String? =
+    FileKit.openFilePicker(
+        type = FileKitType.File("db", "sqlite", "sqlite3"),
+        mode = FileKitMode.Single,
+    )?.path

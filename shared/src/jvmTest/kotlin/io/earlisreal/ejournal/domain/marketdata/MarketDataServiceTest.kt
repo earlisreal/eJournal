@@ -65,6 +65,21 @@ private class FakeProvider : MarketDataProvider {
     private fun LocalDate.atTime9_30() = LocalDateTime.parse("${this}T09:30")
 }
 
+private class FakeEtapeImporter(
+    private val result: EtapeImportResult = EtapeImportResult(importedBars = 3),
+) : EtapeMarketDataImporter {
+    var calls = 0
+        private set
+    var positions: List<io.earlisreal.ejournal.domain.model.ClosedPosition> = emptyList()
+        private set
+
+    override suspend fun importFor(positions: List<io.earlisreal.ejournal.domain.model.ClosedPosition>): EtapeImportResult {
+        calls++
+        this.positions = positions
+        return result
+    }
+}
+
 private class FakeCreds(var creds: AlpacaMarketDataCredentials? = null) : CredentialsRepository {
     private val portfolio = mutableMapOf<String, io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials>()
     override fun getAlpacaMarketDataCredentials(): AlpacaMarketDataCredentials? = creds
@@ -107,6 +122,7 @@ class MarketDataServiceTest {
         alpaca: FakeProvider = FakeProvider(),
         crypto: FakeProvider = FakeProvider(),
         creds: FakeCreds = FakeCreds(),
+        etapeImporter: EtapeMarketDataImporter? = null,
     ) = MarketDataService(
         portfolioRepository = FakePortfolios(portfolios),
         closedPositions = ClosedPositionService(FakeTransactions(transactions), FakePortfolios(portfolios)),
@@ -116,8 +132,19 @@ class MarketDataServiceTest {
         alpacaProvider = alpaca,
         cryptoProvider = crypto,
         credentialsRepository = creds,
+        etapeImporter = etapeImporter,
         todayProvider = { TODAY },
     )
+
+    @Test
+    fun `sync imports eTape bars through the shared market-data run`() = runTest {
+        val importer = FakeEtapeImporter()
+        val result = service(etapeImporter = importer).sync()
+
+        assertEquals(1, importer.calls)
+        assertEquals(1, importer.positions.size)
+        assertEquals(3, result.etapeImportedBars)
+    }
 
     @Test
     fun `fetches and stores one-minute bars for a day trade via alpaca`() = runTest {

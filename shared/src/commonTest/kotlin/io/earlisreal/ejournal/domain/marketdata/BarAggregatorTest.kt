@@ -31,6 +31,18 @@ class BarAggregatorTest {
     }
 
     @Test
+    fun tenSecondPassthrough() {
+        val bars = listOf(
+            bar(timeframe = Timeframe.TEN_SECONDS, timestamp = "2024-01-02T09:30:00", open = 10.0, high = 11.0, low = 9.5, close = 10.5, volume = 1000),
+            bar(timeframe = Timeframe.TEN_SECONDS, timestamp = "2024-01-02T09:30:10", open = 10.5, high = 12.0, low = 10.0, close = 11.0, volume = 2000),
+        )
+        val result = BarAggregator.aggregate(bars, ChartTimeframe.TEN_SEC)
+
+        assertEquals(bars, result.bars)
+        assertEquals(2, result.vwap.size)
+    }
+
+    @Test
     fun fiveMinAggregatesOhlcv() {
         val bars = (0 until 5).map { i ->
             bar(timestamp = "2024-01-02T09:3$i", open = 10.0 + i, high = 11.0 + i, low = 9.0 + i, close = 10.5 + i, volume = 1000L)

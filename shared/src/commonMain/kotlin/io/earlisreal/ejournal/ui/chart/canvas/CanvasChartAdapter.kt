@@ -17,6 +17,12 @@ import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisState
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Maps [AnalysisState] onto the plain data the native [CandlestickCanvasChart] draws, and bridges the
@@ -34,7 +40,7 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
     val colors = remember(appColors) { chartColorsFrom(appColors) }
 
     // Precompute the derived overlays once per data load, not per frame.
-    val markers = remember(bars, position) { if (position != null) markersFor(position, bars) else emptyList() }
+    val markers = remember(bars, position, tf) { if (position != null) markersFor(position, bars, tf) else emptyList() }
     val overlays = remember(bars, state.vwapEnabled, state.chartData) {
         val points = if (state.vwapEnabled) vwapFor(bars, state.chartData?.vwap ?: emptyList()) else emptyList()
         if (points.isEmpty()) emptyList() else listOf(LineOverlay(points = points, label = "VWAP"))
@@ -59,19 +65,21 @@ fun CandlestickCanvasChart(state: AnalysisState, modifier: Modifier = Modifier) 
     )
 }
 
-private val INTRADAY = setOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
+private val INTRADAY = setOf(ChartTimeframe.TEN_SEC, ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
 
 /**
  * Place each trade fill on the bar that contains it — the last bar whose timestamp is at or before
  * the fill time (works for daily bars at midnight and intraday bars at the minute). Dedupes by
  * transaction id.
  */
-private fun markersFor(position: ClosedPosition, bars: List<Bar>): List<PriceMarker> {
+internal fun markersFor(position: ClosedPosition, bars: List<Bar>, timeframe: ChartTimeframe): List<PriceMarker> {
     if (bars.isEmpty()) return emptyList()
     val seen = HashSet<Long>()
     return position.transactions.filter { seen.add(it.id) }.mapNotNull { tx ->
         val idx = bars.indexOfLast { it.timestamp <= tx.datetime }
-        if (idx < 0) null else PriceMarker(barIndex = idx, price = tx.price, isBuy = tx.action == Action.BUY)
+        val bar = bars.getOrNull(idx)
+        if (bar == null || tx.datetime.toInstant(UTC) >= bar.timestamp.toInstant(UTC) + timeframe.barDuration) null
+        else PriceMarker(barIndex = idx, price = tx.price, isBuy = tx.action == Action.BUY)
     }
 }
 
@@ -79,7 +87,19 @@ private fun markersFor(position: ClosedPosition, bars: List<Bar>): List<PriceMar
 private fun vwapFor(bars: List<Bar>, vwap: List<VwapPoint>): List<LinePoint> {
     if (bars.isEmpty() || vwap.isEmpty()) return emptyList()
     return vwap.mapNotNull { p ->
-        val idx = bars.indexOfLast { it.timestamp <= p.timestamp }
+        val idx = bars.indexOfFirst { it.timestamp == p.timestamp }
         if (idx < 0) null else LinePoint(barIndex = idx, value = p.value)
     }
 }
+
+private val ChartTimeframe.barDuration: Duration
+    get() = when (this) {
+        ChartTimeframe.TEN_SEC -> 10.seconds
+        ChartTimeframe.ONE_MIN -> 1.minutes
+        ChartTimeframe.FIVE_MIN -> 5.minutes
+        ChartTimeframe.FIFTEEN_MIN -> 15.minutes
+        ChartTimeframe.DAILY -> 1.days
+        ChartTimeframe.WEEKLY -> 7.days
+    }
+
+private val UTC = TimeZone.UTC

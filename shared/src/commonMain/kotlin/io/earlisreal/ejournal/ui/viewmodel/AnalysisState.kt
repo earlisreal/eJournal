@@ -15,4 +15,5 @@ data class AnalysisState(
     val noDataForTimeframe: Boolean = false,
     val isDarkTheme: Boolean = true,
     val has1MinData: Boolean = true,
+    val hasTenSecData: Boolean = false,
 )

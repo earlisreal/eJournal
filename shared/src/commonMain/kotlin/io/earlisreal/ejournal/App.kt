@@ -128,6 +128,7 @@ fun App(
                 credentialsRepository = credentialsRepository,
                 alpacaProvider = alpacaProvider,
                 marketDataService = marketDataService,
+                settingsRepository = settingsRepository,
             )
         }
     }

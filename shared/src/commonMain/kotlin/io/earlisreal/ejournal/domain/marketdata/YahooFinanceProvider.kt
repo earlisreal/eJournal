@@ -53,6 +53,7 @@ class YahooFinanceProvider(private val client: HttpClient) : MarketDataProvider 
         val interval = when (timeframe) {
             Timeframe.DAILY -> "1d"
             Timeframe.ONE_MINUTE -> "1m"
+            Timeframe.TEN_SECONDS -> throw IllegalArgumentException("Yahoo does not provide 10-second bars")
         }
         val response = runCatching {
             client.get("$BASE_URL/$symbol") {

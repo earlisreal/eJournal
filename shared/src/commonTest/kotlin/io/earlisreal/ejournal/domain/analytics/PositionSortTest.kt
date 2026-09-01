@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.analytics
 
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.TradeDirection
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,5 +33,29 @@ class PositionSortTest {
     @Test
     fun symbolAscendingIsAlphabetical() {
         assertEquals(listOf(a, b), sortPositions(list, SortColumn.SYMBOL, SortDirection.ASC))
+    }
+
+    @Test
+    fun averagePriceDifferenceAscendingIsWorstFirst() {
+        val losingLong = a.copy(averageEntryPrice = 10.0, averageExitPrice = 9.0)
+        val winningShort = b.copy(
+            averageEntryPrice = 12.0,
+            averageExitPrice = 10.0,
+            direction = TradeDirection.SHORT,
+        )
+        val losingShort = b.copy(
+            averageEntryPrice = 10.0,
+            averageExitPrice = 13.0,
+            direction = TradeDirection.SHORT,
+        )
+
+        assertEquals(
+            listOf(losingShort, losingLong, winningShort),
+            sortPositions(
+                listOf(winningShort, losingLong, losingShort),
+                SortColumn.AVG_DIFFERENCE,
+                SortDirection.ASC,
+            ),
+        )
     }
 }

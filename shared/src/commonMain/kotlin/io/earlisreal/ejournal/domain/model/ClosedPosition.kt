@@ -21,6 +21,10 @@ data class ClosedPosition(
     // FifoMatcher itself). Keyed to this position's opening transaction id.
     val tags: List<Tag> = emptyList(),
 ) {
+    val averagePriceDifference: Double
+        get() = if (direction == TradeDirection.LONG) averageExitPrice - averageEntryPrice
+        else averageEntryPrice - averageExitPrice
+
     /**
      * Stable identity for tag assignment: the id of the fill that opened this round trip.
      * FifoMatcher appends fills in datetime order, so the first transaction is the opener. Null only

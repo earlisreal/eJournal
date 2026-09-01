@@ -33,6 +33,7 @@ import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
+import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
@@ -48,6 +49,7 @@ private val COLUMNS = listOf(
     Col(SortColumn.SHARES, "Shares", 0.8f, true),
     Col(SortColumn.AVG_ENTRY, "Avg entry", 1.0f, true),
     Col(SortColumn.AVG_EXIT, "Avg exit", 1.0f, true),
+    Col(SortColumn.AVG_DIFFERENCE, "Avg diff", 1.0f, true),
     Col(SortColumn.FEES, "Fees", 0.8f, true),
     Col(SortColumn.PNL, "P&L", 1.0f, true),
     Col(SortColumn.PNL_PCT, "P&L %", 0.8f, true),
@@ -128,6 +130,8 @@ private fun PositionRow(
 ) {
     val type = classifyTradeType(p)
     val pnlColor = if (p.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
+    val averageDifference = p.averagePriceDifference
+    val averageDifferenceColor = AppTheme.colors.priceDifferenceColor(averageDifference)
     val cost = p.averageEntryPrice * p.shares
     val pct = if (cost == 0.0) 0.0 else p.profitLoss / cost * 100.0
 
@@ -143,10 +147,11 @@ private fun PositionRow(
         NumCell("%.0f".format(p.shares), COLUMNS[5].weight)
         NumCell("%.2f".format(p.averageEntryPrice), COLUMNS[6].weight)
         NumCell("%.2f".format(p.averageExitPrice), COLUMNS[7].weight)
-        NumCell("%.2f".format(p.fees), COLUMNS[8].weight)
-        NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[9].weight, color = pnlColor, bold = true)
-        NumCell("%+.1f%%".format(pct), COLUMNS[10].weight, color = pnlColor)
-        TagCell(p, COLUMNS[11].weight, allTags, onToggleTag, onCreateTag, onManageTags)
+        NumCell(formatPriceDifference(averageDifference), COLUMNS[8].weight, color = averageDifferenceColor)
+        NumCell("%.2f".format(p.fees), COLUMNS[9].weight)
+        NumCell(formatSignedMoney(p.profitLoss, symbol), COLUMNS[10].weight, color = pnlColor, bold = true)
+        NumCell("%+.1f%%".format(pct), COLUMNS[11].weight, color = pnlColor)
+        TagCell(p, COLUMNS[12].weight, allTags, onToggleTag, onCreateTag, onManageTags)
     }
 }
 

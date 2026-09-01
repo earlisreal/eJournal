@@ -20,6 +20,10 @@ _Avoid_: Live chart
 The New York exchange-local calendar date containing a US-stock day Position's opening and closing Transactions.
 _Avoid_: Import date, UTC date
 
+**Average Price Difference**:
+The signed per-share difference between a Position's quantity-weighted average sell price and quantity-weighted average buy price for its realized shares. It excludes fees; positive values indicate a favorable price move for either long or short Positions.
+_Avoid_: Average spread
+
 **10-Second Bar**:
 An OHLCV summary for one wall-clock-aligned ten-second interval. It is the finest market-data interval shown for US-stock day Positions.
 _Avoid_: 10-second chart, tick data

@@ -4,7 +4,7 @@ import io.earlisreal.ejournal.domain.model.ClosedPosition
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
-enum class SortColumn { SYMBOL, TYPE, ENTRY, EXIT, HELD, SHARES, AVG_ENTRY, AVG_EXIT, FEES, PNL, PNL_PCT }
+enum class SortColumn { SYMBOL, TYPE, ENTRY, EXIT, HELD, SHARES, AVG_ENTRY, AVG_EXIT, AVG_DIFFERENCE, FEES, PNL, PNL_PCT }
 enum class SortDirection { ASC, DESC }
 
 private fun heldSeconds(p: ClosedPosition): Long =
@@ -29,6 +29,7 @@ fun sortPositions(
         SortColumn.SHARES -> compareBy { it.shares }
         SortColumn.AVG_ENTRY -> compareBy { it.averageEntryPrice }
         SortColumn.AVG_EXIT -> compareBy { it.averageExitPrice }
+        SortColumn.AVG_DIFFERENCE -> compareBy { it.averagePriceDifference }
         SortColumn.FEES -> compareBy { it.fees }
         SortColumn.PNL -> compareBy { it.profitLoss }
         SortColumn.PNL_PCT -> compareBy { pnlPct(it) }

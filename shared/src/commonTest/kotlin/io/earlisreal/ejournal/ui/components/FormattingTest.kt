@@ -32,6 +32,13 @@ class FormattingTest {
     }
 
     @Test
+    fun priceDifferenceUsesSignedTwoDecimalFormatting() {
+        assertEquals("+2.00", formatPriceDifference(2.0))
+        assertEquals("−2.00", formatPriceDifference(-2.0))
+        assertEquals("0.00", formatPriceDifference(0.0))
+    }
+
+    @Test
     fun dayTradeHoldShowsHoursMinutesSeconds() {
         val entry = LocalDateTime.parse("2024-01-01T09:30:00")
         val exit = LocalDateTime.parse("2024-01-01T11:45:30")

@@ -29,6 +29,12 @@ data class AppColors(
     val candleDown: Color,
 )
 
+fun AppColors.priceDifferenceColor(value: Double?): Color = when {
+    value == null || value == 0.0 -> textPrimary
+    value > 0 -> profit
+    else -> loss
+}
+
 val lightAppColors = AppColors(
     background = Color(0xFFF4F5F9),
     surface = Color(0xFFFFFFFF),

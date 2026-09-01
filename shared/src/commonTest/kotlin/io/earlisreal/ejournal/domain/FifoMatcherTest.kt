@@ -42,6 +42,7 @@ class FifoMatcherTest {
         assertEquals(TradeDirection.LONG, positions[0].direction)
         assertEquals(10.0, positions[0].averageEntryPrice)
         assertEquals(15.0, positions[0].averageExitPrice)
+        assertEquals(5.0, positions[0].averagePriceDifference)
         assertEquals(100.0, positions[0].shares)
         assertEquals(45.0, positions[0].fees)           // 20 + 25
         assertEquals(455.0, positions[0].profitLoss)    // (15-10)*100 - 45
@@ -114,6 +115,7 @@ class FifoMatcherTest {
         assertEquals(TradeDirection.SHORT, positions[0].direction)
         assertEquals(20.0, positions[0].averageEntryPrice)   // open = sell
         assertEquals(18.0, positions[0].averageExitPrice)    // close = buy
+        assertEquals(2.0, positions[0].averagePriceDifference)
         assertEquals(100.0, positions[0].shares)
         assertEquals(20.0, positions[0].fees)
         assertEquals(180.0, positions[0].profitLoss)         // (20-18)*100 - 20

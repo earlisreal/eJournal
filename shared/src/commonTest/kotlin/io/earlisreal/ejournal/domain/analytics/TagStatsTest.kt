@@ -12,12 +12,18 @@ class TagStatsTest {
     private val breakout = Tag(1, "Breakout", "#4CAF50")
     private val oversized = Tag(2, "Oversized", "#F44336")
 
-    private fun pos(pnl: Double, tags: List<Tag> = emptyList()) = ClosedPosition(
+    private fun pos(
+        pnl: Double,
+        tags: List<Tag> = emptyList(),
+        averageEntryPrice: Double = 10.0,
+        averageExitPrice: Double = 10.0,
+        shares: Double = 100.0,
+    ) = ClosedPosition(
         symbol = "X",
         entryDatetime = LocalDateTime.parse("2024-03-01T09:00"),
         exitDatetime = LocalDateTime.parse("2024-03-01T15:00"),
-        averageEntryPrice = 10.0, averageExitPrice = 10.0,
-        shares = 100.0, fees = 0.0, profitLoss = pnl,
+        averageEntryPrice = averageEntryPrice, averageExitPrice = averageExitPrice,
+        shares = shares, fees = 0.0, profitLoss = pnl,
         tags = tags,
     )
 
@@ -42,6 +48,18 @@ class TagStatsTest {
         val oversizedStat = stats.first { it.tag == oversized }
         assertEquals(1, oversizedStat.metrics.tradeCount)
         assertEquals(60.0, oversizedStat.metrics.netPnl)
+    }
+
+    @Test
+    fun averagePriceDifferenceIsMeanAcrossPositionsInEachTag() {
+        val stat = tagStats(
+            listOf(
+                pos(100.0, listOf(breakout), averageEntryPrice = 10.0, averageExitPrice = 12.0, shares = 10.0),
+                pos(-50.0, listOf(breakout), averageEntryPrice = 10.0, averageExitPrice = 9.0, shares = 1_000.0),
+            )
+        ).single()
+
+        assertEquals(0.5, stat.metrics.avgPriceDifference)
     }
 
     @Test

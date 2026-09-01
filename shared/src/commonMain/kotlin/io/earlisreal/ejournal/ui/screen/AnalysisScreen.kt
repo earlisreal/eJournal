@@ -75,6 +75,7 @@ import io.earlisreal.ejournal.ui.components.TagEditorMenu
 import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
 import io.earlisreal.ejournal.ui.components.formatHold
+import io.earlisreal.ejournal.ui.components.formatPriceDifference
 import io.earlisreal.ejournal.ui.components.signedMoney
 import io.earlisreal.ejournal.ui.shell.Destination
 import kotlinx.coroutines.Job
@@ -85,6 +86,7 @@ import kotlinx.coroutines.launch
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
+import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -421,9 +423,12 @@ fun AnalysisScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                     ) {
                         val pnlColor = if (position.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
+                        val averageDifference = position.averagePriceDifference
+                        val averageDifferenceColor = AppTheme.colors.priceDifferenceColor(averageDifference)
                         StatCell("Net P/L", signedMoney(position.profitLoss, symbol), valueColor = pnlColor)
                         StatCell("Avg Entry", "%.2f".format(position.averageEntryPrice))
                         StatCell("Avg Exit",  "%.2f".format(position.averageExitPrice))
+                        StatCell("Avg diff", formatPriceDifference(averageDifference), valueColor = averageDifferenceColor)
                         StatCell("Shares",   "%.0f".format(position.shares))
                         StatCell("Fees",     "%.2f".format(position.fees))
                         StatCell("Entry",    "%02d:%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute, position.entryDatetime.second))

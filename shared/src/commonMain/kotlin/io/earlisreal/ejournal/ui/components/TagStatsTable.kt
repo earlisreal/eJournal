@@ -30,6 +30,7 @@ import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
+import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
 
 /** Full per-tag statistics table for the Reports screen. Clicking a tagged row calls [onSelectTag]. */
 @Composable
@@ -48,6 +49,7 @@ fun TagStatsTable(
             HeaderCell("Tag", 2.0f, TextAlign.Start)
             HeaderCell("Trades", 0.8f, TextAlign.End)
             HeaderCell("Net P&L", 1.2f, TextAlign.End)
+            HeaderCell("Avg diff", 1.0f, TextAlign.End)
             HeaderCell("Win rate", 1.0f, TextAlign.End)
             HeaderCell("Profit factor", 1.2f, TextAlign.End)
             HeaderCell("Avg win", 1.0f, TextAlign.End)
@@ -69,6 +71,8 @@ fun TagStatsTable(
 @Composable
 private fun TagStatRow(s: TagStat, symbol: String, onSelectTag: (Long) -> Unit) {
     val m = s.metrics
+    val averageDifference = m.avgPriceDifference
+    val averageDifferenceColor = AppTheme.colors.priceDifferenceColor(averageDifference)
     Row(
         Modifier.fillMaxWidth()
             .clickable(enabled = s.tag != null) { s.tag?.let { onSelectTag(it.id) } }
@@ -82,6 +86,7 @@ private fun TagStatRow(s: TagStat, symbol: String, onSelectTag: (Long) -> Unit) 
         }
         NumCell(m.tradeCount.toString(), 0.8f)
         NumCell(signedMoney(m.netPnl, symbol), 1.2f, color = signColor(m.netPnl), bold = true)
+        NumCell(averageDifference?.let(::formatPriceDifference) ?: "—", 1.0f, color = averageDifferenceColor)
         NumCell(percentOrDash(m.winRate), 1.0f)
         NumCell(ratioOrDash(m.profitFactor), 1.2f)
         NumCell(moneyOrDash(m.avgWin, symbol), 1.0f, color = AppTheme.colors.profit)

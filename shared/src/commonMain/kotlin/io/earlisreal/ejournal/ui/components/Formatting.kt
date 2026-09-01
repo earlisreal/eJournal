@@ -46,6 +46,9 @@ fun formatDuration(seconds: Double): String {
 fun signedMoney(value: Double, symbol: String = "$"): String =
     (if (value < 0) "−" else "+") + symbol + "%,.2f".format(abs(value))
 
+fun formatPriceDifference(value: Double): String =
+    (if (value > 0) "+" else if (value < 0) "−" else "") + "%.2f".format(abs(value))
+
 /** Compact money for tight axis labels: "$3.4k", "−$640", "$2.5M", "$0". No leading plus sign. */
 fun compactMoney(value: Double, symbol: String = "$"): String {
     val sign = if (value < 0) "−" else ""

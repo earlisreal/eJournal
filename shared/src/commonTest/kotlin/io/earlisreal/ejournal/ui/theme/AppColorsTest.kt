@@ -21,6 +21,14 @@ class AppColorsTest {
     }
 
     @Test
+    fun priceDifferenceColorUsesProfitLossAndNeutralColors() {
+        assertEquals(lightAppColors.profit, lightAppColors.priceDifferenceColor(1.0))
+        assertEquals(lightAppColors.loss, lightAppColors.priceDifferenceColor(-1.0))
+        assertEquals(lightAppColors.textPrimary, lightAppColors.priceDifferenceColor(0.0))
+        assertEquals(lightAppColors.textPrimary, lightAppColors.priceDifferenceColor(null))
+    }
+
+    @Test
     fun darkBackgroundDiffersFromLightBackground() {
         assertNotEquals(lightAppColors.background, darkAppColors.background)
     }

@@ -141,7 +141,16 @@ class AnalysisViewModel(
     }
 
     private fun defaultTimeframe(position: ClosedPosition): ChartTimeframe =
-        if (classifyTradeType(position) == TradeType.DAY) ChartTimeframe.ONE_MIN else ChartTimeframe.DAILY
+        when {
+            isSubMinuteDayPosition(position) -> ChartTimeframe.TEN_SEC
+            classifyTradeType(position) == TradeType.DAY -> ChartTimeframe.ONE_MIN
+            else -> ChartTimeframe.DAILY
+        }
+
+    private fun isSubMinuteDayPosition(position: ClosedPosition): Boolean =
+        position.market == Market.US_STOCKS &&
+            classifyTradeType(position) == TradeType.DAY &&
+            position.exitDatetime.toInstant(UTC) < position.entryDatetime.toInstant(UTC) + 60.seconds
 
     private suspend fun check1MinAvailability(position: ClosedPosition): Boolean {
         val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE, position.market) ?: return false
@@ -178,7 +187,18 @@ class AnalysisViewModel(
             val has1Min = check1MinAvailability(position)
             val hasTenSec = checkTenSecAvailability(position)
             if (generation == availabilityGeneration && _state.value.currentIndex == index) {
-                _state.value = _state.value.copy(has1MinData = has1Min, hasTenSecData = hasTenSec)
+                val current = _state.value
+                val fallBackToOneMinute =
+                    isSubMinuteDayPosition(position) && !hasTenSec && current.activeTimeframe == ChartTimeframe.TEN_SEC
+                _state.value = current.copy(
+                    has1MinData = has1Min,
+                    hasTenSecData = hasTenSec,
+                    activeTimeframe = if (fallBackToOneMinute) ChartTimeframe.ONE_MIN else current.activeTimeframe,
+                    loading = if (fallBackToOneMinute) true else current.loading,
+                    chartData = if (fallBackToOneMinute) null else current.chartData,
+                    noDataForTimeframe = if (fallBackToOneMinute) false else current.noDataForTimeframe,
+                )
+                if (fallBackToOneMinute) loadBars(position, ChartTimeframe.ONE_MIN)
             }
         }
     }

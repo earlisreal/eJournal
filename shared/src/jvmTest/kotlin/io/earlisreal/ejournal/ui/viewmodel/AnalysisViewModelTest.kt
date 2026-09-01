@@ -32,6 +32,68 @@ class AnalysisViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
+    fun `sub-minute Position defaults to 10-second timeframe when complete data exists`() = runTest {
+        val repository = FakeMarketDataRepository(
+            tenSecondBars = listOf(
+                bar("2026-06-10T09:30:00"),
+                bar("2026-06-10T09:30:30"),
+            ),
+        )
+        val vm = AnalysisViewModel(repository)
+        vm.init(
+            listOf(position(
+                entry = "2026-06-10T09:30:05",
+                exit = "2026-06-10T09:30:35",
+            )),
+            index = 0,
+            isDarkTheme = true,
+        )
+
+        vm.state.first { it.hasTenSecData && it.activeTimeframe == io.earlisreal.ejournal.domain.marketdata.ChartTimeframe.TEN_SEC && it.chartData != null && !it.loading }
+
+        assertEquals(Timeframe.TEN_SECONDS, repository.tenSecondQueries.last().timeframe)
+        assertEquals(io.earlisreal.ejournal.domain.marketdata.ChartTimeframe.TEN_SEC, vm.state.value.activeTimeframe)
+    }
+
+    @Test
+    fun `sub-minute Position falls back to one-minute timeframe without complete 10-second data`() = runTest {
+        val repository = FakeMarketDataRepository(
+            tenSecondBars = emptyList(),
+            oneMinuteBars = listOf(bar("2026-06-10T09:30:00", Timeframe.ONE_MINUTE)),
+        )
+        val vm = AnalysisViewModel(repository)
+        vm.init(
+            listOf(position(
+                entry = "2026-06-10T09:30:05",
+                exit = "2026-06-10T09:30:35",
+            )),
+            index = 0,
+            isDarkTheme = true,
+        )
+
+        vm.state.first { it.activeTimeframe == io.earlisreal.ejournal.domain.marketdata.ChartTimeframe.ONE_MIN && !it.loading }
+
+        assertFalse(vm.state.value.hasTenSecData)
+        assertTrue(repository.oneMinuteQueries.isNotEmpty())
+        assertTrue(vm.state.value.chartData != null)
+    }
+
+    @Test
+    fun `60-second Position keeps one-minute default`() = runTest {
+        val vm = AnalysisViewModel(FakeMarketDataRepository())
+        vm.init(
+            listOf(position(
+                entry = "2026-06-10T09:30:00",
+                exit = "2026-06-10T09:31:00",
+            )),
+            index = 0,
+            isDarkTheme = true,
+        )
+
+        assertEquals(io.earlisreal.ejournal.domain.marketdata.ChartTimeframe.ONE_MIN, vm.state.value.activeTimeframe)
+    }
+
+    @Test
     fun `10-second availability covers every fill and loads the entire Position date`() = runTest {
         val repository = FakeMarketDataRepository(
             tenSecondBars = listOf(
@@ -65,25 +127,28 @@ class AnalysisViewModelTest {
         assertTrue(vm.state.value.activeTimeframe != io.earlisreal.ejournal.domain.marketdata.ChartTimeframe.TEN_SEC)
     }
 
-    private fun position() = ClosedPosition(
+    private fun position(
+        entry: String = "2026-06-10T09:30:05",
+        exit: String = "2026-06-10T10:00:05",
+    ) = ClosedPosition(
         symbol = "AAPL",
-        entryDatetime = LocalDateTime.parse("2026-06-10T09:30:05"),
-        exitDatetime = LocalDateTime.parse("2026-06-10T10:00:05"),
+        entryDatetime = LocalDateTime.parse(entry),
+        exitDatetime = LocalDateTime.parse(exit),
         averageEntryPrice = 100.0,
         averageExitPrice = 101.0,
         shares = 10.0,
         fees = 1.0,
         profitLoss = 10.0,
         transactions = listOf(
-            Transaction(1L, 1L, "AAPL", LocalDateTime.parse("2026-06-10T09:30:05"), Action.BUY, 100.0, 10.0, 0.5),
-            Transaction(2L, 1L, "AAPL", LocalDateTime.parse("2026-06-10T10:00:05"), Action.SELL, 101.0, 10.0, 0.5),
+            Transaction(1L, 1L, "AAPL", LocalDateTime.parse(entry), Action.BUY, 100.0, 10.0, 0.5),
+            Transaction(2L, 1L, "AAPL", LocalDateTime.parse(exit), Action.SELL, 101.0, 10.0, 0.5),
         ),
         market = Market.US_STOCKS,
     )
 
-    private fun bar(timestamp: String) = Bar(
+    private fun bar(timestamp: String, timeframe: Timeframe = Timeframe.TEN_SECONDS) = Bar(
         symbol = "AAPL",
-        timeframe = Timeframe.TEN_SECONDS,
+        timeframe = timeframe,
         timestamp = LocalDateTime.parse(timestamp),
         open = 100.0,
         high = 101.0,
@@ -93,11 +158,13 @@ class AnalysisViewModelTest {
     )
 
     private class FakeMarketDataRepository(
-        private val tenSecondBars: List<Bar>,
+        private val tenSecondBars: List<Bar> = emptyList(),
+        private val oneMinuteBars: List<Bar> = emptyList(),
     ) : MarketDataRepository {
         data class Query(val timeframe: Timeframe, val from: LocalDateTime, val to: LocalDateTime)
 
         val tenSecondQueries = mutableListOf<Query>()
+        val oneMinuteQueries = mutableListOf<Query>()
 
         override suspend fun upsertBars(market: Market, bars: List<Bar>) = Unit
 
@@ -110,9 +177,17 @@ class AnalysisViewModelTest {
             from: LocalDateTime,
             to: LocalDateTime,
         ): List<Bar> {
-            if (timeframe != Timeframe.TEN_SECONDS) return emptyList()
-            tenSecondQueries += Query(timeframe, from, to)
-            return tenSecondBars
+            when (timeframe) {
+                Timeframe.TEN_SECONDS -> {
+                    tenSecondQueries += Query(timeframe, from, to)
+                    return tenSecondBars
+                }
+                Timeframe.ONE_MINUTE -> {
+                    oneMinuteQueries += Query(timeframe, from, to)
+                    return oneMinuteBars
+                }
+                Timeframe.DAILY -> return emptyList()
+            }
         }
     }
 }

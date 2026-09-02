@@ -4,6 +4,7 @@ import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.Transaction
@@ -35,8 +36,7 @@ class CalendarViewModelTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun pos(year: Int, month: Int, day: Int, pnl: Double = 0.0): ClosedPosition {
-        val dt = LocalDateTime(year, month, day, 15, 0)
+    private fun posAt(dt: LocalDateTime, pnl: Double = 0.0): ClosedPosition {
         return ClosedPosition(
             symbol = "AAPL",
             entryDatetime = dt,
@@ -49,11 +49,14 @@ class CalendarViewModelTest {
         )
     }
 
+    private fun pos(year: Int, month: Int, day: Int, pnl: Double = 0.0): ClosedPosition =
+        posAt(LocalDateTime(year, month, day, 15, 0), pnl)
+
     /** ClosedPositionService backed by a per-portfolio marker tx + a compute that maps it to fixtures. */
     private fun serviceWith(positions: Map<Long, List<ClosedPosition>>): ClosedPositionService {
         val repo = object : TransactionRepository {
             override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> =
-                listOf(tx(externalId = "p$portfolioId"))
+                listOf(tx(externalId = "p$portfolioId:${positions[portfolioId].hashCode()}"))
             override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> = emptyList()
             override suspend fun insert(transaction: Transaction): Long? = null
             override suspend fun delete(id: Long) {}
@@ -61,7 +64,7 @@ class CalendarViewModelTest {
             override suspend fun deleteByPortfolio(portfolioId: Long) {}
         }
         val compute: (List<Transaction>) -> List<ClosedPosition> = { txs ->
-            val pid = txs.first().externalId!!.removePrefix("p").toLong()
+            val pid = txs.first().externalId!!.removePrefix("p").substringBefore(':').toLong()
             positions[pid] ?: emptyList()
         }
         return ClosedPositionService(repo, FakePortfolioRepository(), compute)
@@ -161,6 +164,115 @@ class CalendarViewModelTest {
         vm.load(1L, Segment.ALL)
 
         assertEquals(LocalDate(2024, 3, 20), vm.state.value.selectedDate)
+    }
+
+    @Test
+    fun `day and week selections are mutually exclusive`() = runTest {
+        val vm = newVm(serviceWith(mapOf(1L to listOf(pos(2024, 3, 20)))))
+        vm.load(1L, Segment.ALL)
+
+        vm.selectDay(LocalDate(2024, 3, 20))
+        assertEquals(LocalDate(2024, 3, 20), vm.state.value.selectedDate)
+        assertNull(vm.state.value.selectedWeekStart)
+
+        vm.selectWeek(LocalDate(2024, 3, 18))
+        assertNull(vm.state.value.selectedDate)
+        assertEquals(LocalDate(2024, 3, 18), vm.state.value.selectedWeekStart)
+    }
+
+    @Test
+    fun `month changes clear both selections`() = runTest {
+        val vm = newVm(serviceWith(mapOf(1L to listOf(pos(2024, 3, 20), pos(2024, 4, 2)))))
+        vm.load(1L, Segment.ALL)
+        vm.selectWeek(LocalDate(2024, 3, 18))
+
+        vm.jumpToMonth(2024, 4)
+
+        assertNull(vm.state.value.selectedDate)
+        assertNull(vm.state.value.selectedWeekStart)
+    }
+
+    @Test
+    fun `reload with the same dataset preserves the selected week`() = runTest {
+        val vm = newVm(serviceWith(mapOf(1L to listOf(pos(2024, 3, 20)))))
+        vm.load(1L, Segment.ALL)
+        vm.selectWeek(LocalDate(2024, 3, 18))
+
+        vm.load(1L, Segment.ALL)
+
+        assertEquals(LocalDate(2024, 3, 18), vm.state.value.selectedWeekStart)
+        assertNull(vm.state.value.selectedDate)
+    }
+
+    @Test
+    fun `dataset changes clear the selected week even when the filter key is unchanged`() = runTest {
+        val positions = mutableMapOf(1L to listOf(pos(2024, 3, 20)))
+        val vm = newVm(serviceWith(positions))
+        vm.load(1L, Segment.ALL)
+        vm.selectWeek(LocalDate(2024, 3, 18))
+
+        positions[1L] = listOf(pos(2024, 4, 2))
+        vm.load(1L, Segment.ALL)
+
+        assertNull(vm.state.value.selectedDate)
+        assertNull(vm.state.value.selectedWeekStart)
+    }
+
+    @Test
+    fun `selecting a traded adjacent day changes the displayed month`() = runTest {
+        val vm = newVm(serviceWith(mapOf(1L to listOf(pos(2024, 4, 1)))))
+        vm.load(1L, Segment.ALL)
+        vm.jumpToMonth(2024, 3)
+
+        vm.selectDay(LocalDate(2024, 4, 1))
+
+        assertEquals(2024, vm.state.value.year)
+        assertEquals(4, vm.state.value.month)
+        assertEquals(LocalDate(2024, 4, 1), vm.state.value.selectedDate)
+        assertNull(vm.state.value.selectedWeekStart)
+    }
+
+    @Test
+    fun `weekly positions include only seven dates and are ordered by exit datetime`() = runTest {
+        val early = posAt(LocalDateTime(2024, 6, 3, 9, 0), pnl = 10.0)
+        val late = posAt(LocalDateTime(2024, 6, 3, 15, 0), pnl = 20.0)
+        val sunday = posAt(LocalDateTime(2024, 6, 9, 12, 0), pnl = 30.0)
+        val before = posAt(LocalDateTime(2024, 6, 2, 15, 0), pnl = 40.0)
+        val after = posAt(LocalDateTime(2024, 6, 10, 9, 0), pnl = 50.0)
+        val vm = newVm(serviceWith(mapOf(1L to listOf(after, sunday, late, before, early))))
+        vm.load(1L, Segment.ALL)
+
+        assertEquals(listOf(early, late, sunday), vm.positionsForWeek(LocalDate(2024, 6, 3)))
+    }
+
+    @Test
+    fun `calendar applies segment and tag filters to daily and weekly values`() = runTest {
+        val tag = Tag(7, "Setup", "#111111")
+        val taggedDay = posAt(LocalDateTime(2024, 6, 3, 9, 0), pnl = 10.0).copy(tags = listOf(tag))
+        val untaggedDay = posAt(LocalDateTime(2024, 6, 4, 9, 0), pnl = 20.0)
+        val taggedSwing = posAt(LocalDateTime(2024, 6, 5, 9, 0), pnl = 30.0)
+            .copy(entryDatetime = LocalDateTime(2024, 6, 4, 9, 0), tags = listOf(tag))
+        val vm = newVm(serviceWith(mapOf(1L to listOf(taggedSwing, untaggedDay, taggedDay))))
+
+        vm.load(1L, Segment.DAY, setOf(tag.id), TagMatch.ANY)
+
+        assertEquals(10.0, vm.state.value.summaries[LocalDate(2024, 6, 3)]?.netPnl)
+        assertEquals(listOf(taggedDay), vm.positionsForWeek(LocalDate(2024, 6, 3)))
+    }
+
+    @Test
+    fun `month total excludes adjacent dates while the week includes them`() = runTest {
+        val mayPosition = pos(2024, 5, 31, pnl = 25.0)
+        val junePosition = pos(2024, 6, 1, pnl = 75.0)
+        val vm = newVm(serviceWith(mapOf(1L to listOf(mayPosition, junePosition))))
+        vm.load(1L, Segment.ALL)
+
+        assertEquals(75.0, vm.state.value.monthTotal)
+        assertEquals(listOf(mayPosition, junePosition), vm.positionsForWeek(LocalDate(2024, 5, 27)))
+
+        vm.jumpToMonth(2024, 5)
+
+        assertEquals(25.0, vm.state.value.monthTotal)
     }
 
     @Test

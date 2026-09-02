@@ -26,11 +26,12 @@ import kotlinx.datetime.plus
 data class CalendarState(
     val year: Int,
     val month: Int,
-    val grid: List<LocalDate?> = emptyList(),
+    val grid: List<LocalDate> = emptyList(),
     val summaries: Map<LocalDate, DaySummary> = emptyMap(),
     val positionsByDay: Map<LocalDate, List<ClosedPosition>> = emptyMap(),
     val monthTotal: Double = 0.0,
     val selectedDate: LocalDate? = null,
+    val selectedWeekStart: LocalDate? = null,
     val loading: Boolean = false,
     val availableYears: List<Int> = emptyList(),
     val canGoPrevious: Boolean = false,
@@ -74,6 +75,7 @@ class CalendarViewModel(
             loadedKey = null
             _state.value = _state.value.copy(
                 summaries = emptyMap(), positionsByDay = emptyMap(), monthTotal = 0.0, loading = false,
+                selectedDate = null, selectedWeekStart = null, availableYears = emptyList(),
                 canGoPrevious = false, canGoNext = false,
             )
             return
@@ -92,6 +94,7 @@ class CalendarViewModel(
             val positionsByDay = positions.groupBy { it.exitDatetime.date }
             val availableYears = summaries.keys.map { it.year }.distinct().sorted()
             val current = _state.value
+            val datasetChanged = positionsByDay != current.positionsByDay
             val year: Int
             val month: Int
             if (snapToLatest) {
@@ -111,7 +114,8 @@ class CalendarViewModel(
                 monthTotal     = monthTotal(summaries, year, month),
                 loading        = false,
                 availableYears = availableYears,
-                selectedDate   = if (snapToLatest) null else current.selectedDate,
+                selectedDate   = if (!snapToLatest && !datasetChanged) current.selectedDate else null,
+                selectedWeekStart = if (!snapToLatest && !datasetChanged) current.selectedWeekStart else null,
                 canGoPrevious  = canGoPreviousMonth(summaries, year, month),
                 canGoNext      = canGoNextMonth(summaries, year, month),
             )
@@ -127,8 +131,26 @@ class CalendarViewModel(
     }
 
     fun selectDay(date: LocalDate?) {
-        _state.value = _state.value.copy(selectedDate = date)
+        if (date == null) {
+            _state.value = _state.value.copy(selectedDate = null, selectedWeekStart = null)
+            return
+        }
+        val current = _state.value
+        if (date.year != current.year || date.monthNumber != current.month) {
+            applyMonth(date.year, date.monthNumber)
+        }
+        _state.value = _state.value.copy(selectedDate = date, selectedWeekStart = null)
     }
+
+    fun selectWeek(weekStart: LocalDate) {
+        _state.value = _state.value.copy(selectedDate = null, selectedWeekStart = weekStart)
+    }
+
+    /** Returns Positions closed on the seven dates beginning at the selected Monday. */
+    fun positionsForWeek(weekStart: LocalDate): List<ClosedPosition> =
+        (0 until 7)
+            .flatMap { offset -> _state.value.positionsByDay[weekStart.plus(offset, DateTimeUnit.DAY)].orEmpty() }
+            .sortedBy { it.exitDatetime }
 
     fun jumpToMonth(year: Int, month: Int) = applyMonth(year, month)
 
@@ -140,6 +162,7 @@ class CalendarViewModel(
             grid          = monthGrid(year, month),
             monthTotal    = monthTotal(s.summaries, year, month),
             selectedDate  = null,
+            selectedWeekStart = null,
             canGoPrevious = canGoPreviousMonth(s.summaries, year, month),
             canGoNext     = canGoNextMonth(s.summaries, year, month),
         )

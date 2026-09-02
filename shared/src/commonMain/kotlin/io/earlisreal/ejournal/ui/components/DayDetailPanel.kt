@@ -25,20 +25,20 @@ import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.theme.AppTheme
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
-import kotlinx.datetime.LocalDate
 
 @Composable
 fun DayDetailPanel(
-    date: LocalDate?,
+    heading: String?,
     positions: List<ClosedPosition>,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     symbol: String,
+    showExitDate: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     AppCard(modifier = modifier, contentFillsHeight = true) {
-        if (date == null) {
+        if (heading == null) {
             Text(
-                "Select a day to see its trades",
+                "Select a day or week to see its trades",
                 color = AppTheme.colors.textMuted,
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -49,7 +49,7 @@ fun DayDetailPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    longDate(date),
+                    heading,
                     color = AppTheme.colors.textPrimary,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -66,7 +66,7 @@ fun DayDetailPanel(
             }
             if (positions.isEmpty()) {
                 Text(
-                    "No trades closed this day",
+                    if (showExitDate) "No trades closed this week" else "No trades closed this day",
                     color = AppTheme.colors.textMuted,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -93,7 +93,8 @@ fun DayDetailPanel(
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
                                     Text(
-                                        if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing",
+                                        (if (showExitDate) "${shortDate(p.exitDatetime.date)} · " else "") +
+                                            if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing",
                                         color = AppTheme.colors.textMuted,
                                         style = MaterialTheme.typography.labelSmall,
                                     )

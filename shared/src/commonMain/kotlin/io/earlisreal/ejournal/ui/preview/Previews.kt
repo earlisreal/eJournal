@@ -69,7 +69,6 @@ private val sampleDashboardState = DashboardState(
     worstTrades = samplePositions.filter { it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(5),
 )
 private val sampleSummaries = dailySummaries(samplePositions)
-private val samplePositionsByDay = samplePositions.groupBy { it.exitDatetime.date }
 private val sampleGrid = monthGrid(2024, 6)
 private val sampleToday = LocalDate(2024, 6, 12)
 
@@ -145,8 +144,12 @@ fun MonthGridPreview() = PreviewBox {
             grid = sampleGrid,
             summaries = sampleSummaries,
             today = sampleToday,
-            selectedDate = LocalDate(2024, 6, 5),
+            displayedYear = 2024,
+            displayedMonth = 6,
+            selectedDate = null,
+            selectedWeekStart = LocalDate(2024, 6, 3),
             onSelectDay = {},
+            onSelectWeek = {},
             symbol = "$",
         )
     }
@@ -156,10 +159,11 @@ fun MonthGridPreview() = PreviewBox {
 @Composable
 fun DayDetailPanelPreview() = PreviewBox {
     DayDetailPanel(
-        date = LocalDate(2024, 6, 5),
-        positions = samplePositionsByDay[LocalDate(2024, 6, 5)] ?: emptyList(),
+        heading = "Jun 3–9, 2024",
+        positions = samplePositions,
         onAnalyze = { _, _ -> },
         symbol = "$",
+        showExitDate = true,
         modifier = Modifier.width(300.dp),
     )
 }

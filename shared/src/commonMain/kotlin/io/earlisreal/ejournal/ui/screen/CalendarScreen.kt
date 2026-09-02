@@ -44,6 +44,8 @@ import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.MonthGrid
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
 import io.earlisreal.ejournal.ui.components.monthName
+import io.earlisreal.ejournal.ui.components.longDate
+import io.earlisreal.ejournal.ui.components.shortDate
 import io.earlisreal.ejournal.ui.components.signedMoney
 import io.earlisreal.ejournal.ui.shell.FilterState
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -51,8 +53,23 @@ import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.viewmodel.CalendarViewModel
 import kotlin.time.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.plus
+
+private fun weekRange(start: LocalDate): String {
+    val end = start.plus(6, DateTimeUnit.DAY)
+    return when {
+        start.year == end.year && start.monthNumber == end.monthNumber ->
+            "${shortDate(start)}–${end.dayOfMonth}, ${end.year}"
+        start.year == end.year ->
+            "${shortDate(start)}–${shortDate(end)}, ${end.year}"
+        else ->
+            "${shortDate(start)}, ${start.year}–${shortDate(end)}, ${end.year}"
+    }
+}
 
 @Composable
 fun CalendarScreen(
@@ -160,23 +177,32 @@ fun CalendarScreen(
                     }
                 }
                 BoxWithConstraints(Modifier.weight(1f)) {
-                    val dayPositions = state.selectedDate?.let { state.positionsByDay[it] } ?: emptyList()
+                    val weekPositions = state.selectedWeekStart?.let(vm::positionsForWeek).orEmpty()
+                    val detailHeading = state.selectedDate?.let(::longDate)
+                        ?: state.selectedWeekStart?.let(::weekRange)
+                    val detailPositions = state.selectedDate?.let { state.positionsByDay[it].orEmpty() } ?: weekPositions
+                    val showExitDate = state.selectedWeekStart != null
                     if (maxWidth >= 760.dp) {
                         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                             MonthGrid(
                                 grid = state.grid,
                                 summaries = state.summaries,
+                                displayedYear = state.year,
+                                displayedMonth = state.month,
                                 today = today,
                                 selectedDate = state.selectedDate,
+                                selectedWeekStart = state.selectedWeekStart,
                                 onSelectDay = vm::selectDay,
+                                onSelectWeek = vm::selectWeek,
                                 symbol = symbol,
                                 modifier = Modifier.weight(1f),
                             )
                             DayDetailPanel(
-                                date = state.selectedDate,
-                                positions = dayPositions,
+                                heading = detailHeading,
+                                positions = detailPositions,
                                 onAnalyze = onAnalyze,
                                 symbol = symbol,
+                                showExitDate = showExitDate,
                                 modifier = Modifier.width(300.dp).fillMaxHeight(),
                             )
                         }
@@ -185,17 +211,22 @@ fun CalendarScreen(
                             MonthGrid(
                                 grid = state.grid,
                                 summaries = state.summaries,
+                                displayedYear = state.year,
+                                displayedMonth = state.month,
                                 today = today,
                                 selectedDate = state.selectedDate,
+                                selectedWeekStart = state.selectedWeekStart,
                                 onSelectDay = vm::selectDay,
+                                onSelectWeek = vm::selectWeek,
                                 symbol = symbol,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             DayDetailPanel(
-                                date = state.selectedDate,
-                                positions = dayPositions,
+                                heading = detailHeading,
+                                positions = detailPositions,
                                 onAnalyze = onAnalyze,
                                 symbol = symbol,
+                                showExitDate = showExitDate,
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                         }

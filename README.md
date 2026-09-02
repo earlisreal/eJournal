@@ -26,7 +26,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 
 - **Automatic FIFO trade matching** — groups individual fills into round-trip trades; handles longs, shorts, scale-ins/outs, and position flips. Closed positions are recomputed from your transactions (never stored), so editing or deleting a transaction just works — no sync to manage.
 - **Performance dashboard** — net & gross P&L, win rate, profit factor, expectancy, reward:risk, average win/loss, streaks, average hold time, top/worst trades, and an equity curve — all filterable by date range.
-- **P&L calendar** — a month grid color-coded by daily profit/loss; click any day to see the trades you closed.
+- **P&L calendar** — a month grid color-coded by daily profit/loss with Monday-through-Sunday weekly totals; click a day or week to drill into its trades.
 - **Per-trade analysis** — candlestick chart (10-second eTape bars by default for sub-minute Positions when available, 1/5/15-minute intraday, or daily/weekly for swing trades) with your entries and exits plotted, a VWAP toggle, a transaction breakdown, and arrow-key navigation between trades.
 - **Sortable, filterable trade log** — every closed position with entry/exit times & prices, shares, P&L, fees, and hold duration. Click through to the chart.
 - **Drag-and-drop import** — drop a CSV, let eJournal auto-detect the broker, and preview parsed transactions before committing.

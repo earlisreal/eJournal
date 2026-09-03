@@ -9,8 +9,8 @@ import kotlin.test.assertNull
 
 class TagStatsTest {
 
-    private val breakout = Tag(1, "Breakout", "#4CAF50")
-    private val oversized = Tag(2, "Oversized", "#F44336")
+    private val breakout = Tag(1, 1, "Breakout", "#4CAF50")
+    private val oversized = Tag(2, 1, "Oversized", "#F44336")
 
     private fun pos(
         pnl: Double,

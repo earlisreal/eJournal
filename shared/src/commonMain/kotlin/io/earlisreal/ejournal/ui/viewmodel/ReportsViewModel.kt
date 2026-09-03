@@ -22,8 +22,8 @@ data class ReportsState(
 
 /**
  * Per-tag performance for the Reports screen. Respects the portfolio, date range, and segment, but
- * deliberately ignores the global *tag* filter — the whole point of this screen is to compare all
- * tags side by side.
+ * deliberately ignores the selected *tag* filter — the whole point of this screen is to compare
+ * all tags side by side.
  */
 class ReportsViewModel(
     private val positionTags: PositionTagService,

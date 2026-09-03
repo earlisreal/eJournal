@@ -71,13 +71,13 @@ class CalendarViewModelTest {
     }
 
     private object NoopTagRepository : TagRepository {
-        override suspend fun getAll() = emptyList<Tag>()
-        override suspend fun create(name: String, color: String) = 0L
-        override suspend fun update(id: Long, name: String, color: String) {}
-        override suspend fun delete(id: Long) {}
-        override suspend fun getTagsForOpeningTxIds(openingTxIds: List<Long>) = emptyMap<Long, List<Tag>>()
-        override suspend fun addTag(openingTxId: Long, tagId: Long) {}
-        override suspend fun removeTag(openingTxId: Long, tagId: Long) {}
+        override suspend fun getAll(portfolioId: Long) = emptyList<Tag>()
+        override suspend fun create(portfolioId: Long, name: String, color: String) = 0L
+        override suspend fun update(portfolioId: Long, id: Long, name: String, color: String) {}
+        override suspend fun delete(portfolioId: Long, id: Long) {}
+        override suspend fun getTagsForOpeningTxIds(portfolioId: Long, openingTxIds: List<Long>) = emptyMap<Long, List<Tag>>()
+        override suspend fun addTag(portfolioId: Long, openingTxId: Long, tagId: Long) {}
+        override suspend fun removeTag(portfolioId: Long, openingTxId: Long, tagId: Long) {}
     }
 
     private fun newVm(service: ClosedPositionService) =
@@ -247,7 +247,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `calendar applies segment and tag filters to daily and weekly values`() = runTest {
-        val tag = Tag(7, "Setup", "#111111")
+        val tag = Tag(7, 1, "Setup", "#111111")
         val taggedDay = posAt(LocalDateTime(2024, 6, 3, 9, 0), pnl = 10.0).copy(tags = listOf(tag))
         val untaggedDay = posAt(LocalDateTime(2024, 6, 4, 9, 0), pnl = 20.0)
         val taggedSwing = posAt(LocalDateTime(2024, 6, 5, 9, 0), pnl = 30.0)

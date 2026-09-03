@@ -1,11 +1,11 @@
 package io.earlisreal.ejournal.domain.model
 
 /**
- * A user-defined label attachable to closed positions. The vocabulary is global across portfolios;
- * [color] is a hex string (e.g. "#4CAF50"). Assignments are anchored to a position's opening
- * transaction id — see PositionTag / PositionTagService.
+ * A user-defined label belonging to one portfolio and attachable to its closed positions. [color]
+ * is a hex string (e.g. "#4CAF50"). Assignments are anchored to a position's opening transaction
+ * id — see PositionTag / PositionTagService.
  */
-data class Tag(val id: Long, val name: String, val color: String)
+data class Tag(val id: Long, val portfolioId: Long, val name: String, val color: String)
 
 /**
  * Default color choices offered when creating a tag (hex "#RRGGBB"). Medium-saturation hues picked to

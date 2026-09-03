@@ -50,6 +50,8 @@ class SqlDelightPortfolioRepository(private val db: AppDatabase) : PortfolioRepo
 
     override suspend fun delete(id: Long) {
         db.portfolioQueries.transaction {
+            db.positionTagQueries.deleteAssignmentsForPortfolioTags(id)
+            db.tagQueries.deleteTagsForPortfolio(id)
             db.portfolioSettingQueries.deleteByPortfolio(id)
             db.portfolioQueries.deleteById(id)
         }

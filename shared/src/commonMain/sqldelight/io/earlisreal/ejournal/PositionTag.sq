@@ -1,6 +1,6 @@
 -- Tag assignments, anchored to a closed position's opening transaction id (see ClosedPosition
--- .openingTransactionId). Per-portfolio scoping falls out for free: an opener belongs to exactly one
--- portfolio. Foreign keys are declarative only (enforcement is off on the driver); assignment
+-- .openingTransactionId). Portfolio scoping is enforced by repository validation and scoped reads.
+-- Foreign keys are declarative only (enforcement is off on the driver); assignment
 -- cleanup on transaction/portfolio delete is handled in the repository layer, and orphaned rows are
 -- harmless because attachment is a lookup by current positions' opener ids.
 CREATE TABLE PositionTag (
@@ -13,10 +13,13 @@ CREATE INDEX PositionTag_tag ON PositionTag(tagId);
 
 -- All (openingTxId, tag) rows for a set of positions, joined to their tag definitions.
 selectTagsForOpeningTxIds:
-SELECT PositionTag.openingTxId, Tag.id, Tag.name, Tag.color
+SELECT PositionTag.openingTxId, Tag.id, Tag.portfolioId, Tag.name, Tag.color
 FROM PositionTag
 JOIN Tag ON Tag.id = PositionTag.tagId
-WHERE PositionTag.openingTxId IN ?;
+JOIN TradeTransaction ON TradeTransaction.id = PositionTag.openingTxId
+WHERE PositionTag.openingTxId IN ?
+  AND Tag.portfolioId = ?
+  AND TradeTransaction.portfolioId = ?;
 
 insertAssignment:
 INSERT OR IGNORE INTO PositionTag (openingTxId, tagId) VALUES (?, ?);
@@ -26,6 +29,9 @@ DELETE FROM PositionTag WHERE openingTxId = ? AND tagId = ?;
 
 deleteAssignmentsForTag:
 DELETE FROM PositionTag WHERE tagId = ?;
+
+deleteAssignmentsForPortfolioTags:
+DELETE FROM PositionTag WHERE tagId IN (SELECT id FROM Tag WHERE portfolioId = ?);
 
 deleteAssignmentsForOpeningTx:
 DELETE FROM PositionTag WHERE openingTxId = ?;

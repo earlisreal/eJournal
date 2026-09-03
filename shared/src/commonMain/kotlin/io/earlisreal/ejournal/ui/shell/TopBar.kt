@@ -73,10 +73,11 @@ fun TopBar(
             Spacer(Modifier.width(Spacing.lg))
         }
         SegmentToggle(segment = segment, onSegmentChange = onSegmentChange)
-        if (showTagFilter) {
+        if (showTagFilter && selectedPortfolio != null) {
             Spacer(Modifier.width(Spacing.md))
             TagFilterControl(
                 tagRepository = tagRepository,
+                portfolioId = selectedPortfolio.id,
                 selectedTagIds = selectedTagIds,
                 tagMatch = tagMatch,
                 onToggleTag = onToggleTagFilter,

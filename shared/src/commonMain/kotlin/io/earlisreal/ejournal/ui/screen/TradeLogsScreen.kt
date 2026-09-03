@@ -42,6 +42,7 @@ fun TradeLogsScreen(
     tagRepository: TagRepository,
     filter: FilterState,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
+    onTagDeleted: (Long) -> Unit = {},
 ) {
     val vm = viewModel { TradeLogsViewModel(positionTags, tagRepository) }
     val state by vm.state.collectAsState()
@@ -88,11 +89,16 @@ fun TradeLogsScreen(
     }
 
     if (showTagManager) {
-        TagManagerDialog(
-            tagRepository = tagRepository,
-            onChanged = { vm.onTagsChanged() },
-            onDismiss = { showTagManager = false },
-        )
+        filter.portfolio?.let { portfolio ->
+            TagManagerDialog(
+                tagRepository = tagRepository,
+                portfolioId = portfolio.id,
+                portfolioName = portfolio.name,
+                onChanged = { vm.onTagsChanged() },
+                onTagDeleted = onTagDeleted,
+                onDismiss = { showTagManager = false },
+            )
+        }
     }
 }
 

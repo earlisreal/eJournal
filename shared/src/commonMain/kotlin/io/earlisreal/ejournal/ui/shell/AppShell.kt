@@ -48,15 +48,27 @@ data class ShellNav(
     val selectedAnalysis: ClosedPosition?,
     val analysisPositions: List<ClosedPosition>,
     val analysisIndex: Int,
+    val analysisPortfolioId: Long?,
+    val analysisPortfolioName: String?,
     val onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     val onNavigate: (Destination) -> Unit,
-    /** Set the global tag filter to a single tag and jump to Trade Logs (Reports/Dashboard drill-down). */
+    /** Set the active portfolio's tag filter to a single tag and jump to Trade Logs. */
     val onSelectTag: (Long) -> Unit,
+    val onTagDeleted: (Long) -> Unit,
     val themeMode: ThemeMode,
     val onThemeChange: (ThemeMode) -> Unit,
     val analysisSource: Destination?,
     val onBackFromAnalysis: (() -> Unit)?,
 )
+
+internal fun selectedTagsAfterPortfolioChange(
+    selectedTagIds: Set<Long>,
+    previousPortfolioId: Long?,
+    nextPortfolioId: Long?,
+): Set<Long> = if (previousPortfolioId == nextPortfolioId) selectedTagIds else emptySet()
+
+internal fun selectedTagsAfterTagDeletion(selectedTagIds: Set<Long>, deletedTagId: Long): Set<Long> =
+    selectedTagIds - deletedTagId
 
 @Composable
 fun AppShell(
@@ -83,16 +95,10 @@ fun AppShell(
     var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
     var analysisPositions by remember { mutableStateOf<List<ClosedPosition>>(emptyList()) }
     var analysisIndex by remember { mutableStateOf(0) }
+    var analysisPortfolioId by remember { mutableStateOf<Long?>(null) }
+    var analysisPortfolioName by remember { mutableStateOf<String?>(null) }
     var analysisSource by remember { mutableStateOf<Destination?>(null) }
     var showPortfolioManager by remember { mutableStateOf(false) }
-
-    var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
-    var customRange by remember {
-        mutableStateOf(savedFilter?.let { p -> p.customFrom?.let { f -> p.customTo?.let { t -> DateRange(f, t) } } })
-    }
-    var segment by remember { mutableStateOf(savedFilter?.segment ?: Segment.ALL) }
-    var selectedTagIds by remember { mutableStateOf(savedFilter?.selectedTagIds ?: emptySet<Long>()) }
-    var tagMatch by remember { mutableStateOf(savedFilter?.tagMatch ?: TagMatch.ANY) }
 
     var portfolios by remember { mutableStateOf(initialPortfolios) }
     var selectedPortfolio by remember {
@@ -101,6 +107,21 @@ fun AppShell(
                 ?: initialPortfolios.firstOrNull()
         )
     }
+
+    var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
+    var customRange by remember {
+        mutableStateOf(savedFilter?.let { p -> p.customFrom?.let { f -> p.customTo?.let { t -> DateRange(f, t) } } })
+    }
+    var segment by remember { mutableStateOf(savedFilter?.segment ?: Segment.ALL) }
+    var selectedTagIds by remember {
+        mutableStateOf(
+            savedFilter?.portfolioId
+                ?.takeIf { id -> initialPortfolios.any { it.id == id } }
+                ?.let { savedFilter.selectedTagIds }
+                ?: emptySet()
+        )
+    }
+    var tagMatch by remember { mutableStateOf(savedFilter?.tagMatch ?: TagMatch.ANY) }
     // (removed: LaunchedEffect that loaded portfolios and switched to DASHBOARD — now resolved
     //  behind the splash by resolveStartDestination / buildReadyApp)
 
@@ -121,8 +142,11 @@ fun AppShell(
     fun reloadPortfolios() {
         scope.launch {
             val list = portfolioRepository.getAll()
+            val previousId = selectedPortfolio?.id
+            val next = list.firstOrNull { it.id == previousId } ?: list.firstOrNull()
             portfolios = list
-            selectedPortfolio = list.firstOrNull { it.id == selectedPortfolio?.id } ?: list.firstOrNull()
+            selectedPortfolio = next
+            selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, next?.id)
             persist()
         }
     }
@@ -160,7 +184,12 @@ fun AppShell(
                         TopBar(
                             portfolios = portfolios,
                             selectedPortfolio = selectedPortfolio,
-                            onSelectPortfolio = { selectedPortfolio = it; persist() },
+                            onSelectPortfolio = {
+                                val previousId = selectedPortfolio?.id
+                                selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, it.id)
+                                selectedPortfolio = it
+                                persist()
+                            },
                             preset = preset,
                             customRange = customRange,
                             onDateChange = { p, r -> preset = p; customRange = r; persist() },
@@ -188,6 +217,8 @@ fun AppShell(
                                 analysisIndex     = analysisIndex,
                                 onAnalyze = { position, list ->
                                     analysisSource    = current
+                                    analysisPortfolioId = selectedPortfolio?.id
+                                    analysisPortfolioName = selectedPortfolio?.name
                                     selectedAnalysis  = position
                                     analysisPositions = list
                                     analysisIndex     = list.indexOf(position).coerceAtLeast(0)
@@ -203,6 +234,12 @@ fun AppShell(
                                     analysisSource = null
                                     current = Destination.TRADE_LOGS
                                 },
+                                onTagDeleted = { id ->
+                                    selectedTagIds = selectedTagsAfterTagDeletion(selectedTagIds, id)
+                                    persist()
+                                },
+                                analysisPortfolioId = analysisPortfolioId,
+                                analysisPortfolioName = analysisPortfolioName,
                                 themeMode    = themeMode,
                                 onThemeChange = { themeMode = it; settingsRepository.setThemeMode(it) },
                                 analysisSource = analysisSource,

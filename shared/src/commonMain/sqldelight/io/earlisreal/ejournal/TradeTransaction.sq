@@ -21,6 +21,9 @@ insertTransaction:
 INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
+selectById:
+SELECT * FROM TradeTransaction WHERE id = ?;
+
 selectByPortfolio:
 SELECT * FROM TradeTransaction WHERE portfolioId = ? ORDER BY datetime ASC;
 

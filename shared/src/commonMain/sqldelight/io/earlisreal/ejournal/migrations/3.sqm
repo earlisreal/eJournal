@@ -1,0 +1,53 @@
+-- Migrate schema v3 -> v4: make tags portfolio-owned and discard rows whose owner cannot be inferred.
+CREATE TABLE Tag_new (
+    id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    portfolioId INTEGER NOT NULL,
+    name       TEXT    NOT NULL,
+    color      TEXT    NOT NULL
+);
+
+CREATE UNIQUE INDEX Tag_portfolio_name ON Tag_new(portfolioId, name COLLATE NOCASE);
+
+CREATE TABLE TagMigrationMap (
+    legacyTagId INTEGER NOT NULL,
+    portfolioId INTEGER NOT NULL,
+    newTagId    INTEGER NOT NULL,
+    PRIMARY KEY (legacyTagId, portfolioId)
+);
+
+INSERT INTO Tag_new (portfolioId, name, color)
+SELECT DISTINCT tx.portfolioId, tag.name, tag.color
+FROM PositionTag AS assignment
+JOIN TradeTransaction AS tx ON tx.id = assignment.openingTxId
+JOIN Tag AS tag ON tag.id = assignment.tagId;
+
+INSERT INTO TagMigrationMap (legacyTagId, portfolioId, newTagId)
+SELECT DISTINCT assignment.tagId, tx.portfolioId, newTag.id
+FROM PositionTag AS assignment
+JOIN TradeTransaction AS tx ON tx.id = assignment.openingTxId
+JOIN Tag AS tag ON tag.id = assignment.tagId
+JOIN Tag_new AS newTag
+    ON newTag.portfolioId = tx.portfolioId
+   AND newTag.name = tag.name COLLATE NOCASE;
+
+CREATE TABLE PositionTag_new (
+    openingTxId INTEGER NOT NULL,
+    tagId       INTEGER NOT NULL,
+    PRIMARY KEY (openingTxId, tagId)
+);
+
+INSERT OR IGNORE INTO PositionTag_new (openingTxId, tagId)
+SELECT assignment.openingTxId, mapping.newTagId
+FROM PositionTag AS assignment
+JOIN TagMigrationMap AS mapping
+    ON mapping.legacyTagId = assignment.tagId
+JOIN TradeTransaction AS tx
+    ON tx.id = assignment.openingTxId
+   AND tx.portfolioId = mapping.portfolioId;
+
+DROP TABLE PositionTag;
+DROP TABLE Tag;
+CREATE INDEX PositionTag_tag ON PositionTag_new(tagId);
+ALTER TABLE Tag_new RENAME TO Tag;
+ALTER TABLE PositionTag_new RENAME TO PositionTag;
+DROP TABLE TagMigrationMap;

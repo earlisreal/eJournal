@@ -8,8 +8,8 @@ import kotlin.test.assertEquals
 
 class TagFilterTest {
 
-    private val a = Tag(1, "A", "#111111")
-    private val b = Tag(2, "B", "#222222")
+    private val a = Tag(1, 1, "A", "#111111")
+    private val b = Tag(2, 1, "B", "#222222")
 
     private fun pos(symbol: String, tags: List<Tag>) = ClosedPosition(
         symbol = symbol,

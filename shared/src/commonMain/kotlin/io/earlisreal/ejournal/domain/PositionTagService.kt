@@ -21,19 +21,19 @@ class PositionTagService(
         val positions = closedPositions.forPortfolio(portfolioId)
         val openingTxIds = positions.mapNotNull { it.openingTransactionId }
         if (openingTxIds.isEmpty()) return positions
-        val tagsByOpener = tagRepository.getTagsForOpeningTxIds(openingTxIds)
+        val tagsByOpener = tagRepository.getTagsForOpeningTxIds(portfolioId, openingTxIds)
         return positions.map { p ->
             val tags = p.openingTransactionId?.let { tagsByOpener[it] }
             if (tags.isNullOrEmpty()) p else p.copy(tags = tags)
         }
     }
 
-    /** Assigns [tagId] to [position]. No-op if the position carries no transactions (tests/previews). */
-    suspend fun addTag(position: ClosedPosition, tagId: Long) {
-        position.openingTransactionId?.let { tagRepository.addTag(it, tagId) }
+    /** Assigns [tagId] to [position] in [portfolioId]. No-op if the position carries no transactions. */
+    suspend fun addTag(portfolioId: Long, position: ClosedPosition, tagId: Long) {
+        position.openingTransactionId?.let { tagRepository.addTag(portfolioId, it, tagId) }
     }
 
-    suspend fun removeTag(position: ClosedPosition, tagId: Long) {
-        position.openingTransactionId?.let { tagRepository.removeTag(it, tagId) }
+    suspend fun removeTag(portfolioId: Long, position: ClosedPosition, tagId: Long) {
+        position.openingTransactionId?.let { tagRepository.removeTag(portfolioId, it, tagId) }
     }
 }

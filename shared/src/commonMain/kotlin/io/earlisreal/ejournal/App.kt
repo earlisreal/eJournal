@@ -91,6 +91,7 @@ fun App(
                 tagRepository = tagRepository,
                 filter = filter,
                 onAnalyze = nav.onAnalyze,
+                onTagDeleted = nav.onTagDeleted,
             )
             Destination.IMPORT -> ImportScreen(
                 transactionRepository = transactionRepository,
@@ -117,10 +118,16 @@ fun App(
                 positionNotes = positionNotes,
                 positionTags = positionTags,
                 tagRepository = tagRepository,
+                portfolioId = nav.analysisPortfolioId,
+                portfolioName = nav.analysisPortfolioName,
                 isDarkTheme = isDarkTheme,
-                symbol = filter.portfolio?.market?.symbol ?: "$",
+                // The analysis snapshot owns its portfolio context; the top-bar portfolio may
+                // change while analysis remains open.
+                symbol = nav.analysisPositions.firstOrNull()?.market?.symbol
+                    ?: filter.portfolio?.market?.symbol ?: "$",
                 sourceDestination = nav.analysisSource,
                 onBack = nav.onBackFromAnalysis,
+                onTagDeleted = nav.onTagDeleted,
             )
             Destination.SETTINGS -> SettingsScreen(
                 themeMode = nav.themeMode,

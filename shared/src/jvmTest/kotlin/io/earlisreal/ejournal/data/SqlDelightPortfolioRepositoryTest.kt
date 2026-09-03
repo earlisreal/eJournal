@@ -8,8 +8,11 @@ import io.earlisreal.ejournal.data.database.DateTimeAdapter
 import io.earlisreal.ejournal.data.database.MarketAdapter
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Broker
+import io.earlisreal.ejournal.domain.model.Action
+import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDateTime
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,6 +22,8 @@ import kotlin.test.assertTrue
 class SqlDelightPortfolioRepositoryTest {
 
     private lateinit var repo: SqlDelightPortfolioRepository
+    private lateinit var tagRepo: SqlDelightTagRepository
+    private lateinit var transactionRepo: SqlDelightTransactionRepository
 
     @BeforeTest
     fun setup() {
@@ -38,6 +43,8 @@ class SqlDelightPortfolioRepositoryTest {
             ),
         )
         repo = SqlDelightPortfolioRepository(db)
+        tagRepo = SqlDelightTagRepository(db)
+        transactionRepo = SqlDelightTransactionRepository(db)
     }
 
     @Test
@@ -94,4 +101,34 @@ class SqlDelightPortfolioRepositoryTest {
         repo.delete(id)
         assertTrue(repo.getAll().isEmpty())
     }
+
+    @Test
+    fun deleteRemovesPortfolioTagsAndAssignmentsOnlyForThatPortfolio() = runTest {
+        val first = repo.insert("First", Market.US_STOCKS)
+        val second = repo.insert("Second", Market.US_STOCKS)
+        val firstTx = transactionRepo.insert(transaction(first.id))!!
+        val secondTx = transactionRepo.insert(transaction(second.id))!!
+        val firstTag = tagRepo.create(first.id, "First tag", "#111111")
+        val secondTag = tagRepo.create(second.id, "Second tag", "#222222")
+        tagRepo.addTag(first.id, firstTx, firstTag)
+        tagRepo.addTag(second.id, secondTx, secondTag)
+
+        repo.delete(first.id)
+
+        assertTrue(tagRepo.getAll(first.id).isEmpty())
+        assertTrue(tagRepo.getTagsForOpeningTxIds(first.id, listOf(firstTx)).isEmpty())
+        assertEquals(listOf(secondTag), tagRepo.getAll(second.id).map { it.id })
+        assertEquals(listOf(secondTag), tagRepo.getTagsForOpeningTxIds(second.id, listOf(secondTx)).getValue(secondTx).map { it.id })
+    }
+
+    private fun transaction(portfolioId: Long) = Transaction(
+        id = 0L,
+        portfolioId = portfolioId,
+        symbol = "AAPL",
+        datetime = LocalDateTime(2026, 6, 1, 9, 30),
+        action = Action.BUY,
+        price = 100.0,
+        shares = 10.0,
+        fees = 1.0,
+    )
 }

@@ -9,6 +9,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PreferencesSettingsRepositoryFilterTest {
 
@@ -28,11 +29,21 @@ class PreferencesSettingsRepositoryFilterTest {
     @Test
     fun roundTripsPresetSegmentAndPortfolio() {
         val repo = PreferencesSettingsRepository(node)
-        repo.setFilterPrefs(FilterPrefs(portfolioId = 7L, preset = DateRangePreset.THIS_MONTH, customFrom = null, customTo = null, segment = Segment.DAY))
+        repo.setFilterPrefs(
+            FilterPrefs(
+                portfolioId = 7L,
+                preset = DateRangePreset.THIS_MONTH,
+                customFrom = null,
+                customTo = null,
+                segment = Segment.DAY,
+                selectedTagIds = setOf(3L, 5L),
+            ),
+        )
         val read = PreferencesSettingsRepository(node).getFilterPrefs()!!
         assertEquals(7L, read.portfolioId)
         assertEquals(DateRangePreset.THIS_MONTH, read.preset)
         assertEquals(Segment.DAY, read.segment)
+        assertEquals(setOf(3L, 5L), read.selectedTagIds)
     }
 
     @Test
@@ -44,5 +55,22 @@ class PreferencesSettingsRepositoryFilterTest {
         assertEquals(DateRangePreset.CUSTOM, read.preset)
         assertEquals(LocalDate(2024, 1, 5), read.customFrom)
         assertEquals(LocalDate(2024, 2, 6), read.customTo)
+    }
+
+    @Test
+    fun ignoresLegacyGlobalTagSelection() {
+        val repo = PreferencesSettingsRepository(node)
+        repo.setFilterPrefs(
+            FilterPrefs(
+                portfolioId = 7L,
+                preset = DateRangePreset.THIS_MONTH,
+                customFrom = null,
+                customTo = null,
+                segment = Segment.ALL,
+            ),
+        )
+        node.put("filter_tag_ids", "11,12")
+
+        assertTrue(PreferencesSettingsRepository(node).getFilterPrefs()!!.selectedTagIds.isEmpty())
     }
 }

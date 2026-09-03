@@ -58,7 +58,7 @@ class PreferencesSettingsRepository(
         const val KEY_SEGMENT = "filter_segment"
         const val KEY_FROM = "filter_custom_from"
         const val KEY_TO = "filter_custom_to"
-        const val KEY_TAG_IDS = "filter_tag_ids"
+        const val KEY_TAG_IDS = "filter_tag_ids_scoped"
         const val KEY_TAG_MATCH = "filter_tag_match"
         const val KEY_ETAPE_DB_PATH = "etape_db_path"
     }

@@ -69,7 +69,7 @@ class TradeLogsViewModel(
         _state.value = _state.value.copy(loading = true)
         loadJob = viewModelScope.launch(Dispatchers.Default) {
             val positions = positionTags.forPortfolio(portfolioId)
-            val tags = tagRepository.getAll()
+            val tags = tagRepository.getAll(portfolioId)
             filtered = filterByTags(filterPositions(positions, range, segment), selectedTagIds, tagMatch)
             _state.value = _state.value.copy(
                 positions = sortPositions(filtered, _state.value.sortColumn, _state.value.sortDirection),
@@ -96,8 +96,9 @@ class TradeLogsViewModel(
     /** Adds the tag if the position doesn't have it, else removes it; then reloads to reflect the change. */
     fun toggleTag(position: ClosedPosition, tag: Tag) {
         viewModelScope.launch(Dispatchers.Default) {
-            if (position.tags.any { it.id == tag.id }) positionTags.removeTag(position, tag.id)
-            else positionTags.addTag(position, tag.id)
+            val portfolioId = lastPortfolioId ?: return@launch
+            if (position.tags.any { it.id == tag.id }) positionTags.removeTag(portfolioId, position, tag.id)
+            else positionTags.addTag(portfolioId, position, tag.id)
             reload()
         }
     }
@@ -105,14 +106,15 @@ class TradeLogsViewModel(
     /** Quick-creates a tag (cycling the default palette) and assigns it to the position. */
     fun createAndAssignTag(position: ClosedPosition, name: String) {
         viewModelScope.launch(Dispatchers.Default) {
+            val portfolioId = lastPortfolioId ?: return@launch
             val color = defaultTagColors[_state.value.allTags.size % defaultTagColors.size]
             val id = try {
-                tagRepository.create(name, color)
+                tagRepository.create(portfolioId, name, color)
             } catch (e: Exception) {
                 // Name already exists (case-insensitive) — assign the existing one instead.
-                tagRepository.getAll().firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+                tagRepository.getAll(portfolioId).firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
             }
-            if (id != null) positionTags.addTag(position, id)
+            if (id != null) positionTags.addTag(portfolioId, position, id)
             reload()
         }
     }

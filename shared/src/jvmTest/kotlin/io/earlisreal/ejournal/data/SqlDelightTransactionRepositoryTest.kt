@@ -194,12 +194,12 @@ class SqlDelightTransactionRepositoryTest {
         val pId = seedPortfolio()
         val txId = txRepo.insert(tx(pId))!!
         val tagRepo = SqlDelightTagRepository(db)
-        val tagId = tagRepo.create("Breakout", "#4CAF50")
-        tagRepo.addTag(openingTxId = txId, tagId = tagId)
+        val tagId = tagRepo.create(pId, "Breakout", "#4CAF50")
+        tagRepo.addTag(portfolioId = pId, openingTxId = txId, tagId = tagId)
 
         txRepo.delete(txId)
 
-        assertTrue(tagRepo.getTagsForOpeningTxIds(listOf(txId)).isEmpty())
+        assertTrue(tagRepo.getTagsForOpeningTxIds(pId, listOf(txId)).isEmpty())
     }
 
     @Test
@@ -207,11 +207,11 @@ class SqlDelightTransactionRepositoryTest {
         val pId = seedPortfolio()
         val txId = txRepo.insert(tx(pId))!!
         val tagRepo = SqlDelightTagRepository(db)
-        val tagId = tagRepo.create("Breakout", "#4CAF50")
-        tagRepo.addTag(openingTxId = txId, tagId = tagId)
+        val tagId = tagRepo.create(pId, "Breakout", "#4CAF50")
+        tagRepo.addTag(portfolioId = pId, openingTxId = txId, tagId = tagId)
 
         txRepo.deleteByPortfolio(pId)
 
-        assertTrue(tagRepo.getTagsForOpeningTxIds(listOf(txId)).isEmpty())
+        assertTrue(tagRepo.getTagsForOpeningTxIds(pId, listOf(txId)).isEmpty())
     }
 }

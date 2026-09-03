@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 
 class PositionTagServiceTest {
 
-    private val breakout = Tag(1, "Breakout", "#4CAF50")
+    private val breakout = Tag(1, 1, "Breakout", "#4CAF50")
 
     private fun txn(id: Long) = Transaction(
         id = id, portfolioId = 1, symbol = "AAPL",
@@ -53,16 +53,25 @@ class PositionTagServiceTest {
 
     private class FakeTagRepo : TagRepository {
         val assignments = mutableMapOf<Long, MutableList<Tag>>()
+        val hydratedPortfolioIds = mutableListOf<Long>()
         val added = mutableListOf<Pair<Long, Long>>()
         val removed = mutableListOf<Pair<Long, Long>>()
-        override suspend fun getAll() = emptyList<Tag>()
-        override suspend fun create(name: String, color: String) = 0L
-        override suspend fun update(id: Long, name: String, color: String) {}
-        override suspend fun delete(id: Long) {}
-        override suspend fun getTagsForOpeningTxIds(openingTxIds: List<Long>): Map<Long, List<Tag>> =
-            openingTxIds.mapNotNull { id -> assignments[id]?.let { id to it.toList() } }.toMap()
-        override suspend fun addTag(openingTxId: Long, tagId: Long) { added += openingTxId to tagId }
-        override suspend fun removeTag(openingTxId: Long, tagId: Long) { removed += openingTxId to tagId }
+        override suspend fun getAll(portfolioId: Long) = emptyList<Tag>()
+        override suspend fun create(portfolioId: Long, name: String, color: String) = 0L
+        override suspend fun update(portfolioId: Long, id: Long, name: String, color: String) {}
+        override suspend fun delete(portfolioId: Long, id: Long) {}
+        override suspend fun getTagsForOpeningTxIds(portfolioId: Long, openingTxIds: List<Long>): Map<Long, List<Tag>> {
+            hydratedPortfolioIds += portfolioId
+            return openingTxIds.mapNotNull { id -> assignments[id]?.let { id to it.toList() } }.toMap()
+        }
+        override suspend fun addTag(portfolioId: Long, openingTxId: Long, tagId: Long) {
+            require(portfolioId == 1L)
+            added += openingTxId to tagId
+        }
+        override suspend fun removeTag(portfolioId: Long, openingTxId: Long, tagId: Long) {
+            require(portfolioId == 1L)
+            removed += openingTxId to tagId
+        }
     }
 
     @Test
@@ -73,6 +82,7 @@ class PositionTagServiceTest {
         val service = PositionTagService(closed, tagRepo)
 
         val result = service.forPortfolio(1L)
+        assertEquals(listOf(1L), tagRepo.hydratedPortfolioIds)
         assertEquals(listOf(breakout), result.first { it.symbol == "AAPL" }.tags)
         assertEquals(emptyList<Tag>(), result.first { it.symbol == "TSLA" }.tags)
     }
@@ -84,10 +94,21 @@ class PositionTagServiceTest {
         val service = PositionTagService(closed, tagRepo)
         val pos = positionOpenedBy(555L)
 
-        service.addTag(pos, breakout.id)
-        service.removeTag(pos, breakout.id)
+        service.addTag(1L, pos, breakout.id)
+        service.removeTag(1L, pos, breakout.id)
 
         assertEquals(listOf(555L to breakout.id), tagRepo.added)
         assertEquals(listOf(555L to breakout.id), tagRepo.removed)
+    }
+
+    @Test
+    fun crossPortfolioAssignmentIsRejectedByTheRepositoryBoundary() = runTest {
+        val closed = ClosedPositionService(StubTx(emptyList()), StubPortfolio()) { emptyList() }
+        val tagRepo = FakeTagRepo()
+        val service = PositionTagService(closed, tagRepo)
+
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            service.addTag(2L, positionOpenedBy(555L), breakout.id)
+        }
     }
 }

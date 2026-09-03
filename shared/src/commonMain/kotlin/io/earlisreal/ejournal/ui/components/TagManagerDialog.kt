@@ -53,7 +53,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun TagManagerDialog(
     tagRepository: TagRepository,
+    portfolioId: Long,
+    portfolioName: String,
     onChanged: () -> Unit,
+    onTagDeleted: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -63,12 +66,13 @@ fun TagManagerDialog(
     var color by remember { mutableStateOf(defaultTagColors.first()) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    suspend fun refresh() { tags = tagRepository.getAll() }
-    LaunchedEffect(Unit) { refresh() }
+    suspend fun refresh() { tags = tagRepository.getAll(portfolioId) }
 
     fun resetForm() {
         editingId = null; name = ""; color = defaultTagColors.first(); error = null
     }
+
+    LaunchedEffect(portfolioId) { resetForm(); refresh() }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = CardShape, color = AppTheme.colors.surface) {
@@ -76,7 +80,7 @@ fun TagManagerDialog(
                 modifier = Modifier.width(460.dp).heightIn(max = 620.dp).verticalScroll(rememberScrollState()).padding(Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
-                Text("Tags", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Tags · $portfolioName", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
                 if (tags.isEmpty()) {
                     Text("No tags yet. Create one below.", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodyMedium)
@@ -95,9 +99,9 @@ fun TagManagerDialog(
                                 AppTextButton(text = "Edit", onClick = { editingId = t.id; name = t.name; color = t.color; error = null })
                                 AppTextButton(text = "Delete", onClick = {
                                     scope.launch {
-                                        tagRepository.delete(t.id)
+                                        tagRepository.delete(portfolioId, t.id)
                                         if (editingId == t.id) resetForm()
-                                        refresh(); onChanged()
+                                        refresh(); onTagDeleted(t.id); onChanged()
                                     }
                                 })
                             }
@@ -135,7 +139,7 @@ fun TagManagerDialog(
                             val nm = name.trim()
                             scope.launch {
                                 try {
-                                    if (id == null) tagRepository.create(nm, color) else tagRepository.update(id, nm, color)
+                                    if (id == null) tagRepository.create(portfolioId, nm, color) else tagRepository.update(portfolioId, id, nm, color)
                                     resetForm(); refresh(); onChanged()
                                 } catch (e: Exception) {
                                     error = "A tag named \"$nm\" already exists."

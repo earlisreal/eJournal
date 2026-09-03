@@ -98,10 +98,13 @@ fun AnalysisScreen(
     positionNotes: PositionNoteService,
     positionTags: PositionTagService,
     tagRepository: TagRepository,
+    portfolioId: Long?,
+    portfolioName: String? = null,
     isDarkTheme: Boolean,
     symbol: String = "$",
     sourceDestination: Destination? = null,
     onBack: (() -> Unit)? = null,
+    onTagDeleted: (Long) -> Unit = {},
 ) {
     val vm = viewModel { AnalysisViewModel(marketDataRepository) }
     val state by vm.state.collectAsState()
@@ -115,30 +118,35 @@ fun AnalysisScreen(
     var allTags by remember { mutableStateOf<List<Tag>>(emptyList()) }
     var tagOverrides by remember { mutableStateOf<Map<Long, List<Tag>>>(emptyMap()) }
     var showTagManager by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { allTags = tagRepository.getAll() }
+    LaunchedEffect(portfolioId) {
+        tagOverrides = emptyMap()
+        allTags = portfolioId?.let { tagRepository.getAll(it) }.orEmpty()
+    }
 
     fun currentTagsFor(p: ClosedPosition): List<Tag> =
         p.openingTransactionId?.let { tagOverrides[it] } ?: p.tags
 
     fun toggleTag(p: ClosedPosition, tag: Tag) {
         val txId = p.openingTransactionId ?: return
+        val ownerId = portfolioId ?: return
         val current = currentTagsFor(p)
         val has = current.any { it.id == tag.id }
         tagOverrides = tagOverrides + (txId to if (has) current.filter { it.id != tag.id } else current + tag)
-        tagScope.launch { if (has) positionTags.removeTag(p, tag.id) else positionTags.addTag(p, tag.id) }
+        tagScope.launch { if (has) positionTags.removeTag(ownerId, p, tag.id) else positionTags.addTag(ownerId, p, tag.id) }
     }
 
     fun createAndAssignTag(p: ClosedPosition, name: String) {
         val txId = p.openingTransactionId ?: return
+        val ownerId = portfolioId ?: return
         tagScope.launch {
             val color = defaultTagColors[allTags.size % defaultTagColors.size]
             val id = try {
-                tagRepository.create(name, color)
+                tagRepository.create(ownerId, name, color)
             } catch (e: Exception) {
-                tagRepository.getAll().firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+                tagRepository.getAll(ownerId).firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
             } ?: return@launch
-            positionTags.addTag(p, id)
-            allTags = tagRepository.getAll()
+            positionTags.addTag(ownerId, p, id)
+            allTags = tagRepository.getAll(ownerId)
             val created = allTags.firstOrNull { it.id == id } ?: return@launch
             if (created.id !in currentTagsFor(p).map { it.id }) {
                 tagOverrides = tagOverrides + (txId to (currentTagsFor(p) + created))
@@ -305,7 +313,7 @@ fun AnalysisScreen(
                 }
 
                 // ── Tags ─────────────────────────────────────────────────────
-                if (position != null && position.openingTransactionId != null) {
+                if (portfolioId != null && position != null && position.openingTransactionId != null) {
                     TagEditRow(
                         tags = currentTagsFor(position),
                         allTags = allTags,
@@ -469,10 +477,13 @@ fun AnalysisScreen(
         }
     }
 
-    if (showTagManager) {
+    if (showTagManager && portfolioId != null) {
         TagManagerDialog(
             tagRepository = tagRepository,
-            onChanged = { tagScope.launch { allTags = tagRepository.getAll() } },
+            portfolioId = portfolioId,
+            portfolioName = portfolioName ?: "Portfolio $portfolioId",
+            onChanged = { tagScope.launch { allTags = tagRepository.getAll(portfolioId) } },
+            onTagDeleted = onTagDeleted,
             onDismiss = { showTagManager = false },
         )
     }

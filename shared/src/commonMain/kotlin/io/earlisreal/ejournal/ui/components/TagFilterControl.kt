@@ -32,13 +32,14 @@ import io.earlisreal.ejournal.ui.theme.PillShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 
 /**
- * TopBar control for the global tag filter: a pill showing the active count, opening a dropdown of
+ * TopBar control for the active portfolio's tag filter: a pill showing the active count, opening a dropdown of
  * tags (checkbox each) plus an Any/All match toggle and a Clear action. Loads the current vocabulary
  * each time it opens so tags created via the manager show up without an app restart.
  */
 @Composable
 fun TagFilterControl(
     tagRepository: TagRepository,
+    portfolioId: Long,
     selectedTagIds: Set<Long>,
     tagMatch: TagMatch,
     onToggleTag: (Long) -> Unit,
@@ -48,7 +49,7 @@ fun TagFilterControl(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var tags by remember { mutableStateOf<List<Tag>>(emptyList()) }
-    LaunchedEffect(expanded) { if (expanded) tags = tagRepository.getAll() }
+    LaunchedEffect(expanded, portfolioId) { if (expanded) tags = tagRepository.getAll(portfolioId) }
 
     val active = selectedTagIds.isNotEmpty()
     val label = if (active) "Tags · ${selectedTagIds.size}" else "Tags"

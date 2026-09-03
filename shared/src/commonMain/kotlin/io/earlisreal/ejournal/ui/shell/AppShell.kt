@@ -45,7 +45,6 @@ import kotlinx.datetime.todayIn
 
 /** Shell hand-off for screens: analysis navigation + theme state owned by the shell. */
 data class ShellNav(
-    val selectedAnalysis: ClosedPosition?,
     val analysisPositions: List<ClosedPosition>,
     val analysisIndex: Int,
     val analysisPortfolioId: Long?,
@@ -65,7 +64,10 @@ internal fun selectedTagsAfterPortfolioChange(
     selectedTagIds: Set<Long>,
     previousPortfolioId: Long?,
     nextPortfolioId: Long?,
-): Set<Long> = if (previousPortfolioId == nextPortfolioId) selectedTagIds else emptySet()
+): Set<Long> = if (hasPortfolioChanged(previousPortfolioId, nextPortfolioId)) emptySet() else selectedTagIds
+
+internal fun hasPortfolioChanged(previousPortfolioId: Long?, nextPortfolioId: Long?): Boolean =
+    previousPortfolioId != nextPortfolioId
 
 internal fun selectedTagsAfterTagDeletion(selectedTagIds: Set<Long>, deletedTagId: Long): Set<Long> =
     selectedTagIds - deletedTagId
@@ -92,7 +94,6 @@ fun AppShell(
     var current by remember { mutableStateOf(initialDestination) }
     var userExpanded by remember { mutableStateOf(true) }
     var themeMode by remember { mutableStateOf(settingsRepository.getThemeMode()) }
-    var selectedAnalysis by remember { mutableStateOf<ClosedPosition?>(null) }
     var analysisPositions by remember { mutableStateOf<List<ClosedPosition>>(emptyList()) }
     var analysisIndex by remember { mutableStateOf(0) }
     var analysisPortfolioId by remember { mutableStateOf<Long?>(null) }
@@ -139,15 +140,27 @@ fun AppShell(
         )
     }
 
+    fun clearAnalysis() {
+        analysisPositions = emptyList()
+        analysisIndex = 0
+        analysisPortfolioId = null
+        analysisPortfolioName = null
+        analysisSource = null
+    }
+
+    fun selectPortfolio(next: Portfolio?) {
+        val previousId = selectedPortfolio?.id
+        if (hasPortfolioChanged(previousId, next?.id)) clearAnalysis()
+        selectedPortfolio = next
+        selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, next?.id)
+        persist()
+    }
+
     fun reloadPortfolios() {
         scope.launch {
             val list = portfolioRepository.getAll()
-            val previousId = selectedPortfolio?.id
-            val next = list.firstOrNull { it.id == previousId } ?: list.firstOrNull()
             portfolios = list
-            selectedPortfolio = next
-            selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, next?.id)
-            persist()
+            selectPortfolio(list.firstOrNull { it.id == selectedPortfolio?.id } ?: list.firstOrNull())
         }
     }
 
@@ -184,12 +197,7 @@ fun AppShell(
                         TopBar(
                             portfolios = portfolios,
                             selectedPortfolio = selectedPortfolio,
-                            onSelectPortfolio = {
-                                val previousId = selectedPortfolio?.id
-                                selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, it.id)
-                                selectedPortfolio = it
-                                persist()
-                            },
+                            onSelectPortfolio = { selectPortfolio(it) },
                             preset = preset,
                             customRange = customRange,
                             onDateChange = { p, r -> preset = p; customRange = r; persist() },
@@ -212,14 +220,12 @@ fun AppShell(
                             current,
                             filterState,
                             ShellNav(
-                                selectedAnalysis  = selectedAnalysis,
                                 analysisPositions = analysisPositions,
                                 analysisIndex     = analysisIndex,
                                 onAnalyze = { position, list ->
                                     analysisSource    = current
                                     analysisPortfolioId = selectedPortfolio?.id
                                     analysisPortfolioName = selectedPortfolio?.name
-                                    selectedAnalysis  = position
                                     analysisPositions = list
                                     analysisIndex     = list.indexOf(position).coerceAtLeast(0)
                                     current = Destination.ANALYSIS

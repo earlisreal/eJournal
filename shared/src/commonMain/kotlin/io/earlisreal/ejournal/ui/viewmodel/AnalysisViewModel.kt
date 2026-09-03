@@ -39,7 +39,16 @@ class AnalysisViewModel(
 
     fun init(positions: List<ClosedPosition>, index: Int, isDarkTheme: Boolean) {
         this.positions = positions
-        val position = positions.getOrNull(index) ?: return
+        val position = positions.getOrNull(index)
+        if (position == null) {
+            loadJob?.cancel()
+            availabilityJob?.cancel()
+            availabilityGeneration++
+            loadJob = null
+            availabilityJob = null
+            _state.value = AnalysisState(isDarkTheme = isDarkTheme)
+            return
+        }
         val defaultTf = defaultTimeframe(position)
         _state.value = AnalysisState(
             position        = position,

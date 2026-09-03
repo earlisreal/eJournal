@@ -94,6 +94,20 @@ class AnalysisViewModelTest {
     }
 
     @Test
+    fun `empty Position list clears the previous Analysis selection`() = runTest {
+        val vm = AnalysisViewModel(FakeMarketDataRepository())
+        vm.init(listOf(position()), index = 0, isDarkTheme = true)
+        assertEquals("AAPL", vm.state.value.position?.symbol)
+
+        vm.init(emptyList(), index = 0, isDarkTheme = false)
+
+        assertEquals(null, vm.state.value.position)
+        assertEquals(0, vm.state.value.totalCount)
+        assertFalse(vm.state.value.loading)
+        assertFalse(vm.state.value.isDarkTheme)
+    }
+
+    @Test
     fun `10-second availability covers every fill and loads the entire Position date`() = runTest {
         val repository = FakeMarketDataRepository(
             tenSecondBars = listOf(

@@ -197,7 +197,9 @@ fun AppShell(
                         TopBar(
                             portfolios = portfolios,
                             selectedPortfolio = selectedPortfolio,
-                            onSelectPortfolio = { selectPortfolio(it) },
+                            onSelectPortfolio = { next ->
+                                if (hasPortfolioChanged(selectedPortfolio?.id, next.id)) selectPortfolio(next)
+                            },
                             preset = preset,
                             customRange = customRange,
                             onDateChange = { p, r -> preset = p; customRange = r; persist() },

@@ -12,6 +12,7 @@ import io.earlisreal.ejournal.domain.marketdata.nextTradingDay
 import io.earlisreal.ejournal.domain.marketdata.previousTradingDay
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Market
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class AnalysisViewModel(
 
     private var positions: List<ClosedPosition> = emptyList()
     private var loadJob: Job? = null
+    private var loadGeneration = 0L
     private var availabilityJob: Job? = null
     private var availabilityGeneration = 0L
 
@@ -41,6 +43,7 @@ class AnalysisViewModel(
         this.positions = positions
         val position = positions.getOrNull(index)
         if (position == null) {
+            loadGeneration++
             loadJob?.cancel()
             availabilityJob?.cancel()
             availabilityGeneration++
@@ -109,7 +112,9 @@ class AnalysisViewModel(
 
     private fun loadBars(position: ClosedPosition, tf: ChartTimeframe) {
         loadJob?.cancel()
+        val generation = ++loadGeneration
         loadJob = viewModelScope.launch(Dispatchers.Default) {
+            if (generation != loadGeneration) return@launch
             _state.value = _state.value.copy(loading = true)
             try {
                 val sourceTimeframe = when (tf) {
@@ -119,13 +124,18 @@ class AnalysisViewModel(
                 }
                 val (from, to) = queryWindow(position, sourceTimeframe)
                 val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, position.market, from, to)
+                if (generation != loadGeneration) return@launch
                 if (rawBars.isEmpty()) {
                     _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
                     return@launch
                 }
                 val aggregated = BarAggregator.aggregate(rawBars, tf)
+                if (generation != loadGeneration) return@launch
                 _state.value = _state.value.copy(loading = false, chartData = aggregated, noDataForTimeframe = false)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                if (generation != loadGeneration) return@launch
                 System.err.println("[analysis] loadBars error: $e")
                 _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
             }

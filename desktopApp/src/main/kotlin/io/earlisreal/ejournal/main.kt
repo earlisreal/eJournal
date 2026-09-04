@@ -51,7 +51,7 @@ fun main(args: Array<String>) {
 
             is InitState.Ready -> {
                 val ready = s.value
-                val windowState = rememberWindowState(size = DpSize(1360.dp, 880.dp))
+                val windowState = rememberWindowState(size = DpSize(1440.dp, 900.dp))
                 Window(
                     onCloseRequest = ::exitApplication,
                     state = windowState,

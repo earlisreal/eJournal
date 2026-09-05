@@ -21,6 +21,9 @@ insertTransaction:
 INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
+updateFeesByPortfolioAndExternalId:
+UPDATE TradeTransaction SET fees = ? WHERE portfolioId = ? AND externalId = ?;
+
 selectById:
 SELECT * FROM TradeTransaction WHERE id = ?;
 

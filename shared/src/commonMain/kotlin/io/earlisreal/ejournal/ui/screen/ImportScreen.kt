@@ -24,6 +24,7 @@ import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
+import io.earlisreal.ejournal.domain.broker.describeImport
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
@@ -374,12 +375,7 @@ private fun BrokerSyncSection(
                             try {
                                 when (val outcome = service.syncIncremental(portfolioId)) {
                                     is BrokerSyncOutcome.Imported -> {
-                                        result = buildString {
-                                            append("Imported ${outcome.inserted} new transaction(s)")
-                                            outcome.detail.skipped.forEach { (reason, count) ->
-                                                if (count > 0) append(" · $count $reason skipped")
-                                            }
-                                        }
+                                        result = outcome.detail.describeImport(outcome.inserted)
                                         if (outcome.inserted > 0) onImportSuccess()
                                     }
                                     is BrokerSyncOutcome.AccountAlreadyBound ->

@@ -12,22 +12,20 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
 private const val PAGE_SIZE = 100
 private const val MAX_ATTEMPTS = 3
 private val EASTERN = TimeZone.of("America/New_York")
+private val UTC = TimeZone.UTC
 
 class AlpacaBrokerClientImpl(
     private val httpClient: HttpClient,
@@ -84,49 +82,30 @@ class AlpacaBrokerClientImpl(
             }
         }
 
+        val fillRows = when (val result = fetchActivityRows(credentials, "FILL", after, until)) {
+            is ActivityRowsResult.Success -> result.rows
+            ActivityRowsResult.InvalidCredentials -> return AlpacaFetchResult.InvalidCredentials
+            is ActivityRowsResult.Error -> return AlpacaFetchResult.NetworkError(result.message)
+        }
+        val feeRows = when (val result = fetchActivityRows(credentials, "FEE", after, until)) {
+            is ActivityRowsResult.Success -> result.rows
+            ActivityRowsResult.InvalidCredentials -> return AlpacaFetchResult.InvalidCredentials
+            is ActivityRowsResult.Error -> return AlpacaFetchResult.NetworkError(result.message)
+        }
+
+        val fills = fillRows.map { it.toFillActivity(usEquitySymbols) }
         val transactions = mutableListOf<Transaction>()
         var skippedOptions = 0
         var skippedNonEquity = 0
-        var pageToken: String? = null
+        var skippedMalformed = 0
 
-        try {
-            do {
-                val page = when (val result = requestWithRetry(credentials, "/v2/account/activities/FILL") {
-                    parameter("direction", "asc")
-                    parameter("page_size", PAGE_SIZE)
-                    after?.let { parameter("after", it.toString()) }
-                    until?.let { parameter("until", it.toString()) }
-                    pageToken?.let { parameter("page_token", it) }
-                }) {
-                    is RequestResult.Failure -> return AlpacaFetchResult.NetworkError(result.message)
-                    is RequestResult.Response -> when {
-                        result.status == HttpStatusCode.Unauthorized || result.status == HttpStatusCode.Forbidden ->
-                            return AlpacaFetchResult.InvalidCredentials
-                        result.status.value >= 400 ->
-                            return AlpacaFetchResult.NetworkError(result.errorMessage())
-                        else -> parseActivities(result.body).getOrElse {
-                            return AlpacaFetchResult.NetworkError("Invalid Alpaca activity response")
-                        }
-                    }
-                }
-
-                for (fill in page.activities) {
-                    when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id, usEquitySymbols)) {
-                        is FillMapping.Accepted -> transactions += mapped.transaction
-                        FillMapping.SkipNonEquity -> skippedNonEquity++
-                        FillMapping.SkipOption -> skippedOptions++
-                    }
-                }
-
-                // The legacy endpoint returns a bare array. Its next cursor is the final activity
-                // id, so a full page means there may be another page. Envelope responses are also
-                // accepted to keep the parser tolerant of broker-side API changes.
-                pageToken = page.nextPageToken
-            } while (pageToken != null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            return AlpacaFetchResult.NetworkError(e.message ?: "Invalid Alpaca activity response")
+        for (fill in fills) {
+            when (val mapped = fill.toTransactionOrSkip(portfolioId, credentials.environment, account.id)) {
+                is FillMapping.Accepted -> transactions += mapped.transaction
+                FillMapping.SkipNonEquity -> skippedNonEquity++
+                FillMapping.SkipOption -> skippedOptions++
+                FillMapping.SkipMalformed -> skippedMalformed++
+            }
         }
 
         return AlpacaFetchResult.Success(
@@ -136,9 +115,52 @@ class AlpacaBrokerClientImpl(
                 skipped = mapOf(
                     "options" to skippedOptions,
                     "non-US-equity fills" to skippedNonEquity,
+                    "malformed fills" to skippedMalformed,
                 ).filterValues { it > 0 },
             ),
+            fills = fills,
+            fees = feeRows.map { it.toFeeActivity() },
         )
+    }
+
+    private suspend fun fetchActivityRows(
+        credentials: AlpacaBrokerCredentials,
+        activityType: String,
+        after: Instant?,
+        until: Instant?,
+    ): ActivityRowsResult {
+        val rows = mutableListOf<JsonObject>()
+        var pageToken: String? = null
+        try {
+            do {
+                val response = when (val result = requestWithRetry(credentials, "/v2/account/activities/$activityType") {
+                    parameter("direction", "asc")
+                    parameter("page_size", PAGE_SIZE)
+                    after?.let { parameter("after", it.toString()) }
+                    until?.let { parameter("until", it.toString()) }
+                    pageToken?.let { parameter("page_token", it) }
+                }) {
+                    is RequestResult.Failure -> return ActivityRowsResult.Error(result.message)
+                    is RequestResult.Response -> when {
+                        result.status == HttpStatusCode.Unauthorized || result.status == HttpStatusCode.Forbidden ->
+                            return ActivityRowsResult.InvalidCredentials
+                        result.status.value >= 400 ->
+                            return ActivityRowsResult.Error(result.errorMessage())
+                        else -> result
+                    }
+                }
+                val page = parseActivityPage(response.body).getOrElse {
+                    return ActivityRowsResult.Error("Invalid Alpaca activity response")
+                }
+                rows += page.rows
+                pageToken = page.nextPageToken
+            } while (pageToken != null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return ActivityRowsResult.Error(e.message ?: "Invalid Alpaca $activityType activity response")
+        }
+        return ActivityRowsResult.Success(rows)
     }
 
     private suspend fun requestWithRetry(
@@ -178,37 +200,37 @@ class AlpacaBrokerClientImpl(
     }
 
     private fun parseAccount(body: String, environment: AlpacaEnvironment): AlpacaConnectionResult =
-        runCatching { json.decodeFromString<AccountResponse>(body) }
+        runCatching { json.parseToJsonElement(body) as? JsonObject ?: error("account is not an object") }
             .fold(
-                onSuccess = {
+                onSuccess = { root ->
+                    val id = root.text("id")?.takeIf { it.isNotBlank() }
+                        ?: return@fold AlpacaConnectionResult.NetworkError("Invalid Alpaca account response")
                     AlpacaConnectionResult.Connected(
-                        account = AlpacaAccount(it.id, it.accountNumber, it.status),
+                        account = AlpacaAccount(id, root.text("account_number"), root.text("status")),
                         environment = environment,
                     )
                 },
                 onFailure = { AlpacaConnectionResult.NetworkError("Invalid Alpaca account response") },
             )
 
-    private fun parseActivities(body: String): Result<ActivitiesPage> = runCatching {
+    private fun parseActivityPage(body: String): Result<RawActivityPage> = runCatching {
         val root = json.parseToJsonElement(body)
-        when (root) {
-            is JsonArray -> {
-                val activities = json.decodeFromJsonElement<List<FillRow>>(root)
-                ActivitiesPage(
-                    activities = activities,
-                    nextPageToken = activities.lastOrNull()?.id?.takeIf { activities.size == PAGE_SIZE },
-                )
-            }
+        val (elements, envelopeToken) = when (root) {
+            is JsonArray -> root to null
             is JsonObject -> {
-                val envelope = json.decodeFromJsonElement<ActivitiesEnvelope>(root)
-                ActivitiesPage(
-                    activities = envelope.activities,
-                    nextPageToken = envelope.nextPageToken
-                        ?: envelope.activities.lastOrNull()?.id?.takeIf { envelope.activities.size == PAGE_SIZE },
-                )
+                val activities = root["activities"] as? JsonArray
+                    ?: error("activity response has no activities array")
+                activities to root.text("next_page_token")
             }
             else -> error("activity response is not an array or object")
         }
+        val rows = elements.map { it as? JsonObject ?: JsonObject(emptyMap()) }
+        val nextPageToken = envelopeToken
+            ?: rows.lastOrNull()?.text("id")?.takeIf { rows.size == PAGE_SIZE }
+        if (rows.size == PAGE_SIZE && nextPageToken.isNullOrBlank()) {
+            error("full Alpaca activity page has no next token")
+        }
+        RawActivityPage(rows, nextPageToken)
     }
 
     private fun parseUsEquitySymbols(body: String): Result<Set<String>> = runCatching {
@@ -217,10 +239,8 @@ class AlpacaBrokerClientImpl(
         buildSet {
             root.forEach { element ->
                 val asset = element as? JsonObject ?: return@forEach
-                val symbol = (asset["symbol"] as? JsonPrimitive)?.content ?: return@forEach
-                val assetClass =
-                    (asset["class"] as? JsonPrimitive)?.content
-                        ?: (asset["asset_class"] as? JsonPrimitive)?.content
+                val symbol = asset.text("symbol") ?: return@forEach
+                val assetClass = asset.text("class") ?: asset.text("asset_class")
                 if (assetClass == null || assetClass.equals("us_equity", ignoreCase = true)) {
                     val normalized = symbol.trim().uppercase()
                     add(normalized)
@@ -230,77 +250,100 @@ class AlpacaBrokerClientImpl(
         }
     }
 
-    private fun FillRow.toTransactionOrSkip(
+    private fun JsonObject.toFillActivity(usEquitySymbols: Set<String>): AlpacaFillActivity {
+        val symbol = text("symbol")?.trim()?.takeIf { it.isNotEmpty() }
+        val assetClass = when {
+            symbol == null -> AlpacaFillAssetClass.OTHER
+            isOccOptionSymbol(symbol) -> AlpacaFillAssetClass.OPTION
+            symbol.uppercase() in usEquitySymbols -> AlpacaFillAssetClass.US_EQUITY
+            else -> AlpacaFillAssetClass.OTHER
+        }
+        return AlpacaFillActivity(
+            id = text("id"),
+            symbol = symbol,
+            side = text("side"),
+            price = number("price"),
+            shares = number("qty"),
+            transactionTime = text("transaction_time")?.let(::parseInstant),
+            assetClass = assetClass,
+        )
+    }
+
+    private fun JsonObject.toFeeActivity() = AlpacaFeeActivity(
+        id = text("id"),
+        subtype = text("activity_sub_type") ?: text("activity_subtype"),
+        feeDate = text("date")?.let(::parseFeeDate),
+        createdAt = (text("created_at") ?: text("at"))?.let(::parseInstant),
+        status = text("status"),
+        currency = text("currency"),
+        netAmount = number("net_amount"),
+    )
+
+    private fun AlpacaFillActivity.toTransactionOrSkip(
         portfolioId: Long,
         environment: AlpacaEnvironment,
         accountId: String,
-        usEquitySymbols: Set<String>,
     ): FillMapping {
-        val normalizedSymbol = symbol.trim()
-        if (isOccOptionSymbol(normalizedSymbol)) return FillMapping.SkipOption
-        if (normalizedSymbol.uppercase() !in usEquitySymbols) return FillMapping.SkipNonEquity
-
-        val action = when (side.lowercase()) {
+        if (assetClass == AlpacaFillAssetClass.OPTION) return FillMapping.SkipOption
+        if (assetClass != AlpacaFillAssetClass.US_EQUITY) return FillMapping.SkipNonEquity
+        val fillId = id?.takeIf { it.isNotBlank() } ?: return FillMapping.SkipMalformed
+        val action = when (side?.lowercase()) {
             "buy" -> Action.BUY
             "sell" -> Action.SELL
-            else -> error("unsupported Alpaca fill side")
+            else -> return FillMapping.SkipMalformed
         }
-        val price = price.asDouble() ?: error("invalid Alpaca fill price")
-        val shares = qty.asDouble() ?: error("invalid Alpaca fill quantity")
+        val price = price?.takeIf { it.isFinite() && it > 0.0 } ?: return FillMapping.SkipMalformed
+        val shares = shares?.takeIf { it.isFinite() && it > 0.0 } ?: return FillMapping.SkipMalformed
+        val transactionTime = transactionTime ?: return FillMapping.SkipMalformed
+        val symbol = symbol?.takeIf { it.isNotBlank() } ?: return FillMapping.SkipMalformed
         return FillMapping.Accepted(
             Transaction(
                 id = 0L,
                 portfolioId = portfolioId,
-                symbol = normalizedSymbol,
-                datetime = Instant.parse(transactionTime).toLocalDateTime(EASTERN),
+                symbol = symbol,
+                datetime = transactionTime.toLocalDateTime(EASTERN),
                 action = action,
                 price = price,
                 shares = shares,
                 fees = 0.0,
-                externalId = "alpaca:${environment.name.lowercase()}:$accountId:$id",
+                externalId = "alpaca:${environment.name.lowercase()}:$accountId:$fillId",
             )
         )
     }
 
-    private fun JsonElement.asDouble(): Double? =
-        (this as? JsonPrimitive)?.content?.toDoubleOrNull()
+    private fun JsonObject.text(key: String): String? =
+        (this[key] as? JsonPrimitive)?.content
+
+    private fun JsonObject.number(key: String): Double? =
+        text(key)?.toDoubleOrNull()
+
+    private fun parseInstant(value: String): Instant? =
+        runCatching { Instant.parse(value) }.getOrNull()
+
+    private fun parseFeeDate(value: String): LocalDate? =
+        runCatching { LocalDate.parse(value.take(10)) }.getOrNull()
+            ?: parseInstant(value)?.toLocalDateTime(UTC)?.date
 
     private fun isOccOptionSymbol(symbol: String): Boolean =
         OCC_OPTION_REGEX.matches(symbol.uppercase())
 
     private sealed interface FillMapping {
         data class Accepted(val transaction: Transaction) : FillMapping
-        data object SkipOption : FillMapping
         data object SkipNonEquity : FillMapping
+        data object SkipOption : FillMapping
+        data object SkipMalformed : FillMapping
     }
 
-    private data class ActivitiesPage(
-        val activities: List<FillRow>,
+    private data class RawActivityPage(
+        val rows: List<JsonObject>,
         val nextPageToken: String?,
     )
 
-    @Serializable
-    private data class AccountResponse(
-        val id: String,
-        @SerialName("account_number") val accountNumber: String? = null,
-        val status: String? = null,
-    )
-
-    @Serializable
-    private data class ActivitiesEnvelope(
-        val activities: List<FillRow> = emptyList(),
-        @SerialName("next_page_token") val nextPageToken: String? = null,
-    )
-
-    @Serializable
-    private data class FillRow(
-        val id: String,
-        val symbol: String,
-        val side: String,
-        val price: JsonElement,
-        val qty: JsonElement,
-        @SerialName("transaction_time") val transactionTime: String,
-    )
+    private sealed interface ActivityRowsResult {
+        data class Success(val rows: List<JsonObject>) : ActivityRowsResult
+        data object InvalidCredentials : ActivityRowsResult
+        data class Error(val message: String) : ActivityRowsResult
+    }
 
     private sealed interface RequestResult {
         data class Response(

@@ -42,6 +42,19 @@ class SqlDelightTransactionRepository(private val db: AppDatabase) : Transaction
             else db.tradeTransactionQueries.lastInsertRowId().executeAsOne()
         }
 
+    override suspend fun replaceFeesByExternalId(portfolioId: Long, feesByExternalId: Map<String, Double>) {
+        db.tradeTransactionQueries.transaction {
+            feesByExternalId.forEach { (externalId, fees) ->
+                require(fees.isFinite()) { "Transaction fee must be finite" }
+                db.tradeTransactionQueries.updateFeesByPortfolioAndExternalId(
+                    fees = fees,
+                    portfolioId = portfolioId,
+                    externalId = externalId,
+                )
+            }
+        }
+    }
+
     override suspend fun delete(id: Long) {
         // Also drop any tag assignments anchored to this transaction as an opener. Deleting a
         // non-opener fill matches no PositionTag/PositionNote rows, so this is a no-op in that case.

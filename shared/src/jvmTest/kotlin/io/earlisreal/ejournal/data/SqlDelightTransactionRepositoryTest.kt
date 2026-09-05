@@ -17,6 +17,7 @@ import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -128,6 +129,28 @@ class SqlDelightTransactionRepositoryTest {
         assertNotNull(firstId)                                       // new row must report its id, not null
         assertNull(fileTxRepo.insert(tx(pId, externalId = "tz:1")))  // duplicate still skipped
         assertEquals(1, fileTxRepo.getByPortfolio(pId).size)
+    }
+
+    @Test
+    fun feeReplacementIsScopedAndAtomic() = runTest {
+        val first = seedPortfolio()
+        val second = portfolioRepo.insert("Other", Market.US_STOCKS).id
+        txRepo.insert(tx(first, fees = 2.0, externalId = "alpaca:first"))
+        txRepo.insert(tx(first, fees = 3.0, externalId = "alpaca:second"))
+        txRepo.insert(tx(second, fees = 4.0, externalId = "alpaca:other"))
+
+        txRepo.replaceFeesByExternalId(first, mapOf("alpaca:first" to 0.25, "alpaca:second" to 0.75))
+
+        assertEquals(listOf(0.25, 0.75), txRepo.getByPortfolio(first).map { it.fees })
+        assertEquals(4.0, txRepo.getByPortfolio(second).single().fees)
+
+        assertFailsWith<IllegalArgumentException> {
+            txRepo.replaceFeesByExternalId(
+                first,
+                linkedMapOf("alpaca:first" to 9.0, "alpaca:second" to Double.NaN),
+            )
+        }
+        assertEquals(listOf(0.25, 0.75), txRepo.getByPortfolio(first).map { it.fees })
     }
 
     @Test

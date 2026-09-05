@@ -79,6 +79,15 @@ private class DeduplicatingTransactionRepository(
         inserted += transaction
         return inserted.size.toLong()
     }
+
+    override suspend fun replaceFeesByExternalId(portfolioId: Long, feesByExternalId: Map<String, Double>) {
+        for (index in inserted.indices) {
+            val transaction = inserted[index]
+            if (transaction.portfolioId == portfolioId && transaction.externalId in feesByExternalId) {
+                inserted[index] = transaction.copy(fees = feesByExternalId.getValue(transaction.externalId!!))
+            }
+        }
+    }
     override suspend fun delete(id: Long) {}
     override suspend fun countByPortfolio(portfolioId: Long): Long = inserted.size.toLong()
     override suspend fun deleteByPortfolio(portfolioId: Long) {}
@@ -164,6 +173,7 @@ class AlpacaSyncServiceTest {
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        settings.putString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION, AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE)
         val client = FakeAlpacaClient(success("a", "a", "b"))
         val tracker = BackgroundTaskTracker()
         val (service, _) = service(client, repo, settings, tracker)
@@ -171,7 +181,7 @@ class AlpacaSyncServiceTest {
         val result = service.syncIncremental(1L)
 
         assertEquals(BrokerSyncOutcome.Imported(2), result)
-        assertEquals(Instant.parse("2026-06-14T12:00:00Z"), client.lastAfter)
+        assertEquals(Instant.parse("2026-03-16T23:59:59Z"), client.lastAfter)
         assertEquals(2, repo.inserted.size)
         assertEquals(TaskState.Success, tracker.tasks.value.single().state)
     }
@@ -181,6 +191,7 @@ class AlpacaSyncServiceTest {
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        settings.putString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION, AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE)
         val client = FakeAlpacaClient(AlpacaFetchResult.NetworkError("timeout"))
         val (service, _) = service(client, settings = settings)
 
@@ -214,6 +225,91 @@ class AlpacaSyncServiceTest {
         assertEquals(2, result.detail.skipped["non-US-equity fills"])
         assertTrue(service.supportsMarket(Market.US_STOCKS))
         assertTrue(!service.supportsMarket(Market.CRYPTO))
+    }
+
+    @Test
+    fun `allocates aggregate fees by subtype using the UTC fee date`() = runTest {
+        val feeDate = LocalDateTime(2026, 6, 20, 0, 0).date
+        val execution = Instant.parse("2026-06-20T00:30:00Z")
+        val transactions = listOf(
+            Transaction(0, 1, "AAPL", LocalDateTime(2026, 6, 19, 20, 30), Action.BUY, 10.0, 10.0, 9.0, "alpaca:paper:acct-1:buy"),
+            Transaction(0, 1, "AAPL", LocalDateTime(2026, 6, 19, 20, 31), Action.SELL, 20.0, 5.0, 9.0, "alpaca:paper:acct-1:sell-high"),
+            Transaction(0, 1, "AAPL", LocalDateTime(2026, 6, 19, 20, 32), Action.SELL, 10.0, 5.0, 9.0, "alpaca:paper:acct-1:sell-low"),
+        )
+        val fills = transactions.map { transaction ->
+            AlpacaFillActivity(
+                id = transaction.externalId!!.substringAfterLast(':'),
+                symbol = "AAPL",
+                side = transaction.action.name.lowercase(),
+                price = transaction.price,
+                shares = transaction.shares,
+                transactionTime = execution,
+                assetClass = AlpacaFillAssetClass.US_EQUITY,
+            )
+        }
+        fun fee(id: String, subtype: String, amount: Double) = AlpacaFeeActivity(
+            id = id,
+            subtype = subtype,
+            feeDate = feeDate,
+            createdAt = Instant.parse("2026-06-20T01:00:00Z"),
+            status = "executed",
+            currency = "USD",
+            netAmount = amount,
+        )
+        val result = AlpacaFetchResult.Success(
+            transactions = transactions,
+            account = account,
+            fills = fills,
+            fees = listOf(
+                fee("reg-a", "REG", -0.20), fee("reg-b", "REG", -0.10),
+                fee("taf-a", "TAF", -0.01), fee("taf-b", "TAF", -0.02),
+                fee("cat-a", "CAT", -0.02), fee("cat-b", "CAT", -0.04), fee("cat-credit", "CAT", 0.10),
+            ),
+        )
+        val repo = DeduplicatingTransactionRepository(initialTransactions = transactions)
+        val (service, settings) = service(FakeAlpacaClient(result), repo)
+
+        val outcome = assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
+        val byId = repo.inserted.associateBy { it.externalId }
+
+        assertEquals(-0.02, byId["alpaca:paper:acct-1:buy"]!!.fees, 1e-9)
+        assertEquals(0.205, byId["alpaca:paper:acct-1:sell-high"]!!.fees, 1e-9)
+        assertEquals(0.105, byId["alpaca:paper:acct-1:sell-low"]!!.fees, 1e-9)
+        assertEquals(0.29, outcome.detail.feeSummary!!.allocatedFees, 1e-9)
+        assertEquals(0.0, outcome.detail.feeSummary.unappliedFees, 1e-9)
+        assertEquals(AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE, settings.getString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION))
+    }
+
+    @Test
+    fun `contaminated fee dates remain unapplied and clear stale allocations`() = runTest {
+        val transaction = Transaction(
+            1, 1, "AAPL", LocalDateTime(2026, 6, 19, 20, 30), Action.SELL, 10.0, 10.0, 7.0,
+            "alpaca:paper:acct-1:sell",
+        )
+        val fills = listOf(
+            AlpacaFillActivity("sell", "AAPL", "sell", 10.0, 10.0, Instant.parse("2026-06-20T00:30:00Z"), AlpacaFillAssetClass.US_EQUITY),
+            AlpacaFillActivity("option", "AAPL  260619C00150000", "buy", 1.0, 1.0, Instant.parse("2026-06-20T00:31:00Z"), AlpacaFillAssetClass.OPTION),
+        )
+        val fee = AlpacaFeeActivity(
+            id = "reg",
+            subtype = "REG",
+            feeDate = LocalDateTime(2026, 6, 20, 0, 0).date,
+            createdAt = Instant.parse("2026-06-20T01:00:00Z"),
+            status = "executed",
+            currency = "USD",
+            netAmount = -0.10,
+        )
+        val repo = DeduplicatingTransactionRepository(initialTransactions = listOf(transaction))
+        val result = AlpacaFetchResult.Success(listOf(transaction), account, fills = fills, fees = listOf(fee))
+        val (service, _) = service(FakeAlpacaClient(result), repo)
+
+        val outcome = assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
+        val summary = outcome.detail.feeSummary!!
+
+        assertEquals(0.0, repo.inserted.single().fees, 1e-9)
+        assertEquals(0.0, summary.allocatedFees, 1e-9)
+        assertEquals(0.10, summary.unappliedFees, 1e-9)
+        assertEquals(1, summary.warnings["contaminated fee dates"])
     }
 
     @Test
@@ -275,16 +371,32 @@ class AlpacaSyncServiceTest {
     }
 
     @Test
-    fun `same account keeps the three day overlap`() = runTest {
+    fun `same account replays the inclusive fee window`() = runTest {
         val settings = FakePortfolioSettingsRepository()
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
         settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        settings.putString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION, AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE)
         val client = FakeAlpacaClient(success("same-account-fill"))
         val (service, _) = service(client, settings = settings)
 
         service.syncIncremental(1L)
 
-        assertEquals(Instant.parse("2026-06-14T12:00:00Z"), client.lastAfter)
+        assertEquals(Instant.parse("2026-03-16T23:59:59Z"), client.lastAfter)
+    }
+
+    @Test
+    fun `fee allocation version change triggers a full history pass`() = runTest {
+        val settings = FakePortfolioSettingsRepository()
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_AT, "2026-06-17T12:00:00Z")
+        settings.putString(1L, AlpacaSettings.LAST_SYNCED_SOURCE, "paper:acct-1")
+        settings.putString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION, "old")
+        val client = FakeAlpacaClient(success("versioned"))
+        val (service, _) = service(client, settings = settings)
+
+        service.syncIncremental(1L)
+
+        assertEquals(null, client.lastAfter)
+        assertEquals(AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE, settings.getString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION))
     }
 
     @Test

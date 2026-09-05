@@ -25,11 +25,14 @@ class AlpacaBrokerClientImplTest {
     private fun client(
         credentials: AlpacaBrokerCredentials = AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER),
         equityAssets: String = """[{"symbol":"AAPL","class":"us_equity"}]""",
+        feeActivities: String = "[]",
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): Pair<AlpacaBrokerClientImpl, MockEngine> {
         val engine = MockEngine { request ->
             if (request.url.encodedPath == "/v2/assets") {
                 respond(equityAssets, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            } else if (request.url.encodedPath == "/v2/account/activities/FEE") {
+                respond(feeActivities, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             } else {
                 handler(request)
             }
@@ -116,6 +119,32 @@ class AlpacaBrokerClientImplTest {
         val result = assertIs<AlpacaFetchResult.Success>(client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, null, null))
         assertEquals(2, result.transactions.size)
         assertEquals(setOf("alpaca:paper:acct-live:fill-a", "alpaca:paper:acct-live:fill-b"), result.transactions.map { it.externalId }.toSet())
+    }
+
+    @Test
+    fun `fetches structured fee activities with the same window`() = runTest {
+        val fee = """
+            [{"id":"fee-1","activity_sub_type":"REG","date":"2026-06-10","created_at":"2026-06-11T01:00:00Z","status":"executed","currency":"USD","net_amount":"-0.12"}]
+        """.trimIndent()
+        val after = kotlin.time.Instant.parse("2026-06-01T00:00:00Z")
+        val until = kotlin.time.Instant.parse("2026-06-12T00:00:00Z")
+        val (client, engine) = client(feeActivities = fee) { request ->
+            if (request.url.encodedPath == "/v2/account") json(account())
+            else json("[${fill("fill-1")}]" )
+        }
+
+        val result = assertIs<AlpacaFetchResult.Success>(
+            client.fetchFills(AlpacaBrokerCredentials("key-id", "secret", AlpacaEnvironment.PAPER), 7L, after, until),
+        )
+
+        assertEquals("fee-1", result.fees.single().id)
+        assertEquals("REG", result.fees.single().subtype)
+        assertEquals(-0.12, result.fees.single().netAmount)
+        val request = engine.requestHistory.first { it.url.encodedPath == "/v2/account/activities/FEE" }
+        assertEquals("asc", request.url.parameters["direction"])
+        assertEquals("100", request.url.parameters["page_size"])
+        assertEquals(after.toString(), request.url.parameters["after"])
+        assertEquals(until.toString(), request.url.parameters["until"])
     }
 
     @Test

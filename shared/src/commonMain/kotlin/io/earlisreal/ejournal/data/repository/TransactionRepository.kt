@@ -12,6 +12,12 @@ interface TransactionRepository {
     ): List<Transaction>
     /** Inserts a transaction, returning its new row id, or null if it was skipped as a duplicate (same externalId). */
     suspend fun insert(transaction: Transaction): Long?
+
+    /** Atomically replaces fees for the supplied broker transaction identities. */
+    suspend fun replaceFeesByExternalId(portfolioId: Long, feesByExternalId: Map<String, Double>) {
+        error("This transaction repository does not support atomic fee replacement")
+    }
+
     suspend fun delete(id: Long)
     suspend fun countByPortfolio(portfolioId: Long): Long
     suspend fun deleteByPortfolio(portfolioId: Long)

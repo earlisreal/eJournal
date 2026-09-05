@@ -26,3 +26,17 @@ eJournal is a local-first desktop trading journal built with Kotlin Multiplatfor
 - Automatically push the current branch to its configured upstream remote immediately after an automatic commit. If no upstream is configured, report that instead of forcing a remote setup.
 - "Implement directly to main" means edit `main` without creating a feature branch.
 - Never add AI attribution, `Co-Authored-By`, or "Generated with" text to commit messages.
+
+## Agent skills
+
+### Issue tracker
+
+Use local markdown issues under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the canonical triage-label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md`.

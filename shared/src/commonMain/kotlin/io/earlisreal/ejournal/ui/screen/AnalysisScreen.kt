@@ -81,6 +81,7 @@ import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
 import io.earlisreal.ejournal.ui.components.formatHold
 import io.earlisreal.ejournal.ui.components.formatPriceDifference
+import io.earlisreal.ejournal.ui.components.longDate
 import io.earlisreal.ejournal.ui.components.signedMoney
 import io.earlisreal.ejournal.ui.shell.Destination
 import kotlinx.coroutines.Job
@@ -297,7 +298,7 @@ fun AnalysisScreen(
                         )
                         val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"
                         Text(
-                            "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh",
+                            "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh · ${longDate(position.entryDatetime.date)}",
                             color = AppTheme.colors.textMuted,
                             style = MaterialTheme.typography.bodySmall,
                         )

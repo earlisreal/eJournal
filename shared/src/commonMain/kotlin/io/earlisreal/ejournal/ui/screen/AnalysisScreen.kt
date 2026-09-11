@@ -26,8 +26,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -89,7 +94,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
 import io.earlisreal.ejournal.ui.viewmodel.AnalysisViewModel
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
     positions: List<ClosedPosition>,
@@ -342,32 +347,39 @@ fun AnalysisScreen(
                         val isIntraday = isTenSec || tf in listOf(ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)
                         val unavailable = (isTenSec && !state.hasTenSecData) || (!isTenSec && isIntraday && !state.has1MinData)
                         val active = state.activeTimeframe == tf
-                        Text(
-                            tf.label,
-                            modifier = Modifier
-                                .padding(end = 4.dp)
-                                .background(
-                                    if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated,
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .clickable(enabled = !unavailable) { vm.selectTimeframe(tf) }
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = when {
-                                unavailable -> AppTheme.colors.textMuted.copy(alpha = 0.4f)
-                                active      -> AppTheme.colors.onAccent
-                                else        -> AppTheme.colors.textMuted
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-
-                    if (showTenSec && !state.hasTenSecData) {
-                        Text(
-                            "10s unavailable — import the Position date from eTape",
-                            color = AppTheme.colors.textMuted,
-                            style = MaterialTheme.typography.labelSmall,
-                        )
+                        val timeframeLabel: @Composable () -> Unit = {
+                            Text(
+                                tf.label,
+                                modifier = Modifier
+                                    .padding(end = 4.dp)
+                                    .background(
+                                        if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated,
+                                        RoundedCornerShape(4.dp),
+                                    )
+                                    .clickable(enabled = !unavailable) { vm.selectTimeframe(tf) }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = when {
+                                    unavailable -> AppTheme.colors.textMuted.copy(alpha = 0.4f)
+                                    active      -> AppTheme.colors.onAccent
+                                    else        -> AppTheme.colors.textMuted
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                        if (unavailable && isTenSec) {
+                            TooltipBox(
+                                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                                    TooltipAnchorPosition.Above,
+                                ),
+                                tooltip = { PlainTooltip { Text("10s unavailable — import the Position date from eTape") } },
+                                state = rememberTooltipState(),
+                            ) {
+                                timeframeLabel()
+                            }
+                        } else {
+                            timeframeLabel()
+                        }
                     }
 
                     Box(modifier = Modifier.weight(1f))

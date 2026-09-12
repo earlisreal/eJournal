@@ -2,7 +2,7 @@
 
 > Desktop trading journal that turns broker CSVs into closed positions, charts, and analytics — built with Kotlin & Compose Multiplatform.
 
-eJournal is a **free, open-source, local-first desktop trading journal**. Import your broker's transaction CSV and it matches every fill into round-trip trades (FIFO), computes realized P&L, and gives you a performance dashboard, a P&L calendar, a sortable trade log, and a per-trade candlestick chart with your entries and exits plotted on it. Your trades and API keys never leave your machine.
+eJournal is a **free, open-source, local-first desktop trading journal**. Import your broker's transaction CSV and it matches every fill into round-trip trades (FIFO), computes realized P&L, and gives you a performance dashboard, a P&L calendar, a sortable trade log, and a per-trade candlestick chart with your entries and exits plotted on it. eJournal operates no application server; journal data stays local except for the documented market-data and broker requests made to services you use.
 
 ## Screenshots
 
@@ -66,6 +66,17 @@ Grab the latest build from the [**Releases page**](https://github.com/earlisreal
 - **Windows** — `.msi` installer, or the portable `.zip` (no install needed; bundles its own Java runtime).
 
 On **macOS / Linux**, build and run from source — see [Building from source](#building-from-source) below.
+
+### Code signing policy
+
+eJournal is applying for SignPath Foundation sponsorship. Upon acceptance: **Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).** Current releases must be treated as unsigned unless their release page explicitly states that the signing workflow completed successfully. See the full [code signing policy](./CODE_SIGNING_POLICY.md) and [privacy policy](./PRIVACY.md).
+
+### Uninstall
+
+- **MSI installation:** Open Windows **Settings → Apps → Installed apps**, find **eJournal**, and choose **Uninstall**.
+- **Portable build:** Close eJournal and delete the extracted portable folder.
+
+Uninstalling preserves journal data so a later installation can reuse it. To remove all local eJournal data and saved broker credentials, close the application and delete `%USERPROFILE%\.ejournal`. This cannot be undone.
 
 ## Alpaca and market data setup
 

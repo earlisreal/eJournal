@@ -20,6 +20,7 @@ node_modules/
 docs/spikes/
 .claude
 .superpowers
+.scratch/
 *.log
 *.csv
 TODO

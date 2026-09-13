@@ -87,6 +87,8 @@ The experimental DMG targets Apple Silicon Macs running macOS 15 or 26. Open the
 
 To upgrade, quit eJournal and replace the existing app with the newer one from the downloaded DMG. To uninstall, delete `/Applications/eJournal.app`. Upgrades and app removal preserve `~/.ejournal`; hands-on data-preservation checks remain pending.
 
+macOS package metadata uses the release major version plus one (for example, release `0.5.0` has package version `1.5.0`) because JDK 25's `jpackage` requires a positive major version. Download names and the app splash retain the release version.
+
 ### Code signing policy
 
 eJournal is applying for SignPath Foundation sponsorship. Upon acceptance: **Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).** Current releases must be treated as unsigned unless their release page explicitly states that the signing workflow completed successfully. See the full [code signing policy](./CODE_SIGNING_POLICY.md) and [privacy policy](./PRIVACY.md).

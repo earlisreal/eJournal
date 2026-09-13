@@ -228,7 +228,7 @@ jobs:
           [[ -n "$artifact" ]] || { echo "Downloaded DEB artifact not found"; exit 1; }
           sudo apt-get update
           sudo apt-get install -y xvfb
-          sudo apt-get install -y "$artifact"
+          sudo apt-get install -y "./$artifact"
           [[ "$(dpkg-query -W -f='${Package} ${Architecture}\n' ejournal)" == "ejournal amd64" ]]
           app_jar="$(dpkg -L ejournal | grep -E '/app/sqlite-jdbc-[^/]+\.jar$' | head -n1)"
           [[ -n "$app_jar" ]] || { echo "Packaged app dependencies not found"; exit 1; }
@@ -389,6 +389,20 @@ jobs:
           APP_VERSION: ${{ steps.version.outputs.version }}
         run: ./gradlew :shared:jvmTest build :desktopApp:packageDmg "-PappVersion=$APP_VERSION" --no-configuration-cache --stacktrace
 
+      - name: Print macOS packaging logs
+        if: failure()
+        run: find desktopApp/build/compose/logs -type f -name '*.txt' -print -exec cat {} \;
+
+      - name: Preserve macOS packaging diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-macos-packaging-logs
+          path: |
+            desktopApp/build/compose/logs/
+            desktopApp/build/compose/tmp/*.args.txt
+          if-no-files-found: ignore
+
       - name: Stage DMG
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
@@ -438,6 +452,8 @@ jobs:
           dmg_name="${dmg##*/}"
           [[ "$dmg_name" =~ ^eJournal-([0-9]+\.[0-9]+\.[0-9]+)-macos-arm64\.dmg$ ]] || { echo "Unexpected DMG name: $dmg_name"; exit 1; }
           expected_version="${BASH_REMATCH[1]}"
+          # Match the positive-major offset used by macOS nativeDistributions.
+          expected_version="$((10#${expected_version%%.*} + 1)).${expected_version#*.}"
 
           mount="$RUNNER_TEMP/ejournal-dmg"
           mkdir -p "$mount"
@@ -453,6 +469,7 @@ jobs:
           plist="$app/Contents/Info.plist"
           [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" == "io.earlisreal.ejournal" ]]
           [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" == "$expected_version" ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")" == "$expected_version" ]]
           [[ "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")" == "15.0" ]]
           sqlite_jar="$(find "$app/Contents" -type f -name 'sqlite-jdbc-*.jar' -print -quit)"
           [[ -n "$sqlite_jar" ]] || { echo "Packaged app dependencies not found"; exit 1; }

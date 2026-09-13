@@ -127,6 +127,9 @@ compose.desktop {
             // App icons live in desktopApp/icons/ (generated from icons/icon-master.png — the 1024²
             // eJ monogram). Each platform takes its own container format.
             macOS {
+                // jpackage requires a positive major version, including for pre-1.0 releases.
+                // Offset every major so macOS package versions keep increasing across 1.0.
+                packageVersion = "${appVersion.substringBefore('.').toInt() + 1}.${appVersion.substringAfter('.')}"
                 iconFile.set(project.file("icons/icon.icns"))
                 bundleID = "io.earlisreal.ejournal"
                 minimumSystemVersion = "15.0"

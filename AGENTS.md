@@ -20,7 +20,7 @@ eJournal is a local-first desktop trading journal built with Kotlin Multiplatfor
 
 ## Automatic commit and push
 
-- After completing an executed plan or addressing review comments, automatically commit the resulting changes once the work and relevant verification are complete.
+- After completing an executed plan or addressing review comments, automatically commit the resulting changes once the work and relevant verification are complete. Include the executed plan file in the implementation commit, even if it is untracked.
 - Skip automatic commits for small, specific tasks unless the user explicitly asks for a commit.
 - This automatic commit rule applies only on weekends or on weekdays after 15:00 PH time (`Asia/Manila`). Outside that window, leave changes uncommitted unless explicitly instructed otherwise.
 - Automatically push the current branch to its configured upstream remote immediately after an automatic commit. If no upstream is configured, report that instead of forcing a remote setup.

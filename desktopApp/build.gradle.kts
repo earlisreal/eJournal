@@ -32,17 +32,22 @@ val appVersion: String = (project.findProperty("appVersion") as String?)?.takeIf
 // common/splash.png. Up-to-date unless appVersion or the source resources change, so day-to-day dev
 // builds skip it. Inputs/outputs are captured at configuration time to stay config-cache-safe.
 val versionedAppResources = layout.buildDirectory.dir("generated/appResources")
+val moomooNotice = rootProject.file("licenses/moomoo-sdk-notice.txt")
 val generateVersionedSplash by tasks.registering {
     val sourceResources = layout.projectDirectory.dir("resources").asFile
     val outputDir = versionedAppResources
     val version = appVersion
     inputs.dir(sourceResources)
+    if (moomooNotice.isFile) inputs.file(moomooNotice)
     inputs.property("version", version)
     outputs.dir(outputDir)
     doLast {
         val out = outputDir.get().asFile
         out.deleteRecursively()
         sourceResources.copyRecursively(out, overwrite = true)
+        if (moomooNotice.isFile) {
+            moomooNotice.copyTo(out.resolve("common/moomoo-sdk-notice.txt"), overwrite = true)
+        }
         out.walkTopDown().filter { it.name == ".DS_Store" }.forEach { it.delete() }
 
         val splash = out.resolve("common/splash.png")
@@ -123,9 +128,12 @@ compose.desktop {
             // eJ monogram). Each platform takes its own container format.
             macOS {
                 iconFile.set(project.file("icons/icon.icns"))
+                bundleID = "io.earlisreal.ejournal"
+                minimumSystemVersion = "15.0"
             }
             linux {
                 iconFile.set(project.file("icons/icon.png"))
+                packageName = "ejournal"
             }
             windows {
                 iconFile.set(project.file("icons/icon.ico"))

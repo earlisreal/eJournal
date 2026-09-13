@@ -59,13 +59,33 @@ Don't see your broker? Use the **Generic CSV** importer with any file that has t
 
 ## Download
 
-> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The Windows release workflow fails before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed, then include every required notice in the distribution. Local packaging remains available for verification and does not imply redistribution approval. Do **not** publish an installer, portable archive, or other public binary containing the SDK before that confirmation. No license terms are inferred here.
+> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The public release workflows fail before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed, add the confirmed non-empty notice at `licenses/moomoo-sdk-notice.txt`, and let the workflow verify that it is bundled. Local packaging remains available for verification and does not imply redistribution approval. Do **not** publish an installer, portable archive, or other public binary containing the SDK before that confirmation. No license terms are inferred here.
 
 Grab the latest build from the [**Releases page**](https://github.com/earlisreal/eJournal/releases/latest):
 
 - **Windows** — `.msi` installer, or the portable `.zip` (no install needed; bundles its own Java runtime).
+- **Ubuntu x64 (experimental)** — `eJournal-<version>-linux-x64.deb`, CI-tested on Ubuntu 24.04 and 26.04.
+- **macOS Apple Silicon (experimental)** — `eJournal-<version>-macos-arm64.dmg`, CI-tested on macOS 15 and 26.
 
-On **macOS / Linux**, build and run from source — see [Building from source](#building-from-source) below.
+The Ubuntu and macOS packages are experimental: hands-on installation, CSV selection/import, charts, restart persistence, upgrade, and uninstall checks are still pending. Packages include their own JBR 25 runtime; no separate Java installation is required.
+
+Platform verification status: CI covers packaged launch only; Moomoo/OpenD, Alpaca, eTape, and native CSV/XLSX/SQLite file-picker flows have not been hands-on verified on Ubuntu or macOS.
+
+### Ubuntu installation, upgrades, and uninstall
+
+The experimental DEB targets x64 Ubuntu 24.04 and 26.04. Install or upgrade it manually with:
+
+```bash
+sudo apt install ./eJournal-<version>-linux-x64.deb
+```
+
+Remove the package with `sudo apt remove ejournal`. Package removal preserves the journal under `~/.ejournal`; remove that directory separately only if you intend to delete the database, settings, cached data, and credentials.
+
+### macOS installation, upgrades, and uninstall
+
+The experimental DMG targets Apple Silicon Macs running macOS 15 or 26. Open the DMG, drag `eJournal.app` to **Applications**, then right-click the app and choose **Open** the first time. If macOS blocks it, open **System Settings → Privacy & Security**, select **Open Anyway**, and confirm the per-app prompt. The DMG is **not signed with an Apple Developer ID and is not notarized**.
+
+To upgrade, quit eJournal and replace the existing app with the newer one from the downloaded DMG. To uninstall, delete `/Applications/eJournal.app`. Upgrades and app removal preserve `~/.ejournal`; hands-on data-preservation checks remain pending.
 
 ### Code signing policy
 
@@ -112,7 +132,11 @@ eJournal is a Kotlin Multiplatform project targeting Desktop (JVM only). Buildin
 ./gradlew :desktopApp:hotRun --auto  # run with Compose hot reload
 ./gradlew :shared:jvmTest            # run all tests
 ./gradlew build                      # full build
+./gradlew :desktopApp:packageDeb -PappVersion=1.2.3  # Ubuntu x64, on Ubuntu
+./gradlew :desktopApp:packageDmg -PappVersion=1.2.3  # macOS arm64, on Apple Silicon macOS
 ```
+
+Native packages must be built on their target operating system and architecture. Public package builds and release uploads are handled by the [release workflow](https://github.com/earlisreal/eJournal/actions/workflows/release-windows.yml).
 
 Run a single JUnit test class or method with `--tests`:
 

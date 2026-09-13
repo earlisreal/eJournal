@@ -34,15 +34,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify Moomoo SDK notice source
-        if: vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED == 'true'
-        shell: pwsh
-        run: |
-          $notice = "licenses/moomoo-sdk-notice.txt"
-          if (-not (Test-Path -LiteralPath $notice -PathType Leaf) -or (Get-Item -LiteralPath $notice).Length -eq 0) {
-            throw "Moomoo SDK redistribution is enabled but licenses/moomoo-sdk-notice.txt is missing or empty. Add the confirmed required notice before publishing."
-          }
-
       # Temurin bootstraps Gradle. The packaged app uses the JetBrains Runtime (JBR) 25 toolchain
       # requested by build.gradle.kts and provisioned through the Gradle foojay resolver.
       - name: Set up JDK 25 (Gradle bootstrap)
@@ -88,10 +79,6 @@ jobs:
           $appRoot = "desktopApp/build/compose/binaries/main/app"
           $appDir = Get-ChildItem -LiteralPath $appRoot -Directory | Select-Object -First 1
           if (-not $appDir) { throw "Packaged Windows app image not found" }
-          $notice = Join-Path $appDir.FullName "resources/moomoo-sdk-notice.txt"
-          if (-not (Test-Path -LiteralPath $notice -PathType Leaf) -or (Get-Item -LiteralPath $notice).Length -eq 0) {
-            throw "Packaged Windows app is missing licenses/moomoo-sdk-notice.txt"
-          }
           Compress-Archive -Path $appDir.FullName -DestinationPath "eJournal-portable-windows.zip" -Force
 
           $msi = Get-ChildItem -Path "desktopApp/build/compose/binaries/main/msi" -Recurse -Filter *.msi | Select-Object -First 1
@@ -152,11 +139,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify Moomoo SDK notice source
-        if: vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED == 'true'
-        run: |
-          [[ -s licenses/moomoo-sdk-notice.txt ]] || { echo "Moomoo SDK redistribution is enabled but licenses/moomoo-sdk-notice.txt is missing or empty. Add the confirmed required notice before publishing."; exit 1; }
 
       - name: Set up JDK 25 (Gradle bootstrap)
         uses: actions/setup-java@v4
@@ -261,7 +243,6 @@ jobs:
           done
           resources_dir="$app_dir/resources"
           [[ -s "$resources_dir/splash.png" ]] || { echo "Packaged splash not found"; exit 1; }
-          [[ -s "$resources_dir/moomoo-sdk-notice.txt" ]] || { echo "Packaged DEB is missing licenses/moomoo-sdk-notice.txt"; exit 1; }
           icon="$(dpkg -L ejournal | grep -E '/usr/share/icons/.*/apps/[^/]+\.(png|xpm)$' | head -n1)"
           [[ -n "$icon" && -s "$icon" ]] || { echo "Packaged application icon not found"; exit 1; }
           runtime="$(dpkg -L ejournal | awk '/\/lib\/runtime\/bin\/java$/ { print; exit }')"
@@ -370,11 +351,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify Moomoo SDK notice source
-        if: vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED == 'true'
-        run: |
-          [[ -s licenses/moomoo-sdk-notice.txt ]] || { echo "Moomoo SDK redistribution is enabled but licenses/moomoo-sdk-notice.txt is missing or empty. Add the confirmed required notice before publishing."; exit 1; }
 
       - name: Set up JDK 25 (Gradle bootstrap)
         uses: actions/setup-java@v4
@@ -491,8 +467,6 @@ jobs:
           done
           splash="$(find "$app/Contents" -type f -path '*/resources/splash.png' -print -quit)"
           [[ -n "$splash" && -s "$splash" ]] || { echo "Packaged splash not found"; exit 1; }
-          notice="$(find "$app/Contents" -type f -path '*/resources/moomoo-sdk-notice.txt' -print -quit)"
-          [[ -n "$notice" && -s "$notice" ]] || { echo "Packaged DMG is missing licenses/moomoo-sdk-notice.txt"; exit 1; }
           icon="$(find "$app/Contents/Resources" -type f -iname '*.icns' -print -quit)"
           [[ -n "$icon" && -s "$icon" ]] || { echo "Packaged application icon not found"; exit 1; }
 

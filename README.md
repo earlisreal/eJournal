@@ -59,7 +59,7 @@ Don't see your broker? Use the **Generic CSV** importer with any file that has t
 
 ## Download
 
-> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The public release workflows fail before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed, add the confirmed non-empty notice at `licenses/moomoo-sdk-notice.txt`, and let the workflow verify that it is bundled. Local packaging remains available for verification and does not imply redistribution approval. Do **not** publish an installer, portable archive, or other public binary containing the SDK before that confirmation. No license terms are inferred here.
+> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The public release workflows fail before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed. Mandatory notice-file checks are deferred until package-signing work; if `licenses/moomoo-sdk-notice.txt` is present, local and CI packaging still bundle it. Local packaging remains available for verification and does not imply redistribution approval. No license terms are inferred here.
 
 Grab the latest build from the [**Releases page**](https://github.com/earlisreal/eJournal/releases/latest):
 

@@ -58,6 +58,7 @@ private val samplePositions = listOf(
     samplePos("TSLA", "2024-06-05T10:02", "2024-06-05T11:07", 178.20, 170.45, 40.0, 8.0, -310.0),
     samplePos("SM", "2024-05-20T09:00", "2024-06-03T15:00", 910.0, 937.0, 200.0, 45.0, 540.0),
     samplePos("JFC", "2024-06-10T09:00", "2024-06-10T15:00", 250.0, 244.0, 100.0, 10.0, -600.0),
+    samplePos("MSFT", "2024-06-12T10:00", "2024-06-12T10:45", 420.0, 420.0, 100.0, 2.0, -2.0),
 )
 
 private val sampleMetrics = computeMetrics(samplePositions)
@@ -65,8 +66,8 @@ private val sampleDashboardState = DashboardState(
     metrics = sampleMetrics,
     equityCurve = equityCurve(samplePositions),
     recentTrades = samplePositions.sortedByDescending { it.exitDatetime }.take(8),
-    topTrades = samplePositions.filter { it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(5),
-    worstTrades = samplePositions.filter { it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(5),
+    topTrades = samplePositions.filter { !it.isScratch && it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(5),
+    worstTrades = samplePositions.filter { !it.isScratch && it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(5),
 )
 private val sampleSummaries = dailySummaries(samplePositions)
 private val sampleGrid = monthGrid(2024, 6)

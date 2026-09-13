@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.domain.analytics
 
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.TradeDirection
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,22 +10,34 @@ import kotlin.test.assertTrue
 
 class DashboardMetricsTest {
 
-    private fun pos(pnl: Double) = ClosedPosition(
-        symbol = "X",
-        entryDatetime = LocalDateTime.parse("2024-03-01T09:00"),
-        exitDatetime = LocalDateTime.parse("2024-03-01T15:00"),
-        averageEntryPrice = 10.0, averageExitPrice = 10.0,
-        shares = 100.0, fees = 0.0, profitLoss = pnl,
-    )
-
-    /** Position with a custom exit timestamp (entry defaults to the same), for ordering-sensitive metrics. */
-    private fun posAt(pnl: Double, exit: String, entry: String = exit) = ClosedPosition(
+    private fun position(
+        pnl: Double,
+        exit: String = "2024-03-01T15:00",
+        entry: String = "2024-03-01T09:00",
+        averageEntryPrice: Double = 10.0,
+        averageExitPrice: Double = if (pnl < 0.0) 9.0 else 11.0,
+        fees: Double = 0.0,
+        direction: TradeDirection = TradeDirection.LONG,
+    ) = ClosedPosition(
         symbol = "X",
         entryDatetime = LocalDateTime.parse(entry),
         exitDatetime = LocalDateTime.parse(exit),
-        averageEntryPrice = 10.0, averageExitPrice = 10.0,
-        shares = 100.0, fees = 0.0, profitLoss = pnl,
+        averageEntryPrice = averageEntryPrice, averageExitPrice = averageExitPrice,
+        shares = 100.0, fees = fees, profitLoss = pnl, direction = direction,
     )
+
+    private fun pos(pnl: Double) = position(pnl)
+
+    /** Position with a custom exit timestamp (entry defaults to the same), for ordering-sensitive metrics. */
+    private fun posAt(pnl: Double, exit: String, entry: String = exit) = position(pnl, exit, entry)
+
+    private fun scratch(
+        pnl: Double = 0.0,
+        exit: String = "2024-03-01T15:00",
+        entry: String = "2024-03-01T09:00",
+        fees: Double = 0.0,
+        direction: TradeDirection = TradeDirection.LONG,
+    ) = position(pnl, exit, entry, averageExitPrice = 10.0, fees = fees, direction = direction)
 
     @Test
     fun emptyListYieldsZeroSumsAndNullRatios() {
@@ -32,9 +45,58 @@ class DashboardMetricsTest {
         assertEquals(0.0, m.netPnl); assertEquals(0, m.tradeCount)
         assertNull(m.winRate); assertNull(m.profitFactor); assertNull(m.expectancy)
         assertNull(m.avgWin); assertNull(m.avgLoss); assertNull(m.largestWin); assertNull(m.largestLoss)
-        assertEquals(0, m.winCount); assertEquals(0, m.lossCount); assertEquals(0, m.breakEvenCount)
+        assertEquals(0, m.winCount); assertEquals(0, m.lossCount); assertEquals(0, m.scratchCount); assertEquals(0, m.breakEvenCount)
         assertNull(m.payoffRatio); assertNull(m.avgHoldSeconds)
         assertEquals(0, m.maxWinStreak); assertEquals(0, m.maxLossStreak)
+    }
+
+    @Test
+    fun feeDebitScratchIsNotLossOrBreakEven() {
+        val m = computeMetrics(listOf(scratch(pnl = -2.0, fees = 2.0)))
+
+        assertEquals(1, m.scratchCount)
+        assertEquals(0, m.lossCount)
+        assertEquals(0, m.breakEvenCount)
+        assertNull(m.winRate)
+    }
+
+    @Test
+    fun zeroFeeFlatPositionIsScratch() {
+        val m = computeMetrics(listOf(scratch()))
+
+        assertEquals(1, m.scratchCount)
+        assertEquals(0, m.breakEvenCount)
+    }
+
+    @Test
+    fun nonFlatZeroPnlPositionIsBreakEven() {
+        val m = computeMetrics(listOf(position(pnl = 0.0, averageExitPrice = 10.02, fees = 2.0)))
+
+        assertEquals(0, m.scratchCount)
+        assertEquals(1, m.breakEvenCount)
+    }
+
+    @Test
+    fun anyNonzeroPriceDifferenceIsNotScratch() {
+        val m = computeMetrics(listOf(position(pnl = 1.0, averageExitPrice = 10.0000000001)))
+
+        assertEquals(0, m.scratchCount)
+        assertEquals(1, m.winCount)
+    }
+
+    @Test
+    fun flatLongAndShortPositionsAreBothScratch() {
+        val m = computeMetrics(
+            listOf(
+                scratch(direction = TradeDirection.LONG),
+                scratch(direction = TradeDirection.SHORT),
+            )
+        )
+
+        assertEquals(2, m.scratchCount)
+        assertEquals(0, m.winCount)
+        assertEquals(0, m.lossCount)
+        assertEquals(0, m.breakEvenCount)
     }
 
     @Test
@@ -63,10 +125,53 @@ class DashboardMetricsTest {
 
     @Test
     fun countsWinnersLosersAndBreakEvens() {
-        val m = computeMetrics(listOf(pos(100.0), pos(-40.0), pos(0.0), pos(60.0)))
+        val m = computeMetrics(listOf(pos(100.0), pos(-40.0), scratch(-2.0), pos(0.0), pos(60.0)))
         assertEquals(2, m.winCount)
         assertEquals(1, m.lossCount)
+        assertEquals(1, m.scratchCount)
         assertEquals(1, m.breakEvenCount)
+        assertEquals(m.tradeCount, m.winCount + m.lossCount + m.scratchCount + m.breakEvenCount)
+        assertEquals(2.0 / 3.0, m.winRate!!, 1e-9)
+    }
+
+    @Test
+    fun scratchFeesStayFinancialButNotClassifiedLossMetrics() {
+        val m = computeMetrics(listOf(pos(100.0), pos(-40.0), scratch(-2.0, fees = 2.0)))
+
+        assertEquals(58.0, m.netPnl)
+        assertEquals(100.0, m.grossProfit)
+        assertEquals(-42.0, m.grossLoss)
+        assertEquals(100.0 / 42.0, m.profitFactor!!, 1e-9)
+        assertEquals(58.0 / 3.0, m.expectancy!!, 1e-9)
+        assertEquals(-40.0, m.avgLoss)
+        assertEquals(-40.0, m.largestLoss)
+        assertEquals(100.0 / 40.0, m.payoffRatio!!, 1e-9)
+    }
+
+    @Test
+    fun scratchFeesDoNotCreateAWinLossDenominator() {
+        val m = computeMetrics(listOf(pos(100.0), scratch(-2.0, fees = 2.0)))
+
+        assertEquals(1.0, m.winRate)
+        assertNull(m.avgLoss)
+        assertNull(m.largestLoss)
+        assertNull(m.payoffRatio)
+        assertEquals(50.0, m.profitFactor)
+    }
+
+    @Test
+    fun allScratchesHaveNoWinLossMetricsOrStreaks() {
+        val m = computeMetrics(
+            listOf(
+                scratch(-2.0, fees = 2.0),
+                scratch(),
+            )
+        )
+
+        assertEquals(2, m.scratchCount)
+        assertNull(m.winRate)
+        assertEquals(0, m.maxWinStreak)
+        assertEquals(0, m.maxLossStreak)
     }
 
     @Test
@@ -111,6 +216,29 @@ class DashboardMetricsTest {
         val m = computeMetrics(trades)
         assertEquals(2, m.maxWinStreak)
         assertEquals(0, m.maxLossStreak)
+    }
+
+    @Test
+    fun scratchResetsBothStreaks() {
+        val winStreak = computeMetrics(
+            listOf(
+                posAt(10.0, "2024-03-01T10:00"),
+                posAt(10.0, "2024-03-02T10:00"),
+                scratch(-2.0, "2024-03-03T10:00"),
+                posAt(10.0, "2024-03-04T10:00"),
+            )
+        )
+        val lossStreak = computeMetrics(
+            listOf(
+                posAt(-10.0, "2024-03-01T10:00"),
+                posAt(-10.0, "2024-03-02T10:00"),
+                scratch(-2.0, "2024-03-03T10:00"),
+                posAt(-10.0, "2024-03-04T10:00"),
+            )
+        )
+
+        assertEquals(2, winStreak.maxWinStreak)
+        assertEquals(2, lossStreak.maxLossStreak)
     }
 
     @Test

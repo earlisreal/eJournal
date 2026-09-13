@@ -67,8 +67,8 @@ class DashboardViewModel(
                 metrics = computeMetrics(filtered),
                 equityCurve = equityCurve(filtered),
                 recentTrades = byRecency.take(RECENT_TRADE_LIMIT),
-                topTrades = filtered.filter { it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(TOP_TRADE_LIMIT),
-                worstTrades = filtered.filter { it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(TOP_TRADE_LIMIT),
+                topTrades = filtered.filter { !it.isScratch && it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(TOP_TRADE_LIMIT),
+                worstTrades = filtered.filter { !it.isScratch && it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(TOP_TRADE_LIMIT),
                 tagStats = tagStats(filtered),
                 loading = false,
             )

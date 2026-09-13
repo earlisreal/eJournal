@@ -16,14 +16,15 @@ class TagStatsTest {
         pnl: Double,
         tags: List<Tag> = emptyList(),
         averageEntryPrice: Double = 10.0,
-        averageExitPrice: Double = 10.0,
+        averageExitPrice: Double = if (pnl < 0.0) 9.0 else 11.0,
         shares: Double = 100.0,
+        fees: Double = 0.0,
     ) = ClosedPosition(
         symbol = "X",
         entryDatetime = LocalDateTime.parse("2024-03-01T09:00"),
         exitDatetime = LocalDateTime.parse("2024-03-01T15:00"),
         averageEntryPrice = averageEntryPrice, averageExitPrice = averageExitPrice,
-        shares = shares, fees = 0.0, profitLoss = pnl,
+        shares = shares, fees = fees, profitLoss = pnl,
         tags = tags,
     )
 
@@ -48,6 +49,19 @@ class TagStatsTest {
         val oversizedStat = stats.first { it.tag == oversized }
         assertEquals(1, oversizedStat.metrics.tradeCount)
         assertEquals(60.0, oversizedStat.metrics.netPnl)
+    }
+
+    @Test
+    fun taggedScratchKeepsFeePnlAndUsesScratchWinRateSemantics() {
+        val metrics = tagStats(listOf(pos(-2.0, listOf(breakout), fees = 2.0, averageExitPrice = 10.0)))
+            .single()
+            .metrics
+
+        assertEquals(-2.0, metrics.netPnl)
+        assertEquals(1, metrics.scratchCount)
+        assertEquals(0, metrics.winCount)
+        assertEquals(0, metrics.lossCount)
+        assertNull(metrics.winRate)
     }
 
     @Test

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.PositionTagService
+import io.earlisreal.ejournal.domain.analytics.computeMetrics
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.components.AppTextButton
 import io.earlisreal.ejournal.ui.components.EmptyState
@@ -105,23 +106,21 @@ fun TradeLogsScreen(
 /** Lead-with-the-number summary for the filtered set: net P&L, then count and win rate as context. */
 @Composable
 private fun TradeLogsSummary(positions: List<ClosedPosition>, symbol: String, modifier: Modifier = Modifier) {
-    val net = positions.sumOf { it.profitLoss }
-    val wins = positions.count { it.profitLoss > 0.0 }
-    val losses = positions.count { it.profitLoss < 0.0 }
-    val decided = wins + losses
-    val winRate = if (decided > 0) wins.toDouble() / decided * 100.0 else null
+    val metrics = remember(positions) { computeMetrics(positions) }
     val context = buildString {
-        append(positions.size)
-        append(if (positions.size == 1) " trade" else " trades")
-        append("  ·  ${wins}W / ${losses}L")
-        winRate?.let { append("  ·  %.1f%% win rate".format(it)) }
+        append(metrics.tradeCount)
+        append(if (metrics.tradeCount == 1) " trade" else " trades")
+        append("  ·  ${metrics.winCount}W / ${metrics.lossCount}L")
+        if (metrics.scratchCount > 0) append(" / ${metrics.scratchCount}S")
+        if (metrics.breakEvenCount > 0) append(" / ${metrics.breakEvenCount}BE")
+        metrics.winRate?.let { append("  ·  %.1f%% win rate".format(it * 100)) }
     }
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Column {
             Text("NET P&L", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
             Text(
-                signedMoney(net, symbol),
-                color = if (net >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
+                signedMoney(metrics.netPnl, symbol),
+                color = if (metrics.netPnl >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
                 style = NumberTextStyle,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,

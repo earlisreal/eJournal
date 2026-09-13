@@ -8,6 +8,10 @@ eJournal records and reviews a trader's market activity as positions assembled f
 A continuous long or short exposure in one symbol, beginning when holdings move away from zero and ending when they return to zero. Scale-ins and partial exits remain part of the same position.
 _Avoid_: Trade, round-trip trade
 
+**Scratch Position**:
+A closed Position whose direction-aware quantity-weighted Average Price Difference is exactly zero. It is neutral for outcome statistics while fee-inclusive Realized P&L remains unchanged.
+_Avoid_: Scratch Trade
+
 **Position Note**:
 One user-authored, editable multiline note belonging to a position throughout its lifecycle.
 _Avoid_: Remark, transaction note, broker description

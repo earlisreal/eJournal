@@ -128,6 +128,7 @@ internal fun DashboardContent(
                 Tile("Winners", metrics.winCount.toString())
                 Tile("Losers", metrics.lossCount.toString())
                 Tile("Trades", metrics.tradeCount.toString())
+                if (metrics.scratchCount > 0) Tile("Scratch", metrics.scratchCount.toString())
                 if (metrics.breakEvenCount > 0) Tile("Break-even", metrics.breakEvenCount.toString())
                 Tile("Profit factor", ratioOrDash(metrics.profitFactor))
                 Tile("Reward : risk", payoffOrDash(metrics.payoffRatio))

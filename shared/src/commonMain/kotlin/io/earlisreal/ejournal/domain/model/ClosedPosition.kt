@@ -25,6 +25,9 @@ data class ClosedPosition(
         get() = if (direction == TradeDirection.LONG) averageExitPrice - averageEntryPrice
         else averageEntryPrice - averageExitPrice
 
+    val isScratch: Boolean
+        get() = averagePriceDifference == 0.0
+
     /**
      * Stable identity for tag assignment: the id of the fill that opened this round trip.
      * FifoMatcher appends fills in datetime order, so the first transaction is the opener. Null only

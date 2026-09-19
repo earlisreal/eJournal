@@ -71,3 +71,15 @@ _Avoid_: Average spread
 **10-Second Bar**:
 An OHLCV summary for one wall-clock-aligned ten-second interval. It is the finest market-data interval shown for US-stock day Positions.
 _Avoid_: 10-second chart, tick data
+
+**Auto-Sync Setting**:
+A per-Portfolio, per-broker opt-in that permits eJournal to perform an incremental broker synchronization when the application starts.
+_Avoid_: Global sync setting, account sync setting
+
+**Startup Synchronization**:
+An automatic incremental synchronization for every eligible Portfolio whose Auto-Sync Setting is enabled. A synchronization may add Transactions or reconcile Transaction fees.
+_Avoid_: Selected-Portfolio sync, background import
+
+**Dashboard Refresh**:
+Recomputing the selected Portfolio's Dashboard after Startup Synchronization changes its Transactions or fees.
+_Avoid_: Market-data refresh, screen reload

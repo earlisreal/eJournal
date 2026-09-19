@@ -1,8 +1,5 @@
 package io.earlisreal.ejournal.domain
 
-import io.earlisreal.ejournal.data.repository.FilterPrefs
-import io.earlisreal.ejournal.domain.analytics.DateRangePreset
-import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Broker
@@ -10,7 +7,6 @@ import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
 import io.earlisreal.ejournal.testutil.FakePortfolioSettingsRepository
-import io.earlisreal.ejournal.testutil.FakeSettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,20 +34,15 @@ private class FakeBrokerSyncService(
 
 class StartupSyncCoordinatorTest {
 
-    private fun filter(portfolioId: Long?) =
-        FilterPrefs(portfolioId, DateRangePreset.ALL_TIME, null, null, Segment.ALL)
-
     private fun portfolio(id: Long = 5L, broker: Broker? = Broker.TRADEZERO) =
         Portfolio(id, "P$id", Market.US_STOCKS, broker, "ref-$id")
 
     private fun coordinator(
         log: MutableList<String>,
-        selectedId: Long?,
         portfolios: List<Portfolio> = listOf(portfolio()),
         services: List<BrokerSyncService>,
         settings: FakePortfolioSettingsRepository = FakePortfolioSettingsRepository(),
     ) = StartupSyncCoordinator(
-        settingsRepository = FakeSettingsRepository(filterPrefs = filter(selectedId)),
         portfolioRepository = FakePortfolioRepository(portfolios),
         portfolioSettings = settings,
         brokerSyncServices = services,
@@ -59,13 +50,12 @@ class StartupSyncCoordinatorTest {
     )
 
     @Test
-    fun selectedPortfolioBrokerRunsBeforeMarketData() = runTest {
+    fun autoSyncedPortfolioRunsBeforeMarketData() = runTest {
         val log = mutableListOf<String>()
         val settings = FakePortfolioSettingsRepository()
         settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
             log,
-            selectedId = 5L,
             services = listOf(FakeBrokerSyncService("tradezero", log)),
             settings = settings,
         ).run()
@@ -81,7 +71,6 @@ class StartupSyncCoordinatorTest {
 
         coordinator(
             log,
-            selectedId = 5L,
             portfolios = listOf(portfolio(broker = Broker.MOOMOO)),
             services = listOf(FakeBrokerSyncService("moomoo", log)),
             settings = settings,
@@ -97,7 +86,6 @@ class StartupSyncCoordinatorTest {
         settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
             log,
-            selectedId = 5L,
             portfolios = listOf(portfolio(broker = null)),
             services = listOf(FakeBrokerSyncService("tradezero", log)),
             settings = settings,
@@ -113,7 +101,6 @@ class StartupSyncCoordinatorTest {
         settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
             log,
-            selectedId = 5L,
             services = listOf(FakeBrokerSyncService("tradezero", log, configured = false)),
             settings = settings,
         ).run()
@@ -126,7 +113,6 @@ class StartupSyncCoordinatorTest {
         val log = mutableListOf<String>()
         coordinator(
             log,
-            selectedId = 5L,
             services = listOf(FakeBrokerSyncService("tradezero", log)),
         ).run()
 
@@ -134,19 +120,20 @@ class StartupSyncCoordinatorTest {
     }
 
     @Test
-    fun onlySelectedPortfolioBrokerRuns() = runTest {
+    fun everyOptedInPortfolioRunsBeforeMarketData() = runTest {
         val log = mutableListOf<String>()
         val settings = FakePortfolioSettingsRepository()
         settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
-        settings.putBoolean(5L, "alpaca.autoSyncOnStartup", true)
-        coordinator(
+        settings.putBoolean(6L, "alpaca.autoSyncOnStartup", true)
+        val changed = coordinator(
             log,
-            selectedId = 5L,
+            portfolios = listOf(portfolio(5L), portfolio(6L, Broker.ALPACA)),
             services = listOf(FakeBrokerSyncService("alpaca", log), FakeBrokerSyncService("tradezero", log)),
             settings = settings,
         ).run()
 
-        assertEquals(listOf("tradezero", "md"), log)
+        assertEquals(listOf("tradezero", "alpaca", "md"), log)
+        assertEquals(setOf(5L, 6L), changed)
     }
 
     @Test
@@ -156,7 +143,6 @@ class StartupSyncCoordinatorTest {
         settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
         coordinator(
             log,
-            selectedId = 5L,
             services = listOf(FakeBrokerSyncService("tradezero", log, fail = true)),
             settings = settings,
         ).run()
@@ -165,11 +151,31 @@ class StartupSyncCoordinatorTest {
     }
 
     @Test
-    fun noOrStaleSelectionRunsMarketDataOnly() = runTest {
+    fun brokerFailureDoesNotBlockOtherPortfolios() = runTest {
+        val log = mutableListOf<String>()
+        val settings = FakePortfolioSettingsRepository()
+        settings.putBoolean(5L, "tradezero.autoSyncOnStartup", true)
+        settings.putBoolean(6L, "alpaca.autoSyncOnStartup", true)
+        val changed = coordinator(
+            log,
+            portfolios = listOf(portfolio(5L), portfolio(6L, Broker.ALPACA)),
+            services = listOf(
+                FakeBrokerSyncService("tradezero", log, fail = true),
+                FakeBrokerSyncService("alpaca", log),
+            ),
+            settings = settings,
+        ).run()
+
+        assertEquals(listOf("tradezero", "alpaca", "md"), log)
+        assertEquals(setOf(6L), changed)
+    }
+
+    @Test
+    fun noEligiblePortfolioRunsMarketDataOnly() = runTest {
         val log = mutableListOf<String>()
         val service = FakeBrokerSyncService("tradezero", log)
-        coordinator(log, selectedId = null, services = listOf(service)).run()
-        coordinator(log, selectedId = 99L, portfolios = listOf(portfolio()), services = listOf(service)).run()
+        coordinator(log, services = listOf(service)).run()
+        coordinator(log, portfolios = listOf(portfolio(broker = null)), services = listOf(service)).run()
 
         assertEquals(listOf("md", "md"), log)
     }
@@ -182,7 +188,6 @@ class StartupSyncCoordinatorTest {
         assertFailsWith<CancellationException> {
             coordinator(
                 log,
-                selectedId = 5L,
                 services = listOf(FakeBrokerSyncService("tradezero", log, cancel = true)),
                 settings = settings,
             ).run()

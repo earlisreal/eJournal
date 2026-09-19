@@ -55,6 +55,7 @@ import io.earlisreal.ejournal.ui.viewmodel.DashboardViewModel
 fun DashboardScreen(
     positionTags: PositionTagService,
     filter: FilterState,
+    refreshOnStartup: Boolean = false,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     onViewAllTrades: () -> Unit = {},
     onOpenReports: () -> Unit = {},
@@ -63,7 +64,7 @@ fun DashboardScreen(
     val vm = viewModel { DashboardViewModel(positionTags) }
     val state by vm.state.collectAsState()
 
-    LaunchedEffect(filter) {
+    LaunchedEffect(filter, refreshOnStartup) {
         vm.load(filter.portfolio?.id, filter.dateRange, filter.segment, filter.selectedTagIds, filter.tagMatch)
     }
 

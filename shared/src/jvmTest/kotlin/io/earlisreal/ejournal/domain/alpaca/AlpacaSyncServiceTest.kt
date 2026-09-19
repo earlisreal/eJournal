@@ -277,6 +277,7 @@ class AlpacaSyncServiceTest {
         assertEquals(0.105, byId["alpaca:paper:acct-1:sell-low"]!!.fees, 1e-9)
         assertEquals(0.29, outcome.detail.feeSummary!!.allocatedFees, 1e-9)
         assertEquals(0.0, outcome.detail.feeSummary.unappliedFees, 1e-9)
+        assertTrue(outcome.changed)
         assertEquals(AlpacaSettings.FEE_ALLOCATION_VERSION_VALUE, settings.getString(1L, AlpacaSettings.FEE_ALLOCATION_VERSION))
     }
 

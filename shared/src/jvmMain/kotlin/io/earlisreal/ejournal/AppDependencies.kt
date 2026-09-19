@@ -148,7 +148,6 @@ class AppDependencies {
         listOf(alpacaSyncService, tradeZeroSyncService, moomooSyncService)
 
     val startupSyncCoordinator = StartupSyncCoordinator(
-        settingsRepository = settingsRepository,
         portfolioRepository = portfolioRepository,
         portfolioSettings = portfolioSettingsRepository,
         brokerSyncServices = brokerSyncServices,

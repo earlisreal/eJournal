@@ -102,7 +102,7 @@ class AlpacaSyncService(
                         "Alpaca account changed during synchronization"
                     }
                     val inserted = result.transactions.count { transactionRepository.insert(it) != null }
-                    val feeSummary = reconcileFees(
+                    val feeReconciliation = reconcileFees(
                         portfolioId = portfolioId,
                         source = source,
                         result = result,
@@ -122,11 +122,15 @@ class AlpacaSyncService(
                     }
 
                     val detail = result.detail.copy(
-                        feeSummary = feeSummary.takeIf { result.fills.isNotEmpty() || result.fees.isNotEmpty() }
+                        feeSummary = feeReconciliation.summary.takeIf { result.fills.isNotEmpty() || result.fees.isNotEmpty() }
                             ?: result.detail.feeSummary,
                     )
                     handle.succeed(detail.describeImport(inserted))
-                    BrokerSyncOutcome.Imported(inserted, detail)
+                    BrokerSyncOutcome.Imported(
+                        inserted = inserted,
+                        detail = detail,
+                        changed = inserted > 0 || feeReconciliation.changed,
+                    )
                 }
                 AlpacaFetchResult.InvalidCredentials -> {
                     handle.fail("Invalid Alpaca credentials — update this portfolio's broker configuration")
@@ -152,7 +156,7 @@ class AlpacaSyncService(
         result: AlpacaFetchResult.Success,
         fromDate: LocalDate?,
         untilDate: LocalDate,
-    ): BrokerFeeSummary {
+    ): FeeReconciliation {
         val transactions = transactionRepository.getByPortfolio(portfolioId)
         val prefix = "alpaca:$source:"
         val candidates = transactions.filter { transaction ->
@@ -226,8 +230,13 @@ class AlpacaSyncService(
             allocated += total
         }
 
+        val feesByExternalId = transactions.associateBy { it.externalId }
+        val changed = updates.any { (externalId, fees) -> feesByExternalId[externalId]?.fees != fees }
         transactionRepository.replaceFeesByExternalId(portfolioId, updates)
-        return BrokerFeeSummary(allocatedFees = allocated, unappliedFees = unapplied, warnings = warnings)
+        return FeeReconciliation(
+            summary = BrokerFeeSummary(allocatedFees = allocated, unappliedFees = unapplied, warnings = warnings),
+            changed = changed,
+        )
     }
 
     private fun allocationWeight(transaction: Transaction, subtype: String): Double? {
@@ -302,6 +311,11 @@ class AlpacaSyncService(
     private data class FeeBucket(
         val date: LocalDate,
         val subtype: String,
+    )
+
+    private data class FeeReconciliation(
+        val summary: BrokerFeeSummary,
+        val changed: Boolean,
     )
 
     companion object {

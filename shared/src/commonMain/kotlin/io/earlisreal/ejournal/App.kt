@@ -3,6 +3,10 @@ package io.earlisreal.ejournal
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
@@ -58,7 +62,10 @@ fun App(
     positionTags: PositionTagService,
     tagRepository: TagRepository,
 ) {
-    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { startupSyncCoordinator.run() } }
+    var startupChangedPortfolioIds by remember { mutableStateOf(emptySet<Long>()) }
+    LaunchedEffect(Unit) {
+        startupChangedPortfolioIds = withContext(Dispatchers.IO) { startupSyncCoordinator.run() }
+    }
 
     val systemDark = isSystemInDarkTheme()
 
@@ -81,6 +88,7 @@ fun App(
             Destination.DASHBOARD -> DashboardScreen(
                 positionTags = positionTags,
                 filter = filter,
+                refreshOnStartup = filter.portfolio?.id?.let(startupChangedPortfolioIds::contains) == true,
                 onAnalyze = nav.onAnalyze,
                 onViewAllTrades = { nav.onNavigate(Destination.TRADE_LOGS) },
                 onOpenReports = { nav.onNavigate(Destination.REPORTS) },

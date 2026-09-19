@@ -30,6 +30,8 @@ sealed interface BrokerSyncOutcome {
     data class Imported(
         val inserted: Int,
         val detail: BrokerSyncDetail = BrokerSyncDetail(),
+        /** True when synchronization changed Transactions or their fees. */
+        val changed: Boolean = inserted > 0,
     ) : BrokerSyncOutcome
 
     data class AccountAlreadyBound(val portfolioName: String) : BrokerSyncOutcome

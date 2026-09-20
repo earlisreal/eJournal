@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -171,6 +172,7 @@ fun AnalysisScreen(
     val position = state.position
     val isDay = position?.let { classifyTradeType(it) == TradeType.DAY } ?: false
     val showTenSec = position != null && isDay && position.market == Market.US_STOCKS
+    var chartResetVersion by remember { mutableStateOf(0) }
 
     var noteText by remember { mutableStateOf("") }
     var noteLoadedForId by remember { mutableStateOf<Long?>(null) }
@@ -385,19 +387,35 @@ fun AnalysisScreen(
 
                     Box(modifier = Modifier.weight(1f))
 
-                    if (state.activeTimeframe in listOf(ChartTimeframe.TEN_SEC, ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
-                        val vwapOn = state.vwapEnabled
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    ) {
+                        if (state.activeTimeframe in listOf(ChartTimeframe.TEN_SEC, ChartTimeframe.ONE_MIN, ChartTimeframe.FIVE_MIN, ChartTimeframe.FIFTEEN_MIN)) {
+                            val vwapOn = state.vwapEnabled
+                            Text(
+                                "⬤ VWAP",
+                                modifier = Modifier
+                                    .border(1.dp, if (vwapOn) AppTheme.colors.accent else AppTheme.colors.border, RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (vwapOn) AppTheme.colors.accent.copy(alpha = 0.15f) else AppTheme.colors.surface,
+                                        RoundedCornerShape(12.dp),
+                                    )
+                                    .clickable { vm.toggleVwap() }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                color = if (vwapOn) AppTheme.colors.accent else AppTheme.colors.textMuted,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                         Text(
-                            "⬤ VWAP",
+                            "Reset",
                             modifier = Modifier
-                                .border(1.dp, if (vwapOn) AppTheme.colors.accent else AppTheme.colors.border, RoundedCornerShape(12.dp))
-                                .background(
-                                    if (vwapOn) AppTheme.colors.accent.copy(alpha = 0.15f) else AppTheme.colors.surface,
-                                    RoundedCornerShape(12.dp),
-                                )
-                                .clickable { vm.toggleVwap() }
+                                .border(1.dp, AppTheme.colors.border, RoundedCornerShape(12.dp))
+                                .background(AppTheme.colors.surface, RoundedCornerShape(12.dp))
+                                .clickable { chartResetVersion++ }
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
-                            color = if (vwapOn) AppTheme.colors.accent else AppTheme.colors.textMuted,
+                            color = AppTheme.colors.textMuted,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -414,7 +432,9 @@ fun AnalysisScreen(
                             subtitle = "Go to Settings → Sync market data to fetch OHLCV bars for this trade.",
                         )
                     } else {
-                        CandlestickCanvasChart(state = state, modifier = Modifier.fillMaxSize())
+                        key(chartResetVersion) {
+                            CandlestickCanvasChart(state = state, modifier = Modifier.fillMaxSize())
+                        }
                         if (state.loading) LoadingIndicator()
                     }
                 }

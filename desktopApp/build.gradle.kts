@@ -57,11 +57,15 @@ val writeWindowsRuntimeInventory = tasks.register("writeWindowsRuntimeInventory"
                 appendLine("Non-Maven runtime inputs: JetBrains Runtime 25, Skiko Windows native DLL, and JetBrains Mono.")
                 val packagedApp = packagedAppRoot.get().asFile.takeIf { it.isDirectory }?.walkTopDown()
                     ?.filter { it.isFile && it.extension.lowercase() in setOf("dll", "exe", "jar", "ttf", "otf") }
-                    ?.map { it.relativeTo(packagedAppRoot.get().asFile).invariantSeparatorsPath }
+                    ?.map {
+                        it.relativeTo(packagedAppRoot.get().asFile).invariantSeparatorsPath
+                            .replace(Regex("-[0-9a-f]{28,32}\\.jar$"), ".jar")
+                    }
+                    ?.distinct()
                     ?.toList()
                     .orEmpty()
                 if (packagedApp.isNotEmpty()) {
-                    appendLine("Packaged runtime inputs (generated after createDistributable):")
+                    appendLine("Packaged runtime inputs (generated after createDistributable; JAR content hashes omitted):")
                     packagedApp.sorted().forEach(::appendLine)
                 }
             },

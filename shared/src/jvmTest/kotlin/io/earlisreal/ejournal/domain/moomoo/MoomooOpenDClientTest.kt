@@ -11,6 +11,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
@@ -94,6 +95,47 @@ class MoomooOpenDClientTest {
         assertEquals("••1001", account.label)
         assertEquals(MoomooAccountEnvironment.REAL, account.environment)
         assertTrue(account.active)
+    }
+
+    @Test
+    fun emptyHistoricalOrderResponseWithoutOrderListIsAnEmptyResult() {
+        val server = ServerSocket(0)
+        val serverThread = thread(start = true, isDaemon = true) {
+            server.use { listener ->
+                listener.accept().use { socket ->
+                    val input = socket.getInputStream()
+                    val output = socket.getOutputStream()
+                    val init = OpenDFrameCodec.read(input)
+                    output.write(frame(1001, init.serial, """{"retType":0,"s2c":{"keepAliveInterval":300}}"""))
+                    output.flush()
+
+                    val orders = OpenDFrameCodec.read(input)
+                    assertEquals(2221, orders.protocolId)
+                    output.write(
+                        frame(
+                            2221,
+                            orders.serial,
+                            """{"retType":0,"s2c":{"header":{"trdEnv":1,"accID":"1001","trdMarket":2}}}""",
+                        ),
+                    )
+                    output.flush()
+                }
+            }
+        }
+
+        val result = runBlocking {
+            val opened = MoomooOpenDClient(2.seconds).open(server.localPort)
+            assertIs<MoomooResult.Success<MoomooSession>>(opened).value.let { session ->
+                try {
+                    session.getHistoricalOrders("1001", LocalDate(2026, 6, 1), LocalDate(2026, 6, 30))
+                } finally {
+                    session.close()
+                }
+            }
+        }
+        serverThread.join(2_000)
+
+        assertEquals(MoomooResult.Success(emptyList()), result)
     }
 
     @Test

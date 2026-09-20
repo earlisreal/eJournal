@@ -288,7 +288,7 @@ private class MoomooOpenDSession(
             put("header", header)
             put("filterConditions", filter(from, to))
         }.map { root ->
-            root.obj("s2c")?.array("orderList")?.map { mapOrder(it.jsonObject) }
+            root.obj("s2c")?.arrayOrEmpty("orderList")?.map { mapOrder(it.jsonObject) }
                 ?: error(root.errorMessage("Invalid OpenD historical order response"))
         }
     }
@@ -303,7 +303,7 @@ private class MoomooOpenDSession(
             put("header", header)
             put("filterConditions", filter(from, to))
         }.map { root ->
-            root.obj("s2c")?.array("orderFillList")?.map { mapExecution(it.jsonObject) }
+            root.obj("s2c")?.arrayOrEmpty("orderFillList")?.map { mapExecution(it.jsonObject) }
                 ?: error(root.errorMessage("Invalid OpenD historical deal response"))
         }
     }
@@ -317,7 +317,7 @@ private class MoomooOpenDSession(
             put("header", header)
             put("orderIDExList", buildJsonArray { orderIds.forEach { add(JsonPrimitive(it)) } })
         }.map { root ->
-            root.obj("s2c")?.array("orderFeeList")?.map { mapFee(it.jsonObject) }
+            root.obj("s2c")?.arrayOrEmpty("orderFeeList")?.map { mapFee(it.jsonObject) }
                 ?: error(root.errorMessage("Invalid OpenD order fee response"))
         }
     }
@@ -372,6 +372,11 @@ private fun JsonObject.errorMessage(fallback: String): String =
 
 private fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
 private fun JsonObject.array(key: String): JsonArray? = this[key] as? JsonArray
+private fun JsonObject.arrayOrEmpty(key: String): JsonArray = when (val value = this[key]) {
+    null -> JsonArray(emptyList())
+    is JsonArray -> value
+    else -> error("Invalid OpenD response field: $key")
+}
 private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
 private fun JsonObject.int(key: String): Int = string(key)?.toIntOrNull() ?: -400
 private fun JsonObject.long(key: String): Long? = string(key)?.toLongOrNull()

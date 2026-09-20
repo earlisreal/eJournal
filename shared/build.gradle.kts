@@ -29,7 +29,6 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
-            implementation(libs.moomoo.api)
             implementation(libs.sqldelight.driver.sqlite)
             implementation(libs.sqlite.jdbc)
             implementation(libs.ktor.client.cio)

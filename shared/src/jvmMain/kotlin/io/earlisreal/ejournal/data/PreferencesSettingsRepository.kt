@@ -51,6 +51,32 @@ class PreferencesSettingsRepository(
         else prefs.put(KEY_ETAPE_DB_PATH, path.trim())
     }
 
+    override fun getOnlineMarketDataEnabled(): Boolean = prefs.getBoolean(KEY_ONLINE_MARKET_DATA, false)
+
+    override fun setOnlineMarketDataEnabled(enabled: Boolean) {
+        prefs.putBoolean(KEY_ONLINE_MARKET_DATA, enabled)
+    }
+
+    override fun getAutomaticUpdateChecksEnabled(): Boolean = prefs.getBoolean(KEY_UPDATE_CHECKS, true)
+
+    override fun setAutomaticUpdateChecksEnabled(enabled: Boolean) {
+        prefs.putBoolean(KEY_UPDATE_CHECKS, enabled)
+    }
+
+    override fun getNetworkDisclosureVersion(): Int? =
+        prefs.get(KEY_NETWORK_DISCLOSURE_VERSION, "").toIntOrNull()
+
+    override fun setNetworkDisclosureVersion(version: Int) {
+        prefs.putInt(KEY_NETWORK_DISCLOSURE_VERSION, version)
+    }
+
+    override fun getLastUpdateCheckEpochMillis(): Long? =
+        prefs.get(KEY_LAST_UPDATE_CHECK, "").toLongOrNull()
+
+    override fun setLastUpdateCheckEpochMillis(epochMillis: Long) {
+        prefs.putLong(KEY_LAST_UPDATE_CHECK, epochMillis)
+    }
+
     private companion object {
         const val KEY_THEME = "theme_mode"
         const val KEY_PORTFOLIO = "filter_portfolio_id"
@@ -61,5 +87,9 @@ class PreferencesSettingsRepository(
         const val KEY_TAG_IDS = "filter_tag_ids_scoped"
         const val KEY_TAG_MATCH = "filter_tag_match"
         const val KEY_ETAPE_DB_PATH = "etape_db_path"
+        const val KEY_ONLINE_MARKET_DATA = "online_market_data_enabled"
+        const val KEY_UPDATE_CHECKS = "automatic_update_checks"
+        const val KEY_NETWORK_DISCLOSURE_VERSION = "network_disclosure_version"
+        const val KEY_LAST_UPDATE_CHECK = "last_update_check_epoch_millis"
     }
 }

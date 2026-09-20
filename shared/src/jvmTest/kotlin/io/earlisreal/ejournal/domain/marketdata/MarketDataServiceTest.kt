@@ -6,6 +6,8 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Broker
@@ -91,6 +93,15 @@ private class FakeCreds(var creds: AlpacaMarketDataCredentials? = null) : Creden
     override fun deletePortfolioBrokerCredentials(credentialRef: String) { portfolio.remove(credentialRef) }
 }
 
+private class FakeSettings(var onlineMarketData: Boolean = false) : SettingsRepository {
+    override fun getThemeMode() = io.earlisreal.ejournal.ui.theme.ThemeMode.SYSTEM
+    override fun setThemeMode(mode: io.earlisreal.ejournal.ui.theme.ThemeMode) = Unit
+    override fun getFilterPrefs(): FilterPrefs? = null
+    override fun setFilterPrefs(prefs: FilterPrefs) = Unit
+    override fun getOnlineMarketDataEnabled(): Boolean = onlineMarketData
+    override fun setOnlineMarketDataEnabled(enabled: Boolean) { onlineMarketData = enabled }
+}
+
 class MarketDataServiceTest {
 
     private fun usPortfolio(id: Long = 1L) = Portfolio(id = id, name = "US", market = Market.US_STOCKS, broker = null, credentialRef = "ref-$id")
@@ -123,6 +134,7 @@ class MarketDataServiceTest {
         crypto: FakeProvider = FakeProvider(),
         creds: FakeCreds = FakeCreds(),
         etapeImporter: EtapeMarketDataImporter? = null,
+        settings: SettingsRepository = FakeSettings(onlineMarketData = true),
     ) = MarketDataService(
         portfolioRepository = FakePortfolios(portfolios),
         closedPositions = ClosedPositionService(FakeTransactions(transactions), FakePortfolios(portfolios)),
@@ -133,8 +145,30 @@ class MarketDataServiceTest {
         cryptoProvider = crypto,
         credentialsRepository = creds,
         etapeImporter = etapeImporter,
+        settingsRepository = settings,
         todayProvider = { TODAY },
     )
+
+    @Test
+    fun `automatic sync skips external providers when market data is disabled`() = runTest {
+        val yahoo = FakeProvider()
+        val importer = FakeEtapeImporter()
+        val result = service(yahoo = yahoo, etapeImporter = importer, settings = FakeSettings()).sync()
+
+        assertTrue(yahoo.calls.isEmpty())
+        assertEquals(1, importer.calls)
+        assertEquals(0, result.fetchedSymbols)
+    }
+
+    @Test
+    fun `confirmed sync can fetch while automatic market data is disabled`() = runTest {
+        val yahoo = FakeProvider()
+        val service = service(yahoo = yahoo, settings = FakeSettings())
+
+        service.syncConfirmed()
+
+        assertTrue(yahoo.calls.isNotEmpty())
+    }
 
     @Test
     fun `sync imports eTape bars through the shared market-data run`() = runTest {

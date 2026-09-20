@@ -53,4 +53,24 @@ class PreferencesSettingsRepositoryTest {
 
         assertNull(PreferencesSettingsRepository(node).getEtapeDbPath())
     }
+
+    @Test
+    fun networkPreferencesDefaultSafelyAndRoundTrip() {
+        val repo = PreferencesSettingsRepository(node)
+        assertEquals(false, repo.getOnlineMarketDataEnabled())
+        assertEquals(true, repo.getAutomaticUpdateChecksEnabled())
+        assertNull(repo.getNetworkDisclosureVersion())
+        assertNull(repo.getLastUpdateCheckEpochMillis())
+
+        repo.setOnlineMarketDataEnabled(true)
+        repo.setAutomaticUpdateChecksEnabled(false)
+        repo.setNetworkDisclosureVersion(1)
+        repo.setLastUpdateCheckEpochMillis(123L)
+
+        val restored = PreferencesSettingsRepository(node)
+        assertEquals(true, restored.getOnlineMarketDataEnabled())
+        assertEquals(false, restored.getAutomaticUpdateChecksEnabled())
+        assertEquals(1, restored.getNetworkDisclosureVersion())
+        assertEquals(123L, restored.getLastUpdateCheckEpochMillis())
+    }
 }

@@ -30,7 +30,7 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 - **Per-trade analysis** — candlestick chart (10-second eTape bars by default for sub-minute Positions when available, 1/5/15-minute intraday, or daily/weekly for swing trades) with your entries and exits plotted, a VWAP toggle, a transaction breakdown, and arrow-key navigation between trades.
 - **Sortable, filterable trade log** — every closed position with entry/exit times & prices, shares, P&L, fees, and hold duration. Click through to the chart.
 - **Drag-and-drop import** — drop a CSV, let eJournal auto-detect the broker, and preview parsed transactions before committing.
-- **Free market data** — Yahoo Finance daily bars work out of the box; add free Alpaca keys for 1-minute intraday bars on day trades. Optional local eTape data supplies exact 10-second bars for US stock day Positions.
+- **Opt-in market data** — Yahoo Finance and Alpaca requests are disabled by default and can be enabled in Settings; optional local eTape data remains available without network access.
 - **Direct Alpaca synchronization** — read-only import of executed US stock fills from a Paper or Live trading account, including partial fills.
 - **Direct Moomoo OpenD synchronization** — read-only, localhost-only import of live US stock orders, executions, and exact order fees.
 - **Local-first & private** — everything lives in a single SQLite file under `~/.ejournal`; API keys are stored with owner-only permissions on your machine.
@@ -59,35 +59,15 @@ Don't see your broker? Use the **Generic CSV** importer with any file that has t
 
 ## Download
 
-> **Moomoo SDK public-binary release gate:** the `com.moomoo.openapi:moomoo-api:10.8.6808` POM names a non-commercial license, but its linked license text was unavailable when this integration was added. The public release workflows fail before packaging unless repository Actions variable `MOOMOO_SDK_REDISTRIBUTION_CONFIRMED` is exactly `true`. Set that variable only after Moomoo's redistribution terms and required notices have been confirmed. Mandatory notice-file checks are deferred until package-signing work; if `licenses/moomoo-sdk-notice.txt` is present, local and CI packaging still bundle it. Local packaging remains available for verification and does not imply redistribution approval. No license terms are inferred here.
+Public Windows artifacts do not bundle the Moomoo SDK or OpenD. The Moomoo integration speaks the documented JSON OpenD protocol directly and requires a separately installed OpenD service.
 
 Grab the latest build from the [**Releases page**](https://github.com/earlisreal/eJournal/releases/latest):
 
-- **Windows** — `.msi` installer, or the portable `.zip` (no install needed; bundles its own Java runtime).
-- **Ubuntu x64 (experimental)** — `eJournal-<version>-linux-x64.deb`, CI-tested on Ubuntu 24.04 and 26.04.
-- **macOS Apple Silicon (experimental)** — `eJournal-<version>-macos-arm64.dmg`, CI-tested on macOS 15 and 26.
+- **Windows** — `.msi` installer, or the portable `.zip` (both bundle their own Java runtime).
 
-The Ubuntu and macOS packages are experimental: hands-on installation, CSV selection/import, charts, restart persistence, upgrade, and uninstall checks are still pending. Packages include their own JBR 25 runtime; no separate Java installation is required.
+The Windows release is currently unsigned pending SignPath acceptance. The built-in updater checks GitHub at most once per day when enabled and opens the release page; it never downloads or installs an MSI automatically. Windows users can install or upgrade the MSI through normal Windows Apps settings, or replace the extracted portable folder.
 
-Platform verification status: CI covers packaged launch only; Moomoo/OpenD, Alpaca, eTape, and native CSV/XLSX/SQLite file-picker flows have not been hands-on verified on Ubuntu or macOS.
-
-### Ubuntu installation, upgrades, and uninstall
-
-The experimental DEB targets x64 Ubuntu 24.04 and 26.04. Install or upgrade it manually with:
-
-```bash
-sudo apt install ./eJournal-<version>-linux-x64.deb
-```
-
-Remove the package with `sudo apt remove ejournal`. Package removal preserves the journal under `~/.ejournal`; remove that directory separately only if you intend to delete the database, settings, cached data, and credentials.
-
-### macOS installation, upgrades, and uninstall
-
-The experimental DMG targets Apple Silicon Macs running macOS 15 or 26. Open the DMG, drag `eJournal.app` to **Applications**, then right-click the app and choose **Open** the first time. If macOS blocks it, open **System Settings → Privacy & Security**, select **Open Anyway**, and confirm the per-app prompt. The DMG is **not signed with an Apple Developer ID and is not notarized**.
-
-To upgrade, quit eJournal and replace the existing app with the newer one from the downloaded DMG. To uninstall, delete `/Applications/eJournal.app`. Upgrades and app removal preserve `~/.ejournal`; hands-on data-preservation checks remain pending.
-
-macOS package metadata uses the release major version plus one (for example, release `0.5.0` has package version `1.5.0`) because JDK 25's `jpackage` requires a positive major version. Download names and the app splash retain the release version.
+Linux and macOS packaging is intentionally dormant while Windows signing eligibility is completed. The previous workflow is preserved under `.github/workflows-disabled/` and makes no support claim.
 
 ### Code signing policy
 
@@ -104,17 +84,17 @@ Uninstalling preserves journal data so a later installation can reuse it. To rem
 
 Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades, and optional native 10-second bars for sub-minute US stock day trades. Analysis defaults to 10-second bars for those Positions when complete data is available, then falls back to 1-minute bars. Three sources:
 
-- **Yahoo Finance (default, no setup).** Full daily history for daily bars. Works out of the box.
+- **Yahoo Finance (opt-in, no setup).** Full daily history for daily bars after the user enables online market data or confirms a one-shot fetch.
 - **Alpaca (optional, free).** The same Key ID and Secret Key unlock 1-minute market-data history and read-only trading-account synchronization. In **Settings → Alpaca**, select the matching **Paper** or **Live** trading environment; Paper and Live credentials are different. Create a free account at [alpaca.markets](https://alpaca.markets) (Paper/data keys need no funding), then follow steps 1 and 2 of [Alpaca's guide](https://alpaca.markets/learn/connect-to-alpaca-api).
 - **eTape (optional, local).** When `~/.eTape/etape.db` exists, eJournal copies the complete available Position date of native `bars_10s` rows into its own database during market-data sync. Use **Settings → Sync → Choose eTape database…** for another file; the selected path is remembered. Imports are read-only, idempotent, and never synthesize bars from 1-minute data.
 
 Alpaca synchronization only reads `/v2/account`, `/v2/assets`, and legacy `/v2/account/activities/FILL` plus `FEE` data. It never places, modifies, or cancels orders. Phase 1 imports US stock fills only; options and crypto fills are skipped. Each execution, including partial fills, remains a separate eJournal transaction. Alpaca's aggregate CAT, REG, and TAF Broker Fees are preserved and allocated as eJournal-derived Fee Allocation across matching Alpaca Transactions: REG by sell notional, TAF by sell shares, and CAT by all executed shares. Fee Dates use Alpaca's UTC activity boundary, debits become positive journal fees, fractional cents are retained, and unsupported, contaminated, malformed, or unmatched buckets remain unapplied with warnings. The first sync reconciles full history; later syncs replay an inclusive 95-day window so recent corrections replace prior allocations. Startup synchronization is opt-in per Portfolio and runs every eligible Portfolio before market-data synchronization; when it changes the selected Portfolio, the Dashboard refreshes after synchronization completes.
 
-Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Market data syncs automatically after each import and on app startup; use **Settings → Sync market data** to backfill manually after adding keys.
+Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Online market-data requests are off by default. Enable **Settings → Sync → Allow automatic online market data** for automatic requests, or use **Fetch online data once** for a one-shot confirmed request. Local eTape imports still run with online access disabled.
 
 ## Moomoo OpenD setup
 
-Direct Moomoo import requires the separately installed **Moomoo OpenD** application. eJournal uses Moomoo OpenAPI SDK `10.8.6808`; it does not bundle OpenD, OpenD native libraries, or SDK source.
+Direct Moomoo import requires the separately installed **Moomoo OpenD** application. eJournal does not bundle OpenD, OpenD native libraries, or the Moomoo SDK; it sends the minimum documented JSON protocol over localhost.
 
 1. Install and start OpenD using Moomoo's official instructions, sign in, and authorize the live trading account you want to journal.
 2. Keep OpenD on the same computer as eJournal. eJournal always connects to `127.0.0.1`; remote hosts are not accepted.
@@ -134,11 +114,10 @@ eJournal is a Kotlin Multiplatform project targeting Desktop (JVM only). Buildin
 ./gradlew :desktopApp:hotRun --auto  # run with Compose hot reload
 ./gradlew :shared:jvmTest            # run all tests
 ./gradlew build                      # full build
-./gradlew :desktopApp:packageDeb -PappVersion=1.2.3  # Ubuntu x64, on Ubuntu
-./gradlew :desktopApp:packageDmg -PappVersion=1.2.3  # macOS arm64, on Apple Silicon macOS
+./gradlew :desktopApp:packageMsi -PappVersion=1.2.3 -PofficialRelease=true -Pdistribution=msi  # Windows
 ```
 
-Native packages must be built on their target operating system and architecture. Public package builds and release uploads are handled by the [release workflow](https://github.com/earlisreal/eJournal/actions/workflows/release-windows.yml).
+The public Windows package is built on GitHub-hosted Windows runners by the [release workflow](https://github.com/earlisreal/eJournal/actions/workflows/release-windows.yml). The archived Linux/macOS workflow is not active.
 
 Run a single JUnit test class or method with `--tests`:
 

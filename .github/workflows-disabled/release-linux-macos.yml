@@ -1,0 +1,690 @@
+# Archived workflow. GitHub only executes files under .github/workflows; this file is intentionally
+# dormant. Restore it only after moving it back, reviewing current runner/action versions, removing
+# stale dependency gates, and rerunning hands-on Linux/macOS validation.
+name: Archived Release (Windows, Ubuntu, macOS)
+
+# Builds platform-native packages on the matching GitHub-hosted runner. Tagged runs publish
+# each successful platform asset to the same GitHub Release; manual runs upload workflow artifacts
+# only. Linux and macOS packages are experimental until hands-on validation is completed.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numeric package version (major.minor.patch; defaults to 1.0.0)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Enforce Moomoo SDK redistribution gate
+        shell: pwsh
+        env:
+          MOOMOO_SDK_REDISTRIBUTION_CONFIRMED: ${{ vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED }}
+        run: |
+          if ($env:MOOMOO_SDK_REDISTRIBUTION_CONFIRMED -ne "true") {
+            throw "Public binaries are blocked until repository variable MOOMOO_SDK_REDISTRIBUTION_CONFIRMED is set to true after Moomoo SDK redistribution terms and notices are confirmed."
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Temurin bootstraps Gradle. The packaged app uses the JetBrains Runtime (JBR) 25 toolchain
+      # requested by build.gradle.kts and provisioned through the Gradle foojay resolver.
+      - name: Set up JDK 25 (Gradle bootstrap)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Derive app version
+        id: version
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref_name }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          if ($env:EVENT_NAME -eq "workflow_dispatch") {
+            if ($env:VERSION_INPUT -eq "") {
+              $v = "1.0.0"
+            } else {
+              if ($env:VERSION_INPUT -notmatch '^\d+\.\d+\.\d+$') { throw "version must be major.minor.patch" }
+              $v = $env:VERSION_INPUT
+            }
+          } elseif ($env:EVENT_NAME -eq "push" -and $env:RELEASE_REF -match '^v(\d+\.\d+\.\d+)$') {
+            $v = $Matches[1]
+          } else {
+            throw "release tags must match vX.Y.Z"
+          }
+          Write-Host "packageVersion = $v"
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Build MSI installer and portable app image
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: .\gradlew.bat :shared:jvmTest build :desktopApp:packageMsi :desktopApp:createDistributable "-PappVersion=$env:APP_VERSION" --no-configuration-cache --stacktrace
+
+      - name: Stage release artifacts
+        shell: pwsh
+        run: |
+          $appRoot = "desktopApp/build/compose/binaries/main/app"
+          $appDir = Get-ChildItem -LiteralPath $appRoot -Directory | Select-Object -First 1
+          if (-not $appDir) { throw "Packaged Windows app image not found" }
+          Compress-Archive -Path $appDir.FullName -DestinationPath "eJournal-portable-windows.zip" -Force
+
+          $msi = Get-ChildItem -Path "desktopApp/build/compose/binaries/main/msi" -Recurse -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "Packaged Windows MSI not found" }
+          Copy-Item $msi.FullName -Destination "eJournal-windows.msi"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-windows
+          path: |
+            eJournal-portable-windows.zip
+            eJournal-windows.msi
+
+  publish-windows:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && needs.build-windows.result == 'success'
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ejournal-windows
+
+      - name: Publish Windows assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --verify-tag --title "eJournal $TAG" --generate-notes \
+              || gh release view "$TAG" --repo "$GH_REPO"
+          fi
+          gh release upload "$TAG" eJournal-portable-windows.zip eJournal-windows.msi --repo "$GH_REPO" --clobber
+          {
+            echo "### Windows"
+            echo "Published eJournal-windows.msi and eJournal-portable-windows.zip."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Enforce Moomoo SDK redistribution gate
+        env:
+          MOOMOO_SDK_REDISTRIBUTION_CONFIRMED: ${{ vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED }}
+        run: |
+          if [[ "$MOOMOO_SDK_REDISTRIBUTION_CONFIRMED" != "true" ]]; then
+            echo "Public binaries are blocked until repository variable MOOMOO_SDK_REDISTRIBUTION_CONFIRMED is true after Moomoo SDK terms and notices are confirmed."
+            exit 1
+          fi
+
+      - name: Verify runner architecture
+        run: |
+          [[ "$(lsb_release -rs)" == "24.04" ]]
+          [[ "$(uname -m)" == "x86_64" ]]
+          [[ "$(dpkg --print-architecture)" == "amd64" ]]
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (Gradle bootstrap)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Derive package version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref_name }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -n "$VERSION_INPUT" ]]; then
+              [[ "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version must be major.minor.patch"; exit 1; }
+              version="$VERSION_INPUT"
+            else
+              version="1.0.0"
+            fi
+          elif [[ "$EVENT_NAME" == "push" && "$RELEASE_REF" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            version="${BASH_REMATCH[1]}"
+          else
+            echo "release tags must match vX.Y.Z"
+            exit 1
+          fi
+          echo "packageVersion = $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test and build DEB
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew :shared:jvmTest build :desktopApp:packageDeb "-PappVersion=$APP_VERSION" --no-configuration-cache --stacktrace
+
+      - name: Stage and inspect DEB
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          artifact="$(find desktopApp/build/compose/binaries/main/deb -type f -name '*.deb' -print -quit)"
+          [[ -n "$artifact" ]] || { echo "DEB artifact not found"; exit 1; }
+          output="eJournal-${APP_VERSION}-linux-x64.deb"
+          cp "$artifact" "$output"
+          [[ "$(dpkg-deb -f "$output" Package)" == "ejournal" ]]
+          [[ "$(dpkg-deb -f "$output" Version)" == "$APP_VERSION" ]]
+          [[ "$(dpkg-deb -f "$output" Architecture)" == "amd64" ]]
+          echo "### Ubuntu x64 (experimental)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Built $output on Ubuntu 24.04; exact artifact will be launched on Ubuntu 24.04 and 26.04." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-linux
+          path: eJournal-*.deb
+          if-no-files-found: error
+
+  test-linux:
+    needs: build-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Verify runner architecture
+        run: |
+          expected_os="${{ matrix.os }}"
+          expected_os="${expected_os#ubuntu-}"
+          [[ "$(lsb_release -rs)" == "$expected_os" ]]
+          [[ "$(uname -m)" == "x86_64" ]]
+          [[ "$(dpkg --print-architecture)" == "amd64" ]]
+
+      - name: Download exact DEB
+        uses: actions/download-artifact@v4
+        with:
+          name: ejournal-linux
+          path: artifact
+
+      - name: Install package and verify bundled runtime
+        run: |
+          artifact="$(find artifact -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          [[ -n "$artifact" ]] || { echo "Downloaded DEB artifact not found"; exit 1; }
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          sudo apt-get install -y "./$artifact"
+          [[ "$(dpkg-query -W -f='${Package} ${Architecture}\n' ejournal)" == "ejournal amd64" ]]
+          app_jar="$(dpkg -L ejournal | grep -E '/app/sqlite-jdbc-[^/]+\.jar$' | head -n1)"
+          [[ -n "$app_jar" ]] || { echo "Packaged app dependencies not found"; exit 1; }
+          app_dir="$(dirname "$app_jar")"
+          for pattern in \
+            'skiko-awt-runtime-linux-x64-*.jar' \
+            'sqlite-jdbc-*.jar' \
+            'filekit-core-jvm-*.jar' \
+            'filekit-dialogs-jvm-*.jar' \
+            'jna-*.jar'; do
+            compgen -G "$app_dir/$pattern" >/dev/null || { echo "Missing packaged dependency: $pattern"; exit 1; }
+          done
+          resources_dir="$app_dir/resources"
+          [[ -s "$resources_dir/splash.png" ]] || { echo "Packaged splash not found"; exit 1; }
+          icon="$(dpkg -L ejournal | grep -E '/usr/share/icons/.*/apps/[^/]+\.(png|xpm)$' | head -n1)"
+          [[ -n "$icon" && -s "$icon" ]] || { echo "Packaged application icon not found"; exit 1; }
+          runtime="$(dpkg -L ejournal | awk '/\/lib\/runtime\/bin\/java$/ { print; exit }')"
+          [[ -x "$runtime" ]] || { echo "Bundled runtime not found"; exit 1; }
+          "$runtime" -version 2>&1 | grep -q '"25'
+
+      - name: Launch installed application
+        run: |
+          launcher="$(command -v ejournal)"
+          [[ -x "$launcher" ]] || { echo "Installed eJournal launcher not found"; exit 1; }
+          test_home="$RUNNER_TEMP/ejournal-home"
+          rm -rf "$test_home"
+          mkdir -p "$test_home"
+          log="$test_home/.ejournal/logs/ejournal.log"
+          launch_log="$RUNNER_TEMP/ejournal-launch.log"
+          if [[ -n "${DISPLAY:-}" ]]; then
+            echo "Launching in the runner's default desktop session ($DISPLAY)"
+            HOME="$test_home" JAVA_TOOL_OPTIONS="-Duser.home=$test_home" "$launcher" >"$launch_log" 2>&1 &
+          else
+            echo "::warning::No default Ubuntu desktop session is available; using Xvfb. Desktop-session and native file-dialog validation remains pending."
+            HOME="$test_home" JAVA_TOOL_OPTIONS="-Duser.home=$test_home" xvfb-run -a --server-args="-screen 0 1440x900x24" "$launcher" >"$launch_log" 2>&1 &
+          fi
+          pid=$!
+          cleanup() { kill "$pid" >/dev/null 2>&1 || true; wait "$pid" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 90); do
+            if [[ -f "$log" ]] && grep -Eiq '(^|[^[:alnum:]])(Exception|Error|UnsatisfiedLinkError|NoClassDefFoundError)([^[:alnum:]]|$)|\[(startup|log)\].*(failed|error)' "$log"; then
+              echo "eJournal reported a startup error"
+              cat "$launch_log"
+              cat "$log"
+              exit 1
+            fi
+            if [[ -f "$log" ]] && grep -q 'window-shown' "$log"; then
+              echo "window-shown reached on ${{ matrix.os }}"
+              exit 0
+            fi
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+              echo "eJournal exited before window-shown"
+              cat "$launch_log"
+              cat "$log" 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "Timed out waiting for window-shown"
+          cat "$launch_log"
+          cat "$log" 2>/dev/null || true
+          exit 1
+
+      - name: Preserve Linux launch logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-linux-launch-logs-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/ejournal-launch.log
+            ${{ runner.temp }}/ejournal-home/.ejournal/logs
+          if-no-files-found: ignore
+
+  publish-linux:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && needs.build-linux.result == 'success' && needs.test-linux.result == 'success'
+    needs:
+      - build-linux
+      - test-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download DEB
+        uses: actions/download-artifact@v4
+        with:
+          name: ejournal-linux
+
+      - name: Publish Ubuntu asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          asset="$(find . -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          [[ -n "$asset" ]] || { echo "DEB artifact not found"; exit 1; }
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --verify-tag --title "eJournal $TAG" --generate-notes \
+              || gh release view "$TAG" --repo "$GH_REPO"
+          fi
+          gh release upload "$TAG" "$asset" --repo "$GH_REPO" --clobber
+          {
+            echo "### Ubuntu x64 (experimental)"
+            echo "Published $(basename "$asset"); CI launch checks ran on Ubuntu 24.04 and 26.04."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-macos:
+    runs-on: macos-15
+    steps:
+      - name: Enforce Moomoo SDK redistribution gate
+        env:
+          MOOMOO_SDK_REDISTRIBUTION_CONFIRMED: ${{ vars.MOOMOO_SDK_REDISTRIBUTION_CONFIRMED }}
+        run: |
+          if [[ "$MOOMOO_SDK_REDISTRIBUTION_CONFIRMED" != "true" ]]; then
+            echo "Public binaries are blocked until repository variable MOOMOO_SDK_REDISTRIBUTION_CONFIRMED is true after Moomoo SDK terms and notices are confirmed."
+            exit 1
+          fi
+
+      - name: Verify runner architecture
+        run: |
+          [[ "$(sw_vers -productVersion)" == 15.* ]]
+          [[ "$(uname -m)" == "arm64" ]]
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (Gradle bootstrap)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Derive package version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref_name }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -n "$VERSION_INPUT" ]]; then
+              [[ "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version must be major.minor.patch"; exit 1; }
+              version="$VERSION_INPUT"
+            else
+              version="1.0.0"
+            fi
+          elif [[ "$EVENT_NAME" == "push" && "$RELEASE_REF" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            version="${BASH_REMATCH[1]}"
+          else
+            echo "release tags must match vX.Y.Z"
+            exit 1
+          fi
+          echo "packageVersion = $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test and build DMG
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew :shared:jvmTest build :desktopApp:packageDmg "-PappVersion=$APP_VERSION" --no-configuration-cache --stacktrace
+
+      - name: Print macOS packaging logs
+        if: failure()
+        run: find desktopApp/build/compose/logs -type f -name '*.txt' -print -exec cat {} \;
+
+      - name: Preserve macOS packaging diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-macos-packaging-logs
+          path: |
+            desktopApp/build/compose/logs/
+            desktopApp/build/compose/tmp/*.args.txt
+          if-no-files-found: ignore
+
+      - name: Stage DMG
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          artifact="$(find desktopApp/build/compose/binaries/main/dmg -type f -name '*.dmg' -print -quit)"
+          [[ -n "$artifact" ]] || { echo "DMG artifact not found"; exit 1; }
+          output="eJournal-${APP_VERSION}-macos-arm64.dmg"
+          cp "$artifact" "$output"
+          echo "### macOS arm64 (experimental)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Built $output on macOS 15; exact artifact will be launched on macOS 15 and 26." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-macos
+          path: eJournal-*.dmg
+          if-no-files-found: error
+
+  test-macos:
+    needs: build-macos
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-15
+          - macos-26
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Verify runner architecture
+        run: |
+          expected_os="${{ matrix.os }}"
+          expected_os="${expected_os#macos-}"
+          [[ "$(sw_vers -productVersion)" == "$expected_os".* ]]
+          [[ "$(uname -m)" == "arm64" ]]
+
+      - name: Download exact DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: ejournal-macos
+          path: artifact
+
+      - name: Mount and inspect app bundle
+        id: app
+        run: |
+          dmg="$(find artifact -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          [[ -n "$dmg" ]] || { echo "Downloaded DMG artifact not found"; exit 1; }
+          dmg_name="${dmg##*/}"
+          [[ "$dmg_name" =~ ^eJournal-([0-9]+\.[0-9]+\.[0-9]+)-macos-arm64\.dmg$ ]] || { echo "Unexpected DMG name: $dmg_name"; exit 1; }
+          expected_version="${BASH_REMATCH[1]}"
+          # Match the positive-major offset used by macOS nativeDistributions.
+          expected_version="$((10#${expected_version%%.*} + 1)).${expected_version#*.}"
+
+          mount="$RUNNER_TEMP/ejournal-dmg"
+          mkdir -p "$mount"
+          cleanup_mount() { hdiutil detach "$mount" -force >/dev/null 2>&1 || true; }
+          trap cleanup_mount EXIT
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount"
+          source_app="$(find "$mount" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          [[ -n "$source_app" ]] || { echo "App bundle not found in DMG"; exit 1; }
+          app="$RUNNER_TEMP/eJournal.app"
+          ditto "$source_app" "$app"
+          hdiutil detach "$mount" -force
+
+          plist="$app/Contents/Info.plist"
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" == "io.earlisreal.ejournal" ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" == "$expected_version" ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")" == "$expected_version" ]]
+          [[ "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")" == "15.0" ]]
+          sqlite_jar="$(find "$app/Contents" -type f -name 'sqlite-jdbc-*.jar' -print -quit)"
+          [[ -n "$sqlite_jar" ]] || { echo "Packaged app dependencies not found"; exit 1; }
+          app_dir="$(dirname "$sqlite_jar")"
+          for pattern in \
+            'skiko-awt-runtime-macos-arm64-*.jar' \
+            'sqlite-jdbc-*.jar' \
+            'filekit-core-jvm-*.jar' \
+            'filekit-dialogs-jvm-*.jar' \
+            'jna-*.jar'; do
+            find "$app_dir" -maxdepth 1 -type f -name "$pattern" -print -quit | grep -q . || { echo "Missing packaged dependency: $pattern"; exit 1; }
+          done
+          splash="$(find "$app/Contents" -type f -path '*/resources/splash.png' -print -quit)"
+          [[ -n "$splash" && -s "$splash" ]] || { echo "Packaged splash not found"; exit 1; }
+          icon="$(find "$app/Contents/Resources" -type f -iname '*.icns' -print -quit)"
+          [[ -n "$icon" && -s "$icon" ]] || { echo "Packaged application icon not found"; exit 1; }
+
+          launcher="$app/Contents/MacOS/eJournal"
+          [[ -x "$launcher" ]] || { echo "App launcher not found"; exit 1; }
+          [[ "$(lipo -archs "$launcher")" == *arm64* ]]
+          runtime="$app/Contents/runtime/Contents/Home/bin/java"
+          [[ -x "$runtime" ]] || { echo "Bundled runtime not found"; exit 1; }
+          "$runtime" -version 2>&1 | grep -q '"25'
+
+          if codesign --verify --deep --strict "$app" >/dev/null 2>&1; then
+            signature_status="$(codesign --display --verbose=4 "$app" 2>&1 | awk -F= '/^Signature=/ { print $2; exit }')"
+            signature_status="${signature_status:-valid}"
+            echo "The app has a valid local signature ($signature_status); Developer ID signing and notarization remain intentionally absent."
+          else
+            signature_status="unsigned"
+            echo "The app is unsigned or ad hoc-signed; continuing with the experimental launch check."
+          fi
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "signature_status=$signature_status" >> "$GITHUB_OUTPUT"
+
+      - name: Launch installed application
+        env:
+          APP_PATH: ${{ steps.app.outputs.app }}
+          SIGNATURE_STATUS: ${{ steps.app.outputs.signature_status }}
+        run: |
+          launcher="$APP_PATH/Contents/MacOS/eJournal"
+          test_home="$RUNNER_TEMP/ejournal-home"
+          rm -rf "$test_home"
+          mkdir -p "$test_home"
+          log="$test_home/.ejournal/logs/ejournal.log"
+          launch_log="$RUNNER_TEMP/ejournal-launch.log"
+          HOME="$test_home" JAVA_TOOL_OPTIONS="-Duser.home=$test_home" "$launcher" >"$launch_log" 2>&1 &
+          pid=$!
+          cleanup() { kill "$pid" >/dev/null 2>&1 || true; wait "$pid" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 90); do
+            if [[ -f "$log" ]] && grep -Eiq '(^|[^[:alnum:]])(Exception|Error|UnsatisfiedLinkError|NoClassDefFoundError)([^[:alnum:]]|$)|\[(startup|log)\].*(failed|error)' "$log"; then
+              echo "eJournal reported a startup error"
+              cat "$launch_log"
+              cat "$log"
+              exit 1
+            fi
+            if [[ -f "$log" ]] && grep -q 'window-shown' "$log"; then
+              echo "window-shown reached on ${{ matrix.os }}"
+              if [[ "$SIGNATURE_STATUS" == "unsigned" ]]; then
+                echo "Unsigned app launch succeeded on ${{ matrix.os }}; ad hoc signing is not required for this packaged launch." >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "Packaged launch succeeded with signature status: $SIGNATURE_STATUS." >> "$GITHUB_STEP_SUMMARY"
+              fi
+              exit 0
+            fi
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+              echo "eJournal exited before window-shown"
+              cat "$launch_log"
+              cat "$log" 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "Timed out waiting for window-shown"
+          cat "$launch_log"
+          cat "$log" 2>/dev/null || true
+          exit 1
+
+      - name: Preserve macOS launch logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ejournal-macos-launch-logs-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/ejournal-launch.log
+            ${{ runner.temp }}/ejournal-home/.ejournal/logs
+          if-no-files-found: ignore
+
+  publish-macos:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && needs.build-macos.result == 'success' && needs.test-macos.result == 'success'
+    needs:
+      - build-macos
+      - test-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: ejournal-macos
+
+      - name: Publish macOS asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          asset="$(find . -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          [[ -n "$asset" ]] || { echo "DMG artifact not found"; exit 1; }
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GH_REPO" --verify-tag --title "eJournal $TAG" --generate-notes \
+              || gh release view "$TAG" --repo "$GH_REPO"
+          fi
+          gh release upload "$TAG" "$asset" --repo "$GH_REPO" --clobber
+          {
+            echo "### macOS arm64 (experimental)"
+            echo "Published $(basename "$asset"); CI launch checks ran on macOS 15 and 26."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release-summary:
+    if: always()
+    concurrency:
+      # Serialize reruns for one ref; the notes step also replaces only its marked section.
+      group: release-notes-${{ github.ref }}
+      cancel-in-progress: false
+    needs:
+      - build-windows
+      - publish-windows
+      - build-linux
+      - test-linux
+      - publish-linux
+      - build-macos
+      - test-macos
+      - publish-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize platform results
+        env:
+          WINDOWS_BUILD: ${{ needs.build-windows.result }}
+          WINDOWS_PUBLISH: ${{ needs.publish-windows.result }}
+          LINUX_BUILD: ${{ needs.build-linux.result }}
+          LINUX_TEST: ${{ needs.test-linux.result }}
+          LINUX_PUBLISH: ${{ needs.publish-linux.result }}
+          MACOS_BUILD: ${{ needs.build-macos.result }}
+          MACOS_TEST: ${{ needs.test-macos.result }}
+          MACOS_PUBLISH: ${{ needs.publish-macos.result }}
+        run: |
+          {
+            echo "## Release platform summary"
+            echo "- Windows: build=$WINDOWS_BUILD, publish=$WINDOWS_PUBLISH"
+            echo "- Ubuntu x64 (24.04/26.04): build=$LINUX_BUILD, checks=$LINUX_TEST, publish=$LINUX_PUBLISH"
+            echo "- macOS arm64 (15/26): build=$MACOS_BUILD, checks=$MACOS_TEST, publish=$MACOS_PUBLISH"
+            echo "- Hands-on installation/import/chart/restart/upgrade/uninstall validation: pending for experimental packages"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update release notes with platform status
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          WINDOWS_BUILD: ${{ needs.build-windows.result }}
+          WINDOWS_PUBLISH: ${{ needs.publish-windows.result }}
+          LINUX_BUILD: ${{ needs.build-linux.result }}
+          LINUX_TEST: ${{ needs.test-linux.result }}
+          LINUX_PUBLISH: ${{ needs.publish-linux.result }}
+          MACOS_BUILD: ${{ needs.build-macos.result }}
+          MACOS_TEST: ${{ needs.test-macos.result }}
+          MACOS_PUBLISH: ${{ needs.publish-macos.result }}
+        run: |
+          if ! body="$(gh release view "$TAG" --repo "$GH_REPO" --json body --jq .body)"; then
+            echo "Release $TAG was not found; no platform asset was published, so release notes cannot be updated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          marker='<!-- ejournal-platform-status -->'
+          end_marker='<!-- /ejournal-platform-status -->'
+          if [[ "$body" == *"$marker"* ]]; then
+            prefix="${body%%"$marker"*}"
+            suffix="${body#*"$marker"}"
+            [[ "$suffix" == *"$end_marker"* ]] || {
+              echo "Release notes contain an incomplete platform-status section; refusing to overwrite them." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            }
+            suffix="${suffix#*"$end_marker"}"
+            body="$prefix$suffix"
+          fi
+          status() {
+            if [[ "$1" == "success" ]]; then
+              printf '%s' "$4"
+            else
+              printf 'not published (build=%s, checks=%s, publish=%s)' "$2" "$3" "$1"
+            fi
+          }
+          windows_status="$(status "$WINDOWS_PUBLISH" "$WINDOWS_BUILD" "n/a" "published")"
+          linux_status="$(status "$LINUX_PUBLISH" "$LINUX_BUILD" "$LINUX_TEST" "published (experimental)")"
+          macos_status="$(status "$MACOS_PUBLISH" "$MACOS_BUILD" "$MACOS_TEST" "published (experimental)")"
+          notes="$RUNNER_TEMP/release-notes.md"
+          {
+            printf '%s\n' "$body"
+            printf '\n%s\n\n' "$marker"
+            printf '## Experimental platform status\n\n'
+            printf '%s\n' "- Windows: $windows_status"
+            printf '%s\n' "- Ubuntu x64 (Ubuntu 24.04 and 26.04): $linux_status"
+            printf '%s\n' "- macOS arm64 (macOS 15 and 26): $macos_status"
+            printf '\n### Downloads and installation\n\n'
+            printf '%s\n' '- Ubuntu: download `eJournal-<version>-linux-x64.deb`; install or upgrade with `sudo apt install ./eJournal-<version>-linux-x64.deb`, remove with `sudo apt remove ejournal`. Ubuntu x64 24.04 and 26.04 are supported by CI; JBR 25 is bundled.'
+            printf '%s\n' '- macOS: download `eJournal-<version>-macos-arm64.dmg`; drag `eJournal.app` to Applications, then right-click **Open**. If blocked, use **System Settings → Privacy & Security → Open Anyway**. The app is not Developer ID signed or notarized; replace the app to upgrade and delete it to uninstall. Apple Silicon macOS 15 and 26 are supported by CI; JBR 25 is bundled.'
+            printf '%s\n' '- Prerequisites and verification: no separate Java is required. Moomoo still requires separately installed OpenD, and broker integrations plus native file-picker flows remain unverified on these new platforms.'
+            printf '%s\n' '- Native packaging: `./gradlew :desktopApp:packageDeb -PappVersion=<version>` on Ubuntu x64; `./gradlew :desktopApp:packageDmg -PappVersion=<version>` on Apple Silicon macOS.'
+            printf '%s\n' '- Hands-on installation/import/chart/restart/upgrade/uninstall validation remains pending.'
+            printf '\n%s\n' "$end_marker"
+          } > "$notes"
+          gh release edit "$TAG" --repo "$GH_REPO" --notes-file "$notes"
+          echo "Updated release notes with platform status." >> "$GITHUB_STEP_SUMMARY"

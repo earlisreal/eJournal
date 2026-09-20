@@ -85,6 +85,8 @@ fun main(args: Array<String>) {
                         positionNotes = ready.deps.positionNoteService,
                         positionTags = ready.deps.positionTagService,
                         tagRepository = ready.deps.tagRepository,
+                        updateManager = ready.deps.updateManager,
+                        onExit = ::exitApplication,
                     )
                 }
             }

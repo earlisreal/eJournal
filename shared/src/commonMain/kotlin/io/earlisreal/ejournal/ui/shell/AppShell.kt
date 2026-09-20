@@ -33,6 +33,8 @@ import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.moomoo.MoomooClient
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.update.UpdateManager
+import io.earlisreal.ejournal.ui.components.UpdateBanner
 import io.earlisreal.ejournal.ui.components.PortfolioManagerDialog
 import io.earlisreal.ejournal.ui.components.StatusBar
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -86,6 +88,7 @@ fun AppShell(
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
     initialPortfolios: List<Portfolio>,
+    updateManager: UpdateManager? = null,
     content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
     val savedFilter = remember { settingsRepository.getFilterPrefs() }
@@ -176,7 +179,9 @@ fun AppShell(
     val systemDark = isSystemInDarkTheme()
     AppTheme(darkTheme = resolveDarkMode(themeMode, systemDark)) {
         val backgroundTasks by backgroundTaskTracker.tasks.collectAsState()
+        val updateState = updateManager?.state?.collectAsState()?.value
         Column(modifier = Modifier.fillMaxSize()) {
+            updateState?.let { UpdateBanner(it, updateManager) }
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth().weight(1f).background(AppTheme.colors.contentBackground),
             ) {

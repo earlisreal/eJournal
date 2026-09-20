@@ -1,74 +1,57 @@
 package io.earlisreal.ejournal.domain.moomoo
 
-import com.moomoo.openapi.pb.TrdCommon
-import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.datetime.LocalDateTime
 
 class MoomooOpenDMappingTest {
     @Test
-    fun mapsSdkAccountFieldsAndEligibility() {
-        val sdk = TrdCommon.TrdAcc.newBuilder()
-            .setAccID(1001L)
-            .setUniCardNum("••1001")
-            .setSecurityFirm(TrdCommon.SecurityFirm.SecurityFirm_FutuInc_VALUE)
-            .setTrdEnv(TrdCommon.TrdEnv.TrdEnv_Real_VALUE)
-            .setAccRole(TrdCommon.TrdAccRole.TrdAccRole_Normal_VALUE)
-            .setAccStatus(TrdCommon.TrdAccStatus.TrdAccStatus_Active_VALUE)
-            .addTrdMarketAuthList(TrdCommon.TrdMarket.TrdMarket_US_VALUE)
-            .buildPartial()
+    fun mapsDocumentedJsonAccountFieldsAndEligibility() {
+        val account = mapAccount(Json.parseToJsonElement("""
+            {"accID":"1001","uniCardNum":"••1001","securityFirm":2,"trdEnv":1,
+             "accRole":1,"accStatus":0,"trdMarketAuthList":[2]}
+        """).jsonObject)
 
-        val mapped = mapAccount(sdk)
-
-        assertEquals("1001", mapped.id)
-        assertEquals("••1001", mapped.label)
-        assertEquals("Moomoo Financial", mapped.securityFirm)
-        assertEquals(MoomooAccountEnvironment.REAL, mapped.environment)
-        assertEquals(MoomooAccountRole.NORMAL, mapped.role)
-        assertEquals(setOf(MoomooMarket.US), mapped.authorizedMarkets)
-        assertTrue(mapped.active)
-        assertEquals(listOf(mapped), listOf(mapped).eligibleForUsStocks())
+        assertEquals("1001", account.id)
+        assertEquals("••1001", account.label)
+        assertEquals("Moomoo Financial", account.securityFirm)
+        assertEquals(MoomooAccountEnvironment.REAL, account.environment)
+        assertEquals(MoomooAccountRole.NORMAL, account.role)
+        assertEquals(setOf(MoomooMarket.US), account.authorizedMarkets)
+        assertTrue(account.active)
+        assertEquals(listOf(account), listOf(account).eligibleForUsStocks())
     }
 
     @Test
-    fun mapsReadOnlyOrderAndExecutionRows() {
-        val order = TrdCommon.Order.newBuilder()
-            .setOrderIDEx("order-1")
-            .setCode("US.AAPL")
-            .setTrdSide(TrdCommon.TrdSide.TrdSide_Sell_VALUE)
-            .setCreateTime("2026-06-08 06:51:04")
-            .setFillQty(2.0)
-            .setSecMarket(TrdCommon.TrdSecMarket.TrdSecMarket_US_VALUE)
-            .buildPartial()
-        val execution = TrdCommon.OrderFill.newBuilder()
-            .setOrderIDEx("order-1")
-            .setCode("US.AAPL")
-            .setTrdSide(TrdCommon.TrdSide.TrdSide_Sell_VALUE)
-            .setQty(2.0)
-            .setPrice(12.5)
-            .setCreateTime("2026-06-08 06:52:00")
-            .setSecMarket(TrdCommon.TrdSecMarket.TrdSecMarket_US_VALUE)
-            .buildPartial()
+    fun mapsReadOnlyOrderExecutionAndExactFeeRows() {
+        val order = mapOrder(Json.parseToJsonElement("""
+            {"orderID":"123","orderIDEx":"order-1","code":"US.AAPL","trdSide":2,
+             "createTime":"2026-06-08 06:51:04","fillQty":2,"secMarket":2}
+        """).jsonObject)
+        val execution = mapExecution(Json.parseToJsonElement("""
+            {"orderIDEx":"order-1","code":"US.AAPL","trdSide":2,"qty":2,
+             "price":12.5,"createTime":"2026-06-08 06:52:00","secMarket":2}
+        """).jsonObject)
+        val fee = mapFee(Json.parseToJsonElement("""{"orderIDEx":"order-1","feeAmount":1.23}""").jsonObject)
 
-        val mappedOrder = mapOrder(order)
-        val mappedExecution = mapExecution(execution)
-
-        assertEquals("order-1", mappedOrder.id)
-        assertEquals(MoomooSide.SELL, mappedOrder.side)
-        assertEquals(LocalDateTime.parse("2026-06-08T06:51:04"), mappedOrder.createdAt)
-        assertEquals(MoomooMarket.US, mappedOrder.market)
-        assertEquals("order-1", mappedExecution.orderId)
-        assertEquals(12.5, mappedExecution.price)
-        assertEquals(LocalDateTime.parse("2026-06-08T06:52:00"), mappedExecution.executedAt)
+        assertEquals("order-1", order.id)
+        assertEquals(MoomooSide.SELL, order.side)
+        assertEquals(LocalDateTime.parse("2026-06-08T06:51:04"), order.createdAt)
+        assertEquals(MoomooMarket.US, order.market)
+        assertEquals("order-1", execution.orderId)
+        assertEquals(12.5, execution.price)
+        assertEquals(LocalDateTime.parse("2026-06-08T06:52:00"), execution.executedAt)
+        assertEquals(1.23, fee.amount)
     }
 
     @Test
-    fun missingSdkFeeAmountRemainsMissing() {
-        val fee = TrdCommon.OrderFee.newBuilder().setOrderIDEx("order-1").build()
-
-        assertNull(mapFee(fee).amount)
+    fun missingFeeAmountRemainsMissing() {
+        val fee = mapFee(Json.parseToJsonElement("""{"orderIDEx":"order-1"}""").jsonObject)
+        assertNull(fee.amount)
         assertEquals("127.0.0.1", MoomooOpenDClient.HOST)
     }
 }

@@ -51,6 +51,9 @@ import io.earlisreal.ejournal.domain.parser.WebullCsvParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClientImpl
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroSyncService
+import io.earlisreal.ejournal.domain.update.BuildIdentity
+import io.earlisreal.ejournal.domain.update.GithubUpdateManager
+import io.earlisreal.ejournal.domain.update.UpdateManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import java.io.File
@@ -64,6 +67,11 @@ class AppDependencies {
     private val db = JvmDatabaseFactory.create()
     private val httpClient = HttpClient(CIO)
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val buildIdentity = BuildIdentity(
+        version = System.getProperty("ejournal.appVersion") ?: "development",
+        officialRelease = System.getProperty("ejournal.officialRelease") == "true",
+        distribution = System.getProperty("ejournal.distribution") ?: "development",
+    )
 
     val portfolioRepository: PortfolioRepository = SqlDelightPortfolioRepository(db)
     val transactionRepository: TransactionRepository = SqlDelightTransactionRepository(db)
@@ -114,6 +122,13 @@ class AppDependencies {
         credentialsRepository = credentialsRepository,
         scope = backgroundScope,
         etapeImporter = etapeMarketDataImporter,
+        settingsRepository = settingsRepository,
+    )
+    val updateManager: UpdateManager = GithubUpdateManager(
+        client = httpClient,
+        settingsRepository = settingsRepository,
+        identity = buildIdentity,
+        scope = backgroundScope,
     )
 
     val backgroundTaskTracker = BackgroundTaskTracker()

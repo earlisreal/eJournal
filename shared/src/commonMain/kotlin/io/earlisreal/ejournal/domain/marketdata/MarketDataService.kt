@@ -3,6 +3,7 @@ package io.earlisreal.ejournal.domain.marketdata
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
+import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Market
 import kotlin.time.Clock
@@ -11,11 +12,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -60,6 +64,7 @@ class MarketDataService(
     private val scope: CoroutineScope? = null,
     private val todayProvider: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
     private val etapeImporter: EtapeMarketDataImporter? = null,
+    private val settingsRepository: SettingsRepository,
 ) {
     private val yahooSemaphore = Semaphore(MAX_YAHOO_CONCURRENT)
     private val alpacaSemaphore = Semaphore(MAX_ALPACA_CONCURRENT)
@@ -67,15 +72,40 @@ class MarketDataService(
 
     private val _status = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val status: StateFlow<SyncStatus> = _status.asStateFlow()
+    private val _onlineMarketDataEnabled = MutableStateFlow(settingsRepository.getOnlineMarketDataEnabled())
+    val onlineMarketDataEnabled: StateFlow<Boolean> = _onlineMarketDataEnabled.asStateFlow()
+    private var activeAutomaticExternalJob: kotlinx.coroutines.Job? = null
 
-    /** Fire-and-forget for UI triggers; no-op while a sync is already running. */
-    fun requestSync() {
+    /** Fire-and-forget automatic path; external providers are consulted only when opted in. */
+    fun requestSync() = requestAutomaticSync()
+
+    fun requestAutomaticSync() {
         val scope = scope ?: return
         if (_status.value is SyncStatus.Syncing) return
-        scope.launch { sync() }
+        scope.launch { syncInternal(allowExternal = _onlineMarketDataEnabled.value, automatic = true) }
+    }
+
+    /** Explicit, one-shot path used after the user confirms an external market-data request. */
+    fun requestConfirmedSync() {
+        val scope = scope ?: return
+        if (_status.value is SyncStatus.Syncing) return
+        scope.launch { syncConfirmed() }
+    }
+
+    fun setOnlineMarketDataEnabled(enabled: Boolean) {
+        _onlineMarketDataEnabled.value = enabled
+        settingsRepository.setOnlineMarketDataEnabled(enabled)
+        if (!enabled) activeAutomaticExternalJob?.cancel()
     }
 
     suspend fun sync(): SyncResult {
+        return syncInternal(allowExternal = _onlineMarketDataEnabled.value, automatic = true)
+    }
+
+    /** One-shot manual path; the caller has already confirmed the external request. */
+    suspend fun syncConfirmed(): SyncResult = syncInternal(allowExternal = true, automatic = false)
+
+    private suspend fun syncInternal(allowExternal: Boolean, automatic: Boolean): SyncResult {
         val today = todayProvider()
         val hasKeys = credentialsRepository.getAlpacaMarketDataCredentials() != null
 
@@ -83,27 +113,23 @@ class MarketDataService(
             .filter { it.market == Market.US_STOCKS || it.market == Market.CRYPTO }
             .flatMap { closedPositions.forPortfolio(it.id) }
 
-        val work = requiredRanges(positions, today)
-            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe, range.market)) }
-            .flatMap { range -> route(range, hasKeys) }
-            .groupBy { it.range.symbol }
-
-        _status.value = SyncStatus.Syncing(0, work.size)
-
-        val progressMutex = Mutex()
-        var completed = 0
-
-        val symbolResults: List<SymbolFetchResult> = coroutineScope {
-            work.entries.map { (symbol, routedRanges) ->
-                async {
-                    val result = fetchSymbol(symbol, routedRanges)
-                    progressMutex.withLock {
-                        completed++
-                        _status.value = SyncStatus.Syncing(completed, work.size)
-                    }
-                    result
+        val symbolResults = if (allowExternal) {
+            supervisorScope {
+                val externalJob = async {
+                    fetchExternal(positions, today, hasKeys)
                 }
-            }.awaitAll()
+                if (automatic) activeAutomaticExternalJob = externalJob
+                try {
+                    externalJob.await()
+                } catch (error: CancellationException) {
+                    if (!currentCoroutineContext().isActive) throw error
+                    emptyList()
+                } finally {
+                    if (activeAutomaticExternalJob === externalJob) activeAutomaticExternalJob = null
+                }
+            }
+        } else {
+            emptyList()
         }
 
         val etapeResult = if (etapeImporter == null) {
@@ -130,6 +156,33 @@ class MarketDataService(
         )
         _status.value = SyncStatus.Finished(result)
         return result
+    }
+
+    private suspend fun fetchExternal(
+        positions: List<io.earlisreal.ejournal.domain.model.ClosedPosition>,
+        today: LocalDate,
+        hasKeys: Boolean,
+    ): List<SymbolFetchResult> {
+        val work = requiredRanges(positions, today)
+            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe, range.market)) }
+            .flatMap { range -> route(range, hasKeys) }
+            .groupBy { it.range.symbol }
+
+        _status.value = SyncStatus.Syncing(0, work.size)
+        val progressMutex = Mutex()
+        var completed = 0
+        return coroutineScope {
+            work.entries.map { (symbol, routedRanges) ->
+                async {
+                    val result = fetchSymbol(symbol, routedRanges)
+                    progressMutex.withLock {
+                        completed++
+                        _status.value = SyncStatus.Syncing(completed, work.size)
+                    }
+                    result
+                }
+            }.awaitAll()
+        }
     }
 
     private suspend fun fetchSymbol(symbol: String, routedRanges: List<RoutedRange>): SymbolFetchResult {

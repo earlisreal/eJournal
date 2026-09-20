@@ -25,6 +25,50 @@ val jbrLauncher = javaToolchains.launcherFor {
 // local/dev builds fall back to a valid numeric default. Must stay numeric major.minor.patch — MSI
 // rejects suffixes like -beta.
 val appVersion: String = (project.findProperty("appVersion") as String?)?.takeIf { it.isNotBlank() } ?: "1.0.0"
+val officialRelease = (project.findProperty("officialRelease") as String?)?.toBoolean() ?: false
+val distribution = (project.findProperty("distribution") as String?)?.takeIf { it.isNotBlank() } ?: "development"
+if (officialRelease) {
+    if ((project.findProperty("appVersion") as String?) == null || !appVersion.matches(Regex("\\d+\\.\\d+\\.\\d+"))) {
+        error("officialRelease builds must provide -PappVersion=MAJOR.MINOR.PATCH")
+    }
+    if (distribution !in setOf("msi", "portable")) {
+        error("officialRelease builds must provide -Pdistribution=msi or portable")
+    }
+}
+
+val windowsRuntimeInventory = rootProject.layout.projectDirectory.file("licenses/windows-runtime-components.txt")
+val packagedAppRoot = layout.buildDirectory.dir("compose/binaries/main/app")
+val writeWindowsRuntimeInventory = tasks.register("writeWindowsRuntimeInventory") {
+    doLast {
+        val coordinates = configurations.runtimeClasspath.get().resolvedConfiguration.resolvedArtifacts
+            .map { artifact ->
+                val id = artifact.moduleVersion.id
+                "${id.group}:${artifact.name}:${id.version}"
+            }
+            .distinct()
+            .sorted()
+        windowsRuntimeInventory.asFile.writeText(
+            buildString {
+                appendLine("# Windows runtime inventory")
+                appendLine("# Generated from :desktopApp:runtimeClasspath; keep sorted and review before release.")
+                appendLine()
+                coordinates.forEach(::appendLine)
+                appendLine()
+                appendLine("Non-Maven runtime inputs: JetBrains Runtime 25, Skiko Windows native DLL, and JetBrains Mono.")
+                val packagedApp = packagedAppRoot.get().asFile.takeIf { it.isDirectory }?.walkTopDown()
+                    ?.filter { it.isFile && it.extension.lowercase() in setOf("dll", "exe", "jar", "ttf", "otf") }
+                    ?.map { it.relativeTo(packagedAppRoot.get().asFile).invariantSeparatorsPath }
+                    ?.toList()
+                    .orEmpty()
+                if (packagedApp.isNotEmpty()) {
+                    appendLine("Packaged runtime inputs (generated after createDistributable):")
+                    packagedApp.sorted().forEach(::appendLine)
+                }
+            },
+        )
+    }
+}
+writeWindowsRuntimeInventory.configure { mustRunAfter("createDistributable") }
 
 // Bake the version into the splash at build time so it shows together with the image — no runtime
 // pop-in (drawing on the live splash from main() pays a one-time AWT/font-init cost on launch).
@@ -32,22 +76,17 @@ val appVersion: String = (project.findProperty("appVersion") as String?)?.takeIf
 // common/splash.png. Up-to-date unless appVersion or the source resources change, so day-to-day dev
 // builds skip it. Inputs/outputs are captured at configuration time to stay config-cache-safe.
 val versionedAppResources = layout.buildDirectory.dir("generated/appResources")
-val moomooNotice = rootProject.file("licenses/moomoo-sdk-notice.txt")
 val generateVersionedSplash by tasks.registering {
     val sourceResources = layout.projectDirectory.dir("resources").asFile
     val outputDir = versionedAppResources
     val version = appVersion
     inputs.dir(sourceResources)
-    if (moomooNotice.isFile) inputs.file(moomooNotice)
     inputs.property("version", version)
     outputs.dir(outputDir)
     doLast {
         val out = outputDir.get().asFile
         out.deleteRecursively()
         sourceResources.copyRecursively(out, overwrite = true)
-        if (moomooNotice.isFile) {
-            moomooNotice.copyTo(out.resolve("common/moomoo-sdk-notice.txt"), overwrite = true)
-        }
         out.walkTopDown().filter { it.name == ".DS_Store" }.forEach { it.delete() }
 
         val splash = out.resolve("common/splash.png")
@@ -101,6 +140,9 @@ compose.desktop {
         jvmArgs += "-XX:+UseSerialGC"
         jvmArgs += "-Xms128m"
         jvmArgs += "-Xmx512m"
+        jvmArgs += "-Dejournal.appVersion=$appVersion"
+        jvmArgs += "-Dejournal.officialRelease=$officialRelease"
+        jvmArgs += "-Dejournal.distribution=$distribution"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -156,6 +198,8 @@ compose.desktop {
 // the .icns/.ico container formats off the runtime classpath.
 tasks.named<ProcessResources>("processResources") {
     from("icons/icon.png")
+    from(rootProject.file("THIRD_PARTY_NOTICES.md"))
+    from(rootProject.file("licenses/JetBrainsMono-OFL.txt")) { into("licenses") }
 }
 
 // Applies to `run`, `hotRun` (Compose Hot Reload's run task extends JavaExec) and other JavaExec tasks,
@@ -170,4 +214,7 @@ tasks.withType<JavaExec>().configureEach {
     jvmArgs("-XX:+UseSerialGC")
     jvmArgs("-Xms128m")
     jvmArgs("-Xmx512m")
+    jvmArgs("-Dejournal.appVersion=$appVersion")
+    jvmArgs("-Dejournal.officialRelease=$officialRelease")
+    jvmArgs("-Dejournal.distribution=$distribution")
 }

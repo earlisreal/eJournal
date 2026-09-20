@@ -67,7 +67,7 @@ interface MoomooSession {
     fun close()
 }
 
-/** Platform-neutral seam. The JVM implementation is the only code that imports Moomoo's SDK. */
+/** Platform-neutral seam. The JVM implementation speaks the local OpenD JSON protocol directly. */
 interface MoomooClient {
     suspend fun open(port: Int): MoomooResult<MoomooSession>
 }

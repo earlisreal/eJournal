@@ -18,6 +18,7 @@ import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.PositionNoteService
 import io.earlisreal.ejournal.domain.StartupSyncCoordinator
+import io.earlisreal.ejournal.domain.CURRENT_NETWORK_DISCLOSURE_VERSION
 import io.earlisreal.ejournal.domain.alpaca.AlpacaBrokerClient
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
@@ -26,6 +27,7 @@ import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.moomoo.MoomooClient
 import io.earlisreal.ejournal.domain.parser.TransactionParser
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroClient
+import io.earlisreal.ejournal.domain.update.UpdateManager
 import io.earlisreal.ejournal.ui.screen.AnalysisScreen
 import io.earlisreal.ejournal.ui.screen.CalendarScreen
 import io.earlisreal.ejournal.ui.screen.DashboardScreen
@@ -33,6 +35,7 @@ import io.earlisreal.ejournal.ui.screen.ImportScreen
 import io.earlisreal.ejournal.ui.screen.ReportsScreen
 import io.earlisreal.ejournal.ui.screen.SettingsScreen
 import io.earlisreal.ejournal.ui.screen.TradeLogsScreen
+import io.earlisreal.ejournal.ui.screen.NetworkDisclosureScreen
 import io.earlisreal.ejournal.ui.shell.AppShell
 import io.earlisreal.ejournal.ui.shell.Destination
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
@@ -61,13 +64,39 @@ fun App(
     positionNotes: PositionNoteService,
     positionTags: PositionTagService,
     tagRepository: TagRepository,
+    updateManager: UpdateManager? = null,
+    onExit: () -> Unit = {},
 ) {
-    var startupChangedPortfolioIds by remember { mutableStateOf(emptySet<Long>()) }
-    LaunchedEffect(Unit) {
-        startupChangedPortfolioIds = withContext(Dispatchers.IO) { startupSyncCoordinator.run() }
+    var disclosureAccepted by remember {
+        mutableStateOf(settingsRepository.getNetworkDisclosureVersion() == CURRENT_NETWORK_DISCLOSURE_VERSION)
     }
+    var disclosureMarketDataEnabled by remember { mutableStateOf(settingsRepository.getOnlineMarketDataEnabled()) }
+    var disclosureUpdateChecksEnabled by remember { mutableStateOf(settingsRepository.getAutomaticUpdateChecksEnabled()) }
+    var startupChangedPortfolioIds by remember { mutableStateOf(emptySet<Long>()) }
 
     val systemDark = isSystemInDarkTheme()
+
+    if (!disclosureAccepted) {
+        NetworkDisclosureScreen(
+            marketDataEnabled = disclosureMarketDataEnabled,
+            updateChecksEnabled = disclosureUpdateChecksEnabled,
+            onMarketDataChange = { disclosureMarketDataEnabled = it },
+            onUpdateChecksChange = { disclosureUpdateChecksEnabled = it },
+            onContinue = {
+                settingsRepository.setOnlineMarketDataEnabled(disclosureMarketDataEnabled)
+                settingsRepository.setAutomaticUpdateChecksEnabled(disclosureUpdateChecksEnabled)
+                settingsRepository.setNetworkDisclosureVersion(CURRENT_NETWORK_DISCLOSURE_VERSION)
+                disclosureAccepted = true
+            },
+            onExit = onExit,
+        )
+        return
+    }
+
+    LaunchedEffect(Unit) {
+        startupChangedPortfolioIds = withContext(Dispatchers.IO) { startupSyncCoordinator.run() }
+        updateManager?.requestAutomaticCheck()
+    }
 
     AppShell(
         portfolioRepository = portfolioRepository,
@@ -82,6 +111,7 @@ fun App(
         backgroundTaskTracker = backgroundTaskTracker,
         initialDestination = startDestination,
         initialPortfolios = initialPortfolios,
+        updateManager = updateManager,
     ) { destination, filter, nav ->
         val isDarkTheme = resolveDarkMode(nav.themeMode, systemDark)
         when (destination) {
@@ -144,6 +174,7 @@ fun App(
                 alpacaProvider = alpacaProvider,
                 marketDataService = marketDataService,
                 settingsRepository = settingsRepository,
+                updateManager = updateManager,
             )
         }
     }

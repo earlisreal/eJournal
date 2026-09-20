@@ -72,6 +72,10 @@ _Avoid_: Average spread
 An OHLCV summary for one wall-clock-aligned ten-second interval. It is the finest market-data interval shown for US-stock day Positions.
 _Avoid_: 10-second chart, tick data
 
+**Online Market-Data Setting**:
+A global opt-in that permits eJournal to request online market data automatically after imports and at startup. It does not govern broker Startup Synchronization or local eTape data.
+_Avoid_: Global sync setting, Yahoo consent, market-data auto-sync
+
 **Auto-Sync Setting**:
 A per-Portfolio, per-broker opt-in that permits eJournal to perform an incremental broker synchronization when the application starts.
 _Avoid_: Global sync setting, account sync setting

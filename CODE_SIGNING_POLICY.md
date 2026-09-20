@@ -8,7 +8,7 @@ Upon acceptance: **Free code signing provided by [SignPath.io](https://about.sig
 
 Official Windows releases are built from this repository by the public [GitHub Actions release workflow](https://github.com/earlisreal/eJournal/actions/workflows/release-windows.yml). The intended signing scope is the eJournal MSI and eJournal-owned launchers. Bundled third-party runtime files are not signed as eJournal binaries.
 
-The Windows workflow blocks public binaries containing the Moomoo OpenAPI SDK until its redistribution terms and required notices are confirmed. Redistribution permission alone will not be treated as SignPath eligibility: eJournal will obtain an explicit SignPath decision before requesting signatures for an artifact containing that separately licensed SDK.
+The signed Windows artifact contains no Moomoo OpenAPI SDK, protobuf schema, generated SDK code, or OpenD executable. The Moomoo integration is an independently implemented, read-only JSON client for a separately installed localhost OpenD service. OpenD itself is outside the signed distribution and remains the user's responsibility to install under Moomoo's terms.
 
 ## Intended signed-release process
 
@@ -32,4 +32,4 @@ All team members with source or signing access must use multi-factor authenticat
 
 ## Privacy
 
-See the [eJournal privacy policy](./PRIVACY.md), including its description of automatic Yahoo Finance market-data requests and optional broker integrations.
+See the [eJournal privacy policy](./PRIVACY.md), including its description of default-off Yahoo/Alpaca market-data requests, explicit one-shot confirmation, GitHub update checks, and optional broker integrations.

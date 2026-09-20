@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +44,8 @@ import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.marketdata.AlpacaProvider
 import io.earlisreal.ejournal.domain.marketdata.ConnectionResult
 import io.earlisreal.ejournal.domain.marketdata.MarketDataService
+import io.earlisreal.ejournal.domain.update.UpdateManager
+import io.earlisreal.ejournal.domain.update.UpdateResult
 import io.earlisreal.ejournal.ui.components.AppCard
 import io.earlisreal.ejournal.ui.components.AppPrimaryButton
 import io.earlisreal.ejournal.ui.components.AppSecondaryButton
@@ -63,12 +68,16 @@ fun SettingsScreen(
     alpacaProvider: AlpacaProvider,
     marketDataService: MarketDataService,
     settingsRepository: SettingsRepository,
+    updateManager: UpdateManager? = null,
 ) {
     val vm = viewModel { SettingsViewModel(credentialsRepository, alpacaProvider) }
     val state by vm.state.collectAsState()
     val syncStatus by marketDataService.status.collectAsState()
+    val onlineMarketDataEnabled by marketDataService.onlineMarketDataEnabled.collectAsState()
     val scope = rememberCoroutineScope()
     var etapePath by remember { mutableStateOf(settingsRepository.getEtapeDbPath().orEmpty()) }
+    var automaticUpdates by remember { mutableStateOf(settingsRepository.getAutomaticUpdateChecksEnabled()) }
+    var showOnlineDataConfirmation by remember { mutableStateOf(false) }
 
     ScreenScaffold(title = "Settings") {
         Column(
@@ -145,12 +154,53 @@ fun SettingsScreen(
                 SectionTitle("Sync")
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(
-                        "Market data syncs automatically after imports and on startup. Run it manually after adding keys to backfill older trades.",
+                        "Online market-data requests are off by default. Enable automatic requests here, or use the one-shot button below to confirm a request.",
+                        color = AppTheme.colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text = buildAnnotatedString {
+                            append("When enabled, Yahoo Finance or Alpaca receive ticker symbols and requested date ranges derived from imported transactions. See ")
+                            withLink(
+                                LinkAnnotation.Url(
+                                    "https://github.com/earlisreal/eJournal/blob/main/PRIVACY.md",
+                                    TextLinkStyles(style = SpanStyle(color = AppTheme.colors.accent, textDecoration = TextDecoration.Underline)),
+                                ),
+                            ) { append("PRIVACY.md") }
+                            append(" and the ")
+                            withLink(
+                                LinkAnnotation.Url(
+                                    "https://legal.yahoo.com/us/en/yahoo/privacy/index.html",
+                                    TextLinkStyles(style = SpanStyle(color = AppTheme.colors.accent, textDecoration = TextDecoration.Underline)),
+                                ),
+                            ) { append("Yahoo") }
+                            append(" and ")
+                            withLink(
+                                LinkAnnotation.Url(
+                                    "https://alpaca.markets/disclosures",
+                                    TextLinkStyles(style = SpanStyle(color = AppTheme.colors.accent, textDecoration = TextDecoration.Underline)),
+                                ),
+                            ) { append("Alpaca") }
+                            append(" policies.")
+                        },
                         color = AppTheme.colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        AppSecondaryButton(text = "Sync market data", onClick = { marketDataService.requestSync() })
+                        Text("Allow automatic online market data", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = onlineMarketDataEnabled,
+                            onCheckedChange = marketDataService::setOnlineMarketDataEnabled,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        AppSecondaryButton(
+                            text = "Fetch online data once",
+                            onClick = {
+                                if (onlineMarketDataEnabled) marketDataService.requestConfirmedSync()
+                                else showOnlineDataConfirmation = true
+                            },
+                        )
                         MarketDataSyncStatus(status = syncStatus, onRetry = { marketDataService.requestSync() })
                     }
                     Text(
@@ -189,7 +239,76 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            updateManager?.let { manager ->
+                val updateState by manager.state.collectAsState()
+                AppCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionTitle("Updates")
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        Text(
+                            "Current version: ${manager.identity.version} (${manager.identity.distribution})",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            "Checks send normal network metadata and an eJournal user agent to the public GitHub Releases API, but never journal, broker, portfolio, credential, or device data.",
+                            color = AppTheme.colors.textMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                            Text("Check automatically", color = AppTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = automaticUpdates,
+                                onCheckedChange = {
+                                    automaticUpdates = it
+                                    settingsRepository.setAutomaticUpdateChecksEnabled(it)
+                                },
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                            AppSecondaryButton(text = "Check now", onClick = manager::requestManualCheck)
+                            when (val result = updateState.result) {
+                                UpdateResult.Idle -> Text("Not checked yet", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
+                                UpdateResult.Checking -> Text("Checking…", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
+                                UpdateResult.Current -> Text("You are up to date", color = AppTheme.colors.profit, style = MaterialTheme.typography.bodySmall)
+                                is UpdateResult.Available -> Text("${result.update.version} available", color = AppTheme.colors.accent, style = MaterialTheme.typography.bodySmall)
+                                is UpdateResult.Failed -> Text(result.message, color = AppTheme.colors.loss, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        updateState.lastCheckedEpochMillis?.let {
+                            Text(
+                                "Last checked: ${kotlin.time.Instant.fromEpochMilliseconds(it)}",
+                                color = AppTheme.colors.textMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    if (showOnlineDataConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showOnlineDataConfirmation = false },
+            title = { Text("Fetch online market data?") },
+            text = {
+                Text(
+                    "This one-time request may send ticker symbols and requested date ranges derived from imported transactions to Yahoo Finance or Alpaca. It does not enable automatic requests.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showOnlineDataConfirmation = false
+                        marketDataService.requestConfirmedSync()
+                    },
+                ) { Text("Fetch once") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOnlineDataConfirmation = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

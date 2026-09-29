@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,18 +51,20 @@ fun DateRangeFilter(
     preset: DateRangePreset,
     customRange: DateRange?,
     onChange: (DateRangePreset, DateRange?) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var showPicker by remember { mutableStateOf(false) }
+    LaunchedEffect(enabled) { if (!enabled) showPicker = false }
 
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         PRESET_LABELS.forEach { (p, label) ->
-            Chip(label = label, active = preset == p) { onChange(p, null) }
+            Chip(label = label, active = preset == p, enabled = enabled) { onChange(p, null) }
         }
-        Chip(label = "Custom…", active = preset == DateRangePreset.CUSTOM) { showPicker = true }
+        Chip(label = "Custom…", active = preset == DateRangePreset.CUSTOM, enabled = enabled) { showPicker = true }
     }
 
-    if (showPicker) {
+    if (showPicker && enabled) {
         val state = rememberDateRangePickerState(
             initialSelectedStartDateMillis = customRange?.from?.toEpochMillis(),
             initialSelectedEndDateMillis = customRange?.to?.toEpochMillis(),
@@ -69,14 +72,14 @@ fun DateRangeFilter(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(enabled = enabled, onClick = {
                     val from = state.selectedStartDateMillis?.toLocalDate()
                     val to = state.selectedEndDateMillis?.toLocalDate()
                     if (from != null && to != null) onChange(DateRangePreset.CUSTOM, DateRange(from, to))
                     showPicker = false
                 }) { Text("Apply") }
             },
-            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(enabled = enabled, onClick = { showPicker = false }) { Text("Cancel") } },
         ) {
             DateRangePicker(state = state)
         }
@@ -84,7 +87,7 @@ fun DateRangeFilter(
 }
 
 @Composable
-private fun Chip(label: String, active: Boolean, onClick: () -> Unit) {
+private fun Chip(label: String, active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val accent = AppTheme.colors.accent
     Text(
         text = label,
@@ -92,7 +95,7 @@ private fun Chip(label: String, active: Boolean, onClick: () -> Unit) {
         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
         style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
         modifier = Modifier
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
             .then(
                 if (active) Modifier.drawBehind {
                     val stroke = 2.dp.toPx()

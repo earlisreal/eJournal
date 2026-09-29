@@ -1,12 +1,14 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.LegacyFilterPrefs
+import io.earlisreal.ejournal.data.repository.PortfolioFilterPrefs
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import kotlinx.datetime.LocalDate
+import io.earlisreal.ejournal.data.repository.normalizePortfolioFilterPrefs
 import java.util.prefs.Preferences
 
 class PreferencesSettingsRepository(
@@ -21,27 +23,31 @@ class PreferencesSettingsRepository(
         prefs.put(KEY_THEME, mode.name)
     }
 
-    override fun getFilterPrefs(): FilterPrefs? {
-        val presetName = prefs.get(KEY_PRESET, "")
-        if (presetName.isEmpty()) return null
-        val preset = runCatching { DateRangePreset.valueOf(presetName) }.getOrNull() ?: return null
+    override fun getSelectedPortfolioId(): Long? =
+        prefs.getLong(KEY_PORTFOLIO, -1L).takeIf { it >= 0L }
+
+    override fun setSelectedPortfolioId(portfolioId: Long?) {
+        if (portfolioId == null) prefs.remove(KEY_PORTFOLIO)
+        else prefs.putLong(KEY_PORTFOLIO, portfolioId)
+    }
+
+    override fun getLegacyFilterPrefs(): LegacyFilterPrefs? {
+        val presetName = prefs.get(KEY_PRESET, null) ?: return null
+        val preset = runCatching { DateRangePreset.valueOf(presetName) }.getOrDefault(DateRangePreset.ALL_TIME)
         val segment = runCatching { Segment.valueOf(prefs.get(KEY_SEGMENT, Segment.ALL.name)) }.getOrDefault(Segment.ALL)
         val portfolioId = prefs.getLong(KEY_PORTFOLIO, -1L).takeIf { it >= 0L }
         val from = prefs.get(KEY_FROM, "").takeIf { it.isNotEmpty() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val to = prefs.get(KEY_TO, "").takeIf { it.isNotEmpty() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        val tagIds = prefs.get(KEY_TAG_IDS, "").split(",").mapNotNull { it.toLongOrNull() }.toSet()
+        val tagIds = prefs.get(KEY_TAG_IDS, "").split(",").mapNotNull { it.toLongOrNull()?.takeIf { id -> id > 0L } }.toSet()
         val tagMatch = runCatching { TagMatch.valueOf(prefs.get(KEY_TAG_MATCH, TagMatch.ANY.name)) }.getOrDefault(TagMatch.ANY)
-        return FilterPrefs(portfolioId, preset, from, to, segment, tagIds, tagMatch)
+        return LegacyFilterPrefs(
+            portfolioId,
+            normalizePortfolioFilterPrefs(PortfolioFilterPrefs(preset, from, to, segment, tagIds, tagMatch)),
+        )
     }
 
-    override fun setFilterPrefs(prefs0: FilterPrefs) {
-        prefs.putLong(KEY_PORTFOLIO, prefs0.portfolioId ?: -1L)
-        prefs.put(KEY_PRESET, prefs0.preset.name)
-        prefs.put(KEY_SEGMENT, prefs0.segment.name)
-        prefs.put(KEY_FROM, prefs0.customFrom?.toString() ?: "")
-        prefs.put(KEY_TO, prefs0.customTo?.toString() ?: "")
-        prefs.put(KEY_TAG_IDS, prefs0.selectedTagIds.joinToString(","))
-        prefs.put(KEY_TAG_MATCH, prefs0.tagMatch.name)
+    override fun clearLegacyFilterPrefs() {
+        listOf(KEY_PRESET, KEY_SEGMENT, KEY_FROM, KEY_TO, KEY_TAG_IDS, KEY_TAG_MATCH, KEY_OLD_TAG_IDS).forEach(prefs::remove)
     }
 
     override fun getEtapeDbPath(): String? = prefs.get(KEY_ETAPE_DB_PATH, "").takeIf { it.isNotBlank() }
@@ -86,6 +92,7 @@ class PreferencesSettingsRepository(
         const val KEY_TO = "filter_custom_to"
         const val KEY_TAG_IDS = "filter_tag_ids_scoped"
         const val KEY_TAG_MATCH = "filter_tag_match"
+        const val KEY_OLD_TAG_IDS = "filter_tag_ids"
         const val KEY_ETAPE_DB_PATH = "etape_db_path"
         const val KEY_ONLINE_MARKET_DATA = "online_market_data_enabled"
         const val KEY_UPDATE_CHECKS = "automatic_update_checks"

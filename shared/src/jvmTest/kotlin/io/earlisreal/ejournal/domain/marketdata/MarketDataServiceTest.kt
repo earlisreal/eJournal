@@ -6,7 +6,6 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
-import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.model.Action
@@ -96,8 +95,10 @@ private class FakeCreds(var creds: AlpacaMarketDataCredentials? = null) : Creden
 private class FakeSettings(var onlineMarketData: Boolean = false) : SettingsRepository {
     override fun getThemeMode() = io.earlisreal.ejournal.ui.theme.ThemeMode.SYSTEM
     override fun setThemeMode(mode: io.earlisreal.ejournal.ui.theme.ThemeMode) = Unit
-    override fun getFilterPrefs(): FilterPrefs? = null
-    override fun setFilterPrefs(prefs: FilterPrefs) = Unit
+    override fun getSelectedPortfolioId(): Long? = null
+    override fun setSelectedPortfolioId(portfolioId: Long?) = Unit
+    override fun getLegacyFilterPrefs() = null
+    override fun clearLegacyFilterPrefs() = Unit
     override fun getOnlineMarketDataEnabled(): Boolean = onlineMarketData
     override fun setOnlineMarketDataEnabled(enabled: Boolean) { onlineMarketData = enabled }
 }

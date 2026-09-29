@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -31,6 +32,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 fun TopBar(
     portfolios: List<Portfolio>,
     selectedPortfolio: Portfolio?,
+    enabled: Boolean,
     onSelectPortfolio: (Portfolio) -> Unit,
     preset: DateRangePreset,
     customRange: DateRange?,
@@ -62,28 +64,36 @@ fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        PortfolioSwitcher(
-            portfolios = portfolios,
-            selected = selectedPortfolio,
-            onSelect = onSelectPortfolio,
-            onManage = onManagePortfolios,
-        )
+        key(selectedPortfolio?.id) {
+            PortfolioSwitcher(
+                portfolios = portfolios,
+                selected = selectedPortfolio,
+                enabled = enabled,
+                onSelect = onSelectPortfolio,
+                onManage = onManagePortfolios,
+            )
+        }
         if (showDateFilter) {
-            DateRangeFilter(preset = preset, customRange = customRange, onChange = onDateChange)
+            key(selectedPortfolio?.id) {
+                DateRangeFilter(preset = preset, customRange = customRange, onChange = onDateChange, enabled = enabled)
+            }
             Spacer(Modifier.width(Spacing.lg))
         }
-        SegmentToggle(segment = segment, onSegmentChange = onSegmentChange)
+        SegmentToggle(segment = segment, onSegmentChange = onSegmentChange, enabled = enabled)
         if (showTagFilter && selectedPortfolio != null) {
             Spacer(Modifier.width(Spacing.md))
-            TagFilterControl(
-                tagRepository = tagRepository,
-                portfolioId = selectedPortfolio.id,
-                selectedTagIds = selectedTagIds,
-                tagMatch = tagMatch,
-                onToggleTag = onToggleTagFilter,
-                onSetMatch = onSetTagMatch,
-                onClear = onClearTagFilter,
-            )
+            key(selectedPortfolio.id) {
+                TagFilterControl(
+                    tagRepository = tagRepository,
+                    enabled = enabled,
+                    portfolioId = selectedPortfolio.id,
+                    selectedTagIds = selectedTagIds,
+                    tagMatch = tagMatch,
+                    onToggleTag = onToggleTagFilter,
+                    onSetMatch = onSetTagMatch,
+                    onClear = onClearTagFilter,
+                )
+            }
         }
     }
 }

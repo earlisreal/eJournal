@@ -2,6 +2,8 @@
 
 Status: agreed
 
+Superseded behavior: [Portfolio-Scoped Filter State Plan](portfolio-filter-state-plan.md) replaces the rule below that switching Portfolios clears selected Tags. The complete saved filter snapshot is now restored for each Portfolio.
+
 ## Goal
 
 Move tag definitions from one global vocabulary to portfolio ownership without changing what a Tag means: Tags remain user-defined labels on derived Positions, and assignments remain anchored to opening transaction IDs. Each portfolio must expose and mutate only its own Tags, while existing valid assignments survive the migration.

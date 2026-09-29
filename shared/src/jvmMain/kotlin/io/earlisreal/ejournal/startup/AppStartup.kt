@@ -3,6 +3,8 @@ package io.earlisreal.ejournal.startup
 
 import io.earlisreal.ejournal.AppDependencies
 import io.earlisreal.ejournal.StartupTrace
+import io.earlisreal.ejournal.data.repository.PortfolioFilterPrefs
+import io.earlisreal.ejournal.data.repository.loadInitialPortfolioFilterState
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.ui.shell.Destination
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +15,8 @@ class ReadyApp(
     val deps: AppDependencies,
     val startDestination: Destination,
     val portfolios: List<Portfolio>,
+    val selectedPortfolioId: Long?,
+    val initialFilterPrefs: PortfolioFilterPrefs,
 )
 
 /**
@@ -25,12 +29,18 @@ suspend fun buildReadyApp(): ReadyApp = withContext(Dispatchers.IO) {
     val deps = AppDependencies()
     StartupTrace.mark("deps:done")
     val portfolios = deps.portfolioRepository.getAll()
-    val savedPortfolioId = deps.settingsRepository.getFilterPrefs()?.portfolioId
+    val initialFilters = loadInitialPortfolioFilterState(
+        portfolios = portfolios,
+        settingsRepository = deps.settingsRepository,
+        portfolioSettings = deps.portfolioSettingsRepository,
+        tagRepository = deps.tagRepository,
+    )
+    val savedPortfolioId = initialFilters.portfolio?.id
     val startDestination = resolveStartDestination(
         portfolios = portfolios,
         savedPortfolioId = savedPortfolioId,
         countByPortfolio = { id -> deps.transactionRepository.countByPortfolio(id) },
     )
     StartupTrace.mark("warm:done")
-    ReadyApp(deps, startDestination, portfolios)
+    ReadyApp(deps, startDestination, portfolios, savedPortfolioId, initialFilters.filters)
 }

@@ -40,6 +40,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 fun TagFilterControl(
     tagRepository: TagRepository,
     portfolioId: Long,
+    enabled: Boolean = true,
     selectedTagIds: Set<Long>,
     tagMatch: TagMatch,
     onToggleTag: (Long) -> Unit,
@@ -58,7 +59,7 @@ fun TagFilterControl(
             Modifier
                 .clip(PillShape)
                 .background(if (active) AppTheme.colors.accent.copy(alpha = 0.15f) else AppTheme.colors.surfaceElevated)
-                .clickable { expanded = true }
+                .clickable(enabled = enabled) { expanded = true }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -82,8 +83,8 @@ fun TagFilterControl(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 Text("Match", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
-                MatchChip("Any", tagMatch == TagMatch.ANY) { onSetMatch(TagMatch.ANY) }
-                MatchChip("All", tagMatch == TagMatch.ALL) { onSetMatch(TagMatch.ALL) }
+                MatchChip("Any", tagMatch == TagMatch.ANY, enabled) { onSetMatch(TagMatch.ANY) }
+                MatchChip("All", tagMatch == TagMatch.ALL, enabled) { onSetMatch(TagMatch.ALL) }
             }
             HorizontalDivider(color = AppTheme.colors.border)
             if (tags.isEmpty()) {
@@ -97,7 +98,7 @@ fun TagFilterControl(
             tags.forEach { tag ->
                 val checked = tag.id in selectedTagIds
                 Row(
-                    Modifier.fillMaxWidth().clickable { onToggleTag(tag.id) }
+                    Modifier.fillMaxWidth().clickable(enabled = enabled) { onToggleTag(tag.id) }
                         .padding(horizontal = Spacing.md, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -115,7 +116,7 @@ fun TagFilterControl(
                 HorizontalDivider(color = AppTheme.colors.border)
                 Text(
                     "Clear filter",
-                    modifier = Modifier.fillMaxWidth().clickable { onClear() }
+                    modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onClear() }
                         .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                     color = AppTheme.colors.textMuted,
                     style = MaterialTheme.typography.labelSmall,
@@ -126,13 +127,13 @@ fun TagFilterControl(
 }
 
 @Composable
-private fun MatchChip(text: String, active: Boolean, onClick: () -> Unit) {
+private fun MatchChip(text: String, active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     Text(
         text,
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
             .background(if (active) AppTheme.colors.accent else AppTheme.colors.surfaceElevated)
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
             .padding(horizontal = 8.dp, vertical = 3.dp),
         color = if (active) AppTheme.colors.onAccent else AppTheme.colors.textMuted,
         style = MaterialTheme.typography.labelSmall,

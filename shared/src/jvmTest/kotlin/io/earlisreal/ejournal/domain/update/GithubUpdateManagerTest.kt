@@ -1,6 +1,5 @@
 package io.earlisreal.ejournal.domain.update
 
-import io.earlisreal.ejournal.data.repository.FilterPrefs
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -25,8 +24,10 @@ private class UpdateSettings(
 ) : SettingsRepository {
     override fun getThemeMode() = io.earlisreal.ejournal.ui.theme.ThemeMode.SYSTEM
     override fun setThemeMode(mode: io.earlisreal.ejournal.ui.theme.ThemeMode) = Unit
-    override fun getFilterPrefs(): FilterPrefs? = null
-    override fun setFilterPrefs(prefs: FilterPrefs) = Unit
+    override fun getSelectedPortfolioId(): Long? = null
+    override fun setSelectedPortfolioId(portfolioId: Long?) = Unit
+    override fun getLegacyFilterPrefs() = null
+    override fun clearLegacyFilterPrefs() = Unit
     override fun getAutomaticUpdateChecksEnabled() = automatic
     override fun setAutomaticUpdateChecksEnabled(enabled: Boolean) { automatic = enabled }
     override fun getLastUpdateCheckEpochMillis() = lastCheck

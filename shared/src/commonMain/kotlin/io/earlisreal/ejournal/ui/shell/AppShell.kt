@@ -16,13 +16,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
-import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.PortfolioFilterPrefs
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.loadPortfolioFilterPrefs
+import io.earlisreal.ejournal.data.repository.normalizePortfolioFilterPrefs
+import io.earlisreal.ejournal.data.repository.putPortfolioFilterPrefs
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
@@ -42,6 +45,8 @@ import io.earlisreal.ejournal.ui.theme.ThemeMode
 import io.earlisreal.ejournal.ui.theme.resolveDarkMode
 import kotlin.time.Clock
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
@@ -62,17 +67,37 @@ data class ShellNav(
     val onBackFromAnalysis: (() -> Unit)?,
 )
 
-internal fun selectedTagsAfterPortfolioChange(
-    selectedTagIds: Set<Long>,
-    previousPortfolioId: Long?,
-    nextPortfolioId: Long?,
-): Set<Long> = if (hasPortfolioChanged(previousPortfolioId, nextPortfolioId)) emptySet() else selectedTagIds
-
 internal fun hasPortfolioChanged(previousPortfolioId: Long?, nextPortfolioId: Long?): Boolean =
     previousPortfolioId != nextPortfolioId
 
+internal fun portfolioAfterReload(portfolios: List<Portfolio>, activePortfolioId: Long?): Portfolio? =
+    portfolios.firstOrNull { it.id == activePortfolioId } ?: portfolios.firstOrNull()
+
+internal fun refreshPortfolioMetadata(
+    active: ActivePortfolioFilters,
+    next: Portfolio?,
+): ActivePortfolioFilters? =
+    if (hasPortfolioChanged(active.portfolio?.id, next?.id)) null else active.copy(portfolio = next)
+
 internal fun selectedTagsAfterTagDeletion(selectedTagIds: Set<Long>, deletedTagId: Long): Set<Long> =
     selectedTagIds - deletedTagId
+
+internal data class ActivePortfolioFilters(
+    val portfolio: Portfolio?,
+    val filters: PortfolioFilterPrefs,
+)
+
+internal suspend fun restoreActivePortfolioFilters(
+    next: Portfolio?,
+    portfolioSettings: PortfolioSettingsRepository,
+    settingsRepository: SettingsRepository,
+    tagRepository: TagRepository,
+): ActivePortfolioFilters {
+    val filters = next?.let { portfolioSettings.loadPortfolioFilterPrefs(it.id, tagRepository) }
+        ?: PortfolioFilterPrefs()
+    settingsRepository.setSelectedPortfolioId(next?.id)
+    return ActivePortfolioFilters(next, filters)
+}
 
 @Composable
 fun AppShell(
@@ -88,11 +113,13 @@ fun AppShell(
     backgroundTaskTracker: BackgroundTaskTracker,
     initialDestination: Destination,
     initialPortfolios: List<Portfolio>,
+    initialSelectedPortfolioId: Long?,
+    initialFilterPrefs: PortfolioFilterPrefs,
     updateManager: UpdateManager? = null,
     content: @Composable (Destination, FilterState, ShellNav) -> Unit,
 ) {
-    val savedFilter = remember { settingsRepository.getFilterPrefs() }
     val scope = rememberCoroutineScope()
+    val filterMutex = remember { Mutex() }
 
     var current by remember { mutableStateOf(initialDestination) }
     var userExpanded by remember { mutableStateOf(true) }
@@ -105,43 +132,17 @@ fun AppShell(
     var showPortfolioManager by remember { mutableStateOf(false) }
 
     var portfolios by remember { mutableStateOf(initialPortfolios) }
-    var selectedPortfolio by remember {
+    var activeFilters by remember {
         mutableStateOf(
-            savedFilter?.portfolioId?.let { id -> initialPortfolios.firstOrNull { it.id == id } }
-                ?: initialPortfolios.firstOrNull()
-        )
-    }
-
-    var preset by remember { mutableStateOf(savedFilter?.preset ?: DateRangePreset.ALL_TIME) }
-    var customRange by remember {
-        mutableStateOf(savedFilter?.let { p -> p.customFrom?.let { f -> p.customTo?.let { t -> DateRange(f, t) } } })
-    }
-    var segment by remember { mutableStateOf(savedFilter?.segment ?: Segment.ALL) }
-    var selectedTagIds by remember {
-        mutableStateOf(
-            savedFilter?.portfolioId
-                ?.takeIf { id -> initialPortfolios.any { it.id == id } }
-                ?.let { savedFilter.selectedTagIds }
-                ?: emptySet()
-        )
-    }
-    var tagMatch by remember { mutableStateOf(savedFilter?.tagMatch ?: TagMatch.ANY) }
-    // (removed: LaunchedEffect that loaded portfolios and switched to DASHBOARD — now resolved
-    //  behind the splash by resolveStartDestination / buildReadyApp)
-
-    fun persist() {
-        settingsRepository.setFilterPrefs(
-            FilterPrefs(
-                portfolioId = selectedPortfolio?.id,
-                preset = preset,
-                customFrom = customRange?.from,
-                customTo = customRange?.to,
-                segment = segment,
-                selectedTagIds = selectedTagIds,
-                tagMatch = tagMatch,
+            ActivePortfolioFilters(
+                portfolio = initialSelectedPortfolioId?.let { id -> initialPortfolios.firstOrNull { it.id == id } },
+                filters = initialFilterPrefs,
             )
         )
     }
+    var switchingPortfolio by remember { mutableStateOf(false) }
+    // (removed: LaunchedEffect that loaded portfolios and switched to DASHBOARD — now resolved
+    //  behind the splash by resolveStartDestination / buildReadyApp)
 
     fun clearAnalysis() {
         analysisPositions = emptyList()
@@ -151,29 +152,75 @@ fun AppShell(
         analysisSource = null
     }
 
+    fun updateFilters(transform: (PortfolioFilterPrefs) -> PortfolioFilterPrefs, after: () -> Unit = {}) {
+        if (switchingPortfolio) return
+        scope.launch {
+            filterMutex.withLock {
+                if (switchingPortfolio) return@withLock
+                val active = activeFilters
+                val next = normalizePortfolioFilterPrefs(transform(active.filters))
+                if (next == active.filters) {
+                    after()
+                    return@withLock
+                }
+                active.portfolio?.let { portfolioSettings.putPortfolioFilterPrefs(it.id, next) }
+                activeFilters = active.copy(filters = next)
+                after()
+            }
+        }
+    }
+
     fun selectPortfolio(next: Portfolio?) {
-        val previousId = selectedPortfolio?.id
-        if (hasPortfolioChanged(previousId, next?.id)) clearAnalysis()
-        selectedPortfolio = next
-        selectedTagIds = selectedTagsAfterPortfolioChange(selectedTagIds, previousId, next?.id)
-        persist()
+        if (switchingPortfolio || !hasPortfolioChanged(activeFilters.portfolio?.id, next?.id)) return
+        switchingPortfolio = true
+        scope.launch {
+            try {
+                filterMutex.withLock {
+                    val previous = activeFilters
+                    if (!hasPortfolioChanged(previous.portfolio?.id, next?.id)) {
+                        activeFilters = previous.copy(portfolio = next)
+                        return@withLock
+                    }
+                    val restored = restoreActivePortfolioFilters(
+                        next = next,
+                        portfolioSettings = portfolioSettings,
+                        settingsRepository = settingsRepository,
+                        tagRepository = tagRepository,
+                    )
+                    clearAnalysis()
+                    activeFilters = restored
+                }
+            } finally {
+                switchingPortfolio = false
+            }
+        }
     }
 
     fun reloadPortfolios() {
         scope.launch {
             val list = portfolioRepository.getAll()
             portfolios = list
-            selectPortfolio(list.firstOrNull { it.id == selectedPortfolio?.id } ?: list.firstOrNull())
+            val currentPortfolio = activeFilters.portfolio
+            val next = portfolioAfterReload(list, currentPortfolio?.id)
+            if (hasPortfolioChanged(currentPortfolio?.id, next?.id)) {
+                selectPortfolio(next)
+            } else {
+                filterMutex.withLock {
+                    refreshPortfolioMetadata(activeFilters, next)?.let { activeFilters = it }
+                }
+            }
         }
     }
 
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val activePrefs = activeFilters.filters
+    val customRange = activePrefs.customFrom?.let { from -> activePrefs.customTo?.let { to -> DateRange(from, to) } }
     val filterState = FilterState(
-        portfolio = selectedPortfolio,
-        dateRange = resolveRange(preset, today, customRange),
-        segment = segment,
-        selectedTagIds = selectedTagIds,
-        tagMatch = tagMatch,
+        portfolio = activeFilters.portfolio,
+        dateRange = resolveRange(activePrefs.preset, today, customRange),
+        segment = activePrefs.segment,
+        selectedTagIds = activePrefs.selectedTagIds,
+        tagMatch = activePrefs.tagMatch,
     )
 
     val systemDark = isSystemInDarkTheme()
@@ -201,26 +248,26 @@ fun AppShell(
                     Column(modifier = Modifier.weight(1f)) {
                         TopBar(
                             portfolios = portfolios,
-                            selectedPortfolio = selectedPortfolio,
+                            selectedPortfolio = activeFilters.portfolio,
+                            enabled = !switchingPortfolio,
                             onSelectPortfolio = { next ->
-                                if (hasPortfolioChanged(selectedPortfolio?.id, next.id)) selectPortfolio(next)
+                                if (hasPortfolioChanged(activeFilters.portfolio?.id, next.id)) selectPortfolio(next)
                             },
-                            preset = preset,
+                            preset = activePrefs.preset,
                             customRange = customRange,
-                            onDateChange = { p, r -> preset = p; customRange = r; persist() },
-                            segment = segment,
-                            onSegmentChange = { segment = it; persist() },
+                            onDateChange = { p, r -> updateFilters(transform = { it.copy(preset = p, customFrom = r?.from, customTo = r?.to) }) },
+                            segment = activePrefs.segment,
+                            onSegmentChange = { value -> updateFilters(transform = { it.copy(segment = value) }) },
                             showDateFilter = current != Destination.CALENDAR,
                             onManagePortfolios = { showPortfolioManager = true },
                             tagRepository = tagRepository,
-                            selectedTagIds = selectedTagIds,
-                            tagMatch = tagMatch,
-                            onToggleTagFilter = { id ->
-                                selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
-                                persist()
-                            },
-                            onSetTagMatch = { tagMatch = it; persist() },
-                            onClearTagFilter = { selectedTagIds = emptySet(); persist() },
+                            selectedTagIds = activePrefs.selectedTagIds,
+                            tagMatch = activePrefs.tagMatch,
+                            onToggleTagFilter = { id -> updateFilters(transform = { prefs ->
+                                prefs.copy(selectedTagIds = if (id in prefs.selectedTagIds) prefs.selectedTagIds - id else prefs.selectedTagIds + id)
+                            }) },
+                            onSetTagMatch = { value -> updateFilters(transform = { it.copy(tagMatch = value) }) },
+                            onClearTagFilter = { updateFilters(transform = { it.copy(selectedTagIds = emptySet()) }) },
                             showTagFilter = current in setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.CALENDAR),
                         )
                         content(
@@ -231,8 +278,8 @@ fun AppShell(
                                 analysisIndex     = analysisIndex,
                                 onAnalyze = { position, list ->
                                     analysisSource    = current
-                                    analysisPortfolioId = selectedPortfolio?.id
-                                    analysisPortfolioName = selectedPortfolio?.name
+                                    analysisPortfolioId = activeFilters.portfolio?.id
+                                    analysisPortfolioName = activeFilters.portfolio?.name
                                     analysisPositions = list
                                     analysisIndex     = list.indexOf(position).coerceAtLeast(0)
                                     current = Destination.ANALYSIS
@@ -240,16 +287,14 @@ fun AppShell(
                                 onNavigate = { dest ->
                                     if (dest.enabled) { analysisSource = null; current = dest }
                                 },
-                                onSelectTag = { id ->
-                                    selectedTagIds = setOf(id)
-                                    tagMatch = TagMatch.ANY
-                                    persist()
-                                    analysisSource = null
-                                    current = Destination.TRADE_LOGS
-                                },
+                                onSelectTag = { id -> updateFilters(
+                                    transform = { it.copy(selectedTagIds = setOf(id), tagMatch = TagMatch.ANY) },
+                                    after = { analysisSource = null; current = Destination.TRADE_LOGS },
+                                ) },
                                 onTagDeleted = { id ->
-                                    selectedTagIds = selectedTagsAfterTagDeletion(selectedTagIds, id)
-                                    persist()
+                                    updateFilters(transform = { prefs ->
+                                        prefs.copy(selectedTagIds = selectedTagsAfterTagDeletion(prefs.selectedTagIds, id))
+                                    })
                                 },
                                 analysisPortfolioId = analysisPortfolioId,
                                 analysisPortfolioName = analysisPortfolioName,

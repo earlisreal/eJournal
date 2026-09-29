@@ -1,15 +1,15 @@
 package io.earlisreal.ejournal.data
 
-import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.PortfolioFilterPrefs
 import io.earlisreal.ejournal.domain.analytics.DateRangePreset
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.TagMatch
 import kotlinx.datetime.LocalDate
 import java.util.prefs.Preferences
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class PreferencesSettingsRepositoryFilterTest {
 
@@ -22,55 +22,78 @@ class PreferencesSettingsRepositoryFilterTest {
     }
 
     @Test
-    fun nullWhenNothingStored() {
-        assertNull(PreferencesSettingsRepository(node).getFilterPrefs())
+    fun selectedPortfolioRoundTripsAndCanBeCleared() {
+        val repo = PreferencesSettingsRepository(node)
+        repo.setSelectedPortfolioId(7L)
+        assertEquals(7L, PreferencesSettingsRepository(node).getSelectedPortfolioId())
+        repo.setSelectedPortfolioId(null)
+        assertNull(PreferencesSettingsRepository(node).getSelectedPortfolioId())
     }
 
     @Test
-    fun roundTripsPresetSegmentAndPortfolio() {
-        val repo = PreferencesSettingsRepository(node)
-        repo.setFilterPrefs(
-            FilterPrefs(
-                portfolioId = 7L,
-                preset = DateRangePreset.THIS_MONTH,
-                customFrom = null,
-                customTo = null,
-                segment = Segment.DAY,
-                selectedTagIds = setOf(3L, 5L),
-            ),
-        )
-        val read = PreferencesSettingsRepository(node).getFilterPrefs()!!
-        assertEquals(7L, read.portfolioId)
-        assertEquals(DateRangePreset.THIS_MONTH, read.preset)
-        assertEquals(Segment.DAY, read.segment)
-        assertEquals(setOf(3L, 5L), read.selectedTagIds)
+    fun readsLegacySnapshotForMigration() {
+        node.putLong("filter_portfolio_id", 7L)
+        node.put("filter_preset", DateRangePreset.CUSTOM.name)
+        node.put("filter_custom_from", "2024-01-05")
+        node.put("filter_custom_to", "2024-02-06")
+        node.put("filter_segment", Segment.DAY.name)
+        node.put("filter_tag_ids_scoped", "3,5")
+        node.put("filter_tag_match", TagMatch.ALL.name)
+
+        val legacy = PreferencesSettingsRepository(node).getLegacyFilterPrefs()!!
+        assertEquals(7L, legacy.portfolioId)
+        assertEquals(DateRangePreset.CUSTOM, legacy.filters.preset)
+        assertEquals(LocalDate(2024, 1, 5), legacy.filters.customFrom)
+        assertEquals(LocalDate(2024, 2, 6), legacy.filters.customTo)
+        assertEquals(Segment.DAY, legacy.filters.segment)
+        assertEquals(setOf(3L, 5L), legacy.filters.selectedTagIds)
+        assertEquals(TagMatch.ALL, legacy.filters.tagMatch)
     }
 
     @Test
-    fun roundTripsCustomDates() {
-        val repo = PreferencesSettingsRepository(node)
-        repo.setFilterPrefs(FilterPrefs(portfolioId = null, preset = DateRangePreset.CUSTOM, customFrom = LocalDate(2024, 1, 5), customTo = LocalDate(2024, 2, 6), segment = Segment.ALL))
-        val read = PreferencesSettingsRepository(node).getFilterPrefs()!!
-        assertNull(read.portfolioId)
-        assertEquals(DateRangePreset.CUSTOM, read.preset)
-        assertEquals(LocalDate(2024, 1, 5), read.customFrom)
-        assertEquals(LocalDate(2024, 2, 6), read.customTo)
+    fun recoversInvalidLegacyFieldsIndependently() {
+        node.putLong("filter_portfolio_id", 7L)
+        node.put("filter_preset", DateRangePreset.CUSTOM.name)
+        node.put("filter_custom_from", "not-a-date")
+        node.put("filter_custom_to", "2024-02-06")
+        node.put("filter_segment", "UNKNOWN")
+        node.put("filter_tag_ids_scoped", "3,broken,-5,3")
+        node.put("filter_tag_match", "UNKNOWN")
+
+        val filters = PreferencesSettingsRepository(node).getLegacyFilterPrefs()!!.filters
+        assertEquals(DateRangePreset.ALL_TIME, filters.preset)
+        assertNull(filters.customFrom)
+        assertNull(filters.customTo)
+        assertEquals(Segment.ALL, filters.segment)
+        assertEquals(setOf(3L), filters.selectedTagIds)
+        assertEquals(TagMatch.ANY, filters.tagMatch)
     }
 
     @Test
-    fun ignoresLegacyGlobalTagSelection() {
-        val repo = PreferencesSettingsRepository(node)
-        repo.setFilterPrefs(
-            FilterPrefs(
-                portfolioId = 7L,
-                preset = DateRangePreset.THIS_MONTH,
-                customFrom = null,
-                customTo = null,
-                segment = Segment.ALL,
-            ),
-        )
-        node.put("filter_tag_ids", "11,12")
+    fun emptyPresetStillActsAsLegacySnapshotSentinel() {
+        node.put("filter_preset", "")
 
-        assertTrue(PreferencesSettingsRepository(node).getFilterPrefs()!!.selectedTagIds.isEmpty())
+        val filters = PreferencesSettingsRepository(node).getLegacyFilterPrefs()!!.filters
+
+        assertEquals(PortfolioFilterPrefs(), filters)
+    }
+
+    @Test
+    fun clearingLegacySnapshotPreservesSelectedPortfolio() {
+        val repo = PreferencesSettingsRepository(node)
+        repo.setSelectedPortfolioId(7L)
+        node.put("filter_preset", DateRangePreset.ALL_TIME.name)
+        node.put("filter_custom_from", "2024-01-01")
+        node.put("filter_custom_to", "2024-01-02")
+        node.put("filter_segment", Segment.DAY.name)
+        node.put("filter_tag_ids_scoped", "3")
+        node.put("filter_tag_ids", "11")
+        node.put("filter_tag_match", TagMatch.ALL.name)
+
+        repo.clearLegacyFilterPrefs()
+
+        assertEquals(7L, repo.getSelectedPortfolioId())
+        assertNull(repo.getLegacyFilterPrefs())
+        assertEquals("", node.get("filter_tag_ids", ""))
     }
 }

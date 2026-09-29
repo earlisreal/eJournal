@@ -6,22 +6,29 @@ import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.ui.theme.ThemeMode
 import kotlinx.datetime.LocalDate
 
-/** Persisted filter selection. customFrom/customTo are only meaningful when preset == CUSTOM. */
-data class FilterPrefs(
-    val portfolioId: Long?,
-    val preset: DateRangePreset,
-    val customFrom: LocalDate?,
-    val customTo: LocalDate?,
-    val segment: Segment,
+/** One Portfolio's shared filter snapshot. Custom bounds are meaningful only for CUSTOM. */
+data class PortfolioFilterPrefs(
+    val preset: DateRangePreset = DateRangePreset.ALL_TIME,
+    val customFrom: LocalDate? = null,
+    val customTo: LocalDate? = null,
+    val segment: Segment = Segment.ALL,
     val selectedTagIds: Set<Long> = emptySet(),
     val tagMatch: TagMatch = TagMatch.ANY,
+)
+
+/** Legacy machine-wide filter state, read only while migrating to Portfolio settings. */
+data class LegacyFilterPrefs(
+    val portfolioId: Long?,
+    val filters: PortfolioFilterPrefs,
 )
 
 interface SettingsRepository {
     fun getThemeMode(): ThemeMode
     fun setThemeMode(mode: ThemeMode)
-    fun getFilterPrefs(): FilterPrefs?   // null when nothing has been stored yet
-    fun setFilterPrefs(prefs: FilterPrefs)
+    fun getSelectedPortfolioId(): Long?
+    fun setSelectedPortfolioId(portfolioId: Long?)
+    fun getLegacyFilterPrefs(): LegacyFilterPrefs?
+    fun clearLegacyFilterPrefs()
     fun getEtapeDbPath(): String? = null
     fun setEtapeDbPath(path: String?) = Unit
 

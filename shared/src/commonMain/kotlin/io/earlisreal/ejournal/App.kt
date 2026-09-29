@@ -12,6 +12,7 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
+import io.earlisreal.ejournal.data.repository.PortfolioFilterPrefs
 import io.earlisreal.ejournal.data.repository.SettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
@@ -61,6 +62,8 @@ fun App(
     startupSyncCoordinator: StartupSyncCoordinator,
     startDestination: Destination,
     initialPortfolios: List<Portfolio>,
+    initialSelectedPortfolioId: Long?,
+    initialFilterPrefs: PortfolioFilterPrefs,
     positionNotes: PositionNoteService,
     positionTags: PositionTagService,
     tagRepository: TagRepository,
@@ -111,6 +114,8 @@ fun App(
         backgroundTaskTracker = backgroundTaskTracker,
         initialDestination = startDestination,
         initialPortfolios = initialPortfolios,
+        initialSelectedPortfolioId = initialSelectedPortfolioId,
+        initialFilterPrefs = initialFilterPrefs,
         updateManager = updateManager,
     ) { destination, filter, nav ->
         val isDarkTheme = resolveDarkMode(nav.themeMode, systemDark)

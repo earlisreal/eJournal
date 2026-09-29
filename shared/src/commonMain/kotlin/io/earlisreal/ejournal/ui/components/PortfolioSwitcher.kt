@@ -18,6 +18,7 @@ import io.earlisreal.ejournal.domain.model.Portfolio
 fun PortfolioSwitcher(
     portfolios: List<Portfolio>,
     selected: Portfolio?,
+    enabled: Boolean = true,
     onSelect: (Portfolio) -> Unit,
     onManage: () -> Unit,
     modifier: Modifier = Modifier,
@@ -27,19 +28,21 @@ fun PortfolioSwitcher(
     Box(modifier = modifier) {
         Pill(
             text = "▾ $label",
-            modifier = Modifier.clickable { expanded = true },
+            modifier = Modifier.clickable(enabled = enabled) { expanded = true },
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             portfolios.forEach { p ->
                 DropdownMenuItem(
                     text = { Text("${p.name} · ${p.market.label}") },
                     onClick = { onSelect(p); expanded = false },
+                    enabled = enabled,
                 )
             }
             if (portfolios.isNotEmpty()) HorizontalDivider()
             DropdownMenuItem(
                 text = { Text("Manage portfolios…") },
                 onClick = { onManage(); expanded = false },
+                enabled = enabled,
             )
         }
     }

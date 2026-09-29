@@ -2,7 +2,7 @@ package io.earlisreal.ejournal.testutil
 
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
-import io.earlisreal.ejournal.data.repository.FilterPrefs
+import io.earlisreal.ejournal.data.repository.LegacyFilterPrefs
 import io.earlisreal.ejournal.data.repository.PortfolioBrokerCredentials
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
@@ -93,15 +93,19 @@ class FakeTransactionRepository(
 }
 
 class FakeSettingsRepository(
-    filterPrefs: FilterPrefs? = null,
+    selectedPortfolioId: Long? = null,
+    legacyFilterPrefs: LegacyFilterPrefs? = null,
     themeMode: ThemeMode = ThemeMode.SYSTEM,
 ) : SettingsRepository {
-    private var storedFilterPrefs: FilterPrefs? = filterPrefs
+    var selectedPortfolioIdValue: Long? = selectedPortfolioId
+    var legacyFilterPrefsValue: LegacyFilterPrefs? = legacyFilterPrefs
     private var storedTheme: ThemeMode = themeMode
     override fun getThemeMode(): ThemeMode = storedTheme
     override fun setThemeMode(mode: ThemeMode) { storedTheme = mode }
-    override fun getFilterPrefs(): FilterPrefs? = storedFilterPrefs
-    override fun setFilterPrefs(prefs: FilterPrefs) { storedFilterPrefs = prefs }
+    override fun getSelectedPortfolioId(): Long? = selectedPortfolioIdValue
+    override fun setSelectedPortfolioId(portfolioId: Long?) { selectedPortfolioIdValue = portfolioId }
+    override fun getLegacyFilterPrefs(): LegacyFilterPrefs? = legacyFilterPrefsValue
+    override fun clearLegacyFilterPrefs() { legacyFilterPrefsValue = null }
 }
 
 class FakePortfolioSettingsRepository : PortfolioSettingsRepository {

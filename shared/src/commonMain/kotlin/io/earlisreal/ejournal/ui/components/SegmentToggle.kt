@@ -20,6 +20,7 @@ import io.earlisreal.ejournal.ui.theme.PillShape
 fun SegmentToggle(
     segment: Segment,
     onSegmentChange: (Segment) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -41,7 +42,7 @@ fun SegmentToggle(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(if (active) AppTheme.colors.accent else androidx.compose.ui.graphics.Color.Transparent)
-                    .clickable { onSegmentChange(option) }
+                    .clickable(enabled = enabled) { onSegmentChange(option) }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }

@@ -65,11 +65,6 @@ fun moomooWindows(from: LocalDate, to: LocalDate): List<MoomooWindow> {
     return result
 }
 
-internal fun moomooSyncStart(today: LocalDate, checkpoint: LocalDate?): LocalDate {
-    val backfillStart = today.minus(MoomooSyncService.BACKFILL_DAYS, DateTimeUnit.DAY)
-    return maxOf(backfillStart, checkpoint?.minus(MoomooSyncService.OVERLAP_DAYS, DateTimeUnit.DAY) ?: backfillStart)
-}
-
 class MoomooSyncService(
     private val client: MoomooClient,
     private val transactionRepository: TransactionRepository,
@@ -120,54 +115,50 @@ class MoomooSyncService(
                 return fail(handle, "Selected live US Moomoo account is not available in OpenD")
             }
 
-            val lastSource = portfolioSettings.getString(portfolioId, MoomooSettings.LAST_SYNCED_SOURCE)
-            val checkpoint = if (lastSource == config.source) {
-                portfolioSettings.getString(portfolioId, MoomooSettings.LAST_COMPLETED_DATE)
-                    ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            } else {
-                null
-            }
             val end = today()
-            val start = moomooSyncStart(end, checkpoint)
+            // ponytail: Replay one year because OpenD filters orders by creation date; track order updates if this gets slow.
+            val start = end.minus(BACKFILL_DAYS, DateTimeUnit.DAY)
             var inserted = 0
             val skipped = mutableMapOf<String, Int>()
+            val orders = mutableListOf<MoomooOrder>()
+            val executions = mutableListOf<MoomooExecution>()
 
             for (window in moomooWindows(start, end)) {
                 gate.awaitPermit()
-                val orders = when (val result = session.getHistoricalOrders(config.accountId, window.from, window.to)) {
+                orders += when (val result = session.getHistoricalOrders(config.accountId, window.from, window.to)) {
                     is MoomooResult.Failure -> return fail(handle, result.message)
                     is MoomooResult.Success -> result.value
                 }
                 gate.awaitPermit()
-                val executions = when (val result = session.getHistoricalExecutions(config.accountId, window.from, window.to)) {
+                executions += when (val result = session.getHistoricalExecutions(config.accountId, window.from, window.to)) {
                     is MoomooResult.Failure -> return fail(handle, result.message)
                     is MoomooResult.Success -> result.value
                 }
+            }
 
-                val mapped = mapOrders(orders, executions, portfolioId, skipped)
-                val fees = mutableMapOf<String, Double>()
-                for (batch in mapped.chunked(MAX_FEE_IDS)) {
-                    gate.awaitPermit()
-                    when (val result = session.getOrderFees(config.accountId, batch.map { it.orderId })) {
-                        is MoomooResult.Failure -> return fail(handle, result.message)
-                        is MoomooResult.Success -> result.value.forEach { fee ->
-                            fee.amount?.takeIf(Double::isFinite)?.let { fees[fee.orderId] = it }
-                        }
+            // Orders and executions use different date filters, so a fill can be in a later window.
+            val mapped = mapOrders(orders, executions, portfolioId, skipped)
+            val fees = mutableMapOf<String, Double>()
+            for (batch in mapped.chunked(MAX_FEE_IDS)) {
+                gate.awaitPermit()
+                when (val result = session.getOrderFees(config.accountId, batch.map { it.orderId })) {
+                    is MoomooResult.Failure -> return fail(handle, result.message)
+                    is MoomooResult.Success -> result.value.forEach { fee ->
+                        fee.amount?.takeIf(Double::isFinite)?.let { fees[fee.orderId] = it }
                     }
                 }
-                val missingFees = mapped.map { it.orderId }.filterNot(fees::containsKey)
-                if (missingFees.isNotEmpty()) {
-                    return fail(handle, "OpenD did not return an exact fee for ${missingFees.size} order(s)")
-                }
-
-                mapped.forEach { row ->
-                    val transaction = row.toTransaction(portfolioId, fees.getValue(row.orderId))
-                    if (transactionRepository.insert(transaction) != null) inserted++
-                }
-                // A checkpoint belongs only to a window whose fees and idempotent inserts all completed.
-                portfolioSettings.putString(portfolioId, MoomooSettings.LAST_COMPLETED_DATE, window.to.toString())
-                portfolioSettings.putString(portfolioId, MoomooSettings.LAST_SYNCED_SOURCE, config.source)
             }
+            val missingFees = mapped.map { it.orderId }.filterNot(fees::containsKey)
+            if (missingFees.isNotEmpty()) {
+                return fail(handle, "OpenD did not return an exact fee for ${missingFees.size} order(s)")
+            }
+
+            mapped.forEach { row ->
+                val transaction = row.toTransaction(portfolioId, fees.getValue(row.orderId))
+                if (transactionRepository.insert(transaction) != null) inserted++
+            }
+            portfolioSettings.putString(portfolioId, MoomooSettings.LAST_COMPLETED_DATE, end.toString())
+            portfolioSettings.putString(portfolioId, MoomooSettings.LAST_SYNCED_SOURCE, config.source)
 
             val detail = BrokerSyncDetail(skipped.filterValues { it > 0 })
             handle.succeed("Imported $inserted new transaction(s)")
@@ -200,7 +191,6 @@ class MoomooSyncService(
         const val TASK_LABEL = "Moomoo OpenD import"
         const val MAX_FEE_IDS = 400
         const val BACKFILL_DAYS = 365
-        const val OVERLAP_DAYS = 3
 
         private val OPTION_SYMBOL = Regex("^[A-Z][A-Z0-9.-]{0,9}\\d{6}[CP]\\d{6,}$")
 

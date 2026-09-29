@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain.moomoo
 
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.domain.FifoMatcher
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Broker
@@ -143,6 +144,35 @@ class MoomooSyncServiceTest {
     }
 
     @Test
+    fun laterExecutionOfOldOrderCompletesThePosition() = runTest {
+        val session = FakeMoomooSession().apply {
+            orders = listOf(order("late", "FROG", 14.0).copy(
+                side = MoomooSide.SELL,
+                createdAt = LocalDateTime.parse("2026-09-09T10:13:00"),
+            ))
+            executions = listOf(execution("late", "FROG", 14.0, 89.941626, "2026-09-22T11:00:27").copy(
+                side = MoomooSide.SELL,
+            ))
+        }
+        val settings = configuredSettings().apply {
+            putString(1L, MoomooSettings.LAST_COMPLETED_DATE, "2026-09-25")
+            putString(1L, MoomooSettings.LAST_SYNCED_SOURCE, MoomooSettings.source("1001"))
+        }
+        val repo = DeduplicatingMoomooTransactions()
+        repo.insert(Transaction(0, 1, "FROG", LocalDateTime.parse("2026-09-09T10:12:24"), Action.BUY, 89.1, 28.0, 1.07))
+        repo.insert(Transaction(0, 1, "FROG", LocalDateTime.parse("2026-09-14T13:55:56"), Action.SELL, 93.9235, 14.0, 1.07))
+
+        val result = assertIs<BrokerSyncOutcome.Imported>(
+            service(FakeMoomooClient(session), settings, repo, today = LocalDate(2026, 9, 25)).syncIncremental(1L),
+        )
+
+        assertEquals(1, result.inserted)
+        val position = FifoMatcher.computeClosedPositions(repo.inserted).single()
+        assertEquals(28.0, position.shares)
+        assertEquals(3, position.transactions.size)
+    }
+
+    @Test
     fun executionQuantityMustMatchCanonicalOrderFill() = runTest {
         val session = FakeMoomooSession().apply {
             orders = listOf(order(quantity = 2.0))
@@ -206,7 +236,7 @@ class MoomooSyncServiceTest {
     }
 
     @Test
-    fun missingRequiredFeeFailsWindowWithoutAdvancingPastFailedWindow() = runTest {
+    fun missingRequiredFeeDoesNotAdvanceCheckpoint() = runTest {
         val session = FakeMoomooSession().apply {
             orders = listOf(order())
             executions = listOf(execution())
@@ -219,11 +249,11 @@ class MoomooSyncServiceTest {
 
         assertIs<BrokerSyncOutcome.NetworkError>(result)
         assertTrue(repo.inserted.isEmpty())
-        assertEquals("2017-12-27", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
+        assertNull(settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
     }
 
     @Test
-    fun completedWindowsCheckpointAndFailureResumesWithThreeDayOverlap() = runTest {
+    fun failedWindowReplaysFullBackfill() = runTest {
         val session = FakeMoomooSession().apply { failOrderCall = 2 }
         val settings = configuredSettings()
         val service = service(
@@ -233,15 +263,16 @@ class MoomooSyncServiceTest {
         )
 
         assertIs<BrokerSyncOutcome.NetworkError>(service.syncIncremental(1L))
-        assertEquals("2017-09-28", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
-        assertEquals(MoomooSettings.source("1001"), settings.getString(1L, MoomooSettings.LAST_SYNCED_SOURCE))
+        assertNull(settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
+        assertNull(settings.getString(1L, MoomooSettings.LAST_SYNCED_SOURCE))
 
         session.failOrderCall = null
         session.orderCall = 0
         session.orderWindows.clear()
         assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1L))
-        assertEquals(LocalDate(2017, 9, 25), session.orderWindows.first().from)
+        assertEquals(LocalDate(2017, 7, 1), session.orderWindows.first().from)
         assertEquals(LocalDate(2018, 7, 1), session.orderWindows.last().to)
+        assertEquals("2018-07-01", settings.getString(1L, MoomooSettings.LAST_COMPLETED_DATE))
     }
 
     @Test

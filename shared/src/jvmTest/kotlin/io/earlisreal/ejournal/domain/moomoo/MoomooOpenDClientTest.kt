@@ -13,6 +13,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.time.Duration.Companion.seconds
 
 class MoomooOpenDClientTest {
@@ -136,6 +137,50 @@ class MoomooOpenDClientTest {
         serverThread.join(2_000)
 
         assertEquals(MoomooResult.Success(emptyList()), result)
+    }
+
+    @Test
+    fun orderFeeRequestReturnsExactFeesForRequestedOrders() {
+        val server = ServerSocket(0)
+        val serverThread = thread(start = true, isDaemon = true) {
+            server.use { listener ->
+                listener.accept().use { socket ->
+                    val input = socket.getInputStream()
+                    val output = socket.getOutputStream()
+                    val init = OpenDFrameCodec.read(input)
+                    output.write(frame(1001, init.serial, """{"retType":0,"s2c":{"keepAliveInterval":300}}"""))
+                    output.flush()
+
+                    val fees = OpenDFrameCodec.read(input)
+                    assertEquals(2225, fees.protocolId)
+                    val c2s = Json.parseToJsonElement(fees.body.decodeToString()).jsonObject["c2s"]!!.jsonObject
+                    val feeList = if (c2s["orderIdExList"].toString() == """["o1","o2"]""") {
+                        """[{"orderIDEx":"o1","feeAmount":1.23},{"orderIDEx":"o2","feeAmount":0.0}]"""
+                    } else {
+                        "[]"
+                    }
+                    output.write(frame(2225, fees.serial, """{"retType":0,"s2c":{"orderFeeList":$feeList}}"""))
+                    output.flush()
+                }
+            }
+        }
+
+        val result = runBlocking {
+            val opened = MoomooOpenDClient(2.seconds).open(server.localPort)
+            assertIs<MoomooResult.Success<MoomooSession>>(opened).value.let { session ->
+                try {
+                    session.getOrderFees("1001", listOf("o1", "o2"))
+                } finally {
+                    session.close()
+                }
+            }
+        }
+        serverThread.join(2_000)
+
+        assertEquals(
+            MoomooResult.Success(listOf(MoomooOrderFee("o1", 1.23), MoomooOrderFee("o2", 0.0))),
+            result,
+        )
     }
 
     @Test

@@ -315,7 +315,7 @@ private class MoomooOpenDSession(
         val header = header(accountId) ?: return MoomooResult.Failure("Invalid Moomoo account id")
         return request(2225) {
             put("header", header)
-            put("orderIDExList", buildJsonArray { orderIds.forEach { add(JsonPrimitive(it)) } })
+            put("orderIdExList", buildJsonArray { orderIds.forEach { add(JsonPrimitive(it)) } })
         }.map { root ->
             root.obj("s2c")?.arrayOrEmpty("orderFeeList")?.map { mapFee(it.jsonObject) }
                 ?: error(root.errorMessage("Invalid OpenD order fee response"))

@@ -88,8 +88,9 @@ class AlpacaCryptoProvider(
     private suspend fun throwOnError(response: HttpResponse, symbol: String) {
         when {
             response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden -> {
-                println("[AlpacaCrypto] ${response.status} for $symbol: ${response.bodyAsText().take(400)}")
-                throw InvalidKeysException("Alpaca rejected the configured keys")
+                val body = response.bodyAsText()
+                println("[AlpacaCrypto] ${response.status} for $symbol: ${body.take(400)}")
+                throw InvalidKeysException(alpacaRejectionMessage(response.status, body))
             }
             response.status == HttpStatusCode.BadRequest || response.status == HttpStatusCode.UnprocessableEntity ->
                 throw SymbolNotFoundException(symbol)

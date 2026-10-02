@@ -10,7 +10,8 @@ private const val MARKET_DATA_LABEL = "Market data"
 /** Human-readable summary of a finished sync; shared by the status bar and the inline import/settings line. */
 fun SyncResult.describe(): String {
     val summary = when {
-        keysRejected -> "Alpaca keys rejected — check Settings"
+        keysRejected -> alpacaRejection?.let { "Alpaca market data rejected — $it" }
+            ?: "Alpaca market data rejected — check keys and market data access in Settings"
         failedSymbols.isNotEmpty() -> "Market data failed for ${failedSymbols.size} symbol(s)"
         needsKeys -> "Market data synced — add Alpaca keys in Settings to fetch 1-minute (intraday) bars"
         fetchedSymbols > 0 -> "Market data fetched for $fetchedSymbols symbol(s)"

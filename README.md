@@ -85,12 +85,20 @@ Uninstalling preserves journal data so a later installation can reuse it. To rem
 Charts and unrealized P&L use OHLCV data fetched per imported trade — daily bars for swing trades, 1-minute bars for day trades, and optional native 10-second bars for sub-minute US stock day trades. Analysis defaults to 10-second bars for those Positions when complete data is available, then falls back to 1-minute bars. Three sources:
 
 - **Yahoo Finance (opt-in, no setup).** Full daily history for daily bars after the user enables online market data or confirms a one-shot fetch.
-- **Alpaca (optional, free).** The same Key ID and Secret Key unlock 1-minute market-data history and read-only trading-account synchronization. In **Settings → Alpaca**, select the matching **Paper** or **Live** trading environment; Paper and Live credentials are different. Create a free account at [alpaca.markets](https://alpaca.markets) (Paper/data keys need no funding), then follow steps 1 and 2 of [Alpaca's guide](https://alpaca.markets/learn/connect-to-alpaca-api).
+- **Alpaca (optional, free).** Paper or Live keys can be used for 1-minute market-data history. Save global chart keys in **Settings → Alpaca Market Data**; configure broker keys and the matching **Paper** or **Live** environment per portfolio in **Manage Portfolios**. Paper and Live trading credentials are different. Create a free account at [alpaca.markets](https://alpaca.markets) (Paper/data keys need no funding), then follow steps 1 and 2 of [Alpaca's guide](https://alpaca.markets/learn/connect-to-alpaca-api).
 - **eTape (optional, local).** When `~/.eTape/etape.db` exists, eJournal copies the complete available Position date of native `bars_10s` rows into its own database during market-data sync. Use **Settings → Sync → Choose eTape database…** for another file; the selected path is remembered. Imports are read-only, idempotent, and never synthesize bars from 1-minute data.
 
 Alpaca synchronization only reads `/v2/account`, `/v2/assets`, and legacy `/v2/account/activities/FILL` plus `FEE` data. It never places, modifies, or cancels orders. Phase 1 imports US stock fills only; options and crypto fills are skipped. Each execution, including partial fills, remains a separate eJournal transaction. Alpaca's aggregate CAT, REG, and TAF Broker Fees are preserved and allocated as eJournal-derived Fee Allocation across matching Alpaca Transactions: REG by sell notional, TAF by sell shares, and CAT by all executed shares. Fee Dates use Alpaca's UTC activity boundary, debits become positive journal fees, fractional cents are retained, and unsupported, contaminated, malformed, or unmatched buckets remain unapplied with warnings. The first sync reconciles full history; later syncs replay an inclusive 95-day window so recent corrections replace prior allocations. Startup synchronization is opt-in per Portfolio and runs every eligible Portfolio before market-data synchronization; when it changes the selected Portfolio, the Dashboard refreshes after synchronization completes.
 
 Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Online market-data requests are off by default. Enable **Settings → Sync → Allow automatic online market data** for automatic requests, or use **Fetch online data once** for a one-shot confirmed request. Local eTape imports still run with online access disabled.
+
+The market-data connection check uses IEX, while stock chart bars use SIP. Rejected fetches show Alpaca's HTTP status and error reason. To compare IEX and delayed SIP access and check clock differences from a Windows source checkout, run:
+
+```powershell
+powershell -NoProfile -File .\scripts\diagnose-alpaca-market-data.ps1 -Symbol AAPL
+```
+
+The diagnostic reads the saved global keys without printing or changing them.
 
 ## Moomoo OpenD setup
 

@@ -38,6 +38,7 @@ data class SyncResult(
     val etapeImportedBars: Int = 0,
     val etapeSkippedBars: Int = 0,
     val etapeWarning: String? = null,
+    val alpacaRejection: String? = null,
 )
 
 sealed class SyncStatus {
@@ -153,6 +154,7 @@ class MarketDataService(
             etapeImportedBars = etapeResult.importedBars,
             etapeSkippedBars = etapeResult.skippedBars,
             etapeWarning = etapeResult.warning,
+            alpacaRejection = symbolResults.firstNotNullOfOrNull { it.alpacaRejection },
         )
         _status.value = SyncStatus.Finished(result)
         return result
@@ -194,18 +196,22 @@ class MarketDataService(
         var failed = false
         var keysRejected = false
         var needsKeys = false
+        var alpacaRejection: String? = null
 
         for (outcome in outcomes) {
             when (outcome) {
                 RangeOutcome.Success -> fetched = true
                 RangeOutcome.NeedsKeys -> needsKeys = true
-                RangeOutcome.KeysRejected -> keysRejected = true
+                is RangeOutcome.KeysRejected -> {
+                    keysRejected = true
+                    alpacaRejection = alpacaRejection ?: outcome.reason
+                }
                 RangeOutcome.SymbolNotFound -> return SymbolFetchResult(symbol, false, false, false, false)
                 RangeOutcome.Failed -> failed = true
             }
         }
 
-        return SymbolFetchResult(symbol, fetched, failed, keysRejected, needsKeys)
+        return SymbolFetchResult(symbol, fetched, failed, keysRejected, needsKeys, alpacaRejection)
     }
 
     private suspend fun fetchRange(routed: RoutedRange): RangeOutcome {
@@ -222,7 +228,7 @@ class MarketDataService(
             marketDataRepository.upsertBars(r.market, bars)
             RangeOutcome.Success
         } catch (e: InvalidKeysException) {
-            RangeOutcome.KeysRejected
+            RangeOutcome.KeysRejected(e.message ?: "Request rejected")
         } catch (e: SymbolNotFoundException) {
             println("[sync] symbol not found: ${r.symbol}")
             RangeOutcome.SymbolNotFound
@@ -236,7 +242,13 @@ class MarketDataService(
         }
     }
 
-    private enum class RangeOutcome { Success, NeedsKeys, KeysRejected, SymbolNotFound, Failed }
+    private sealed interface RangeOutcome {
+        data object Success : RangeOutcome
+        data object NeedsKeys : RangeOutcome
+        data class KeysRejected(val reason: String) : RangeOutcome
+        data object SymbolNotFound : RangeOutcome
+        data object Failed : RangeOutcome
+    }
 
     private suspend fun fetchWithRetry(provider: MarketDataProvider, range: BarRange): List<Bar> =
         try {
@@ -252,6 +264,7 @@ class MarketDataService(
         val failed: Boolean,
         val keysRejected: Boolean,
         val needsKeys: Boolean,
+        val alpacaRejection: String? = null,
     )
 
     companion object {

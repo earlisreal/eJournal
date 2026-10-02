@@ -69,7 +69,7 @@ class MarketDataTaskTest {
         val task = SyncStatus.Finished(SyncResult(0, emptyList(), keysRejected = true, needsKeys = false))
             .toBackgroundTask(noRetry)!!
         assertEquals(TaskState.Failed, task.state)
-        assertEquals("Alpaca keys rejected — check Settings", task.detail)
+        assertEquals("Alpaca market data rejected — check keys and market data access in Settings", task.detail)
     }
 
     @Test

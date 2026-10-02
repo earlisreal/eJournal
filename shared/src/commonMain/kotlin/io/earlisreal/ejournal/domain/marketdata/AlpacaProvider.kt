@@ -21,6 +21,9 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 sealed class ConnectionResult {
     data object Connected : ConnectionResult()
@@ -31,7 +34,7 @@ sealed class ConnectionResult {
 /**
  * Keyed provider for Alpaca's data API. Reads credentials per request so keys saved in
  * Settings take effect immediately. Uses the SIP (consolidated tape) feed for full
- * extended-hours coverage — requires an Alpaca data subscription that includes SIP.
+ * extended-hours coverage, with delayed queries for accounts without a real-time SIP subscription.
  */
 class AlpacaProvider(
     private val client: HttpClient,
@@ -112,8 +115,9 @@ class AlpacaProvider(
     private suspend fun throwOnError(response: HttpResponse, symbol: String) {
         when {
             response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden -> {
-                println("[Alpaca] ${response.status} for $symbol: ${response.bodyAsText().take(400)}")
-                throw InvalidKeysException("Alpaca rejected the configured keys")
+                val body = response.bodyAsText()
+                println("[Alpaca] ${response.status} for $symbol: ${body.take(400)}")
+                throw InvalidKeysException(alpacaRejectionMessage(response.status, body))
             }
             response.status == HttpStatusCode.BadRequest || response.status == HttpStatusCode.UnprocessableEntity ->
                 throw SymbolNotFoundException(symbol)
@@ -157,4 +161,12 @@ class AlpacaProvider(
         // Free-tier SIP can't query the most recent 15 min; 16 gives a safety margin.
         private val SIP_RECENT_DELAY = 16.minutes
     }
+}
+
+internal fun alpacaRejectionMessage(status: HttpStatusCode, body: String): String {
+    val message = runCatching {
+        val error = Json.parseToJsonElement(body) as? JsonObject
+        (error?.get("message") as? JsonPrimitive)?.contentOrNull
+    }.getOrNull()?.takeIf { it.isNotBlank() } ?: status.description
+    return "${status.value}: ${message.take(200)}"
 }

@@ -13,6 +13,12 @@ import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Portfolio
 import io.earlisreal.ejournal.domain.model.Transaction
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -131,7 +137,7 @@ class MarketDataServiceTest {
         bars: FakeBars = FakeBars(),
         yahoo: FakeProvider = FakeProvider(),
         yahooCrypto: FakeProvider = FakeProvider(),
-        alpaca: FakeProvider = FakeProvider(),
+        alpaca: MarketDataProvider = FakeProvider(),
         crypto: FakeProvider = FakeProvider(),
         creds: FakeCreds = FakeCreds(),
         etapeImporter: EtapeMarketDataImporter? = null,
@@ -229,6 +235,36 @@ class MarketDataServiceTest {
 
         assertEquals(1, alpaca.calls.size)
         assertTrue(!result.needsKeys)
+    }
+
+    @Test
+    fun `connected market-data keys retain the SIP rejection reason in the status bar`() = runTest {
+        val creds = FakeCreds(AlpacaMarketDataCredentials("AK-live-test", "test-secret"))
+        val reason = "subscription does not permit querying recent SIP data"
+        val engine = MockEngine { request ->
+            assertEquals("data.alpaca.markets", request.url.host)
+            assertEquals("AK-live-test", request.headers["APCA-API-KEY-ID"])
+            if (request.url.encodedPath.endsWith("/trades/latest")) {
+                respond("{}", HttpStatusCode.OK)
+            } else {
+                respond(
+                    """{"code":42210000,"message":"$reason"}""",
+                    HttpStatusCode.Forbidden,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        }
+        HttpClient(engine).use { httpClient ->
+            val alpaca = AlpacaProvider(httpClient, creds)
+            assertEquals(ConnectionResult.Connected, alpaca.testConnection())
+
+            val result = service(
+                transactions = mapOf(1L to oldDayTrade()), alpaca = alpaca, creds = creds,
+            ).sync()
+            val task = SyncStatus.Finished(result).toBackgroundTask {}!!
+            assertTrue(task.detail.orEmpty().contains("403"), task.detail)
+            assertTrue(task.detail.orEmpty().contains(reason), task.detail)
+        }
     }
 
     @Test

@@ -90,6 +90,50 @@ class AlpacaProviderTest {
     }
 
     @Test
+    fun `recent SIP rejection retries with server time when the computer clock is ahead`() = runTest {
+        val serverNow = Instant.parse("2026-06-12T14:51:00Z")
+        val (provider, engine) = provider(now = { serverNow + 2.minutes }) { request ->
+            val end = Instant.parse(request.url.parameters["end"]!!)
+            if (end > serverNow - 15.minutes) {
+                respond(
+                    """{"code":42210000,"message":"subscription does not permit querying recent SIP data"}""",
+                    HttpStatusCode.Forbidden,
+                    headersOf(HttpHeaders.Date, "Fri, 12 Jun 2026 14:51:00 GMT"),
+                )
+            } else {
+                jsonResponse("""{"bars":[{"t":"2026-06-12T14:35:00Z","o":1,"h":2,"l":1,"c":2,"v":100}]}""")
+            }
+        }
+
+        val bars = provider.getBars("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-11"), LocalDate.parse("2026-06-12"))
+
+        assertEquals(1, bars.size)
+        assertEquals(2, engine.requestHistory.size)
+        assertEquals(serverNow - 16.minutes, Instant.parse(engine.requestHistory.last().url.parameters["end"]!!))
+    }
+
+    @Test
+    fun `SIP delay retry is bounded and requires a valid server date`() = runTest {
+        for ((serverDate, expectedRequests) in listOf(null to 1, "invalid" to 1, "Fri, 12 Jun 2026 14:51:00 GMT" to 2)) {
+            val headers = if (serverDate == null) headersOf() else headersOf(HttpHeaders.Date, serverDate)
+            var requests = 0
+            val (provider, engine) = provider(now = { Instant.parse("2026-06-12T14:53:00Z") }) {
+                assertTrue(++requests <= 2, "A SIP rejection may only retry once")
+                respond(
+                    """{"code":42210000,"message":"subscription does not permit querying recent SIP data"}""",
+                    HttpStatusCode.Forbidden,
+                    headers,
+                )
+            }
+            val error = assertFailsWith<InvalidKeysException> {
+                provider.getBars("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-11"), LocalDate.parse("2026-06-12"))
+            }
+            assertEquals("403: subscription does not permit querying recent SIP data", error.message)
+            assertEquals(expectedRequests, engine.requestHistory.size)
+        }
+    }
+
+    @Test
     fun `bar requests use the consolidated SIP feed for full pre-market coverage`() = runTest {
         val (provider, engine) = provider {
             jsonResponse("""{"bars":[],"symbol":"AAPL","next_page_token":null}""")

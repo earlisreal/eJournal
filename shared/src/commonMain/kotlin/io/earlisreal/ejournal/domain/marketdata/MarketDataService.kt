@@ -166,7 +166,7 @@ class MarketDataService(
         hasKeys: Boolean,
     ): List<SymbolFetchResult> {
         val work = requiredRanges(positions, today)
-            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe, range.market)) }
+            .flatMap { range -> subtractCoverage(range, marketDataRepository.getCoverage(range.symbol, range.timeframe, range.market), today) }
             .flatMap { range -> route(range, hasKeys) }
             .groupBy { it.range.symbol }
 

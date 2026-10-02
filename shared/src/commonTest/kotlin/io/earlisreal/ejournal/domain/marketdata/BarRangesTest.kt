@@ -141,13 +141,13 @@ class BarRangesTest {
 
     @Test
     fun `no coverage means the whole range is missing`() {
-        assertEquals(listOf(junRange), subtractCoverage(junRange, null))
+        assertEquals(listOf(junRange), subtractCoverage(junRange, null, today))
     }
 
     @Test
     fun `full coverage means nothing is missing`() {
         val coverage = BarCoverage(LocalDateTime.parse("2026-05-01T00:00"), LocalDateTime.parse("2026-06-15T00:00"))
-        assertTrue(subtractCoverage(junRange, coverage).isEmpty())
+        assertTrue(subtractCoverage(junRange, coverage, today).isEmpty())
     }
 
     @Test
@@ -155,10 +155,10 @@ class BarRangesTest {
         // Daily is always requested from the full-history sentinel, so existing coverage already
         // reaches the symbol's first bar — re-fetching the leading edge would be a wasted probe.
         val coverage = BarCoverage(LocalDateTime.parse("2026-06-03T00:00"), LocalDateTime.parse("2026-06-07T00:00"))
-        val missing = subtractCoverage(junRange, coverage)
+        val missing = subtractCoverage(junRange, coverage, today)
         assertEquals(
             listOf(
-                BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-10")),
+                BarRange("AAPL", Timeframe.DAILY, LocalDate.parse("2026-06-07"), LocalDate.parse("2026-06-10")),
             ),
             missing,
         )
@@ -168,13 +168,23 @@ class BarRangesTest {
     fun `one-minute partial coverage backfills both leading and trailing edges`() {
         val minRange = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-10"))
         val coverage = BarCoverage(LocalDateTime.parse("2026-06-03T00:00"), LocalDateTime.parse("2026-06-07T00:00"))
-        val missing = subtractCoverage(minRange, coverage)
+        val missing = subtractCoverage(minRange, coverage, today)
         assertEquals(
             listOf(
                 BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-02")),
-                BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-08"), LocalDate.parse("2026-06-10")),
+                BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-07"), LocalDate.parse("2026-06-10")),
             ),
             missing,
+        )
+    }
+
+    @Test
+    fun `extending coverage after midnight includes the partially fetched previous day`() {
+        val range = BarRange("AAPL", Timeframe.ONE_MINUTE, LocalDate.parse("2026-06-11"), LocalDate.parse("2026-06-13"))
+        val coverage = BarCoverage(LocalDateTime.parse("2026-06-11T09:30"), LocalDateTime.parse("2026-06-12T10:35"))
+        assertEquals(
+            listOf(range.copy(from = LocalDate.parse("2026-06-12"))),
+            subtractCoverage(range, coverage, LocalDate.parse("2026-06-13")),
         )
     }
 

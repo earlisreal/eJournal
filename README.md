@@ -92,7 +92,7 @@ Alpaca synchronization only reads `/v2/account`, `/v2/assets`, and legacy `/v2/a
 
 Keys are stored only on your machine in `~/.ejournal/credentials.json` (owner-only permissions) and are sent to no one but Alpaca. Online market-data requests are off by default. Enable **Settings → Sync → Allow automatic online market data** for automatic requests, or use **Fetch online data once** for a one-shot confirmed request. Local eTape imports still run with online access disabled.
 
-The market-data connection check uses IEX, while stock chart bars use SIP. Rejected fetches show Alpaca's HTTP status and error reason. To compare IEX and delayed SIP access and check clock differences from a Windows source checkout, run:
+The market-data connection check uses IEX, while stock chart bars use SIP. Stock chart requests stop 16 minutes before the current time, so a trade from 10 minutes ago can be imported before its chart bars are available. If Alpaca rejects that cutoff because the computer clock is ahead, eJournal retries once using Alpaca's server time. Later fetches refresh the current day and overlap the last stored day when extending history, so delayed bars can be filled in. Rejected fetches show Alpaca's HTTP status and error reason. To compare IEX and delayed SIP access and check clock differences from a Windows source checkout, run:
 
 ```powershell
 powershell -NoProfile -File .\scripts\diagnose-alpaca-market-data.ps1 -Symbol AAPL

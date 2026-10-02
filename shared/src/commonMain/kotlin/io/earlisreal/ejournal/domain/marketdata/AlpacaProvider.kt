@@ -8,7 +8,9 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.fromHttpToGmtDate
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
@@ -57,12 +59,13 @@ class AlpacaProvider(
         // Free-tier SIP rejects ranges whose end is within the last ~15 min ("subscription does
         // not permit querying recent SIP data"), so clamp end to 16 min ago. Harmless for the
         // historical trades we chart; the future end (tomorrow 00:00 ET) for today is what triggers it.
-        val end = minOf(to.plus(DatePeriod(days = 1)).atStartOfDayIn(EASTERN), now() - SIP_RECENT_DELAY)
+        var end = minOf(to.plus(DatePeriod(days = 1)).atStartOfDayIn(EASTERN), now() - SIP_RECENT_DELAY)
         if (start >= end) return emptyList()
 
         val bars = mutableListOf<Bar>()
         var pageToken: String? = null
-        do {
+        var retriedRecentSip = false
+        while (true) {
             val response = request(credentials, "$BASE_URL/v2/stocks/$symbol/bars") {
                 parameter("timeframe", timeframeParam)
                 parameter("start", start.toString())
@@ -76,12 +79,33 @@ class AlpacaProvider(
                 parameter("feed", "sip")
                 pageToken?.let { parameter("page_token", it) }
             }
+            // A computer clock ahead of Alpaca can defeat the one-minute safety margin.
+            // Only this specific SIP-delay rejection can retry using the server's Date header.
+            if (response.status == HttpStatusCode.Forbidden && !retriedRecentSip &&
+                alpacaRejectionMessage(response.status, response.bodyAsText()) ==
+                "403: subscription does not permit querying recent SIP data"
+            ) {
+                val serverEnd = response.headers[HttpHeaders.Date]?.let { date ->
+                    runCatching {
+                        Instant.fromEpochMilliseconds(date.fromHttpToGmtDate().timestamp) - SIP_RECENT_DELAY
+                    }.getOrNull()
+                }
+                if (serverEnd != null && serverEnd < end) {
+                    end = serverEnd
+                    if (start >= end) return emptyList()
+                    retriedRecentSip = true
+                    bars.clear()
+                    pageToken = null
+                    continue
+                }
+            }
             throwOnError(response, symbol)
 
             val page = json.decodeFromString<BarsResponse>(response.bodyAsText())
             page.bars.orEmpty().mapTo(bars) { it.toDomain(symbol, timeframe) }
             pageToken = page.nextPageToken
-        } while (pageToken != null)
+            if (pageToken == null) break
+        }
         return bars
     }
 

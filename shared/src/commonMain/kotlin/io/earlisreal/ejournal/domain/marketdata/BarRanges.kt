@@ -104,9 +104,11 @@ private fun mergeRanges(ranges: List<BarRange>): List<BarRange> {
  * just fire an empty pre-history request every sync (and keep the symbol perpetually "in work"),
  * so for daily we only ever extend the trailing tail once coverage exists. A fresh symbol (null
  * coverage) still pulls the full history. 1-min keeps both edges — it is fetched in per-trade
- * windows, so an earlier trade can still need a leading backfill.
+ * windows, so an earlier trade can still need a leading backfill. Re-fetch today's bars and
+ * overlap the last stored day when extending a tail, since that day may have been fetched
+ * before it finished (including SIP's delay). Historical ranges already fully covered are skipped.
  */
-fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
+fun subtractCoverage(range: BarRange, coverage: BarCoverage?, today: LocalDate): List<BarRange> {
     if (coverage == null) return listOf(range)
     val missing = mutableListOf<BarRange>()
     val coveredFrom = coverage.first.date
@@ -115,8 +117,8 @@ fun subtractCoverage(range: BarRange, coverage: BarCoverage?): List<BarRange> {
     if (backfillLeadingEdge && range.from < coveredFrom) {
         missing.add(range.copy(to = minOf(range.to, coveredFrom.minus(DatePeriod(days = 1)))))
     }
-    if (range.to > coveredTo) {
-        missing.add(range.copy(from = maxOf(range.from, coveredTo.plus(DatePeriod(days = 1)))))
+    if (range.to > coveredTo || (range.to == today && coveredTo == today)) {
+        missing.add(range.copy(from = maxOf(range.from, coveredTo)))
     }
     return missing
 }

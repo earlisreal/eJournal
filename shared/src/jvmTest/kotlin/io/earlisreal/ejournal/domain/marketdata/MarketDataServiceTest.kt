@@ -22,6 +22,8 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -202,14 +204,64 @@ class MarketDataServiceTest {
     }
 
     @Test
-    fun `skips fetching when coverage is complete`() = runTest {
+    fun `recent trade bars are fetched on a later sync after the SIP delay`() = runTest {
+        var now = Instant.parse("2026-06-12T14:51:00Z")
+        val creds = FakeCreds(AlpacaMarketDataCredentials("test-id", "test-secret"))
+        val bars = FakeBars()
+        bars.coverage["AAPL" to Timeframe.DAILY] =
+            BarCoverage(LocalDateTime.parse("2026-01-01T00:00"), LocalDateTime.parse("2026-06-12T00:00"))
+        val engine = MockEngine { request ->
+            val end = Instant.parse(request.url.parameters["end"]!!)
+            if (end > now - 15.minutes) {
+                respond(
+                    """{"code":42210000,"message":"subscription does not permit querying recent SIP data"}""",
+                    HttpStatusCode.Forbidden,
+                )
+            } else {
+                val delayedTradeBar = if (end >= Instant.parse("2026-06-12T14:41:00Z")) {
+                    """,{"t":"2026-06-12T14:41:00Z","o":1,"h":2,"l":1,"c":2,"v":100}"""
+                } else ""
+                respond(
+                    """{"bars":[{"t":"2026-06-11T13:30:00Z","o":1,"h":2,"l":1,"c":2,"v":100},{"t":"2026-06-12T14:35:00Z","o":1,"h":2,"l":1,"c":2,"v":100}$delayedTradeBar]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        }
+        HttpClient(engine).use { httpClient ->
+            val service = service(
+                transactions = mapOf(1L to listOf(
+                    tx(1L, "AAPL", Action.BUY, "2026-06-12T10:40"),
+                    tx(1L, "AAPL", Action.SELL, "2026-06-12T10:41"),
+                )),
+                bars = bars,
+                alpaca = AlpacaProvider(httpClient, creds, now = { now }),
+                creds = creds,
+            )
+            assertTrue(!service.sync().keysRejected)
+            assertEquals(1, engine.requestHistory.size)
+            val exitTime = LocalDateTime.parse("2026-06-12T10:41")
+            assertTrue(bars.stored.none { it.timestamp == exitTime })
+            // SQLDelight reports the first and last stored timestamps as coverage.
+            bars.coverage["AAPL" to Timeframe.ONE_MINUTE] =
+                BarCoverage(bars.stored.minOf { it.timestamp }, bars.stored.maxOf { it.timestamp })
+
+            now += 20.minutes
+            assertTrue(!service.syncConfirmed().keysRejected)
+            assertTrue(bars.stored.any { it.timestamp == exitTime }, "A later fetch must fill in the delayed trade bar")
+            assertEquals(2, engine.requestHistory.size)
+        }
+    }
+
+    @Test
+    fun `skips fetching when historical coverage is complete`() = runTest {
         val bars = FakeBars()
         bars.coverage["AAPL" to Timeframe.ONE_MINUTE] =
-            BarCoverage(LocalDateTime.parse("2026-06-09T04:00"), LocalDateTime.parse("2026-06-11T19:59"))
+            BarCoverage(LocalDateTime.parse("2026-01-02T04:00"), LocalDateTime.parse("2026-01-06T19:59"))
         bars.coverage["AAPL" to Timeframe.DAILY] =
-            BarCoverage(LocalDateTime.parse("2026-04-11T00:00"), LocalDateTime.parse("2026-06-12T23:59"))
+            BarCoverage(LocalDateTime.parse("2026-01-02T00:00"), LocalDateTime.parse("2026-03-06T00:00"))
         val yahoo = FakeProvider()
-        val result = service(bars = bars, yahoo = yahoo).sync()
+        val result = service(transactions = mapOf(1L to oldDayTrade()), bars = bars, yahoo = yahoo).sync()
 
         assertTrue(yahoo.calls.isEmpty())
         assertEquals(0, result.fetchedSymbols)

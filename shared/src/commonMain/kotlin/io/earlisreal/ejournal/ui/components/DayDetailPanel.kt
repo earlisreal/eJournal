@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import io.earlisreal.ejournal.domain.analytics.CalendarEntry
 import io.earlisreal.ejournal.domain.analytics.TradeType
+import io.earlisreal.ejournal.domain.analytics.calendarAnalysisPositions
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -29,7 +31,7 @@ import io.earlisreal.ejournal.ui.theme.Spacing
 @Composable
 fun DayDetailPanel(
     heading: String?,
-    positions: List<ClosedPosition>,
+    entries: List<CalendarEntry>,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit,
     symbol: String,
     showExitDate: Boolean = false,
@@ -54,8 +56,8 @@ fun DayDetailPanel(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
-                if (positions.isNotEmpty()) {
-                    val dayTotal = positions.sumOf { it.profitLoss }
+                if (entries.isNotEmpty()) {
+                    val dayTotal = entries.sumOf { it.profitLoss }
                     Text(
                         signedMoney(dayTotal, symbol),
                         color = if (dayTotal >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss,
@@ -64,28 +66,30 @@ fun DayDetailPanel(
                     )
                 }
             }
-            if (positions.isEmpty()) {
+            if (entries.isEmpty()) {
                 Text(
-                    if (showExitDate) "No trades closed this week" else "No trades closed this day",
+                    if (showExitDate) "No realized exits this week" else "No realized exits this day",
                     color = AppTheme.colors.textMuted,
                     style = MaterialTheme.typography.bodySmall,
                 )
             } else {
+                val positions = calendarAnalysisPositions(entries)
                 val listState = rememberLazyListState()
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     // end padding leaves a gutter so the P/L values clear the overlaid scrollbar
                     LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(end = Spacing.md)) {
-                        itemsIndexed(positions) { index, p ->
-                            val pnlColor = if (p.profitLoss >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss
+                        itemsIndexed(entries) { index, entry ->
+                            val p = entry.position
+                            val pnlColor = if (entry.profitLoss >= 0.0) AppTheme.colors.profit else AppTheme.colors.loss
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { onAnalyze(p, positions) }
                                     .padding(vertical = Spacing.sm),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Column {
+                                Column(Modifier.weight(1f)) {
                                     Text(
                                         p.symbol,
                                         color = AppTheme.colors.textPrimary,
@@ -93,15 +97,16 @@ fun DayDetailPanel(
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
                                     Text(
-                                        (if (showExitDate) "${shortDate(p.exitDatetime.date)} · " else "") +
-                                            if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing",
+                                        (if (showExitDate) "${shortDate(entry.date)} · " else "") +
+                                            (if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing") +
+                                            " · ${formatQuantity(entry.shares)} sh",
                                         color = AppTheme.colors.textMuted,
                                         style = MaterialTheme.typography.labelSmall,
                                     )
                                 }
-                                Text(signedMoney(p.profitLoss, symbol), color = pnlColor, style = NumberTextStyle)
+                                Text(signedMoney(entry.profitLoss, symbol), color = pnlColor, style = NumberTextStyle)
                             }
-                            if (index < positions.lastIndex) {
+                            if (index < entries.lastIndex) {
                                 HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
                             }
                         }

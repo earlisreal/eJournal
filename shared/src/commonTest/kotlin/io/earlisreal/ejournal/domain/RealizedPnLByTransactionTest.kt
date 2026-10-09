@@ -25,6 +25,29 @@ class RealizedPnLByTransactionTest {
         )
 
     @Test
+    fun chainedReversalsAttributeOnlyMatchedSharesAndFees() {
+        val positions = FifoMatcher.computeClosedPositions(
+            listOf(
+                tx(Action.BUY, 10.0, 100.0, 10.0, "2024-01-01T09:00"),
+                tx(Action.SELL, 12.0, 150.0, 15.0, "2024-01-02T09:00"),
+                tx(Action.BUY, 11.0, 40.0, 4.0, "2024-01-03T09:00"),
+                tx(Action.SELL, 20.0, 10.0, 1.0, "2024-01-04T09:00"),
+                tx(Action.BUY, 11.0, 50.0, 5.0, "2024-01-05T09:00"),
+                tx(Action.SELL, 13.0, 30.0, 3.0, "2024-01-06T09:00"),
+            )
+        )
+
+        assertEquals(listOf(180.0, 128.0, 54.0), positions.map { it.profitLoss })
+        assertEquals(listOf(100.0, 60.0, 30.0), positions.map { it.shares })
+        assertEquals(listOf(40.0, 20.0), positions[1].exits.map { it.shares })
+        assertEquals(listOf(null, 32.0, null, 96.0), FifoMatcher.realizedPnLByTransaction(positions[1]))
+        positions.forEach { position ->
+            assertEquals(position.shares, position.exits.sumOf { it.shares }, 1e-9)
+            assertEquals(position.profitLoss, FifoMatcher.realizedPnLByTransaction(position).filterNotNull().sum(), 1e-9)
+        }
+    }
+
+    @Test
     fun openingFillRealizesNothingClosingFillRealizesNetPnl() {
         val position = FifoMatcher.computeClosedPositions(
             listOf(

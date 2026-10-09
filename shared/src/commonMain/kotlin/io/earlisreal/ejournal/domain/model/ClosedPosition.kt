@@ -2,6 +2,9 @@ package io.earlisreal.ejournal.domain.model
 
 import kotlinx.datetime.LocalDateTime
 
+/** One closing fill's matched quantity and fee-inclusive P&L, derived during FIFO matching. */
+data class PositionExit(val transactionIndex: Int, val shares: Double, val profitLoss: Double)
+
 data class ClosedPosition(
     val symbol: String,
     val entryDatetime: LocalDateTime,
@@ -20,6 +23,7 @@ data class ClosedPosition(
     // User tags, hydrated by PositionTagService after FIFO recomputation (never produced by
     // FifoMatcher itself). Keyed to this position's opening transaction id.
     val tags: List<Tag> = emptyList(),
+    val exits: List<PositionExit> = emptyList(),
 ) {
     val averagePriceDifference: Double
         get() = if (direction == TradeDirection.LONG) averageExitPrice - averageEntryPrice

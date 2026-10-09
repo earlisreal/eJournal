@@ -2,10 +2,13 @@ package io.earlisreal.ejournal.ui.viewmodel
 
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
+import io.earlisreal.ejournal.domain.FifoMatcher
 import io.earlisreal.ejournal.domain.PositionTagService
 import io.earlisreal.ejournal.domain.analytics.Segment
+import io.earlisreal.ejournal.domain.analytics.calendarAnalysisPositions
 import io.earlisreal.ejournal.domain.analytics.TagMatch
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.testutil.FakePortfolioRepository
@@ -52,6 +55,13 @@ class CalendarViewModelTest {
     private fun pos(year: Int, month: Int, day: Int, pnl: Double = 0.0): ClosedPosition =
         posAt(LocalDateTime(year, month, day, 15, 0), pnl)
 
+    private fun swingPosition(firstExit: String = "2024-05-31T23:59", lastExit: String = "2024-06-01T00:01") =
+        FifoMatcher.computeClosedPositions(listOf(
+            tx("open").copy(id = 1, datetime = LocalDateTime.parse("2024-05-27T09:00"), price = 10.0, shares = 100.0, fees = 10.0),
+            tx("partial").copy(id = 2, datetime = LocalDateTime.parse(firstExit), action = Action.SELL, price = 12.0, shares = 40.0, fees = 4.0),
+            tx("close").copy(id = 3, datetime = LocalDateTime.parse(lastExit), action = Action.SELL, price = 15.0, shares = 60.0, fees = 6.0),
+        )).single()
+
     /** ClosedPositionService backed by a per-portfolio marker tx + a compute that maps it to fixtures. */
     private fun serviceWith(positions: Map<Long, List<ClosedPosition>>): ClosedPositionService {
         val repo = object : TransactionRepository {
@@ -85,6 +95,78 @@ class CalendarViewModelTest {
             PositionTagService(service, NoopTagRepository),
             initialYear = 2026, initialMonth = 6, dispatcher = UnconfinedTestDispatcher(),
         )
+
+    @Test
+    fun `partial exit months and complete weeks reconcile with original Analysis position`() = runTest {
+        val position = swingPosition()
+        val vm = newVm(serviceWith(mapOf(1L to listOf(position))))
+        vm.load(1L, Segment.ALL)
+
+        assertEquals(6, vm.state.value.month)
+        assertEquals(288.0, vm.state.value.monthTotal)
+        assertTrue(vm.state.value.canGoPrevious)
+        val entries = vm.entriesForWeek(LocalDate(2024, 5, 27))
+        assertEquals(listOf(LocalDate(2024, 5, 31), LocalDate(2024, 6, 1)), entries.map { it.date })
+        assertEquals(listOf(40.0, 60.0), entries.map { it.shares })
+        assertEquals(360.0, entries.sumOf { it.profitLoss })
+        assertEquals(listOf(position), calendarAnalysisPositions(entries))
+        assertEquals(position, entries.first().position)
+
+        vm.selectWeek(LocalDate(2024, 5, 27))
+        vm.load(1L, Segment.ALL)
+        assertEquals(LocalDate(2024, 5, 27), vm.state.value.selectedWeekStart)
+        vm.selectDay(LocalDate(2024, 5, 31))
+        assertEquals(5, vm.state.value.month)
+        assertEquals(72.0, vm.state.value.monthTotal)
+        assertFalse(vm.state.value.canGoPrevious)
+        assertTrue(vm.state.value.canGoNext)
+        vm.load(1L, Segment.ALL)
+        assertEquals(LocalDate(2024, 5, 31), vm.state.value.selectedDate)
+    }
+
+    @Test
+    fun `new earlier exit clears selection even when final date and total Pnl are unchanged`() = runTest {
+        val transactions = listOf(
+            tx("open").copy(id = 1, datetime = LocalDateTime.parse("2024-05-27T09:00"), price = 10.0, shares = 100.0, fees = 10.0),
+            tx("close").copy(id = 3, datetime = LocalDateTime.parse("2024-06-06T09:00"), action = Action.SELL, price = 12.0, shares = 100.0, fees = 10.0),
+        )
+        val positions = mutableMapOf(1L to FifoMatcher.computeClosedPositions(transactions))
+        val vm = newVm(serviceWith(positions))
+        vm.load(1L, Segment.ALL)
+        vm.selectWeek(LocalDate(2024, 6, 3))
+
+        positions[1L] = FifoMatcher.computeClosedPositions(listOf(
+            transactions[0],
+            transactions[1].copy(id = 2, datetime = LocalDateTime.parse("2024-05-31T09:00"), shares = 40.0, fees = 4.0),
+            transactions[1].copy(shares = 60.0, fees = 6.0),
+        ))
+        assertEquals(180.0, positions[1L]!!.single().profitLoss)
+        vm.load(1L, Segment.ALL)
+
+        assertNull(vm.state.value.selectedWeekStart)
+        assertNull(vm.state.value.selectedDate)
+        assertEquals(6, vm.state.value.month)
+        assertEquals(108.0, vm.state.value.monthTotal)
+        assertEquals(72.0, vm.state.value.summaries[LocalDate(2024, 5, 31)]?.netPnl)
+        assertTrue(vm.state.value.canGoPrevious)
+    }
+
+    @Test
+    fun `same day partial exit inherits parent Swing classification and tags`() = runTest {
+        val tag = Tag(7, 1, "Setup", "#111111")
+        val position = swingPosition("2024-05-27T10:00", "2024-05-28T10:00").copy(tags = listOf(tag))
+        val vm = newVm(serviceWith(mapOf(1L to listOf(position))))
+        vm.load(1L, Segment.SWING, setOf(tag.id), TagMatch.ANY)
+
+        assertEquals(72.0, vm.state.value.summaries[LocalDate(2024, 5, 27)]?.netPnl)
+        assertEquals(288.0, vm.state.value.summaries[LocalDate(2024, 5, 28)]?.netPnl)
+        assertEquals(listOf(position), calendarAnalysisPositions(vm.entriesForWeek(LocalDate(2024, 5, 27))))
+
+        vm.load(1L, Segment.DAY, setOf(tag.id), TagMatch.ANY)
+        assertTrue(vm.state.value.summaries.isEmpty())
+        vm.load(1L, Segment.SWING, setOf(8L), TagMatch.ANY)
+        assertTrue(vm.state.value.summaries.isEmpty())
+    }
 
     @Test
     fun `first load snaps to the latest trade month and sets bounds`() = runTest {
@@ -242,7 +324,7 @@ class CalendarViewModelTest {
         val vm = newVm(serviceWith(mapOf(1L to listOf(after, sunday, late, before, early))))
         vm.load(1L, Segment.ALL)
 
-        assertEquals(listOf(early, late, sunday), vm.positionsForWeek(LocalDate(2024, 6, 3)))
+        assertEquals(listOf(early, late, sunday), calendarAnalysisPositions(vm.entriesForWeek(LocalDate(2024, 6, 3))))
     }
 
     @Test
@@ -257,7 +339,7 @@ class CalendarViewModelTest {
         vm.load(1L, Segment.DAY, setOf(tag.id), TagMatch.ANY)
 
         assertEquals(10.0, vm.state.value.summaries[LocalDate(2024, 6, 3)]?.netPnl)
-        assertEquals(listOf(taggedDay), vm.positionsForWeek(LocalDate(2024, 6, 3)))
+        assertEquals(listOf(taggedDay), calendarAnalysisPositions(vm.entriesForWeek(LocalDate(2024, 6, 3))))
     }
 
     @Test
@@ -268,7 +350,7 @@ class CalendarViewModelTest {
         vm.load(1L, Segment.ALL)
 
         assertEquals(75.0, vm.state.value.monthTotal)
-        assertEquals(listOf(mayPosition, junePosition), vm.positionsForWeek(LocalDate(2024, 5, 27)))
+        assertEquals(listOf(mayPosition, junePosition), calendarAnalysisPositions(vm.entriesForWeek(LocalDate(2024, 5, 27))))
 
         vm.jumpToMonth(2024, 5)
 

@@ -15,6 +15,7 @@ import io.earlisreal.ejournal.domain.analytics.Segment
 import io.earlisreal.ejournal.domain.analytics.SortColumn
 import io.earlisreal.ejournal.domain.analytics.SortDirection
 import io.earlisreal.ejournal.domain.analytics.computeMetrics
+import io.earlisreal.ejournal.domain.analytics.calendarEntries
 import io.earlisreal.ejournal.domain.analytics.dailySummaries
 import io.earlisreal.ejournal.domain.analytics.equityCurve
 import io.earlisreal.ejournal.domain.analytics.monthGrid
@@ -69,7 +70,8 @@ private val sampleDashboardState = DashboardState(
     topTrades = samplePositions.filter { !it.isScratch && it.profitLoss > 0.0 }.sortedByDescending { it.profitLoss }.take(5),
     worstTrades = samplePositions.filter { !it.isScratch && it.profitLoss < 0.0 }.sortedBy { it.profitLoss }.take(5),
 )
-private val sampleSummaries = dailySummaries(samplePositions)
+private val sampleEntries = calendarEntries(samplePositions)
+private val sampleSummaries = dailySummaries(sampleEntries)
 private val sampleGrid = monthGrid(2024, 6)
 private val sampleToday = LocalDate(2024, 6, 12)
 
@@ -161,7 +163,7 @@ fun MonthGridPreview() = PreviewBox {
 fun DayDetailPanelPreview() = PreviewBox {
     DayDetailPanel(
         heading = "Jun 3–9, 2024",
-        positions = samplePositions,
+        entries = sampleEntries,
         onAnalyze = { _, _ -> },
         symbol = "$",
         showExitDate = true,

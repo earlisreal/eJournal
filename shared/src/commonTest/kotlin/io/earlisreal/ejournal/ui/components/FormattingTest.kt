@@ -8,6 +8,15 @@ import kotlin.test.assertEquals
 class FormattingTest {
 
     @Test
+    fun quantitiesRetainFractionsWithoutFloatingPointNoise() {
+        assertEquals("40", formatQuantity(40.0))
+        assertEquals("0.3", formatQuantity(0.1 + 0.2))
+        assertEquals("0.125", formatQuantity(0.125))
+        assertEquals("1e-09", formatQuantity(0.000000001))
+        assertEquals("100000000000000", formatQuantity(100000000000000.0))
+    }
+
+    @Test
     fun shortDateAbbreviatesMonth() {
         assertEquals("Jun 18", shortDate(LocalDate.parse("2026-06-18")))
         assertEquals("Jan 1", shortDate(LocalDate.parse("2026-01-01")))

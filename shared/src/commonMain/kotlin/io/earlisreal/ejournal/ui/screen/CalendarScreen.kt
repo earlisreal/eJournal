@@ -177,10 +177,10 @@ fun CalendarScreen(
                     }
                 }
                 BoxWithConstraints(Modifier.weight(1f)) {
-                    val weekPositions = state.selectedWeekStart?.let(vm::positionsForWeek).orEmpty()
+                    val weekEntries = state.selectedWeekStart?.let(vm::entriesForWeek).orEmpty()
                     val detailHeading = state.selectedDate?.let(::longDate)
                         ?: state.selectedWeekStart?.let(::weekRange)
-                    val detailPositions = state.selectedDate?.let { state.positionsByDay[it].orEmpty() } ?: weekPositions
+                    val detailEntries = state.selectedDate?.let { state.entriesByDay[it].orEmpty() } ?: weekEntries
                     val showExitDate = state.selectedWeekStart != null
                     if (maxWidth >= 760.dp) {
                         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
@@ -199,7 +199,7 @@ fun CalendarScreen(
                             )
                             DayDetailPanel(
                                 heading = detailHeading,
-                                positions = detailPositions,
+                                entries = detailEntries,
                                 onAnalyze = onAnalyze,
                                 symbol = symbol,
                                 showExitDate = showExitDate,
@@ -223,7 +223,7 @@ fun CalendarScreen(
                             )
                             DayDetailPanel(
                                 heading = detailHeading,
-                                positions = detailPositions,
+                                entries = detailEntries,
                                 onAnalyze = onAnalyze,
                                 symbol = symbol,
                                 showExitDate = showExitDate,

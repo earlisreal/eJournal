@@ -3,6 +3,8 @@ package io.earlisreal.ejournal.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.domain.PositionTagService
+import io.earlisreal.ejournal.domain.analytics.CalendarEntry
+import io.earlisreal.ejournal.domain.analytics.calendarEntries
 import io.earlisreal.ejournal.domain.analytics.DateRange
 import io.earlisreal.ejournal.domain.analytics.DaySummary
 import io.earlisreal.ejournal.domain.analytics.Segment
@@ -11,7 +13,6 @@ import io.earlisreal.ejournal.domain.analytics.dailySummaries
 import io.earlisreal.ejournal.domain.analytics.filterByTags
 import io.earlisreal.ejournal.domain.analytics.filterPositions
 import io.earlisreal.ejournal.domain.analytics.monthGrid
-import io.earlisreal.ejournal.domain.model.ClosedPosition
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,7 +29,7 @@ data class CalendarState(
     val month: Int,
     val grid: List<LocalDate> = emptyList(),
     val summaries: Map<LocalDate, DaySummary> = emptyMap(),
-    val positionsByDay: Map<LocalDate, List<ClosedPosition>> = emptyMap(),
+    val entriesByDay: Map<LocalDate, List<CalendarEntry>> = emptyMap(),
     val monthTotal: Double = 0.0,
     val selectedDate: LocalDate? = null,
     val selectedWeekStart: LocalDate? = null,
@@ -74,7 +75,7 @@ class CalendarViewModel(
         if (portfolioId == null) {
             loadedKey = null
             _state.value = _state.value.copy(
-                summaries = emptyMap(), positionsByDay = emptyMap(), monthTotal = 0.0, loading = false,
+                summaries = emptyMap(), entriesByDay = emptyMap(), monthTotal = 0.0, loading = false,
                 selectedDate = null, selectedWeekStart = null, availableYears = emptyList(),
                 canGoPrevious = false, canGoNext = false,
             )
@@ -90,11 +91,12 @@ class CalendarViewModel(
                 selectedTagIds,
                 tagMatch,
             )
-            val summaries = dailySummaries(positions)
-            val positionsByDay = positions.groupBy { it.exitDatetime.date }
+            val entries = calendarEntries(positions)
+            val summaries = dailySummaries(entries)
+            val entriesByDay = entries.groupBy { it.date }
             val availableYears = summaries.keys.map { it.year }.distinct().sorted()
             val current = _state.value
-            val datasetChanged = positionsByDay != current.positionsByDay
+            val datasetChanged = entriesByDay != current.entriesByDay
             val year: Int
             val month: Int
             if (snapToLatest) {
@@ -110,7 +112,7 @@ class CalendarViewModel(
                 month          = month,
                 grid           = monthGrid(year, month),
                 summaries      = summaries,
-                positionsByDay = positionsByDay,
+                entriesByDay   = entriesByDay,
                 monthTotal     = monthTotal(summaries, year, month),
                 loading        = false,
                 availableYears = availableYears,
@@ -146,10 +148,10 @@ class CalendarViewModel(
         _state.value = _state.value.copy(selectedDate = null, selectedWeekStart = weekStart)
     }
 
-    /** Returns Positions closed on the seven dates beginning at the selected Monday. */
-    fun positionsForWeek(weekStart: LocalDate): List<ClosedPosition> =
+    /** Returns daily exit rows on the seven dates beginning at the selected Monday. */
+    fun entriesForWeek(weekStart: LocalDate): List<CalendarEntry> =
         (0 until 7)
-            .flatMap { offset -> _state.value.positionsByDay[weekStart.plus(offset, DateTimeUnit.DAY)].orEmpty() }
+            .flatMap { offset -> _state.value.entriesByDay[weekStart.plus(offset, DateTimeUnit.DAY)].orEmpty() }
             .sortedBy { it.exitDatetime }
 
     fun jumpToMonth(year: Int, month: Int) = applyMonth(year, month)

@@ -49,7 +49,7 @@ The New York exchange-local calendar date containing a US-stock day Position's o
 _Avoid_: Import date, UTC date
 
 **Calendar P&L**:
-The sum of fee-inclusive Realized P&L attributed to Position exit dates within a calendar period. It excludes unrealized P&L.
+The sum of fee-inclusive Realized P&L attributed to the dates of matched exit Transactions within a calendar period, including partial exits from still-open Positions. It excludes unrealized P&L.
 _Avoid_: Gross P&L, mark-to-market P&L, account balance change
 
 **Calendar Week**:

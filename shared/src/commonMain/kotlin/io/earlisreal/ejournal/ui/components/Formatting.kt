@@ -49,6 +49,15 @@ fun signedMoney(value: Double, symbol: String = "$"): String =
 fun formatPriceDifference(value: Double): String =
     (if (value > 0) "+" else if (value < 0) "−" else "") + "%.2f".format(abs(value))
 
+/** Keep small fractions visible while removing Double summation noise and redundant decimal zeros. */
+fun formatQuantity(value: Double): String {
+    val parts = "%.15g".format(value).split('e')
+    val mantissa = if (parts[0].contains('.') || parts[0].contains(',')) {
+        parts[0].trimEnd('0').trimEnd('.', ',')
+    } else parts[0]
+    return if (parts.size == 1) mantissa else "${mantissa}e${parts[1]}"
+}
+
 /** Compact money for tight axis labels: "$3.4k", "−$640", "$2.5M", "$0". No leading plus sign. */
 fun compactMoney(value: Double, symbol: String = "$"): String {
     val sign = if (value < 0) "−" else ""

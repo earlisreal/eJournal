@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.domain
 
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.ClosedPosition
+import io.earlisreal.ejournal.domain.model.PositionExit
 import io.earlisreal.ejournal.domain.model.TradeDirection
 import io.earlisreal.ejournal.domain.model.Transaction
 import kotlinx.datetime.LocalDateTime
@@ -32,6 +33,7 @@ object FifoMatcher {
         var profitLoss = 0.0
         var closeDatetime: LocalDateTime = openDatetime
         val transactions = mutableListOf<Transaction>()
+        val exits = mutableListOf<PositionExit>()
 
         fun toClosedPosition(symbol: String) = ClosedPosition(
             symbol = symbol,
@@ -44,6 +46,7 @@ object FifoMatcher {
             profitLoss = profitLoss,
             transactions = transactions.toList(),
             direction = direction,
+            exits = exits.toList(),
         )
     }
 
@@ -78,6 +81,8 @@ object FifoMatcher {
                 var remaining = tx.shares
                 val closeFeePerShare = tx.fees / tx.shares
                 val sign = if (current.direction == TradeDirection.LONG) 1.0 else -1.0
+                var exitShares = 0.0
+                var exitPnl = 0.0
 
                 while (remaining > 0.0 && openQueue.isNotEmpty()) {
                     val lot = openQueue.first()
@@ -85,17 +90,24 @@ object FifoMatcher {
                     val openFee = lot.totalFee * (matched / lot.totalShares)
                     val closeFee = closeFeePerShare * matched
                     val feeMatch = openFee + closeFee
+                    val matchedPnl = sign * (tx.price - lot.price) * matched - feeMatch
 
                     current.matchedShares += matched
                     current.openValue += lot.price * matched
                     current.closeValue += tx.price * matched
                     current.fees += feeMatch
-                    current.profitLoss += sign * (tx.price - lot.price) * matched - feeMatch
+                    current.profitLoss += matchedPnl
                     current.closeDatetime = tx.datetime
+                    exitShares += matched
+                    exitPnl += matchedPnl
 
                     lot.remainingShares -= matched
                     remaining -= matched
                     if (lot.remainingShares <= 0.0) openQueue.removeFirst()
+                }
+
+                if (exitShares > 0.0) {
+                    current.exits.add(PositionExit(current.transactions.lastIndex, exitShares, exitPnl))
                 }
 
                 // Position is flat again: close out this trade.
@@ -126,29 +138,8 @@ object FifoMatcher {
      * the non-null values sum to [ClosedPosition.profitLoss].
      */
     fun realizedPnLByTransaction(position: ClosedPosition): List<Double?> {
-        val sign = if (position.direction == TradeDirection.LONG) 1.0 else -1.0
-        val openQueue = ArrayDeque<Lot>()
-        return position.transactions.map { tx ->
-            val txSide = if (tx.action == Action.BUY) TradeDirection.LONG else TradeDirection.SHORT
-            if (txSide == position.direction) {
-                openQueue.addLast(Lot(tx.price, tx.shares, tx.shares, tx.fees))
-                null
-            } else {
-                var remaining = tx.shares
-                val closeFeePerShare = if (tx.shares != 0.0) tx.fees / tx.shares else 0.0
-                var pnl = 0.0
-                while (remaining > 0.0 && openQueue.isNotEmpty()) {
-                    val lot = openQueue.first()
-                    val matched = minOf(remaining, lot.remainingShares)
-                    val openFee = lot.totalFee * (matched / lot.totalShares)
-                    val closeFee = closeFeePerShare * matched
-                    pnl += sign * (tx.price - lot.price) * matched - (openFee + closeFee)
-                    lot.remainingShares -= matched
-                    remaining -= matched
-                    if (lot.remainingShares <= 0.0) openQueue.removeFirst()
-                }
-                pnl
-            }
-        }
+        val realized = MutableList<Double?>(position.transactions.size) { null }
+        position.exits.forEach { exit -> realized[exit.transactionIndex] = exit.profitLoss }
+        return realized
     }
 }

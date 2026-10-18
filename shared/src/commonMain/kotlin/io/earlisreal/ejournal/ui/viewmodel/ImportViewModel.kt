@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.insertOrEnrichAll
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Market
 import io.earlisreal.ejournal.domain.model.Transaction
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 sealed class ImportStatus {
     object Idle : ImportStatus()
     object Importing : ImportStatus()
-    data class Success(val count: Int) : ImportStatus()
+    data class Success(val count: Int, val timingEnriched: Int = 0, val conflicts: Int = 0) : ImportStatus()
     data class Error(val message: String) : ImportStatus()
 }
 
@@ -130,11 +131,10 @@ class ImportViewModel(
         _state.value = _state.value.copy(status = ImportStatus.Importing)
         viewModelScope.launch {
             try {
-                // insert() returns null for rows skipped as duplicates (idempotent re-imports),
-                // so count actual inserts rather than parsed rows — matching TradeZeroSyncService.
-                val inserted = transactions.count { transactionRepository.insert(it) != null }
+                val counts = transactionRepository.insertOrEnrichAll(transactions)
+                val inserted = counts.inserted
                 _state.value = _state.value.copy(
-                    status = ImportStatus.Success(inserted),
+                    status = ImportStatus.Success(inserted, counts.timingEnriched, counts.conflicts),
                     parsedTransactions = emptyList(),
                     detectionSummary = null,
                 )

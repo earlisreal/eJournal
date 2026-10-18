@@ -302,6 +302,7 @@ class AlpacaBrokerClientImpl(
                 portfolioId = portfolioId,
                 symbol = symbol,
                 datetime = transactionTime.toLocalDateTime(EASTERN),
+                verifiedExecutionInstant = transactionTime,
                 action = action,
                 price = price,
                 shares = shares,

@@ -80,7 +80,8 @@ import io.earlisreal.ejournal.ui.components.TagChip
 import io.earlisreal.ejournal.ui.components.TagEditorMenu
 import io.earlisreal.ejournal.ui.components.TagManagerDialog
 import io.earlisreal.ejournal.ui.components.TradesNavList
-import io.earlisreal.ejournal.ui.components.formatHold
+import io.earlisreal.ejournal.ui.components.formatHeldDuration
+import io.earlisreal.ejournal.domain.analytics.verifiedHoldSeconds
 import io.earlisreal.ejournal.ui.components.formatPriceDifference
 import io.earlisreal.ejournal.ui.components.longDate
 import io.earlisreal.ejournal.ui.components.signedMoney
@@ -474,7 +475,7 @@ fun AnalysisScreen(
                         StatCell("Fees",     "%.2f".format(position.fees))
                         StatCell("Entry",    "%02d:%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute, position.entryDatetime.second))
                         StatCell("Exit",     "%02d:%02d:%02d".format(position.exitDatetime.hour,  position.exitDatetime.minute,  position.exitDatetime.second))
-                        StatCell("Hold",     formatHold(position.entryDatetime, position.exitDatetime, isDay))
+                        StatCell("Hold",     position.verifiedHoldSeconds()?.let { formatHeldDuration(it.toLong(), isDay) } ?: "Unverified")
                     }
                 }
             }

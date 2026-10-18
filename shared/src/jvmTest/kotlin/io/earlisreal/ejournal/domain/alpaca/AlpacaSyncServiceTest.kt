@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.domain.alpaca
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.background.TaskState
 import io.earlisreal.ejournal.data.repository.AlpacaBrokerSecrets
@@ -72,6 +74,9 @@ private class DeduplicatingTransactionRepository(
     override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = inserted.filter { it.portfolioId == portfolioId }
     override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> =
         getByPortfolio(portfolioId)
+    override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+        if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
     override suspend fun insert(transaction: Transaction): Long? {
         if (failOnInsert) error("database unavailable")
         val id = transaction.externalId
@@ -150,6 +155,18 @@ class AlpacaSyncServiceTest {
             now = { now },
         )
         return service to settings
+    }
+
+    @Test
+    fun timingOnlySyncChangesPortfolioWithoutInserts() = runTest {
+        val repo = object : TransactionRepository by DeduplicatingTransactionRepository() {
+            override suspend fun insertOrEnrich(transaction: Transaction) = InsertOrEnrichResult.TIMING_ENRICHED
+        }
+        val (service, _) = service(FakeAlpacaClient(result = success("existing")), repo)
+        val result = assertIs<BrokerSyncOutcome.Imported>(service.syncIncremental(1))
+        assertEquals(0, result.inserted)
+        assertEquals(1, result.detail.timingEnriched)
+        assertTrue(result.changed)
     }
 
     @Test

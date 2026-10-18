@@ -8,6 +8,8 @@ CREATE TABLE TradeTransaction (
     shares      REAL    NOT NULL,
     fees        REAL    NOT NULL,
     externalId  TEXT,
+    verifiedExecutionInstant TEXT AS kotlin.time.Instant,
+    verifiedMarketDate TEXT AS kotlinx.datetime.LocalDate,
     FOREIGN KEY (portfolioId) REFERENCES Portfolio(id)
 );
 
@@ -18,8 +20,8 @@ CREATE TABLE TradeTransaction (
 CREATE UNIQUE INDEX TradeTransaction_portfolio_externalId ON TradeTransaction(portfolioId, externalId);
 
 insertTransaction:
-INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO TradeTransaction (portfolioId, symbol, datetime, action, price, shares, fees, externalId, verifiedExecutionInstant, verifiedMarketDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateFeesByPortfolioAndExternalId:
 UPDATE TradeTransaction SET fees = ? WHERE portfolioId = ? AND externalId = ?;
@@ -49,3 +51,12 @@ SELECT last_insert_rowid();
 
 changes:
 SELECT changes();
+
+selectByIdentity:
+SELECT * FROM TradeTransaction WHERE portfolioId = ? AND externalId = ?;
+
+updateTiming:
+UPDATE TradeTransaction SET verifiedExecutionInstant = ?, verifiedMarketDate = ? WHERE id = ?;
+
+clearMarketDates:
+UPDATE TradeTransaction SET verifiedMarketDate = NULL WHERE portfolioId = ?;

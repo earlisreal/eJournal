@@ -24,6 +24,7 @@ data class ClosedPosition(
     // FifoMatcher itself). Keyed to this position's opening transaction id.
     val tags: List<Tag> = emptyList(),
     val exits: List<PositionExit> = emptyList(),
+    val isClosed: Boolean = true,
 ) {
     val averagePriceDifference: Double
         get() = if (direction == TradeDirection.LONG) averageExitPrice - averageEntryPrice

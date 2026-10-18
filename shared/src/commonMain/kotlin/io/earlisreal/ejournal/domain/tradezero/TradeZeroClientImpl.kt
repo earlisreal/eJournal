@@ -270,15 +270,17 @@ class TradeZeroClientImpl(
             // Natural key shared with the CSV import (tradeId isn't available there), so the same
             // fill from either source dedups. See TradeZeroExternalIdFactory.
             externalId  = externalIds.create(symbol, datetime, action, qty),
+            verifiedExecutionInstant = runCatching { Instant.parse(tradeDate) }.getOrNull()
+                ?: execTime?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
+                    ?.let { io.earlisreal.ejournal.domain.analytics.unambiguousEasternInstant(datetime) },
+            verifiedMarketDate = datetime.date,
         )
     }
 
     // tradeDate is either a full UTC instant ("…Z"/"…+hh:mm") or a date-only timestamp at midnight,
     // in which case execTime ("HH:mm:ss", exchange/Eastern wall-clock) carries the intraday fill time.
     private fun FillRow.resolveDatetime(): LocalDateTime {
-        if (tradeDate.endsWith("Z") || tradeDate.contains("+")) {
-            return Instant.parse(tradeDate).toLocalDateTime(EASTERN)
-        }
+        runCatching { Instant.parse(tradeDate) }.getOrNull()?.let { return it.toLocalDateTime(EASTERN) }
         val date = LocalDateTime.parse(tradeDate).date
         val time = execTime?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
         return if (time != null) LocalDateTime(date, time) else LocalDateTime.parse(tradeDate)

@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.data
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.earlisreal.ejournal.data.database.ActionAdapter
@@ -33,6 +35,8 @@ class SqlDelightTransactionRepositoryTest {
         return AppDatabase(
             driver = driver,
             TradeTransactionAdapter = io.earlisreal.ejournal.TradeTransaction.Adapter(
+                verifiedExecutionInstantAdapter = io.earlisreal.ejournal.data.database.InstantAdapter,
+                verifiedMarketDateAdapter = io.earlisreal.ejournal.data.database.LocalDateAdapter,
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
@@ -74,6 +78,36 @@ class SqlDelightTransactionRepositoryTest {
         fees = fees,
         externalId = externalId
     )
+
+    @Test
+    fun invalidNewProofStillCountsAsInsertedAndConflict() = runTest {
+        val pId = seedPortfolio()
+        val input = tx(pId, externalId = "new").copy(
+            verifiedExecutionInstant = kotlin.time.Instant.parse("2024-01-01T14:30:00Z"),
+            verifiedMarketDate = kotlinx.datetime.LocalDate(2024, 1, 2),
+        )
+        val result = txRepo.insertOrEnrich(input)
+        assertEquals(InsertOrEnrichResult.INSERTED_WITH_CONFLICT, result)
+        val saved = txRepo.getByPortfolio(pId).single()
+        assertEquals(input.datetime, saved.datetime)
+        assertEquals(input.fees, saved.fees)
+        assertNull(saved.verifiedExecutionInstant)
+        assertNull(saved.verifiedMarketDate)
+    }
+
+    @Test
+    fun timingEnrichmentPreservesLedgerAndRejectsConflicts() = runTest {
+        val pId = seedPortfolio()
+        val original = tx(pId, externalId = "fill")
+        val id = txRepo.insert(original)!!
+        val proof = original.copy(verifiedExecutionInstant = kotlin.time.Instant.parse("2024-01-01T14:30:00Z"))
+        assertEquals(InsertOrEnrichResult.TIMING_ENRICHED, txRepo.insertOrEnrich(proof))
+        assertEquals(original.copy(id = id, verifiedExecutionInstant = proof.verifiedExecutionInstant), txRepo.getByPortfolio(pId).single())
+        assertEquals(InsertOrEnrichResult.UNCHANGED, txRepo.insertOrEnrich(proof))
+        assertEquals(InsertOrEnrichResult.CONFLICTING, txRepo.insertOrEnrich(proof.copy(price = 101.0)))
+        assertEquals(InsertOrEnrichResult.CONFLICTING, txRepo.insertOrEnrich(proof.copy(verifiedMarketDate = kotlinx.datetime.LocalDate(2024, 1, 2))))
+        assertEquals(proof.verifiedExecutionInstant, txRepo.getByPortfolio(pId).single().verifiedExecutionInstant)
+    }
 
     @Test
     fun insertAndRetrieveTransaction() = runTest {

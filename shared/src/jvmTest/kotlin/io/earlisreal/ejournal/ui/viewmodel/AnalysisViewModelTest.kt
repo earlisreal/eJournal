@@ -154,8 +154,8 @@ class AnalysisViewModelTest {
         fees = 1.0,
         profitLoss = 10.0,
         transactions = listOf(
-            Transaction(1L, 1L, "AAPL", LocalDateTime.parse(entry), Action.BUY, 100.0, 10.0, 0.5),
-            Transaction(2L, 1L, "AAPL", LocalDateTime.parse(exit), Action.SELL, 101.0, 10.0, 0.5),
+            Transaction(1L, 1L, "AAPL", LocalDateTime.parse(entry), Action.BUY, 100.0, 10.0, 0.5, verifiedExecutionInstant = io.earlisreal.ejournal.domain.analytics.unambiguousEasternInstant(LocalDateTime.parse(entry))),
+            Transaction(2L, 1L, "AAPL", LocalDateTime.parse(exit), Action.SELL, 101.0, 10.0, 0.5, verifiedExecutionInstant = io.earlisreal.ejournal.domain.analytics.unambiguousEasternInstant(LocalDateTime.parse(exit))),
         ),
         market = Market.US_STOCKS,
     )

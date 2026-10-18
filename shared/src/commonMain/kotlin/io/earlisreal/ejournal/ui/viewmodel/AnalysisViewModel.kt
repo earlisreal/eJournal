@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.domain.analytics.verifiedHoldSeconds
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.earlisreal.ejournal.data.repository.MarketDataRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -115,7 +117,7 @@ class AnalysisViewModel(
         val generation = ++loadGeneration
         loadJob = viewModelScope.launch(Dispatchers.Default) {
             if (generation != loadGeneration) return@launch
-            _state.value = _state.value.copy(loading = true)
+            _state.update { it.copy(loading = true) }
             try {
                 val sourceTimeframe = when (tf) {
                     ChartTimeframe.TEN_SEC -> Timeframe.TEN_SECONDS
@@ -126,18 +128,18 @@ class AnalysisViewModel(
                 val rawBars = marketDataRepo.getBars(position.symbol, sourceTimeframe, position.market, from, to)
                 if (generation != loadGeneration) return@launch
                 if (rawBars.isEmpty()) {
-                    _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
+                    _state.update { it.copy(loading = false, noDataForTimeframe = true) }
                     return@launch
                 }
                 val aggregated = BarAggregator.aggregate(rawBars, tf)
                 if (generation != loadGeneration) return@launch
-                _state.value = _state.value.copy(loading = false, chartData = aggregated, noDataForTimeframe = false)
+                _state.update { it.copy(loading = false, chartData = aggregated, noDataForTimeframe = false) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (generation != loadGeneration) return@launch
                 System.err.println("[analysis] loadBars error: $e")
-                _state.value = _state.value.copy(loading = false, noDataForTimeframe = true)
+                _state.update { it.copy(loading = false, noDataForTimeframe = true) }
             }
         }
     }
@@ -169,7 +171,7 @@ class AnalysisViewModel(
     private fun isSubMinuteDayPosition(position: ClosedPosition): Boolean =
         position.market == Market.US_STOCKS &&
             classifyTradeType(position) == TradeType.DAY &&
-            position.exitDatetime.toInstant(UTC) < position.entryDatetime.toInstant(UTC) + 60.seconds
+            position.verifiedHoldSeconds()?.let { it < 60.0 } == true
 
     private suspend fun check1MinAvailability(position: ClosedPosition): Boolean {
         val coverage = marketDataRepo.getCoverage(position.symbol, Timeframe.ONE_MINUTE, position.market) ?: return false
@@ -206,17 +208,18 @@ class AnalysisViewModel(
             val has1Min = check1MinAvailability(position)
             val hasTenSec = checkTenSecAvailability(position)
             if (generation == availabilityGeneration && _state.value.currentIndex == index) {
-                val current = _state.value
-                val fallBackToOneMinute =
-                    isSubMinuteDayPosition(position) && !hasTenSec && current.activeTimeframe == ChartTimeframe.TEN_SEC
-                _state.value = current.copy(
-                    has1MinData = has1Min,
-                    hasTenSecData = hasTenSec,
-                    activeTimeframe = if (fallBackToOneMinute) ChartTimeframe.ONE_MIN else current.activeTimeframe,
-                    loading = if (fallBackToOneMinute) true else current.loading,
-                    chartData = if (fallBackToOneMinute) null else current.chartData,
-                    noDataForTimeframe = if (fallBackToOneMinute) false else current.noDataForTimeframe,
-                )
+                var fallBackToOneMinute = false
+                _state.update { current ->
+                    fallBackToOneMinute = isSubMinuteDayPosition(position) && !hasTenSec && current.activeTimeframe == ChartTimeframe.TEN_SEC
+                    current.copy(
+                        has1MinData = has1Min,
+                        hasTenSecData = hasTenSec,
+                        activeTimeframe = if (fallBackToOneMinute) ChartTimeframe.ONE_MIN else current.activeTimeframe,
+                        loading = if (fallBackToOneMinute) true else current.loading,
+                        chartData = if (fallBackToOneMinute) null else current.chartData,
+                        noDataForTimeframe = if (fallBackToOneMinute) false else current.noDataForTimeframe,
+                    )
+                }
                 if (fallBackToOneMinute) loadBars(position, ChartTimeframe.ONE_MIN)
             }
         }

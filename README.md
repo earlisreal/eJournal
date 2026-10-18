@@ -36,6 +36,20 @@ eJournal is a **free, open-source, local-first desktop trading journal**. Import
 - **Local-first & private** — everything lives in a single SQLite file under `~/.ejournal`; API keys are stored with owner-only permissions on your machine.
 - **Light / dark / system themes.**
 
+## Grouped performance reports
+
+Reports opens with entry-time performance. Choose entry weekday, entry time, holding duration, symbol, direction, or the existing Tag comparison. The sortable table and compact net-P&L/count charts use the same exclusive groups. Selecting a populated group shows its exact Positions; opening Analysis uses that ordered list, and Back restores the report selection, sorting, and scroll position. Tag editing remains available in the cohort.
+
+New grouped views include fully closed Positions in the selected Portfolio, saved final-exit-date range, Day/Swing segment, and Tag filter (Any/All). A partial exit inside the range with a final exit outside remains excluded. Calendar continues to recognize partial exits on their realization dates. The existing Tag comparison deliberately ignores the selected Tag filter and can count one Position under several Tags.
+
+Entry dates and 30-minute entry slots use America/New_York for US Stocks, Asia/Manila for PH Stocks, and UTC for crypto. Holding duration uses verified opening/final-closing execution Instants, including daylight-saving transitions; an elapsed day is 24 hours. Day buckets are <1m, 1–<5m, 5–<15m, 15–<60m, 1–<4h, and ≥4h. Swing buckets are <1d, 1–<3d, 3–<7d, 7–<30d, and ≥30d. Financial metrics retain existing fee and Scratch Position definitions.
+
+Time reports show verified/total coverage. Unverified Positions remain in totals and explicit Time unverified groups. Held/Hold shows Unverified when elapsed duration lacks evidence; Dashboard average hold includes verified durations only and shows its coverage. An unverified US-stock Day Position defaults to one-minute bars.
+
+New Alpaca fills preserve execution Instants. TradeZero preserves supported execution timestamps and actual trade dates, rejecting ambiguous/nonexistent Eastern execution clocks. Moomoo OpenD preserves exact timing only when every fill represented by an Order shares one unambiguous execution instant; otherwise a proven common exchange date can support weekday reports. [Moomoo documents securities timestamps in exchange time](https://openapi.moomoo.com/moomoo-api-doc/en/qa/trade.html). Moomoo/Webull Order CSV aggregates and other unsupported statement clocks remain unverified.
+
+Existing database rows migrate with no timing proof. A source-backed reimport or normal broker refresh can fill missing facts only for an exact Portfolio/external-ID match with unchanged ledger datetime, symbol, action, price, and quantity. Inserted, timing-enriched, and conflicting counts are reported separately; conflicts retain established facts. Timing enrichment preserves financial history, fees, IDs, Tags, and Position Notes. There is no automatic full-history timing backfill. Changing a Portfolio's market clears date-only evidence while preserving absolute Instants.
+
 ## Supported brokers
 
 | Broker | Import format | Status |

@@ -43,6 +43,9 @@ class SqlDelightPortfolioRepository(private val db: AppDatabase) : PortfolioRepo
         alpacaEnvironment: AlpacaEnvironment?,
     ) {
         db.portfolioQueries.transaction {
+            if (db.portfolioQueries.selectById(id).executeAsOne().market != market) {
+                db.tradeTransactionQueries.clearMarketDates(id)
+            }
             db.portfolioQueries.updatePortfolio(name, market, broker, id)
             writeAlpacaEnvironment(id, alpacaEnvironment)
         }

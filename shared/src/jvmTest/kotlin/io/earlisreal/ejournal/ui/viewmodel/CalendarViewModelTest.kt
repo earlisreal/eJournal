@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.ui.viewmodel
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.domain.ClosedPositionService
 import io.earlisreal.ejournal.domain.FifoMatcher
@@ -68,6 +70,9 @@ class CalendarViewModelTest {
             override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> =
                 listOf(tx(externalId = "p$portfolioId:${positions[portfolioId].hashCode()}"))
             override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> = emptyList()
+            override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+                if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
             override suspend fun insert(transaction: Transaction): Long? = null
             override suspend fun delete(id: Long) {}
             override suspend fun countByPortfolio(portfolioId: Long): Long = 0

@@ -26,6 +26,8 @@ class SqlDelightPortfolioSettingsRepositoryTest {
         val db = AppDatabase(
             driver = driver,
             TradeTransactionAdapter = io.earlisreal.ejournal.TradeTransaction.Adapter(
+                verifiedExecutionInstantAdapter = io.earlisreal.ejournal.data.database.InstantAdapter,
+                verifiedMarketDateAdapter = io.earlisreal.ejournal.data.database.LocalDateAdapter,
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter,
             ),

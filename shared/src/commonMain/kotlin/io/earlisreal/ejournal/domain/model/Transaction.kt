@@ -18,4 +18,6 @@ data class Transaction(
      * (manual entry) — those are never deduped.
      */
     val externalId: String? = null,
+    val verifiedExecutionInstant: kotlin.time.Instant? = null,
+    val verifiedMarketDate: kotlinx.datetime.LocalDate? = null,
 )

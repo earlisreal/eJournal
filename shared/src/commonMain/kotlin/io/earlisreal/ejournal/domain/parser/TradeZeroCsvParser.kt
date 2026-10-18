@@ -4,6 +4,12 @@ import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Transaction
 import io.earlisreal.ejournal.domain.tradezero.TradeZeroExternalIdFactory
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
+import io.earlisreal.ejournal.domain.analytics.unambiguousEasternInstant
 
 /**
  * Parses TradeZero's "TradeHistory" CSV export — fill-level (one row per execution), primarily for
@@ -40,7 +46,12 @@ class TradeZeroCsvParser : TransactionParser {
         val action = if (c[SIDE].trim().equals("B", ignoreCase = true)) Action.BUY else Action.SELL
         val shares = c[QTY].toNumber()
         val price = c[PRICE].toNumber()
-        val datetime = parseDateTime(c[TRADE_DATE], c[EXEC_TIME])
+        val (mm, dd, yyyy) = c[TRADE_DATE].trim().split("/")
+        val date = LocalDate(yyyy.toInt(), mm.toInt(), dd.toInt())
+        val time = runCatching { LocalTime.parse(c[EXEC_TIME].trim()) }.getOrNull()
+        val offsetInstant = runCatching { Instant.parse("${date}T${c[EXEC_TIME].trim()}") }.getOrNull()
+        val datetime = offsetInstant?.toLocalDateTime(TimeZone.of("America/New_York"))
+            ?: LocalDateTime(date, time ?: LocalTime(0, 0))
         val fees = FEE_COLUMNS.sumOf { c.getOrNull(it).toNumberOrZero() }
 
         return Transaction(
@@ -53,6 +64,8 @@ class TradeZeroCsvParser : TransactionParser {
             shares = shares,
             fees = fees,
             externalId = externalIds.create(symbol, datetime, action, shares),
+            verifiedExecutionInstant = offsetInstant ?: time?.let { unambiguousEasternInstant(datetime) },
+            verifiedMarketDate = date,
         )
     }
 
@@ -61,13 +74,6 @@ class TradeZeroCsvParser : TransactionParser {
     private fun String.toNumber(): Double = trim().replace(",", "").toDouble()
     private fun String?.toNumberOrZero(): Double =
         this?.trim()?.takeIf { it.isNotEmpty() }?.replace(",", "")?.toDouble() ?: 0.0
-
-    // T/D "MM/DD/YYYY" + Exec Time "HH:mm:ss" -> LocalDateTime (Eastern wall-clock), via ISO.
-    private fun parseDateTime(date: String, time: String): LocalDateTime {
-        val (mm, dd, yyyy) = date.trim().split("/")
-        val iso = "${yyyy.padStart(4, '0')}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}T${time.trim()}"
-        return LocalDateTime.parse(iso)
-    }
 
     private companion object {
         const val SIDE = 5

@@ -28,6 +28,12 @@ class JvmDatabaseFactoryMigrationTest {
         return names
     }
 
+    private fun createLegacySchema(driver: JdbcSqliteDriver) {
+        AppDatabase.Schema.create(driver)
+        driver.execute(null, "ALTER TABLE TradeTransaction DROP COLUMN verifiedExecutionInstant", 0)
+        driver.execute(null, "ALTER TABLE TradeTransaction DROP COLUMN verifiedMarketDate", 0)
+    }
+
     private fun createLegacyTagTables(driver: JdbcSqliteDriver) {
         driver.execute(null, "DROP TABLE PositionTag", 0)
         driver.execute(null, "DROP TABLE Tag", 0)
@@ -55,6 +61,24 @@ class JvmDatabaseFactoryMigrationTest {
             0,
         )
         driver.execute(null, "CREATE INDEX PositionTag_tag ON PositionTag(tagId)", 0)
+    }
+
+    @Test
+    fun legacyTransactionsSurviveWithNullTimingEvidence() {
+        val dir = tempDir()
+        val seed = JdbcSqliteDriver("jdbc:sqlite:${File(dir, "ejournal.db").absolutePath}")
+        createLegacySchema(seed)
+        seed.execute(null, "INSERT INTO Portfolio VALUES (1, 'Legacy', 'US_STOCKS', NULL, 'legacy')", 0)
+        seed.execute(null, "INSERT INTO TradeTransaction VALUES (42, 1, 'AAPL', '2026-01-02T00:00', 'BUY', 100.0, 0.5, 0.25, 'legacy-fill')", 0)
+        seed.execute(null, "PRAGMA user_version = 4", 0)
+        seed.close()
+        val row = JvmDatabaseFactory.create(dir).tradeTransactionQueries.selectById(42).executeAsOne()
+        assertEquals(0.5, row.shares)
+        assertEquals(0.25, row.fees)
+        assertEquals("legacy-fill", row.externalId)
+        assertEquals(kotlinx.datetime.LocalDateTime(2026, 1, 2, 0, 0), row.datetime)
+        kotlin.test.assertNull(row.verifiedExecutionInstant)
+        kotlin.test.assertNull(row.verifiedMarketDate)
     }
 
     @Test
@@ -92,7 +116,7 @@ class JvmDatabaseFactoryMigrationTest {
         val dbFile = File(dir, "ejournal.db")
         // Simulate a v1 database: the full current schema minus the v2 and v3 tables, stamped as version 1.
         val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
-        AppDatabase.Schema.create(seed)
+        createLegacySchema(seed)
         createLegacyTagTables(seed)
         seed.execute(null, "DROP TABLE PortfolioSetting", 0)
         seed.execute(null, "DROP TABLE PositionNote", 0)
@@ -110,7 +134,7 @@ class JvmDatabaseFactoryMigrationTest {
         val dir = tempDir()
         val dbFile = File(dir, "ejournal.db")
         val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
-        AppDatabase.Schema.create(seed)
+        createLegacySchema(seed)
         createLegacyTagTables(seed)
         seed.execute(null, "DROP TABLE PositionNote", 0)
         seed.execute(null, "PRAGMA user_version = 2", 0)
@@ -127,7 +151,7 @@ class JvmDatabaseFactoryMigrationTest {
         val dir = tempDir()
         val dbFile = File(dir, "ejournal.db")
         val seed = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
-        AppDatabase.Schema.create(seed)
+        createLegacySchema(seed)
         createLegacyTagTables(seed)
         seed.execute(
             null,

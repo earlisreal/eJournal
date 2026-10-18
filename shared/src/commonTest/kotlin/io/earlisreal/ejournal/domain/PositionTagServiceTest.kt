@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.domain
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TagRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
@@ -36,6 +38,9 @@ class PositionTagServiceTest {
     private class StubTx(val txs: List<Transaction>) : TransactionRepository {
         override suspend fun getByPortfolio(portfolioId: Long) = txs
         override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime) = emptyList<Transaction>()
+        override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+            if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
         override suspend fun insert(transaction: Transaction): Long? = null
         override suspend fun delete(id: Long) {}
         override suspend fun countByPortfolio(portfolioId: Long) = txs.size.toLong()

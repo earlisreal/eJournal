@@ -32,6 +32,8 @@ class SqlDelightPortfolioRepositoryTest {
         val db = AppDatabase(
             driver = driver,
             TradeTransactionAdapter = io.earlisreal.ejournal.TradeTransaction.Adapter(
+                verifiedExecutionInstantAdapter = io.earlisreal.ejournal.data.database.InstantAdapter,
+                verifiedMarketDateAdapter = io.earlisreal.ejournal.data.database.LocalDateAdapter,
                 datetimeAdapter = DateTimeAdapter,
                 actionAdapter = ActionAdapter
             ),
@@ -45,6 +47,22 @@ class SqlDelightPortfolioRepositoryTest {
         repo = SqlDelightPortfolioRepository(db)
         tagRepo = SqlDelightTagRepository(db)
         transactionRepo = SqlDelightTransactionRepository(db)
+    }
+
+    @Test
+    fun marketEditsClearDateEvidenceButRetainAbsoluteInstants() = runTest {
+        val p = repo.insert("First", Market.US_STOCKS)
+        val instant = kotlin.time.Instant.parse("2026-01-02T14:30:00Z")
+        val input = Transaction(0, p.id, "X", LocalDateTime(2026, 1, 2, 9, 30), Action.BUY, 10.0, 1.0, 0.2,
+            verifiedExecutionInstant = instant, verifiedMarketDate = kotlinx.datetime.LocalDate(2026, 1, 2))
+        transactionRepo.insertOrEnrich(input)
+        repo.update(p.id, "Renamed", Market.US_STOCKS)
+        assertEquals(input.verifiedMarketDate, transactionRepo.getByPortfolio(p.id).single().verifiedMarketDate)
+        repo.update(p.id, "Renamed", Market.PH_STOCKS)
+        val saved = transactionRepo.getByPortfolio(p.id).single()
+        assertNull(saved.verifiedMarketDate)
+        assertEquals(instant, saved.verifiedExecutionInstant)
+        assertEquals(input.datetime, saved.datetime)
     }
 
     @Test

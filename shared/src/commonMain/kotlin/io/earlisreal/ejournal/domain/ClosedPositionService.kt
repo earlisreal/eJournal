@@ -23,7 +23,7 @@ class ClosedPositionService(
     private val portfolioRepository: PortfolioRepository,
     private val compute: (List<Transaction>) -> List<ClosedPosition> = FifoMatcher::computeClosedPositions,
 ) {
-    private data class Entry(val signature: Int, val positions: List<ClosedPosition>)
+    private data class Entry(val signature: Int, val market: Market, val positions: List<ClosedPosition>)
 
     private val mutex = Mutex()
     // No eviction needed: entry count is bounded by the (small) number of portfolios.
@@ -32,20 +32,20 @@ class ClosedPositionService(
     suspend fun forPortfolio(portfolioId: Long): List<ClosedPosition> {
         val txs = transactionRepository.getByPortfolio(portfolioId)
         val signature = txs.hashCode()
+        val market = portfolioRepository.getById(portfolioId)?.market ?: Market.US_STOCKS
 
         mutex.withLock { cache[portfolioId] }
-            ?.takeIf { it.signature == signature }
+            ?.takeIf { it.signature == signature && it.market == market }
             ?.let { return it.positions }
 
         // Stamp the portfolio's market onto every position so the market-data layer can namespace
-        // bars. Looked up only on a cache miss; cached positions are already stamped.
-        val market = portfolioRepository.getById(portfolioId)?.market ?: Market.US_STOCKS
+        // bars. Market participates in cache validity alongside the Transaction evidence.
         val positions = compute(txs).map { it.copy(market = market) }
         // Don't clobber a fresher entry written by a concurrent caller while we computed.
         mutex.withLock {
             val current = cache[portfolioId]
             if (current == null || current.signature == signature) {
-                cache[portfolioId] = Entry(signature, positions)
+                cache[portfolioId] = Entry(signature, market, positions)
             }
         }
         return positions

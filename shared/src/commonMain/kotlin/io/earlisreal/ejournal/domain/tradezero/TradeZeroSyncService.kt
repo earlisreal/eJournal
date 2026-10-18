@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TradeZeroBrokerCredentials
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.insertOrEnrichAll
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
 import io.earlisreal.ejournal.domain.model.Broker
@@ -126,9 +127,11 @@ class TradeZeroSyncService(
     ): BrokerSyncOutcome = when (val result = client.fetchOrders(credentials, portfolioId, from, to)) {
         is TradeZeroFetchResult.Success -> {
             check(result.account.id == expectedAccount.id) { "TradeZero account changed during synchronization" }
-            val inserted = result.transactions.count { transactionRepository.insert(it) != null }
-            handle.succeed("Imported $inserted new transaction(s)")
-            BrokerSyncOutcome.Imported(inserted)
+            val counts = transactionRepository.insertOrEnrichAll(result.transactions)
+                val inserted = counts.inserted
+            val detail = io.earlisreal.ejournal.domain.broker.BrokerSyncDetail(timingEnriched = counts.timingEnriched, timingConflicts = counts.conflicts)
+            handle.succeed("Imported $inserted new transaction(s) · ${counts.timingEnriched} timing-enriched · ${counts.conflicts} timing conflicts")
+            BrokerSyncOutcome.Imported(inserted, detail)
         }
         TradeZeroFetchResult.InvalidCredentials -> {
             handle.fail("Invalid TradeZero credentials — update this portfolio's broker configuration")

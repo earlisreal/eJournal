@@ -62,6 +62,21 @@ class TradeZeroClientImplTest {
         url.encodedPath.contains("/orders-with-pagination/start-date/")
 
     @Test
+    fun malformedExecutionClockRetainsFinancialRowWithoutExactTiming() = runTest {
+        val client = client { request ->
+            when {
+                request.url.encodedPath.endsWith("/accounts") -> json("""{"accounts":[{"account":"ACC1"}]}""")
+                request.isOrders() -> json(page(1, listOf(fill(execTime = "broken", tradeId = 1))))
+                else -> json(page(0, emptyList()))
+            }
+        }
+        val date = LocalDate(2026, 6, 16)
+        val result = assertIs<TradeZeroFetchResult.Success>(client.fetchOrders(credentials, 7, date, date))
+        kotlin.test.assertNull(result.transactions.single().verifiedExecutionInstant)
+        assertEquals(date, result.transactions.single().verifiedMarketDate)
+    }
+
+    @Test
     fun `connection returns the resolved account identity`() = runTest {
         val client = client { request ->
             when {

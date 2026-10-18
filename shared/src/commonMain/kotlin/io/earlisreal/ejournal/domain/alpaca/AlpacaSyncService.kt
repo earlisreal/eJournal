@@ -6,6 +6,7 @@ import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.insertOrEnrichAll
 import io.earlisreal.ejournal.domain.broker.BrokerFeeSummary
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
@@ -101,7 +102,8 @@ class AlpacaSyncService(
                     check(result.account.id == connection.account.id) {
                         "Alpaca account changed during synchronization"
                     }
-                    val inserted = result.transactions.count { transactionRepository.insert(it) != null }
+                    val counts = transactionRepository.insertOrEnrichAll(result.transactions)
+                val inserted = counts.inserted
                     val feeReconciliation = reconcileFees(
                         portfolioId = portfolioId,
                         source = source,
@@ -122,6 +124,8 @@ class AlpacaSyncService(
                     }
 
                     val detail = result.detail.copy(
+                        timingEnriched = counts.timingEnriched,
+                        timingConflicts = counts.conflicts,
                         feeSummary = feeReconciliation.summary.takeIf { result.fills.isNotEmpty() || result.fees.isNotEmpty() }
                             ?: result.detail.feeSummary,
                     )
@@ -129,7 +133,7 @@ class AlpacaSyncService(
                     BrokerSyncOutcome.Imported(
                         inserted = inserted,
                         detail = detail,
-                        changed = inserted > 0 || feeReconciliation.changed,
+                        changed = inserted > 0 || counts.timingEnriched > 0 || feeReconciliation.changed,
                     )
                 }
                 AlpacaFetchResult.InvalidCredentials -> {

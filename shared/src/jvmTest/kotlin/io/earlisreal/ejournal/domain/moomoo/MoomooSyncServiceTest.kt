@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.domain.moomoo
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.background.BackgroundTaskTracker
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.FifoMatcher
@@ -81,6 +83,9 @@ private class DeduplicatingMoomooTransactions : TransactionRepository {
     override suspend fun getByPortfolio(portfolioId: Long) = inserted.filter { it.portfolioId == portfolioId }
     override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime) =
         getByPortfolio(portfolioId)
+    override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+        if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
     override suspend fun insert(transaction: Transaction): Long? {
         transaction.externalId?.let { if (!externalIds.add(it)) return null }
         inserted += transaction
@@ -115,6 +120,37 @@ class MoomooSyncServiceTest {
         today = { today },
         requestGateFactory = { MoomooRequestGate { } },
     )
+
+    @Test
+    fun timingOnlySyncChangesPortfolioWithoutInserts() = runTest {
+        val repo = object : TransactionRepository by DeduplicatingMoomooTransactions() {
+            override suspend fun insertOrEnrich(transaction: Transaction) = InsertOrEnrichResult.TIMING_ENRICHED
+        }
+        val session = FakeMoomooSession().apply {
+            orders = listOf(order())
+            executions = listOf(execution())
+        }
+        val result = assertIs<BrokerSyncOutcome.Imported>(service(FakeMoomooClient(session), configuredSettings(), repo).syncIncremental(1))
+        assertEquals(0, result.inserted)
+        assertEquals(1, result.detail.timingEnriched)
+        assertTrue(result.changed)
+    }
+
+    @Test
+    fun aggregateTimingRequiresOneProvenInstantOrOneCommonDate() {
+        fun mapped(fills: List<MoomooExecution>) = MoomooSyncService.mapOrders(listOf(order(quantity = 2.0)), fills, 1).single().toTransaction(1, 0.5)
+        val same = mapped(listOf(execution(quantity = 1.0), execution(quantity = 1.0)))
+        assertEquals(kotlin.time.Instant.parse("2018-01-02T14:30:00Z"), same.verifiedExecutionInstant)
+        val different = mapped(listOf(execution(quantity = 1.0), execution(quantity = 1.0, at = "2018-01-02T09:31:00")))
+        assertNull(different.verifiedExecutionInstant)
+        assertEquals(LocalDate(2018, 1, 2), different.verifiedMarketDate)
+        val overnight = mapped(listOf(execution(quantity = 1.0), execution(quantity = 1.0, at = "2018-01-03T09:30:00")))
+        assertNull(overnight.verifiedExecutionInstant)
+        assertNull(overnight.verifiedMarketDate)
+        val ambiguous = mapped(listOf(execution(at = "2026-11-01T01:30:00"), execution(at = "2026-11-01T01:30:00")))
+        assertNull(ambiguous.verifiedExecutionInstant)
+        assertEquals(LocalDate(2026, 11, 1), ambiguous.verifiedMarketDate)
+    }
 
     @Test
     fun aggregatesExecutionsUsesEarliestTimeAndExactFee() = runTest {

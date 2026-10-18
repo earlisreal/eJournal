@@ -31,3 +31,13 @@ object TimeframeAdapter : ColumnAdapter<Timeframe, String> {
     override fun decode(databaseValue: String): Timeframe = Timeframe.valueOf(databaseValue)
     override fun encode(value: Timeframe): String = value.name
 }
+
+object InstantAdapter : ColumnAdapter<kotlin.time.Instant, String> {
+    override fun decode(databaseValue: String) = kotlin.time.Instant.parse(databaseValue)
+    override fun encode(value: kotlin.time.Instant) = value.toString()
+}
+
+object LocalDateAdapter : ColumnAdapter<kotlinx.datetime.LocalDate, String> {
+    override fun decode(databaseValue: String) = kotlinx.datetime.LocalDate.parse(databaseValue)
+    override fun encode(value: kotlinx.datetime.LocalDate) = value.toString()
+}

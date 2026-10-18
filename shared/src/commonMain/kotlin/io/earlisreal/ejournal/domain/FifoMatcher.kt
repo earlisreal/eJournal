@@ -35,7 +35,7 @@ object FifoMatcher {
         val transactions = mutableListOf<Transaction>()
         val exits = mutableListOf<PositionExit>()
 
-        fun toClosedPosition(symbol: String) = ClosedPosition(
+        fun toClosedPosition(symbol: String, isClosed: Boolean) = ClosedPosition(
             symbol = symbol,
             entryDatetime = openDatetime,
             exitDatetime = closeDatetime,
@@ -47,6 +47,7 @@ object FifoMatcher {
             transactions = transactions.toList(),
             direction = direction,
             exits = exits.toList(),
+            isClosed = isClosed,
         )
     }
 
@@ -59,7 +60,7 @@ object FifoMatcher {
 
             // Emit the current trade if it realized anything, then go flat.
             fun flush() {
-                acc?.let { if (it.matchedShares > 0.0) result.add(it.toClosedPosition(symbol)) }
+                acc?.let { if (it.matchedShares > 0.0) result.add(it.toClosedPosition(symbol, openQueue.isEmpty())) }
                 acc = null
             }
 

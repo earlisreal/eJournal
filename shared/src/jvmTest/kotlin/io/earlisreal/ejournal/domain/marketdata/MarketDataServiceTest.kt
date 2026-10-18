@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.domain.marketdata
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.BarCoverage
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
@@ -41,6 +43,9 @@ private class FakePortfolios(private val portfolios: List<Portfolio>) : Portfoli
 private class FakeTransactions(private val bySymbolPortfolio: Map<Long, List<Transaction>>) : TransactionRepository {
     override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = bySymbolPortfolio[portfolioId].orEmpty()
     override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime) = error("unused")
+    override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+        if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
     override suspend fun insert(transaction: Transaction): Long = error("unused")
     override suspend fun delete(id: Long) = error("unused")
     override suspend fun countByPortfolio(portfolioId: Long): Long = error("unused")

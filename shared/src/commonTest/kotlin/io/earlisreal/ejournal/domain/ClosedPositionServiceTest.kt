@@ -1,6 +1,8 @@
 // shared/src/commonTest/kotlin/io/earlisreal/ejournal/domain/ClosedPositionServiceTest.kt
 package io.earlisreal.ejournal.domain
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
 import io.earlisreal.ejournal.domain.model.Action
@@ -16,13 +18,16 @@ import kotlin.test.assertEquals
 private class StubTransactionRepository(var txs: List<Transaction>) : TransactionRepository {
     override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = txs
     override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime) = emptyList<Transaction>()
+    override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+        if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
+
     override suspend fun insert(transaction: Transaction): Long? = null
     override suspend fun delete(id: Long) {}
     override suspend fun countByPortfolio(portfolioId: Long): Long = txs.size.toLong()
     override suspend fun deleteByPortfolio(portfolioId: Long) {}
 }
 
-private class StubPortfolioRepository(private val portfolios: List<Portfolio> = emptyList()) : PortfolioRepository {
+private class StubPortfolioRepository(var portfolios: List<Portfolio> = emptyList()) : PortfolioRepository {
     override suspend fun getAll(): List<Portfolio> = portfolios
     override suspend fun getById(id: Long): Portfolio? = portfolios.firstOrNull { it.id == id }
     override suspend fun insert(name: String, market: Market, broker: io.earlisreal.ejournal.domain.model.Broker?, alpacaEnvironment: io.earlisreal.ejournal.domain.alpaca.AlpacaEnvironment?): Portfolio =
@@ -46,6 +51,20 @@ class ClosedPositionServiceTest {
         averageEntryPrice = 100.0, averageExitPrice = 110.0,
         shares = 1.0, fees = 1.0, profitLoss = 9.0,
     )
+
+    @Test
+    fun timingEvidenceAndMarketChangesInvalidateCachedPositions() = runTest {
+        val transactions = StubTransactionRepository(listOf(txn(1)))
+        val portfolios = StubPortfolioRepository(listOf(Portfolio(1, "First", Market.US_STOCKS, null, "first")))
+        var calls = 0
+        val service = ClosedPositionService(transactions, portfolios) { calls++; listOf(position()) }
+        service.forPortfolio(1)
+        transactions.txs = transactions.txs.map { it.copy(verifiedExecutionInstant = kotlin.time.Instant.parse("2026-01-02T14:30:00Z")) }
+        service.forPortfolio(1)
+        portfolios.portfolios = portfolios.portfolios.map { it.copy(market = Market.PH_STOCKS) }
+        assertEquals(Market.PH_STOCKS, service.forPortfolio(1).single().market)
+        assertEquals(3, calls)
+    }
 
     @Test
     fun computesOncePerUnchangedPortfolio() = runTest {

@@ -5,9 +5,11 @@ import io.earlisreal.ejournal.background.TaskHandle
 import io.earlisreal.ejournal.data.repository.PortfolioRepository
 import io.earlisreal.ejournal.data.repository.PortfolioSettingsRepository
 import io.earlisreal.ejournal.data.repository.TransactionRepository
+import io.earlisreal.ejournal.data.repository.insertOrEnrichAll
 import io.earlisreal.ejournal.domain.broker.BrokerSyncDetail
 import io.earlisreal.ejournal.domain.broker.BrokerSyncOutcome
 import io.earlisreal.ejournal.domain.broker.BrokerSyncService
+import io.earlisreal.ejournal.domain.analytics.unambiguousEasternInstant
 import io.earlisreal.ejournal.domain.model.Action
 import io.earlisreal.ejournal.domain.model.Broker
 import io.earlisreal.ejournal.domain.model.Market
@@ -118,7 +120,6 @@ class MoomooSyncService(
             val end = today()
             // ponytail: Replay one year because OpenD filters orders by creation date; track order updates if this gets slow.
             val start = end.minus(BACKFILL_DAYS, DateTimeUnit.DAY)
-            var inserted = 0
             val skipped = mutableMapOf<String, Int>()
             val orders = mutableListOf<MoomooOrder>()
             val executions = mutableListOf<MoomooExecution>()
@@ -153,15 +154,15 @@ class MoomooSyncService(
                 return fail(handle, "OpenD did not return an exact fee for ${missingFees.size} order(s)")
             }
 
-            mapped.forEach { row ->
-                val transaction = row.toTransaction(portfolioId, fees.getValue(row.orderId))
-                if (transactionRepository.insert(transaction) != null) inserted++
-            }
+            val counts = transactionRepository.insertOrEnrichAll(mapped.map { row ->
+                row.toTransaction(portfolioId, fees.getValue(row.orderId))
+            })
+            val inserted = counts.inserted
             portfolioSettings.putString(portfolioId, MoomooSettings.LAST_COMPLETED_DATE, end.toString())
             portfolioSettings.putString(portfolioId, MoomooSettings.LAST_SYNCED_SOURCE, config.source)
 
-            val detail = BrokerSyncDetail(skipped.filterValues { it > 0 })
-            handle.succeed("Imported $inserted new transaction(s)")
+            val detail = BrokerSyncDetail(skipped.filterValues { it > 0 }, timingEnriched = counts.timingEnriched, timingConflicts = counts.conflicts)
+            handle.succeed("Imported $inserted new transaction(s) · ${counts.timingEnriched} timing-enriched · ${counts.conflicts} timing conflicts")
             BrokerSyncOutcome.Imported(inserted, detail)
         } catch (error: CancellationException) {
             handle.cancel()
@@ -248,6 +249,9 @@ class MoomooSyncService(
                     action = if (order.side == MoomooSide.BUY) Action.BUY else Action.SELL,
                     quantity = order.filledQuantity,
                     averagePrice = fills.sumOf { it.quantity * it.price } / quantity,
+                    // OpenD securities clocks follow the exchange: https://openapi.moomoo.com/moomoo-api-doc/en/qa/trade.html
+                    verifiedInstant = fills.map { it.executedAt }.distinct().singleOrNull()?.let(::unambiguousEasternInstant),
+                    verifiedDate = fills.map { it.executedAt!!.date }.distinct().singleOrNull(),
                 )
             }
         }
@@ -264,12 +268,16 @@ internal data class MappedOrder(
     val action: Action,
     val quantity: Double,
     val averagePrice: Double,
+    val verifiedInstant: kotlin.time.Instant? = null,
+    val verifiedDate: LocalDate? = null,
 ) {
     fun toTransaction(portfolioId: Long, fee: Double) = Transaction(
         id = 0,
         portfolioId = portfolioId,
         symbol = symbol,
         datetime = executedAt,
+        verifiedExecutionInstant = verifiedInstant,
+        verifiedMarketDate = verifiedDate,
         action = action,
         price = averagePrice,
         shares = quantity,

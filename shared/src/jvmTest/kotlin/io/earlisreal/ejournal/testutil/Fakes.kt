@@ -1,5 +1,7 @@
 package io.earlisreal.ejournal.testutil
 
+import io.earlisreal.ejournal.data.repository.InsertOrEnrichResult
+
 import io.earlisreal.ejournal.data.repository.AlpacaMarketDataCredentials
 import io.earlisreal.ejournal.data.repository.CredentialsRepository
 import io.earlisreal.ejournal.data.repository.LegacyFilterPrefs
@@ -80,6 +82,9 @@ class FakeTransactionRepository(
 
     override suspend fun getByPortfolio(portfolioId: Long): List<Transaction> = emptyList()
     override suspend fun getByPortfolioAndDateRange(portfolioId: Long, from: LocalDateTime, to: LocalDateTime): List<Transaction> = emptyList()
+
+    override suspend fun insertOrEnrich(transaction: Transaction): InsertOrEnrichResult =
+        if (insert(transaction) != null) InsertOrEnrichResult.INSERTED else InsertOrEnrichResult.UNCHANGED
 
     override suspend fun insert(transaction: Transaction): Long? {
         if (transaction.externalId != null && transaction.externalId in duplicateExternalIds) return null

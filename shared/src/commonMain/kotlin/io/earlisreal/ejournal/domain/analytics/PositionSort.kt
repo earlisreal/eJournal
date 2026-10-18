@@ -1,14 +1,9 @@
 package io.earlisreal.ejournal.domain.analytics
 
 import io.earlisreal.ejournal.domain.model.ClosedPosition
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 
 enum class SortColumn { SYMBOL, TYPE, ENTRY, EXIT, HELD, SHARES, AVG_ENTRY, AVG_EXIT, AVG_DIFFERENCE, FEES, PNL, PNL_PCT }
 enum class SortDirection { ASC, DESC }
-
-private fun heldSeconds(p: ClosedPosition): Long =
-    p.exitDatetime.toInstant(TimeZone.UTC).epochSeconds - p.entryDatetime.toInstant(TimeZone.UTC).epochSeconds
 
 private fun pnlPct(p: ClosedPosition): Double {
     val cost = p.averageEntryPrice * p.shares
@@ -20,12 +15,23 @@ fun sortPositions(
     column: SortColumn,
     direction: SortDirection,
 ): List<ClosedPosition> {
+    if (column == SortColumn.HELD) return positions.sortedWith { a, b ->
+        val x = a.verifiedHoldSeconds()
+        val y = b.verifiedHoldSeconds()
+        when {
+            x == null && y == null -> 0
+            x == null -> 1
+            y == null -> -1
+            direction == SortDirection.ASC -> x.compareTo(y)
+            else -> y.compareTo(x)
+        }
+    }
     val comparator: Comparator<ClosedPosition> = when (column) {
         SortColumn.SYMBOL -> compareBy { it.symbol }
         SortColumn.TYPE -> compareBy { classifyTradeType(it) }
         SortColumn.ENTRY -> compareBy { it.entryDatetime }
         SortColumn.EXIT -> compareBy { it.exitDatetime }
-        SortColumn.HELD -> compareBy { heldSeconds(it) }
+        SortColumn.HELD -> compareBy { it.verifiedHoldSeconds() }
         SortColumn.SHARES -> compareBy { it.shares }
         SortColumn.AVG_ENTRY -> compareBy { it.averageEntryPrice }
         SortColumn.AVG_EXIT -> compareBy { it.averageExitPrice }

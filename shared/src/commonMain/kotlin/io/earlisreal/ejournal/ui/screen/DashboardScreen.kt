@@ -56,6 +56,7 @@ fun DashboardScreen(
     positionTags: PositionTagService,
     filter: FilterState,
     refreshOnStartup: Boolean = false,
+    refreshRevision: Int = 0,
     onAnalyze: (ClosedPosition, List<ClosedPosition>) -> Unit = { _, _ -> },
     onViewAllTrades: () -> Unit = {},
     onOpenReports: () -> Unit = {},
@@ -64,7 +65,7 @@ fun DashboardScreen(
     val vm = viewModel { DashboardViewModel(positionTags) }
     val state by vm.state.collectAsState()
 
-    LaunchedEffect(filter, refreshOnStartup) {
+    LaunchedEffect(filter, refreshOnStartup, refreshRevision) {
         vm.load(filter.portfolio?.id, filter.dateRange, filter.segment, filter.selectedTagIds, filter.tagMatch)
     }
 
@@ -140,7 +141,7 @@ internal fun DashboardContent(
                 )
                 Tile("Max win streak", metrics.maxWinStreak.toString())
                 Tile("Max loss streak", metrics.maxLossStreak.toString())
-                Tile("Avg hold", holdOrDash(metrics.avgHoldSeconds))
+                Tile("Avg hold (${metrics.verifiedHoldCount}/${metrics.tradeCount} verified)", holdOrDash(metrics.avgHoldSeconds))
             }
 
             Row(

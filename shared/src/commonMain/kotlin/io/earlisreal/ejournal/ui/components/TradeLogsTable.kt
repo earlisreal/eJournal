@@ -34,6 +34,7 @@ import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
+import io.earlisreal.ejournal.domain.analytics.verifiedHoldSeconds
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
@@ -69,8 +70,8 @@ fun TradeLogsTable(
     onCreateTag: (ClosedPosition, String) -> Unit = { _, _ -> },
     onManageTags: () -> Unit = {},
     modifier: Modifier = Modifier,
+    listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
-    val listState = rememberLazyListState()
     androidx.compose.foundation.layout.Column(
         modifier = modifier.border(1.dp, AppTheme.colors.border, CardShape),
     ) {
@@ -241,7 +242,7 @@ private fun formatDateTime(dt: kotlinx.datetime.LocalDateTime): String {
 }
 
 private fun formatHeld(p: ClosedPosition): String {
-    val seconds = p.exitDatetime.toInstant(TimeZone.UTC).epochSeconds - p.entryDatetime.toInstant(TimeZone.UTC).epochSeconds
+    val seconds = p.verifiedHoldSeconds()?.toLong() ?: return "Unverified"
     return formatHeldDuration(seconds, classifyTradeType(p) == TradeType.DAY)
 }
 

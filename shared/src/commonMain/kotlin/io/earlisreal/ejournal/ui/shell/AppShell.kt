@@ -268,7 +268,7 @@ fun AppShell(
                             }) },
                             onSetTagMatch = { value -> updateFilters(transform = { it.copy(tagMatch = value) }) },
                             onClearTagFilter = { updateFilters(transform = { it.copy(selectedTagIds = emptySet()) }) },
-                            showTagFilter = current in setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.CALENDAR),
+                            showTagFilter = current in setOf(Destination.DASHBOARD, Destination.TRADE_LOGS, Destination.CALENDAR, Destination.REPORTS),
                         )
                         content(
                             current,

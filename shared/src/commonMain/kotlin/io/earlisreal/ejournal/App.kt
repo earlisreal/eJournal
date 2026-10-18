@@ -75,6 +75,7 @@ fun App(
     }
     var disclosureMarketDataEnabled by remember { mutableStateOf(settingsRepository.getOnlineMarketDataEnabled()) }
     var disclosureUpdateChecksEnabled by remember { mutableStateOf(settingsRepository.getAutomaticUpdateChecksEnabled()) }
+    var importRevision by remember { mutableStateOf(0) }
     var startupChangedPortfolioIds by remember { mutableStateOf(emptySet<Long>()) }
 
     val systemDark = isSystemInDarkTheme()
@@ -124,6 +125,7 @@ fun App(
                 positionTags = positionTags,
                 filter = filter,
                 refreshOnStartup = filter.portfolio?.id?.let(startupChangedPortfolioIds::contains) == true,
+                refreshRevision = importRevision,
                 onAnalyze = nav.onAnalyze,
                 onViewAllTrades = { nav.onNavigate(Destination.TRADE_LOGS) },
                 onOpenReports = { nav.onNavigate(Destination.REPORTS) },
@@ -141,7 +143,7 @@ fun App(
                 parsers = parsers,
                 portfolioSettings = portfolioSettings,
                 filter = filter,
-                onImportSuccess = { marketDataService.requestSync() },
+                onImportSuccess = { importRevision++; marketDataService.requestSync() },
                 brokerSyncServices = brokerSyncServices,
             )
             Destination.CALENDAR -> CalendarScreen(
@@ -151,8 +153,13 @@ fun App(
             )
             Destination.REPORTS -> ReportsScreen(
                 positionTags = positionTags,
+                tagRepository = tagRepository,
                 filter = filter,
+                refreshOnStartup = filter.portfolio?.id?.let(startupChangedPortfolioIds::contains) == true,
+                refreshRevision = importRevision,
                 onSelectTag = nav.onSelectTag,
+                onAnalyze = nav.onAnalyze,
+                onTagDeleted = nav.onTagDeleted,
             )
             Destination.ANALYSIS -> AnalysisScreen(
                 positions = nav.analysisPositions,

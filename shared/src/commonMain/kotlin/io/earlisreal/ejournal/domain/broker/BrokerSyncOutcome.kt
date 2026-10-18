@@ -10,10 +10,13 @@ data class BrokerFeeSummary(
 data class BrokerSyncDetail(
     val skipped: Map<String, Int> = emptyMap(),
     val feeSummary: BrokerFeeSummary? = null,
+    val timingEnriched: Int = 0,
+    val timingConflicts: Int = 0,
 )
 
 fun BrokerSyncDetail.describeImport(inserted: Int): String = buildString {
     append("Imported $inserted new transaction(s)")
+    append(" · ${timingEnriched} timing-enriched · ${timingConflicts} timing conflicts")
     skipped.forEach { (reason, count) ->
         if (count > 0) append(" · $count $reason skipped")
     }
@@ -31,7 +34,7 @@ sealed interface BrokerSyncOutcome {
         val inserted: Int,
         val detail: BrokerSyncDetail = BrokerSyncDetail(),
         /** True when synchronization changed Transactions or their fees. */
-        val changed: Boolean = inserted > 0,
+        val changed: Boolean = inserted > 0 || detail.timingEnriched > 0,
     ) : BrokerSyncOutcome
 
     data class AccountAlreadyBound(val portfolioName: String) : BrokerSyncOutcome

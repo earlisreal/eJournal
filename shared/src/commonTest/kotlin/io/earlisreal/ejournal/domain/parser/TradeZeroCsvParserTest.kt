@@ -24,6 +24,21 @@ class TradeZeroCsvParserTest {
         (header + "\n" + rows.joinToString("\n")).encodeToByteArray()
 
     @Test
+    fun executionProofRequiresARealUnambiguousClock() {
+        val exact = parser.parse(csv(seBuy), portfolioId).transactions.single()
+        assertEquals(kotlin.time.Instant.parse("2021-06-24T14:29:39Z"), exact.verifiedExecutionInstant)
+        val offset = parser.parse(csv(seBuy.replace("10:29:39", "10:29:39-04:00")), portfolioId).transactions.single()
+        assertEquals(exact.verifiedExecutionInstant, offset.verifiedExecutionInstant)
+        val missing = parser.parse(csv(seBuy.replace("10:29:39", "")), portfolioId).transactions.single()
+        kotlin.test.assertNull(missing.verifiedExecutionInstant)
+        assertEquals(kotlinx.datetime.LocalDate(2021, 6, 24), missing.verifiedMarketDate)
+        assertEquals(exact.shares, missing.shares)
+        val ambiguous = parser.parse(csv(seBuy.replace("06/24/2021", "11/07/2021").replace("10:29:39", "01:30:00")), portfolioId).transactions.single()
+        kotlin.test.assertNull(ambiguous.verifiedExecutionInstant)
+        assertEquals(kotlinx.datetime.LocalDate(2021, 11, 7), ambiguous.verifiedMarketDate)
+    }
+
+    @Test
     fun detectsItsOwnHeader() {
         assertTrue(parser.detect(csv(seBuy)))
     }

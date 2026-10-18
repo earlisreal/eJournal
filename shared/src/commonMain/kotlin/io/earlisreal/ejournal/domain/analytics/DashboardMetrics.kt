@@ -1,8 +1,6 @@
 package io.earlisreal.ejournal.domain.analytics
 
 import io.earlisreal.ejournal.domain.model.ClosedPosition
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 import kotlin.math.abs
 
 data class DashboardMetrics(
@@ -28,9 +26,11 @@ data class DashboardMetrics(
     val maxLossStreak: Int,
     /** Mean holding time (exit − entry) in seconds across all positions; null when empty. */
     val avgHoldSeconds: Double?,
+    val verifiedHoldCount: Int = 0,
 )
 
 fun computeMetrics(positions: List<ClosedPosition>): DashboardMetrics {
+    val holds = positions.mapNotNull { it.verifiedHoldSeconds() }
     val n = positions.size
     val pnls = positions.map { it.profitLoss }
     val financialWins = pnls.filter { it > 0.0 }
@@ -71,7 +71,8 @@ fun computeMetrics(positions: List<ClosedPosition>): DashboardMetrics {
         payoffRatio = if (avgWin == null || avgLoss == null) null else avgWin / abs(avgLoss),
         maxWinStreak = maxWinStreak,
         maxLossStreak = maxLossStreak,
-        avgHoldSeconds = if (n == 0) null else positions.sumOf { holdSeconds(it) }.toDouble() / n,
+        avgHoldSeconds = holds.takeIf { it.isNotEmpty() }?.average(),
+        verifiedHoldCount = holds.size,
     )
 }
 
@@ -89,6 +90,3 @@ private fun computeStreaks(positions: List<ClosedPosition>): Pair<Int, Int> {
     }
     return maxWin to maxLoss
 }
-
-private fun holdSeconds(p: ClosedPosition): Long =
-    p.exitDatetime.toInstant(TimeZone.UTC).epochSeconds - p.entryDatetime.toInstant(TimeZone.UTC).epochSeconds

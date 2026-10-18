@@ -40,6 +40,8 @@ object JvmDatabaseFactory {
         return AppDatabase(
             driver = driver,
             TradeTransactionAdapter = TradeTransaction.Adapter(
+                verifiedExecutionInstantAdapter = io.earlisreal.ejournal.data.database.InstantAdapter,
+                verifiedMarketDateAdapter = io.earlisreal.ejournal.data.database.LocalDateAdapter,
                 datetimeAdapter  = DateTimeAdapter,
                 actionAdapter    = ActionAdapter
             ),

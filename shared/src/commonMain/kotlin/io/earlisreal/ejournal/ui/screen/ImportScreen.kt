@@ -82,6 +82,9 @@ fun ImportScreen(
             onDragHoverChange = { isDragHovered = it },
             onFilesDropped = { files -> vm.parseFiles(files, portfolio.id, portfolio.market) },
         )
+        (state.status as? ImportStatus.Success)?.let { result ->
+            Text("Imported ${result.count} new Transactions · ${result.timingEnriched} timing-enriched · ${result.conflicts} timing conflicts")
+        }
         val portfolioLabel = "Into: ${portfolio.name} · ${portfolio.market.label}"
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg), modifier = Modifier.fillMaxSize()) {
@@ -376,7 +379,7 @@ private fun BrokerSyncSection(
                                 when (val outcome = service.syncIncremental(portfolioId)) {
                                     is BrokerSyncOutcome.Imported -> {
                                         result = outcome.detail.describeImport(outcome.inserted)
-                                        if (outcome.inserted > 0) onImportSuccess()
+                                        if (outcome.changed) onImportSuccess()
                                     }
                                     is BrokerSyncOutcome.AccountAlreadyBound ->
                                         result = "This account is already linked to portfolio \"${outcome.portfolioName}\""

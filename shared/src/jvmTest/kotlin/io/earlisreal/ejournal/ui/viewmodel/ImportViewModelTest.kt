@@ -38,6 +38,22 @@ class ImportViewModelTest {
     }
 
     @Test
+    fun timingOnlyImportReportsEnrichmentAndRefreshes() = runTest {
+        val repo = object : io.earlisreal.ejournal.data.repository.TransactionRepository by FakeTransactionRepository() {
+            override suspend fun insertOrEnrich(transaction: Transaction) = io.earlisreal.ejournal.data.repository.InsertOrEnrichResult.TIMING_ENRICHED
+        }
+        val vm = ImportViewModel(repo, listOf(fixedParser(listOf(tx("existing")))), FakePortfolioSettingsRepository())
+        vm.parseFiles(listOf(ByteArray(1)), 1, Market.US_STOCKS)
+        vm.state.first { it.parsedTransactions.isNotEmpty() }
+        var refreshed = false
+        vm.import(1) { refreshed = true }
+        val result = vm.state.first { it.status is ImportStatus.Success }.status as ImportStatus.Success
+        assertEquals(0, result.count)
+        assertEquals(1, result.timingEnriched)
+        assertTrue(refreshed)
+    }
+
+    @Test
     fun importReportsInsertedCountExcludingDuplicates() = runTest {
         val dupId = "tzcsv:dup#0"
         val repo = FakeTransactionRepository(duplicateExternalIds = setOf(dupId))

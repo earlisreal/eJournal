@@ -91,6 +91,7 @@ class AlpacaBrokerClientImplTest {
         assertEquals(1.5, transaction.shares)
         assertEquals(10.25, transaction.price)
         assertEquals("2026-06-10T09:30", transaction.datetime.toString())
+        assertEquals(kotlin.time.Instant.parse("2026-06-10T13:30:00Z"), transaction.verifiedExecutionInstant)
         assertEquals("alpaca:paper:acct-live:fill-1", transaction.externalId)
         assertEquals(0.0, transaction.fees)
         val assetsRequest = engine.requestHistory.first { it.url.encodedPath == "/v2/assets" }

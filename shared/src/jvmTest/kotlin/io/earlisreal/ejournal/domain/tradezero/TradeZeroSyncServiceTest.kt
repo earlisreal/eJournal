@@ -39,7 +39,7 @@ class TradeZeroSyncServiceTest {
         settings: FakePortfolioSettingsRepository = FakePortfolioSettingsRepository(),
         portfolios: FakePortfolioRepository = FakePortfolioRepository(listOf(portfolio())),
         credentialsRepository: FakeCredentialsRepository = credentialsRepo(),
-        transactions: FakeTransactionRepository = FakeTransactionRepository(),
+        transactions: io.earlisreal.ejournal.data.repository.TransactionRepository = FakeTransactionRepository(),
     ) = TradeZeroSyncService(
         client = client,
         transactionRepository = transactions,
@@ -49,6 +49,18 @@ class TradeZeroSyncServiceTest {
         credentialsRepository = credentialsRepository,
         today = { today },
     )
+
+    @Test
+    fun timingOnlySyncChangesPortfolioWithoutInserts() = runTest {
+        val repo = object : io.earlisreal.ejournal.data.repository.TransactionRepository by FakeTransactionRepository() {
+            override suspend fun insertOrEnrich(transaction: io.earlisreal.ejournal.domain.model.Transaction) = io.earlisreal.ejournal.data.repository.InsertOrEnrichResult.TIMING_ENRICHED
+        }
+        val client = FakeTradeZeroClient(TradeZeroFetchResult.Success(listOf(tx("existing")), TradeZeroAccount("tz-account")))
+        val result = assertIs<BrokerSyncOutcome.Imported>(service(client, transactions = repo).sync(1, from, to))
+        assertEquals(0, result.inserted)
+        assertEquals(1, result.detail.timingEnriched)
+        kotlin.test.assertTrue(result.changed)
+    }
 
     @Test
     fun successImportsAndUsesPortfolioCredentials() = runTest {

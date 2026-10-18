@@ -24,6 +24,10 @@ class DashboardMetricsTest {
         exitDatetime = LocalDateTime.parse(exit),
         averageEntryPrice = averageEntryPrice, averageExitPrice = averageExitPrice,
         shares = 100.0, fees = fees, profitLoss = pnl, direction = direction,
+        transactions = listOf(
+            io.earlisreal.ejournal.domain.model.Transaction(1, 1, "X", LocalDateTime.parse(entry), io.earlisreal.ejournal.domain.model.Action.BUY, 10.0, 100.0, 0.0, verifiedExecutionInstant = unambiguousEasternInstant(LocalDateTime.parse(entry))),
+            io.earlisreal.ejournal.domain.model.Transaction(2, 1, "X", LocalDateTime.parse(exit), io.earlisreal.ejournal.domain.model.Action.SELL, 11.0, 100.0, 0.0, verifiedExecutionInstant = unambiguousEasternInstant(LocalDateTime.parse(exit))),
+        ),
     )
 
     private fun pos(pnl: Double) = position(pnl)

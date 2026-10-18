@@ -2,6 +2,7 @@ package io.earlisreal.ejournal.ui.components
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.HorizontalScrollbar
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.runtime.Composable
@@ -21,4 +22,9 @@ actual fun ColumnVerticalScrollbar(scrollState: ScrollState, modifier: Modifier)
         adapter = rememberScrollbarAdapter(scrollState),
         modifier = modifier,
     )
+}
+
+@Composable
+actual fun RowHorizontalScrollbar(scrollState: ScrollState, modifier: Modifier) {
+    HorizontalScrollbar(adapter = rememberScrollbarAdapter(scrollState), modifier = modifier)
 }

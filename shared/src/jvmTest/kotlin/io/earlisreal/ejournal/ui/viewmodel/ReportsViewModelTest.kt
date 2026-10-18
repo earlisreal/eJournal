@@ -7,6 +7,7 @@ import io.earlisreal.ejournal.domain.analytics.*
 import io.earlisreal.ejournal.domain.model.*
 import io.earlisreal.ejournal.ui.shell.FilterState
 import kotlinx.coroutines.*
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.*
 import kotlinx.datetime.*
@@ -57,6 +58,7 @@ class ReportsViewModelTest {
         release.complete(Unit)
         withContext(Dispatchers.Default) { withTimeout(5000) { finished.await() } }
         assertEquals(second.id, vm.state.value.buckets.flatMap { it.positions }.single().transactions.first().portfolioId)
+        withContext(Dispatchers.Default) { withTimeout(5000) { vm.viewModelScope.coroutineContext[Job]!!.children.toList().joinAll() } }
     }
 
     @Test fun exactCohortExcludesOpenPositionsAndSurvivesRefreshAndSort() = runTest {

@@ -19,3 +19,7 @@ expect fun ListVerticalScrollbar(listState: LazyListState, modifier: Modifier = 
  */
 @Composable
 expect fun ColumnVerticalScrollbar(scrollState: ScrollState, modifier: Modifier = Modifier)
+
+/** Desktop scrollbar for wide metric tables. */
+@Composable
+expect fun RowHorizontalScrollbar(scrollState: ScrollState, modifier: Modifier = Modifier)

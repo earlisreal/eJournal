@@ -42,7 +42,8 @@ class ReportsViewModel(
     private var filtered: List<ClosedPosition> = emptyList()
     private var loadJob: Job? = null
     private var generation = 0
-    val chartListState = androidx.compose.foundation.lazy.LazyListState()
+    val pageScrollState = androidx.compose.foundation.ScrollState(0)
+    val tableScrollState = androidx.compose.foundation.ScrollState(0)
     val bucketListState = androidx.compose.foundation.lazy.LazyListState()
     val positionListState = androidx.compose.foundation.lazy.LazyListState()
 
@@ -72,6 +73,7 @@ class ReportsViewModel(
                 filtered = filterByTags(population.filter { it.isClosed }, next.selectedTagIds, next.tagMatch)
                 _state.value = _state.value.copy(stats = tagStats(population), allTags = tags)
                 regroup(loading = false)
+                if (changed) scrollToFirstActiveGroup()
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (request == generation) _state.value = _state.value.copy(loading = false, error = e.message ?: "Reports could not load")
@@ -91,7 +93,11 @@ class ReportsViewModel(
     fun groupBy(grouping: ReportGrouping) {
         _state.value = _state.value.copy(grouping = grouping, selectedKey = null, metric = null)
         regroup()
-        viewModelScope.launch { bucketListState.scrollToItem(0); chartListState.scrollToItem(0) }
+        scrollToFirstActiveGroup()
+    }
+
+    private fun scrollToFirstActiveGroup() {
+        bucketListState.requestScrollToItem(_state.value.sortedBuckets.indexOfFirst { it.positions.isNotEmpty() }.coerceAtLeast(0))
     }
 
     fun select(key: String?) {
@@ -102,6 +108,7 @@ class ReportsViewModel(
     fun sortBy(metric: ReportMetric?) {
         val direction = if (_state.value.metric == metric && _state.value.metricDirection == SortDirection.DESC) SortDirection.ASC else SortDirection.DESC
         _state.value = _state.value.copy(metric = metric, metricDirection = direction)
+        bucketListState.requestScrollToItem(0)
     }
 
     fun sortPositionsBy(column: SortColumn) {

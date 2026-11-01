@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -120,7 +121,10 @@ fun DateRangeFilter(
                                             },
                                             label = { Text(label, style = MaterialTheme.typography.labelMedium) },
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = AppTheme.colors.accent.copy(alpha = 0.15f),
+                                                // Opaque fills keep the desktop hover state even behind the label.
+                                                containerColor = AppTheme.colors.surface,
+                                                selectedContainerColor = AppTheme.colors.accent.copy(alpha = 0.15f)
+                                                    .compositeOver(AppTheme.colors.surface),
                                                 selectedLabelColor = AppTheme.colors.accent,
                                             ),
                                         )

@@ -67,6 +67,7 @@ internal fun ReportsContent(
     val colors = AppTheme.colors
     val portfolio = filter.portfolio
     val symbol = portfolio?.market?.symbol ?: "$"
+    val byPrice = state.grouping == ReportGrouping.ENTRY_PRICE
     val temporal = state.grouping in setOf(ReportGrouping.ENTRY_TIME, ReportGrouping.ENTRY_WEEKDAY, ReportGrouping.DURATION)
     val timingExplanation = when (state.grouping) {
         ReportGrouping.ENTRY_WEEKDAY -> "Weekdays need a confirmed entry date. Missing dates stay in Time unverified."
@@ -87,7 +88,7 @@ internal fun ReportsContent(
             val pageScroll = vm.pageScrollState
             Column(Modifier.fillMaxSize().then(if (compact) Modifier.verticalScroll(pageScroll) else Modifier), verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp)) {
                 val tableModifier = if (compact) Modifier.fillMaxWidth().height(290.dp) else Modifier.fillMaxWidth().weight(1f)
-                GroupingTabs(state.grouping, vm::groupBy)
+                GroupingTabs(ReportGrouping.entries.filter { it.isAvailableFor(portfolio?.market) }, state.grouping, vm::groupBy)
                 if (portfolio == null) {
                     EmptyState("Choose a Portfolio", "Select a Portfolio in the top bar to review its performance.")
                     return@Column
@@ -114,7 +115,7 @@ internal fun ReportsContent(
                         if (state.stats.isEmpty()) EmptyState("No closed Positions in this range", "Adjust the final exit date or segment in the top bar.")
                         else TagStatsTable(state.stats, symbol, onSelectTag, tableModifier)
                     }
-                    state.total == 0 && !temporal -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    state.total == 0 && !temporal && !byPrice -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         EmptyState("No Positions match these filters", "Try a wider final exit date range or remove a Tag filter.")
                     }
                     else -> {
@@ -139,15 +140,18 @@ internal fun ReportsContent(
                                 onSort = vm::sortPositionsBy, symbol = symbol, onAnalyze = onAnalyze,
                                 onToggleTag = vm::toggleTag, onCreateTag = vm::createAndAssignTag,
                                 onManageTags = onManageTags, listState = vm.positionListState,
-                                modifier = tableModifier)
+                                modifier = tableModifier, preciseEntryPrice = byPrice)
                         } else {
                             AppCard(Modifier.fillMaxWidth()) {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("Performance by ${state.grouping.label.lowercase()}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                        val context = if (temporal) {
-                                            "${if (state.grouping == ReportGrouping.ENTRY_TIME) "30-minute slots in " else "Market clock: "}${marketClock(portfolio.market).id}"
-                                        } else "Compare results across ${if (state.grouping == ReportGrouping.SYMBOL) "symbols" else "Long and Short Positions"}"
+                                        val context = when {
+                                            temporal -> "${if (state.grouping == ReportGrouping.ENTRY_TIME) "30-minute slots in " else "Market clock: "}${marketClock(portfolio.market).id}"
+                                            byPrice -> "Grouped by share-weighted average entry price. Neutral includes scratch and break-even Positions."
+                                            state.grouping == ReportGrouping.SYMBOL -> "Compare results across symbols"
+                                            else -> "Compare results across Long and Short Positions"
+                                        }
                                         Text(context, color = colors.textMuted, style = MaterialTheme.typography.bodySmall)
                                     }
                                     if (temporal) TextButton(onClick = { timingDetails = !timingDetails }) {
@@ -162,7 +166,7 @@ internal fun ReportsContent(
                                     Text(explanation, color = colors.textMuted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp))
                                 }
                                 Spacer(Modifier.height(12.dp))
-                                GroupedReportCharts(state.buckets, symbol, vm::select)
+                                GroupedReportCharts(state.buckets, symbol, vm::select, showOutcomes = byPrice)
                             }
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Text("Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -171,7 +175,8 @@ internal fun ReportsContent(
                                 Spacer(Modifier.weight(1f))
                                 Text("Select a populated row to review its Positions", style = MaterialTheme.typography.bodySmall, color = colors.textMuted)
                             }
-                            GroupedReportTable(state.sortedBuckets, symbol, state.metric, state.metricDirection, vm::sortBy, vm::select, vm.bucketListState, tableModifier, horizontal = vm.tableScrollState)
+                            GroupedReportTable(state.sortedBuckets, symbol, state.metric, state.metricDirection, vm::sortBy,
+                                vm::select, vm.bucketListState, tableModifier, horizontal = vm.tableScrollState, showOutcomes = byPrice)
                         }
                     }
                 }
@@ -182,10 +187,10 @@ internal fun ReportsContent(
 }
 
 @Composable
-private fun GroupingTabs(selected: ReportGrouping, onSelect: (ReportGrouping) -> Unit) {
+private fun GroupingTabs(groupings: List<ReportGrouping>, selected: ReportGrouping, onSelect: (ReportGrouping) -> Unit) {
     val colors = AppTheme.colors
     Row(Modifier.fillMaxWidth().background(colors.surface, ControlShape).border(1.dp, colors.border, ControlShape).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        ReportGrouping.entries.forEach { grouping ->
+        groupings.forEach { grouping ->
             val active = selected == grouping
             Box(Modifier.weight(1f).height(36.dp).background(if (active) colors.accent.copy(alpha = .13f) else colors.surface, ControlShape)
                 .selectable(selected = active, role = Role.Tab, onClick = { onSelect(grouping) }), contentAlignment = Alignment.Center) {

@@ -26,6 +26,8 @@ import io.earlisreal.ejournal.domain.analytics.SortColumn
 import io.earlisreal.ejournal.domain.analytics.SortDirection
 import io.earlisreal.ejournal.domain.analytics.TradeType
 import io.earlisreal.ejournal.domain.analytics.classifyTradeType
+import io.earlisreal.ejournal.domain.analytics.entryPriceBandIndex
+import io.earlisreal.ejournal.domain.analytics.verifiedHoldSeconds
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import io.earlisreal.ejournal.domain.model.Tag
 import io.earlisreal.ejournal.domain.model.TradeDirection
@@ -34,7 +36,6 @@ import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import io.earlisreal.ejournal.ui.theme.priceDifferenceColor
-import io.earlisreal.ejournal.domain.analytics.verifiedHoldSeconds
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
@@ -71,6 +72,7 @@ fun TradeLogsTable(
     onManageTags: () -> Unit = {},
     modifier: Modifier = Modifier,
     listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
+    preciseEntryPrice: Boolean = false,
 ) {
     androidx.compose.foundation.layout.Column(
         modifier = modifier.border(1.dp, AppTheme.colors.border, CardShape),
@@ -107,6 +109,7 @@ fun TradeLogsTable(
                         onCreateTag = onCreateTag,
                         onManageTags = onManageTags,
                         onClick = { onAnalyze(p, positions) },
+                        preciseEntryPrice = preciseEntryPrice,
                     )
                     if (index < positions.lastIndex) HorizontalDivider(color = AppTheme.colors.border.copy(alpha = 0.5f))
                 }
@@ -128,6 +131,7 @@ private fun PositionRow(
     onCreateTag: (ClosedPosition, String) -> Unit,
     onManageTags: () -> Unit,
     onClick: () -> Unit,
+    preciseEntryPrice: Boolean,
 ) {
     val type = classifyTradeType(p)
     val pnlColor = if (p.profitLoss >= 0) AppTheme.colors.profit else AppTheme.colors.loss
@@ -146,7 +150,8 @@ private fun PositionRow(
         Cell(formatDateTime(p.exitDatetime), COLUMNS[3].weight)
         Cell(formatHeld(p), COLUMNS[4].weight)
         NumCell("%.0f".format(p.shares), COLUMNS[5].weight)
-        NumCell("%.2f".format(p.averageEntryPrice), COLUMNS[6].weight)
+        val entryPrice = if (preciseEntryPrice) formatReportEntryPrice(p.averageEntryPrice) else "%.2f".format(p.averageEntryPrice)
+        NumCell(entryPrice, COLUMNS[6].weight)
         NumCell("%.2f".format(p.averageExitPrice), COLUMNS[7].weight)
         NumCell(formatPriceDifference(averageDifference), COLUMNS[8].weight, color = averageDifferenceColor)
         NumCell("%.2f".format(p.fees), COLUMNS[9].weight)
@@ -154,6 +159,15 @@ private fun PositionRow(
         NumCell("%+.1f%%".format(pct), COLUMNS[11].weight, color = pnlColor)
         TagCell(p, COLUMNS[12].weight, allTags, onToggleTag, onCreateTag, onManageTags)
     }
+}
+
+internal fun formatReportEntryPrice(price: Double): String {
+    val band = entryPriceBandIndex(price)
+    if (band < 0) return "—"
+    val label = formatQuantity(price)
+    val displayedPrice = label.replace(',', '.').toDoubleOrNull()
+    // Keep the stored value visible if display rounding would move it to another band.
+    return if (displayedPrice != null && entryPriceBandIndex(displayedPrice) == band) label else price.toString()
 }
 
 @Composable

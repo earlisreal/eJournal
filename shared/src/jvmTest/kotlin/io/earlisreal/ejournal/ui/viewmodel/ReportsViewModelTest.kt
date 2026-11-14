@@ -110,6 +110,43 @@ class ReportsViewModelTest {
         assertEquals(60.0, next.buckets.single { it.key == "slot:19" }.positions.single().verifiedHoldSeconds())
     }
 
+    @Test fun entryPriceRespectsReportFiltersAndRequiresUsStocks() = runTest {
+        val us = portfolios.insert("US stocks", Market.US_STOCKS)
+        val ph = portfolios.insert("PH stocks", Market.PH_STOCKS)
+        val tag = tags.create(us.id, "Setup", "#FF0000")
+        val open = tx(us.id, "open", Action.BUY, 2.0, "2026-10-12T09:30").copy(price = 0.9999, externalId = null)
+        val close = tx(us.id, "close", Action.SELL, 2.0, "2026-10-12T10:30").copy(price = 1.10, externalId = null)
+        val swing = transactions.insert(open.copy(symbol = "SWING", datetime = LocalDateTime.parse("2026-10-09T09:30")))!!
+        transactions.insert(close.copy(symbol = "SWING"))
+        val match = transactions.insert(open)!!
+        transactions.insert(close)
+        transactions.insert(open.copy(symbol = "UNTAGGED"))
+        transactions.insert(close.copy(symbol = "UNTAGGED"))
+        val partial = transactions.insert(open.copy(symbol = "PARTIAL"))!!
+        transactions.insert(close.copy(symbol = "PARTIAL", shares = 1.0))
+        transactions.insert(close.copy(symbol = "PARTIAL", shares = 1.0, datetime = LocalDateTime.parse("2026-10-13T10:30")))
+        val stillOpen = transactions.insert(open.copy(symbol = "STILLOPEN"))!!
+        transactions.insert(close.copy(symbol = "STILLOPEN", shares = 1.0))
+        for (id in listOf(swing, match, partial, stillOpen)) tags.addTag(us.id, id, tag)
+        val date = DateRange(LocalDate(2026, 10, 12), LocalDate(2026, 10, 12))
+        val vm = vm()
+        vm.load(FilterState(us, date, Segment.DAY, setOf(tag)))
+        vm.ready()
+        vm.groupBy(ReportGrouping.ENTRY_PRICE)
+        vm.select("price:4")
+        assertEquals(match, vm.state.value.cohort.single().openingTransactionId)
+        assertEquals(1, vm.state.value.total)
+
+        vm.sortBy(ReportMetric.WIN_COUNT)
+        vm.load(FilterState(ph, date, Segment.DAY))
+        val switched = vm.ready()
+        assertEquals(ReportGrouping.ENTRY_TIME, switched.grouping)
+        assertNull(switched.selectedKey)
+        assertNull(switched.metric)
+        vm.groupBy(ReportGrouping.ENTRY_PRICE)
+        assertEquals(ReportGrouping.ENTRY_TIME, vm.state.value.grouping)
+    }
+
     @Test fun tagEditsRecomputeFilteredCohortAndTagComparisonKeepsException() = runTest {
         val p = portfolios.insert("Tags", Market.US_STOCKS)
         val id = transactions.insert(tx(p.id, "open", Action.BUY, 1.0, "2026-10-12T09:30"))!!

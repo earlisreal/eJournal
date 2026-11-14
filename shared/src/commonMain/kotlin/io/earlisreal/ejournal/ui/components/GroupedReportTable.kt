@@ -39,7 +39,16 @@ import io.earlisreal.ejournal.ui.theme.NumberTextStyle
 import io.earlisreal.ejournal.ui.theme.Spacing
 import kotlin.math.abs
 
-private val metricWeights = listOf(.65f, 1.25f, 1.15f, .95f, 1.15f, 1.15f, 1.0f)
+private val reportColumns = listOf(
+    ReportMetric.COUNT to .65f, ReportMetric.NET_PNL to 1.25f, ReportMetric.AVERAGE to 1.15f,
+    ReportMetric.WIN_RATE to .95f, ReportMetric.WINNER to 1.15f, ReportMetric.LOSER to 1.15f,
+    ReportMetric.PROFIT_FACTOR to 1.0f,
+)
+private val outcomeColumns = listOf(
+    ReportMetric.COUNT to .65f, ReportMetric.WIN_COUNT to .95f, ReportMetric.LOSS_COUNT to .95f,
+    ReportMetric.NEUTRAL_COUNT to .95f, ReportMetric.WIN_RATE to .95f,
+    ReportMetric.NET_PNL to 1.25f, ReportMetric.AVERAGE to 1.15f,
+)
 
 @Composable
 fun GroupedReportTable(
@@ -47,16 +56,19 @@ fun GroupedReportTable(
     onSort: (ReportMetric?) -> Unit, onSelect: (String) -> Unit, listState: LazyListState,
     modifier: Modifier = Modifier,
     horizontal: androidx.compose.foundation.ScrollState = rememberScrollState(),
+    showOutcomes: Boolean = false,
 ) {
+    val columns = if (showOutcomes) outcomeColumns else reportColumns
     val maximum = rows.maxOfOrNull { abs(it.metrics.netPnl) }?.takeIf { it > 0 } ?: 1.0
     BoxWithConstraints(modifier.clip(CardShape).border(1.dp, AppTheme.colors.border, CardShape)) {
         val availableWidth = maxWidth
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.weight(1f).horizontalScroll(horizontal).width(maxOf(availableWidth, 980.dp))) {
                 Row(Modifier.fillMaxWidth().background(AppTheme.colors.surface).padding(horizontal = Spacing.lg)) {
-                    SortHeading("Group", metric == null, SortDirection.ASC, { onSort(null) }, Modifier.weight(1.65f), numeric = false)
-                    ReportMetric.entries.forEachIndexed { index, column ->
-                        SortHeading(column.label, metric == column, direction, { onSort(column) }, Modifier.weight(metricWeights[index]))
+                    SortHeading(if (showOutcomes) "Entry price" else "Group", metric == null,
+                        SortDirection.ASC, { onSort(null) }, Modifier.weight(1.65f), numeric = false)
+                    columns.forEach { (column, weight) ->
+                        SortHeading(column.label, metric == column, direction, { onSort(column) }, Modifier.weight(weight))
                     }
                 }
                 HorizontalDivider(color = AppTheme.colors.border)
@@ -85,23 +97,24 @@ fun GroupedReportTable(
                                         style = MaterialTheme.typography.bodySmall)
                                     if (populated) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.size(15.dp), tint = if (hovered || focused) colors.accent else colors.textMuted)
                                 }
-                                ReportMetric.entries.forEachIndexed { index, column ->
+                                columns.forEach { (column, weight) ->
                                     val value = column.value(row.metrics)
-                                    val label = when {
-                                        value == null -> "—"
-                                        column == ReportMetric.COUNT -> value.toInt().toString()
-                                        column == ReportMetric.WIN_RATE -> "%.1f%%".format(value * 100)
-                                        column == ReportMetric.PROFIT_FACTOR -> if (value.isInfinite()) "∞" else "%.2f".format(value)
+                                    val label = if (value == null) "—" else when (column) {
+                                        ReportMetric.COUNT, ReportMetric.WIN_COUNT, ReportMetric.LOSS_COUNT,
+                                        ReportMetric.NEUTRAL_COUNT -> value.toInt().toString()
+                                        ReportMetric.WIN_RATE -> "%.1f%%".format(value * 100)
+                                        ReportMetric.PROFIT_FACTOR -> if (value.isInfinite()) "∞" else "%.2f".format(value)
                                         else -> signedMoney(value, symbol)
                                     }
                                     val financial = column in setOf(ReportMetric.NET_PNL, ReportMetric.AVERAGE, ReportMetric.WINNER, ReportMetric.LOSER)
                                     val color = when {
                                         !populated || value == null -> colors.textMuted
-                                        financial && value > 0 -> colors.profit
+                                        (financial || column == ReportMetric.WIN_COUNT) && value > 0 -> colors.profit
+                                        column == ReportMetric.LOSS_COUNT && value > 0 -> colors.loss
                                         financial && value < 0 -> colors.loss
                                         else -> colors.textPrimary
                                     }
-                                    Text(label, Modifier.weight(metricWeights[index]).padding(start = 8.dp)
+                                    Text(label, Modifier.weight(weight).padding(start = 8.dp)
                                         .drawBehind {
                                             if (column == ReportMetric.NET_PNL && populated && row.metrics.netPnl != 0.0) {
                                                 val width = (abs(row.metrics.netPnl) / maximum * size.width).toFloat()

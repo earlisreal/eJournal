@@ -1,6 +1,7 @@
 package io.earlisreal.ejournal.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,6 +18,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -45,7 +47,10 @@ internal fun reportBucketIndex(x: Float, width: Float, count: Int): Int? =
 /** P&L and count share a full-width domain; pointer or keyboard inspection exposes every bucket. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
+fun GroupedReportCharts(
+    rows: List<ReportBucket>, symbol: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier,
+    showOutcomes: Boolean = false,
+) {
     val colors = AppTheme.colors
     val measurer = rememberTextMeasurer()
     val axisStyle = MaterialTheme.typography.bodySmall.copy(color = colors.textMuted, fontSize = 11.sp)
@@ -72,7 +77,7 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
                     color = colors.textPrimary, style = MaterialTheme.typography.bodySmall)
             } else Text(if (rows.any { it.positions.isNotEmpty() }) "Point to a bar to inspect. Select to view Positions." else "No Positions in this range.", color = colors.textMuted, style = MaterialTheme.typography.bodySmall)
         }
-        Canvas(Modifier.fillMaxWidth().height(164.dp)
+        Canvas(Modifier.fillMaxWidth().height(if (showOutcomes) 188.dp else 164.dp)
             .onSizeChanged { chartWidth = it.width.toFloat() }
             .focusRequester(requester).onFocusChanged { focused = it.isFocused }
             .onKeyEvent { event ->
@@ -99,8 +104,13 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
                 }
             }
             .semantics {
-                contentDescription = "Net P&L and Position count by group. Use left and right arrows to inspect groups, Enter to view Positions."
-                stateDescription = selected?.let { "${it.label}, ${signedMoney(it.metrics.netPnl, symbol)}, ${it.metrics.tradeCount} Positions" } ?: "No group selected"
+                val breakdown = if (showOutcomes) "Position outcomes" else "Position count"
+                contentDescription = "Net P&L and $breakdown by group. Use left and right arrows to inspect groups, Enter to view Positions."
+                stateDescription = selected?.let { bucket ->
+                    val m = bucket.metrics
+                    val summary = "${bucket.label}, ${signedMoney(m.netPnl, symbol)}, ${m.tradeCount} Positions"
+                    if (showOutcomes) "$summary, Winners ${m.winCount}, Losers ${m.lossCount}, Neutral ${m.neutralCount}" else summary
+                } ?: "No group selected"
                 customActions = listOf(
                     CustomAccessibilityAction("Previous group") {
                         if (rows.isEmpty()) false else { active = ((active ?: rows.size) - 1).coerceAtLeast(0); true }
@@ -121,7 +131,13 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
             val netTop = 7.dp.toPx()
             val netBottom = 88.dp.toPx()
             val countTop = 115.dp.toPx()
-            val countBottom = 142.dp.toPx()
+            val countBottom = if (showOutcomes) 166.dp.toPx() else 142.dp.toPx()
+            val countScale = (countBottom - countTop) / maxCount
+            val priceLabelStride = if (showOutcomes) {
+                val labelWidth = rows.maxOf { measurer.measure(it.label, axisStyle).size.width }
+                ceil((labelWidth + 8.dp.toPx()) / step).toInt().coerceAtLeast(1)
+            } else 1
+            val every = ceil(rows.size / 7.0).toInt().coerceAtLeast(1)
             fun y(value: Double) = netTop + ((hi - value) / (hi - lo) * (netBottom - netTop)).toFloat()
             fun label(text: String, x: Float, top: Float) {
                 drawText(measurer, text, Offset(x, top), style = axisStyle)
@@ -133,7 +149,9 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
             levels.forEach { value ->
                 val lineY = y(value)
                 drawLine(colors.border.copy(alpha = if (value == 0.0) 1f else .5f), Offset(left, lineY), Offset(size.width - right, lineY))
-                label(compactMoney(value, symbol), 0f, lineY - 7.dp.toPx())
+                val money = if (showOutcomes && value != 0.0 && abs(value) < 10.0) signedMoney(value, symbol)
+                    else compactMoney(value, symbol)
+                label(money, 0f, lineY - 7.dp.toPx())
             }
             label("Positions", 0f, countTop - 17.dp.toPx())
             label(maxCount.toString(), 0f, countTop - 2.dp.toPx())
@@ -145,13 +163,30 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
                 val color = if (pnl >= 0) colors.profit else colors.loss
                 if (pnl != 0.0) drawRoundRect(color.copy(alpha = if (active == index) 1f else .95f),
                     Offset(center - barWidth / 2, minOf(y(pnl), y(0.0))), Size(barWidth, abs(y(pnl) - y(0.0)).coerceAtLeast(1f)), CornerRadius(2.dp.toPx()))
-                val height = bucket.metrics.tradeCount.toFloat() / maxCount * (countBottom - countTop)
-                if (height > 0) drawRoundRect((if (active == index) colors.textPrimary else colors.textMuted.copy(alpha = .85f)),
-                    Offset(center - barWidth / 2, countBottom - height), Size(barWidth, height), CornerRadius(2.dp.toPx()))
-                val every = ceil(rows.size / 7.0).toInt().coerceAtLeast(1)
-                val show = if (rows.size == 48 || rows.size == 49) index % 8 == 0 || index == rows.lastIndex else rows.size <= 7 || index % every == 0 || index == rows.lastIndex
+                val leftEdge = center - barWidth / 2
+                if (showOutcomes) {
+                    val m = bucket.metrics
+                    var bottom = countBottom
+                    for ((count, outcomeColor) in listOf(m.winCount to colors.profit, m.lossCount to colors.loss, m.neutralCount to colors.textMuted)) {
+                        if (count == 0) continue
+                        val height = count * countScale
+                        bottom -= height
+                        drawRect(outcomeColor, Offset(leftEdge, bottom), Size(barWidth, height))
+                    }
+                } else {
+                    val height = bucket.metrics.tradeCount * countScale
+                    if (height > 0) drawRoundRect(if (active == index) colors.textPrimary else colors.textMuted.copy(alpha = .85f),
+                        Offset(leftEdge, countBottom - height), Size(barWidth, height), CornerRadius(2.dp.toPx()))
+                }
+                val show = when {
+                    index == rows.lastIndex -> true
+                    showOutcomes -> index % priceLabelStride == 0 && rows.lastIndex - index >= priceLabelStride
+                    rows.size == 48 || rows.size == 49 -> index % 8 == 0
+                    else -> index % every == 0
+                }
                 if (show) {
                     val text = when {
+                        showOutcomes -> bucket.label
                         bucket.unverified -> "Unverified"
                         bucket.key.startsWith("weekday:") -> bucket.label.take(3)
                         bucket.label.length > 13 -> bucket.label.take(12) + "…"
@@ -162,5 +197,21 @@ fun GroupedReportCharts(rows: List<ReportBucket>, symbol: String, onSelect: (Str
                 }
             }
         }
+        if (showOutcomes) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)) {
+                val m = selected?.metrics
+                OutcomeLegend("Winners", m?.winCount, colors.profit)
+                OutcomeLegend("Losers", m?.lossCount, colors.loss)
+                OutcomeLegend("Neutral", m?.neutralCount, colors.textMuted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OutcomeLegend(label: String, count: Int?, color: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(color))
+        Text(if (count == null) label else "$label $count", color = AppTheme.colors.textMuted, style = MaterialTheme.typography.bodySmall)
     }
 }

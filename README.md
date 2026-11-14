@@ -42,6 +42,8 @@ Reports opens with entry-time performance. Choose entry weekday, entry time, hol
 
 New grouped views include fully closed Positions in the selected Portfolio, saved final-exit-date range, Day/Swing segment, and Tag filter (Any/All). A partial exit inside the range with a final exit outside remains excluded. Calendar continues to recognize partial exits on their realization dates. The existing Tag comparison deliberately ignores the selected Tag filter and can count one Position under several Tags.
 
+For US-stock Portfolios, **Entry price** groups Positions by their share-weighted average entry price. Five bands cover prices below $1. The chart and sortable table show winners, losers, and neutral Positions alongside net P&L. Scratch and break-even Positions count as neutral and are excluded from win rate.
+
 Entry dates and 30-minute entry slots use America/New_York for US Stocks, Asia/Manila for PH Stocks, and UTC for crypto. Holding duration uses verified opening/final-closing execution Instants, including daylight-saving transitions; an elapsed day is 24 hours. Day buckets are <1m, 1–<5m, 5–<15m, 15–<60m, 1–<4h, and ≥4h. Swing buckets are <1d, 1–<3d, 3–<7d, 7–<30d, and ≥30d. Financial metrics retain existing fee and Scratch Position definitions.
 
 Time reports show verified/total coverage. Unverified Positions remain in totals and explicit Time unverified groups. Held/Hold shows Unverified when elapsed duration lacks evidence; Dashboard average hold includes verified durations only and shows its coverage. An unverified US-stock Day Position defaults to one-minute bars.

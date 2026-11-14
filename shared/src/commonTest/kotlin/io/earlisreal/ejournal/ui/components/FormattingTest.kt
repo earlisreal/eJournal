@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.components
 
+import io.earlisreal.ejournal.domain.analytics.entryPriceBandIndex
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
@@ -14,6 +15,16 @@ class FormattingTest {
         assertEquals("0.125", formatQuantity(0.125))
         assertEquals("1e-09", formatQuantity(0.000000001))
         assertEquals("100000000000000", formatQuantity(100000000000000.0))
+    }
+
+    @Test
+    fun reportEntryPricesStayWithinTheirDisplayedBand() {
+        for (price in listOf(0.0001, 0.9999, 1.0, 1.0 - 1e-16, 20.0 - 1e-14)) {
+            val displayed = formatReportEntryPrice(price).replace(',', '.').toDouble()
+            assertEquals(entryPriceBandIndex(price), entryPriceBandIndex(displayed), "Price $price displayed as $displayed")
+        }
+        assertEquals("—", formatReportEntryPrice(0.0))
+        assertEquals("—", formatReportEntryPrice(Double.POSITIVE_INFINITY))
     }
 
     @Test

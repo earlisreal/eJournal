@@ -54,7 +54,12 @@ class ReportsViewModel(
         loadJob?.cancel()
         if (changed) {
             filtered = emptyList()
-            _state.value = _state.value.copy(selectedKey = null, stats = emptyList(), buckets = emptyList(), allTags = emptyList())
+            val current = _state.value
+            val grouping = current.grouping.takeIf { it.isAvailableFor(next.portfolio?.market) } ?: ReportGrouping.ENTRY_TIME
+            _state.value = current.copy(
+                grouping = grouping, metric = current.metric.takeIf { grouping == current.grouping }, selectedKey = null,
+                stats = emptyList(), buckets = emptyList(), allTags = emptyList(),
+            )
         }
         val id = next.portfolio?.id
         if (id == null) {
@@ -91,6 +96,7 @@ class ReportsViewModel(
     }
 
     fun groupBy(grouping: ReportGrouping) {
+        if (!grouping.isAvailableFor(filter?.portfolio?.market)) return
         _state.value = _state.value.copy(grouping = grouping, selectedKey = null, metric = null)
         regroup()
         scrollToFirstActiveGroup()

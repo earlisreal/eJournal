@@ -27,7 +27,9 @@ data class DashboardMetrics(
     /** Mean holding time (exit − entry) in seconds across all positions; null when empty. */
     val avgHoldSeconds: Double?,
     val verifiedHoldCount: Int = 0,
-)
+) {
+    val neutralCount: Int get() = scratchCount + breakEvenCount
+}
 
 fun computeMetrics(positions: List<ClosedPosition>): DashboardMetrics {
     val holds = positions.mapNotNull { it.verifiedHoldSeconds() }

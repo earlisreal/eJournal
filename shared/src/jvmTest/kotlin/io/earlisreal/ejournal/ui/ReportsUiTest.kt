@@ -41,17 +41,21 @@ class ReportsUiTest {
         for ((index, minute) in listOf(30, 45).withIndex()) {
             val entry = LocalDateTime(2026, 10, 12, 9, minute)
             val exit = LocalDateTime(2026, 10, 12, 10, minute)
-            val open = Transaction(0, portfolio.id, if (index == 0) "AAPL" else "NVDA", entry, Action.BUY, 100.0, 1.0, .1, "open-$index", verifiedExecutionInstant = unambiguousEasternInstant(entry))
+            val price = if (index == 0) 0.9999 else 100.0
+            val open = Transaction(0, portfolio.id, if (index == 0) "AAPL" else "NVDA", entry, Action.BUY, price, 1.0, .1, "open-$index", verifiedExecutionInstant = unambiguousEasternInstant(entry))
             transactions.insertOrEnrich(open)
-            transactions.insertOrEnrich(open.copy(datetime = exit, action = Action.SELL, price = 102.0, externalId = "close-$index", verifiedExecutionInstant = unambiguousEasternInstant(exit)))
+            transactions.insertOrEnrich(open.copy(datetime = exit, action = Action.SELL, price = price + 2.0, externalId = "close-$index", verifiedExecutionInstant = unambiguousEasternInstant(exit)))
         }
         val vm = ReportsViewModel(PositionTagService(ClosedPositionService(transactions, portfolios), tags), tags)
         val filter = FilterState(portfolio, DateRange(null, null), Segment.ALL)
         vm.load(filter)
         withContext(Dispatchers.Default) { withTimeout(5000) { vm.state.first { !it.loading } } }
+        var analyzed: Pair<ClosedPosition, List<ClosedPosition>>? = null
         val scene = ImageComposeScene(width = 1200, height = 850, coroutineContext = coroutineContext) {
             val state by vm.state.collectAsState()
-            AppTheme(darkTheme = true) { Surface { ReportsContent(state, filter, vm) } }
+            AppTheme(darkTheme = true) {
+                Surface { ReportsContent(state, filter, vm, onAnalyze = { position, positions -> analyzed = position to positions }) }
+            }
         }
         fun frame() { runCurrent(); scene.render(); runCurrent(); scene.render() }
         try {
@@ -84,6 +88,43 @@ class ReportsUiTest {
             assertEquals(ReportGrouping.SYMBOL, vm.state.value.grouping)
             assertNull(vm.state.value.selectedKey)
             assertEquals(2, vm.state.value.total)
+
+            scene.nodes().single { it.text() == "Entry price" && it.config.getOrNull(SemanticsProperties.Role) == Role.Tab }
+                .config[SemanticsActions.OnClick].action!!.invoke()
+            frame()
+            assertEquals(ReportGrouping.ENTRY_PRICE, vm.state.value.grouping)
+            val priceChart = scene.nodes().single {
+                it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { text -> text.startsWith("Net P&L and Position outcomes") } == true
+            }
+            repeat(5) { assertTrue(priceChart.config[SemanticsActions.CustomActions].single { it.label == "Next group" }.action()) }
+            frame()
+            val inspectedPrice = scene.nodes().single { it.id == priceChart.id }
+            assertTrue(inspectedPrice.config[SemanticsProperties.StateDescription].contains("Winners 1, Losers 0, Neutral 0"))
+            assertTrue(scene.nodes().any { it.text() == "Winners 1" })
+            assertTrue(inspectedPrice.config[SemanticsActions.OnClick].action!!.invoke())
+            frame()
+            val chartCohort = vm.state.value.cohort
+            assertEquals("AAPL", chartCohort.single().symbol)
+            val cellTexts = scene.nodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
+            assertTrue(cellTexts.any { it.text.replace(',', '.') == "0.9999" }, "Visible Position text: $cellTexts")
+
+            scene.nodes().single { it.text() == "All groups" }.config[SemanticsActions.OnClick].action!!.invoke()
+            frame()
+            scene.nodes().single { it.config.getOrNull(SemanticsActions.OnClick)?.label == "Sort by Winners" }
+                .config[SemanticsActions.OnClick].action!!.invoke()
+            frame()
+            assertEquals(ReportMetric.WIN_COUNT, vm.state.value.metric)
+            scene.nodes().single { it.config.getOrNull(SemanticsActions.OnClick)?.label == "View $0.75–<$1.00 Positions" }
+                .config[SemanticsActions.OnClick].action!!.invoke()
+            frame()
+            assertEquals(chartCohort, vm.state.value.cohort)
+            val positionRow = scene.nodes().single { node ->
+                node.config.getOrNull(SemanticsActions.OnClick) != null &&
+                    node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { it.text == "AAPL" }
+            }
+            positionRow.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals(chartCohort.single() to chartCohort, analyzed)
+
             transactions.deleteByPortfolio(portfolio.id)
             vm.groupBy(ReportGrouping.ENTRY_WEEKDAY)
             vm.refresh()

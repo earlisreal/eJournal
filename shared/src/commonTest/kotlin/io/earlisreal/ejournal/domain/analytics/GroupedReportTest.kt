@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.domain.analytics
 
+import io.earlisreal.ejournal.domain.FifoMatcher
 import io.earlisreal.ejournal.domain.model.*
 import kotlinx.datetime.*
 import kotlin.time.Instant
@@ -74,6 +75,47 @@ class GroupedReportTest {
             val row = groupedReport(listOf(position(seconds)), ReportGrouping.DURATION, Segment.DAY).single { it.positions.isNotEmpty() }
             assertEquals("day:$index", row.key, "seconds=$seconds")
         }
+    }
+
+    @Test fun entryPriceBandsAreOrderedAndLowerInclusive() {
+        val cutoffs = listOf(0.10, 0.25, 0.50, 0.75, 1.00, 2.00, 5.00, 10.00, 20.00)
+        val base = position()
+        val positions = listOf(base.copy(averageEntryPrice = 0.0001)) +
+            cutoffs.flatMap { listOf(base.copy(averageEntryPrice = it - 0.0001), base.copy(averageEntryPrice = it)) }
+        val rows = groupedReport(positions, ReportGrouping.ENTRY_PRICE, Segment.ALL)
+
+        assertEquals(listOf("<$0.10", "$0.10–<$0.25", "$0.25–<$0.50", "$0.50–<$0.75", "$0.75–<$1.00",
+            "$1–<$2", "$2–<$5", "$5–<$10", "$10–<$20", "$20+"), rows.map { it.label })
+        assertEquals(positions, rows.flatMap { it.positions })
+        assertEquals(List(9) { 2 } + 1, rows.map { it.metrics.tradeCount })
+        assertEquals(rows.map { it.key }, groupedReport(emptyList(), ReportGrouping.ENTRY_PRICE, Segment.DAY).map { it.key })
+    }
+
+    @Test fun entryPriceUsesWeightedOpeningFillsAndExistingOutcomeRules() {
+        val base = position()
+        val open = base.transactions.first().copy(price = 0.25, shares = 1.0, fees = 0.0)
+        val close = base.transactions.last().copy(price = 1.0, shares = 4.0, fees = 0.0)
+        val scaledLong = FifoMatcher.computeClosedPositions(listOf(open, open.copy(price = 1.0, shares = 3.0), close)).single()
+        val short = FifoMatcher.computeClosedPositions(listOf(open.copy(action = Action.SELL, price = 0.875),
+            close.copy(action = Action.BUY, price = 0.75, shares = 1.0, fees = 0.25))).single()
+        val scratch = short.copy(averageExitPrice = short.averageEntryPrice)
+        val breakEven = short.copy(profitLoss = 0.0)
+        val priceUnavailable = base.copy(averageEntryPrice = 0.0)
+        val positions = listOf(scaledLong, short, scratch, breakEven, priceUnavailable)
+        val rows = groupedReport(positions, ReportGrouping.ENTRY_PRICE, Segment.ALL)
+        val bucket = rows.single { it.key == "price:4" }
+
+        assertEquals(0.8125, scaledLong.averageEntryPrice)
+        assertEquals(TradeDirection.SHORT, short.direction)
+        assertEquals(listOf(scaledLong, short, scratch, breakEven), bucket.positions)
+        assertEquals(1, bucket.metrics.winCount)
+        assertEquals(1, bucket.metrics.lossCount)
+        assertEquals(2, bucket.metrics.neutralCount)
+        assertEquals(0.5, bucket.metrics.winRate)
+        assertEquals(positions.size, rows.sumOf { it.metrics.tradeCount })
+        assertEquals(positions.sumOf { it.profitLoss }, rows.sumOf { it.metrics.netPnl }, 1e-9)
+        assertEquals("Price unavailable", rows.last().label)
+        assertEquals(listOf(priceUnavailable), rows.last().positions)
     }
 
     @Test fun sourceClockRejectsDstGapsAndFolds() {

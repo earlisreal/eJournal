@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.ui.components
 
+import io.earlisreal.ejournal.domain.DecimalShares
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -49,13 +50,23 @@ fun signedMoney(value: Double, symbol: String = "$"): String =
 fun formatPriceDifference(value: Double): String =
     (if (value > 0) "+" else if (value < 0) "−" else "") + "%.2f".format(abs(value))
 
-/** Keep small fractions visible while removing Double summation noise and redundant decimal zeros. */
-fun formatQuantity(value: Double): String {
+/** Preserve significant digits in precise report prices. */
+internal fun formatSignificantDigits(value: Double): String {
     val parts = "%.15g".format(value).split('e')
     val mantissa = if (parts[0].contains('.') || parts[0].contains(',')) {
         parts[0].trimEnd('0').trimEnd('.', ',')
     } else parts[0]
     return if (parts.size == 1) mantissa else "${mantissa}e${parts[1]}"
+}
+
+internal data class ShareQuantityLabel(val text: String, val fullQuantity: String? = null)
+
+internal fun formatShareQuantity(value: Double): ShareQuantityLabel {
+    if (!value.isFinite()) return ShareQuantityLabel("—")
+    val quantity = DecimalShares(value)
+    val fullQuantity = quantity.toPlainString()
+    val text = if (value > 0.0 && value < 0.000001) "<0.000001" else quantity.toPlainString(maxDecimals = 6)
+    return ShareQuantityLabel(text, fullQuantity.takeIf { it != text })
 }
 
 /** Compact money for tight axis labels: "$3.4k", "−$640", "$2.5M", "$0". No leading plus sign. */

@@ -96,10 +96,12 @@ fun DayDetailPanel(
                                         fontWeight = FontWeight.SemiBold,
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
-                                    Text(
-                                        (if (showExitDate) "${shortDate(entry.date)} · " else "") +
-                                            (if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing") +
-                                            " · ${formatQuantity(entry.shares)} sh",
+                                    val type = if (classifyTradeType(p) == TradeType.DAY) "Day" else "Swing"
+                                    val datePrefix = if (showExitDate) "${shortDate(entry.date)} · " else ""
+                                    ShareQuantityText(
+                                        shares = entry.shares,
+                                        prefix = "$datePrefix$type · ",
+                                        suffix = " sh",
                                         color = AppTheme.colors.textMuted,
                                         style = MaterialTheme.typography.labelSmall,
                                     )

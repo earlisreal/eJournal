@@ -16,17 +16,19 @@ import kotlinx.datetime.LocalDateTime
  */
 object FifoMatcher {
 
+    private val zeroShares = DecimalShares(0.0)
+
     /** An open lot on the position's opening side: a buy lot for a long trip, a sell lot for a short trip. */
     private data class Lot(
         val price: Double,
-        var remainingShares: Double,
+        var remainingShares: DecimalShares,
         val totalShares: Double,
         val totalFee: Double,
     )
 
     /** Accumulates one round-trip trade as transactions are matched against it. */
     private class TradeAccumulator(val direction: TradeDirection, val openDatetime: LocalDateTime) {
-        var matchedShares = 0.0
+        var matchedShares = zeroShares
         var openValue = 0.0      // Σ openPrice  × matchedShares  (for the average entry price)
         var closeValue = 0.0     // Σ closePrice × matchedShares  (for the average exit price)
         var fees = 0.0
@@ -35,20 +37,23 @@ object FifoMatcher {
         val transactions = mutableListOf<Transaction>()
         val exits = mutableListOf<PositionExit>()
 
-        fun toClosedPosition(symbol: String, isClosed: Boolean) = ClosedPosition(
-            symbol = symbol,
-            entryDatetime = openDatetime,
-            exitDatetime = closeDatetime,
-            averageEntryPrice = openValue / matchedShares,
-            averageExitPrice = closeValue / matchedShares,
-            shares = matchedShares,
-            fees = fees,
-            profitLoss = profitLoss,
-            transactions = transactions.toList(),
-            direction = direction,
-            exits = exits.toList(),
-            isClosed = isClosed,
-        )
+        fun toClosedPosition(symbol: String, isClosed: Boolean): ClosedPosition {
+            val shares = matchedShares.toDouble()
+            return ClosedPosition(
+                symbol = symbol,
+                entryDatetime = openDatetime,
+                exitDatetime = closeDatetime,
+                averageEntryPrice = openValue / shares,
+                averageExitPrice = closeValue / shares,
+                shares = shares,
+                fees = fees,
+                profitLoss = profitLoss,
+                transactions = transactions.toList(),
+                direction = direction,
+                exits = exits.toList(),
+                isClosed = isClosed,
+            )
+        }
     }
 
     fun computeClosedPositions(transactions: List<Transaction>): List<ClosedPosition> {
@@ -60,11 +65,13 @@ object FifoMatcher {
 
             // Emit the current trade if it realized anything, then go flat.
             fun flush() {
-                acc?.let { if (it.matchedShares > 0.0) result.add(it.toClosedPosition(symbol, openQueue.isEmpty())) }
+                acc?.let { if (it.matchedShares.isPositive()) result.add(it.toClosedPosition(symbol, openQueue.isEmpty())) }
                 acc = null
             }
 
             for (tx in symbolTxs.sortedBy { it.datetime }) {
+                if (!tx.shares.isFinite() || tx.shares <= 0.0) continue
+                val quantity = DecimalShares(tx.shares)
                 val txSide = if (tx.action == Action.BUY) TradeDirection.LONG else TradeDirection.SHORT
 
                 // Opening from flat: the order's side sets the trip direction.
@@ -74,41 +81,41 @@ object FifoMatcher {
 
                 if (txSide == current.direction) {
                     // Same side as the position: scale in.
-                    openQueue.addLast(Lot(tx.price, tx.shares, tx.shares, tx.fees))
+                    openQueue.addLast(Lot(tx.price, quantity, tx.shares, tx.fees))
                     continue
                 }
 
                 // Opposite side: close/reduce the position, matching FIFO against open lots.
-                var remaining = tx.shares
-                val closeFeePerShare = tx.fees / tx.shares
+                var remaining = quantity
                 val sign = if (current.direction == TradeDirection.LONG) 1.0 else -1.0
-                var exitShares = 0.0
+                var exitShares = zeroShares
                 var exitPnl = 0.0
 
-                while (remaining > 0.0 && openQueue.isNotEmpty()) {
+                while (remaining.isPositive() && openQueue.isNotEmpty()) {
                     val lot = openQueue.first()
-                    val matched = minOf(remaining, lot.remainingShares)
+                    val matchedQuantity = minOf(remaining, lot.remainingShares)
+                    val matched = matchedQuantity.toDouble()
                     val openFee = lot.totalFee * (matched / lot.totalShares)
-                    val closeFee = closeFeePerShare * matched
+                    val closeFee = tx.fees * (matched / tx.shares)
                     val feeMatch = openFee + closeFee
                     val matchedPnl = sign * (tx.price - lot.price) * matched - feeMatch
 
-                    current.matchedShares += matched
+                    current.matchedShares += matchedQuantity
                     current.openValue += lot.price * matched
                     current.closeValue += tx.price * matched
                     current.fees += feeMatch
                     current.profitLoss += matchedPnl
                     current.closeDatetime = tx.datetime
-                    exitShares += matched
+                    exitShares += matchedQuantity
                     exitPnl += matchedPnl
 
-                    lot.remainingShares -= matched
-                    remaining -= matched
-                    if (lot.remainingShares <= 0.0) openQueue.removeFirst()
+                    lot.remainingShares -= matchedQuantity
+                    remaining -= matchedQuantity
+                    if (!lot.remainingShares.isPositive()) openQueue.removeFirst()
                 }
 
-                if (exitShares > 0.0) {
-                    current.exits.add(PositionExit(current.transactions.lastIndex, exitShares, exitPnl))
+                if (exitShares.isPositive()) {
+                    current.exits.add(PositionExit(current.transactions.lastIndex, exitShares.toDouble(), exitPnl))
                 }
 
                 // Position is flat again: close out this trade.
@@ -116,11 +123,12 @@ object FifoMatcher {
                     flush()
                     // Flip: leftover closing shares open a new position in the opposite direction.
                     // Their share of this order's fee becomes the new lot's opening fee.
-                    if (remaining > 0.0) {
+                    if (remaining.isPositive()) {
                         acc = TradeAccumulator(txSide, tx.datetime)
                         current = acc!!
                         current.transactions.add(tx)
-                        openQueue.addLast(Lot(tx.price, remaining, remaining, closeFeePerShare * remaining))
+                        val shares = remaining.toDouble()
+                        openQueue.addLast(Lot(tx.price, remaining, shares, tx.fees * (shares / tx.shares)))
                     }
                 }
             }

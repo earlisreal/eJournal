@@ -1,5 +1,6 @@
 package io.earlisreal.ejournal.domain.analytics
 
+import io.earlisreal.ejournal.domain.DecimalShares
 import io.earlisreal.ejournal.domain.model.ClosedPosition
 import kotlinx.datetime.LocalDateTime
 
@@ -24,7 +25,7 @@ fun calendarEntries(positions: List<ClosedPosition>): List<CalendarEntry> =
                     CalendarEntry(
                         position = position,
                         exitDatetime = exits.minOf { position.transactions[it.transactionIndex].datetime },
-                        shares = exits.sumOf { it.shares },
+                        shares = exits.fold(DecimalShares(0.0)) { total, exit -> total + DecimalShares(exit.shares) }.toDouble(),
                         profitLoss = exits.sumOf { it.profitLoss },
                     )
                 }

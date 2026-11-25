@@ -34,6 +34,7 @@ import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.ErrorBanner
 import io.earlisreal.ejournal.ui.components.Pill
 import io.earlisreal.ejournal.ui.components.ScreenScaffold
+import io.earlisreal.ejournal.ui.components.ShareQuantityText
 import io.earlisreal.ejournal.ui.platform.pickImportFiles
 import io.earlisreal.ejournal.ui.shell.FilterState
 import io.earlisreal.ejournal.ui.theme.AppTheme
@@ -128,15 +129,21 @@ fun ImportScreen(
                     DataTable(
                         columns = listOf("Symbol", "Date", "Action", "Price", "Shares", "Fees"),
                         rows = state.parsedTransactions,
-                        cells = { tx ->
-                            listOf(
-                                tx.symbol,
-                                tx.datetime.toString(),
-                                tx.action.name,
-                                "%.2f".format(tx.price),
-                                "%.0f".format(tx.shares),
-                                "%.2f".format(tx.fees),
-                            )
+                        cell = { tx, column, modifier ->
+                            val style = MaterialTheme.typography.bodySmall
+                            val color = AppTheme.colors.textPrimary
+                            if (column == 4) {
+                                ShareQuantityText(tx.shares, style, color, modifier)
+                            } else {
+                                val text = when (column) {
+                                    0 -> tx.symbol
+                                    1 -> tx.datetime.toString()
+                                    2 -> tx.action.name
+                                    3 -> "%.2f".format(tx.price)
+                                    else -> "%.2f".format(tx.fees)
+                                }
+                                Text(text, modifier = modifier, color = color, style = style)
+                            }
                         },
                         modifier = Modifier.fillMaxSize(),
                     )

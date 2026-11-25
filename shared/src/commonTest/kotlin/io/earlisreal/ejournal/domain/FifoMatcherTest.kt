@@ -201,4 +201,56 @@ class FifoMatcherTest {
         val symbols = positions.map { it.symbol }.toSet()
         assertEquals(setOf("AAPL", "GOOG"), symbols)
     }
+
+    @Test
+    fun fractionalBuysCloseCleanlyAndTheNextTradeStartsFresh() {
+        val positions = FifoMatcher.computeClosedPositions(
+            listOf(
+                tx(Action.BUY, 10.0, 0.1, 0.01, "2026-11-24T09:30"),
+                tx(Action.BUY, 10.0, 0.2, 0.02, "2026-11-24T09:31"),
+                tx(Action.SELL, 11.0, 0.3, 0.03, "2026-11-24T09:32"),
+                tx(Action.BUY, 12.0, 1.0, 0.0, "2026-11-24T09:33"),
+                tx(Action.SELL, 13.0, 1.0, 0.0, "2026-11-24T09:34"),
+            )
+        )
+
+        assertEquals(listOf(0.3, 1.0), positions.map { it.shares })
+        assertTrue(positions.all { it.isClosed })
+        assertEquals(0.3, positions.first().exits.single().shares)
+        assertEquals(0.06, positions.first().fees, 1e-12)
+        assertEquals(0.24, positions.first().profitLoss, 1e-12)
+    }
+
+    @Test
+    fun fractionalExitsDoNotCreateAPhantomShort() {
+        val positions = FifoMatcher.computeClosedPositions(
+            listOf(
+                tx(Action.BUY, 10.0, 0.3, 0.0, "2026-11-24T09:30"),
+                tx(Action.SELL, 11.0, 0.1, 0.0, "2026-11-24T09:31"),
+                tx(Action.SELL, 11.0, 0.2, 0.0, "2026-11-24T09:32"),
+                tx(Action.BUY, 12.0, 1.0, 0.0, "2026-11-24T09:33"),
+            )
+        )
+
+        val position = positions.single()
+        assertTrue(position.isClosed)
+        assertEquals(listOf(0.1, 0.2), position.exits.map { it.shares })
+    }
+
+    @Test
+    fun genuineRemainderSurvivesEvenWhenItIsSmallerThanDoubleRoundingNoise() {
+        val tiny = 0.00000000000000001
+        val positions = FifoMatcher.computeClosedPositions(
+            listOf(
+                tx(Action.BUY, 10.0, 1.0, 0.0, "2026-11-24T09:30"),
+                tx(Action.SELL, 11.0, tiny, 0.0, "2026-11-24T09:31"),
+                tx(Action.SELL, 11.0, 1.0, 0.0, "2026-11-24T09:32"),
+                tx(Action.BUY, 10.0, tiny, 0.0, "2026-11-24T09:33"),
+            )
+        )
+
+        assertEquals(listOf(TradeDirection.LONG, TradeDirection.SHORT), positions.map { it.direction })
+        assertTrue(positions.all { it.isClosed })
+        assertEquals(tiny, positions.last().shares)
+    }
 }

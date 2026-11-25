@@ -48,7 +48,7 @@ private val COLUMNS = listOf(
     Col(SortColumn.ENTRY, "Entry", 1.2f, false),
     Col(SortColumn.EXIT, "Exit", 1.2f, false),
     Col(SortColumn.HELD, "Held", 0.8f, false),
-    Col(SortColumn.SHARES, "Shares", 0.8f, true),
+    Col(SortColumn.SHARES, "Shares", 1.3f, true),
     Col(SortColumn.AVG_ENTRY, "Avg entry", 1.0f, true),
     Col(SortColumn.AVG_EXIT, "Avg exit", 1.0f, true),
     Col(SortColumn.AVG_DIFFERENCE, "Avg diff", 1.0f, true),
@@ -149,7 +149,13 @@ private fun PositionRow(
         Cell(formatDateTime(p.entryDatetime), COLUMNS[2].weight)
         Cell(formatDateTime(p.exitDatetime), COLUMNS[3].weight)
         Cell(formatHeld(p), COLUMNS[4].weight)
-        NumCell("%.0f".format(p.shares), COLUMNS[5].weight)
+        ShareQuantityText(
+            p.shares,
+            style = NumberTextStyle,
+            color = AppTheme.colors.textPrimary,
+            modifier = Modifier.weight(COLUMNS[5].weight),
+            alignment = Alignment.TopEnd,
+        )
         val entryPrice = if (preciseEntryPrice) formatReportEntryPrice(p.averageEntryPrice) else "%.2f".format(p.averageEntryPrice)
         NumCell(entryPrice, COLUMNS[6].weight)
         NumCell("%.2f".format(p.averageExitPrice), COLUMNS[7].weight)
@@ -164,7 +170,7 @@ private fun PositionRow(
 internal fun formatReportEntryPrice(price: Double): String {
     val band = entryPriceBandIndex(price)
     if (band < 0) return "—"
-    val label = formatQuantity(price)
+    val label = formatSignificantDigits(price)
     val displayedPrice = label.replace(',', '.').toDoubleOrNull()
     // Keep the stored value visible if display rounding would move it to another band.
     return if (displayedPrice != null && entryPriceBandIndex(displayedPrice) == band) label else price.toString()

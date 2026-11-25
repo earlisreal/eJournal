@@ -9,12 +9,26 @@ import kotlin.test.assertEquals
 class FormattingTest {
 
     @Test
-    fun quantitiesRetainFractionsWithoutFloatingPointNoise() {
-        assertEquals("40", formatQuantity(40.0))
-        assertEquals("0.3", formatQuantity(0.1 + 0.2))
-        assertEquals("0.125", formatQuantity(0.125))
-        assertEquals("1e-09", formatQuantity(0.000000001))
-        assertEquals("100000000000000", formatQuantity(100000000000000.0))
+    fun shareQuantitiesUseUpToSixDecimalPlaces() {
+        assertEquals(ShareQuantityLabel("40"), formatShareQuantity(40.0))
+        assertEquals(ShareQuantityLabel("0"), formatShareQuantity(0.0))
+        assertEquals(ShareQuantityLabel("0.125"), formatShareQuantity(0.125))
+        assertEquals(ShareQuantityLabel("0.000001"), formatShareQuantity(0.000001))
+        assertEquals(ShareQuantityLabel("0.123457", "0.1234565"), formatShareQuantity(0.1234565))
+        assertEquals(ShareQuantityLabel("0.3", "0.30000000000000004"), formatShareQuantity(0.1 + 0.2))
+        assertEquals(ShareQuantityLabel("100000000000000"), formatShareQuantity(100000000000000.0))
+    }
+
+    @Test
+    fun tinyShareQuantitiesNeverUseScientificNotation() {
+        assertEquals(
+            ShareQuantityLabel("<0.000001", "0.0000000000000000416333634234434"),
+            formatShareQuantity(4.16333634234434e-17),
+        )
+        assertEquals(
+            ShareQuantityLabel("<0.000001", "0.0000009"),
+            formatShareQuantity(0.0000009),
+        )
     }
 
     @Test

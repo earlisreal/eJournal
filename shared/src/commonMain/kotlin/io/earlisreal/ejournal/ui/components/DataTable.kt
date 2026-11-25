@@ -20,14 +20,13 @@ import io.earlisreal.ejournal.ui.theme.CardShape
 import io.earlisreal.ejournal.ui.theme.Spacing
 
 /**
- * Generic table. `columns` are header labels; `cells` provides each row's cell strings.
- * `weights` (optional) sets per-column flex; defaults to equal.
+ * Generic table with a header label and a weighted content cell for each column.
  */
 @Composable
 fun <T> DataTable(
     columns: List<String>,
     rows: List<T>,
-    cells: (T) -> List<String>,
+    cell: @Composable (row: T, column: Int, modifier: Modifier) -> Unit,
     modifier: Modifier = Modifier,
     weights: List<Float> = columns.map { 1f },
 ) {
@@ -58,13 +57,8 @@ fun <T> DataTable(
                         .fillMaxWidth()
                         .padding(horizontal = Spacing.md, vertical = Spacing.sm)
                 ) {
-                    cells(row).forEachIndexed { i, cell ->
-                        Text(
-                            cell,
-                            modifier = Modifier.weight(weights.getOrElse(i) { 1f }),
-                            color = AppTheme.colors.textPrimary,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                    columns.indices.forEach { i ->
+                        cell(row, i, Modifier.weight(weights.getOrElse(i) { 1f }))
                     }
                 }
                 if (index < rows.lastIndex) {

@@ -81,6 +81,19 @@ class DaySummaryTest {
     }
 
     @Test
+    fun sameDayFractionalExitsSumWithoutQuantityNoise() {
+        val positions = FifoMatcher.computeClosedPositions(
+            listOf(
+                tx(1, Action.BUY, "2024-06-03T09:00", 10.0, 0.3, 0.0),
+                tx(2, Action.SELL, "2024-06-04T09:30", 12.0, 0.1, 0.0),
+                tx(3, Action.SELL, "2024-06-04T10:30", 12.0, 0.2, 0.0),
+            )
+        )
+
+        assertEquals(0.3, calendarEntries(positions).single().shares)
+    }
+
+    @Test
     fun zeroPnlExitStillCountsWithoutCountingItsOpeningDate() {
         val position = FifoMatcher.computeClosedPositions(
             listOf(

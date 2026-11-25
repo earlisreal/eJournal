@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +39,7 @@ private val TXN_COLUMNS = listOf(
     TxnCol("Time", 1.5f, false),
     TxnCol("Side", 0.6f, false),
     TxnCol("Price", 1.0f, true),
-    TxnCol("Shares", 0.9f, true),
+    TxnCol("Shares", 1.1f, true),
     TxnCol("Value", 1.2f, true),
     TxnCol("Fees", 0.8f, true),
     TxnCol("Realized", 1.3f, true),
@@ -88,7 +89,13 @@ private fun TransactionRow(tx: Transaction, realizedPnL: Double?, symbol: String
         Cell(formatTxnTime(tx.datetime, isDay), TXN_COLUMNS[0].weight)
         Cell(if (tx.action == Action.BUY) "Buy" else "Sell", TXN_COLUMNS[1].weight)
         NumCell("%.2f".format(tx.price), TXN_COLUMNS[2].weight)
-        NumCell("%.0f".format(tx.shares), TXN_COLUMNS[3].weight)
+        ShareQuantityText(
+            tx.shares,
+            style = NumberTextStyle,
+            color = AppTheme.colors.textPrimary,
+            modifier = Modifier.weight(TXN_COLUMNS[3].weight),
+            alignment = Alignment.TopEnd,
+        )
         NumCell("%,.2f".format(tx.price * tx.shares), TXN_COLUMNS[4].weight)
         NumCell("%.2f".format(tx.fees), TXN_COLUMNS[5].weight)
         if (realizedPnL == null) {

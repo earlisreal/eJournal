@@ -76,6 +76,7 @@ import io.earlisreal.ejournal.ui.components.EmptyState
 import io.earlisreal.ejournal.ui.components.ColumnVerticalScrollbar
 import io.earlisreal.ejournal.ui.components.LoadingIndicator
 import io.earlisreal.ejournal.ui.components.PositionTransactionsTable
+import io.earlisreal.ejournal.ui.components.ShareQuantityText
 import io.earlisreal.ejournal.ui.components.TagChip
 import io.earlisreal.ejournal.ui.components.TagEditorMenu
 import io.earlisreal.ejournal.ui.components.TagManagerDialog
@@ -300,8 +301,10 @@ fun AnalysisScreen(
                             modifier = Modifier.padding(end = Spacing.sm),
                         )
                         val side = if (position.direction == TradeDirection.SHORT) "Short" else "Long"
-                        Text(
-                            "$side · ${if (isDay) "Day" else "Swing"} · ${"%.0f".format(position.shares)} sh · ${longDate(position.entryDatetime.date)}",
+                        ShareQuantityText(
+                            shares = position.shares,
+                            prefix = "$side · ${if (isDay) "Day" else "Swing"} · ",
+                            suffix = " sh · ${longDate(position.entryDatetime.date)}",
                             color = AppTheme.colors.textMuted,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -471,7 +474,9 @@ fun AnalysisScreen(
                         StatCell("Avg Entry", "%.2f".format(position.averageEntryPrice))
                         StatCell("Avg Exit",  "%.2f".format(position.averageExitPrice))
                         StatCell("Avg diff", formatPriceDifference(averageDifference), valueColor = averageDifferenceColor)
-                        StatCell("Shares",   "%.0f".format(position.shares))
+                        StatCell("Shares") {
+                            ShareQuantityText(position.shares, style = NumberTextStyle, color = AppTheme.colors.textPrimary)
+                        }
                         StatCell("Fees",     "%.2f".format(position.fees))
                         StatCell("Entry",    "%02d:%02d:%02d".format(position.entryDatetime.hour, position.entryDatetime.minute, position.entryDatetime.second))
                         StatCell("Exit",     "%02d:%02d:%02d".format(position.exitDatetime.hour,  position.exitDatetime.minute,  position.exitDatetime.second))
@@ -647,9 +652,14 @@ private fun TagEditRow(
 
 @Composable
 private fun StatCell(label: String, value: String, valueColor: Color = AppTheme.colors.textPrimary) {
+    StatCell(label) { Text(value, color = valueColor, style = NumberTextStyle) }
+}
+
+@Composable
+private fun StatCell(label: String, content: @Composable () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, color = AppTheme.colors.textMuted, style = MaterialTheme.typography.labelSmall)
-        Text(value, color = valueColor, style = NumberTextStyle)
+        content()
     }
 }
 
